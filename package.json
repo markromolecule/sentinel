@@ -1,0 +1,15 @@
+{
+    "name": "sentinel",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "dev": "turbo run dev",
+        "build": "turbo run build",
+        "lint": "turbo run lint",
+        "clean": "rm -rf node_modules"
+    },
+    "devDependencies": {
+        "turbo": "latest",
+        "prettier": "latest"
+    }
+}

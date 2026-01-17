@@ -1,0 +1,23 @@
+{
+    "name": "sentinel-api",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "dev": "tsx watch src/index.ts",
+        "start": "tsx src/index.ts"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "prisma": "^7.2.0"
+    },
+    "dependencies": {
+        "@hono/node-server": "^1.19.9",
+        "@prisma/client": "^7.2.0",
+        "hono": "^4.11.4",
+        "tsx": "^4.21.0"
+    }
+}

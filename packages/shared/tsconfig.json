@@ -1,0 +1,30 @@
+{
+    "compilerOptions": {
+        "target": "es2019",
+        "lib": [
+            "es2019",
+            "dom"
+        ],
+        "module": "esnext",
+        "moduleResolution": "bundler",
+        "allowJs": true,
+        "skipLibCheck": true,
+        "strict": true,
+        "noEmit": true,
+        "esModuleInterop": true,
+        "isolatedModules": true,
+        "resolveJsonModule": true,
+        "baseUrl": ".",
+        "paths": {
+            "@/*": [
+                "./src/*"
+            ]
+        }
+    },
+    "include": [
+        "src"
+    ],
+    "exclude": [
+        "node_modules"
+    ]
+}
