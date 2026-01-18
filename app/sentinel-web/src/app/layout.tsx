@@ -13,10 +13,17 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Sentinel",
-  description: "Sentinel",
+  title: "Sentinel | Smart Proctoring for Academic Integrity",
+  description: "Sentinel is a mobile and web platform for securing online exams, monitoring student focus, and preventing academic dishonesty. It's built for educators, ensuring fair testing everywhere.",
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/icons/icon0.svg", type: "image/svg+xml" },
+      { url: "/icons/icon1.png", type: "image/png" },
+      { url: "/icons/favicon-96x96.png", sizes: "96x96", type: "image/png" },
+      { url: "/icons/web-app-manifest-192x192.png", sizes: "192x192", type: "image/png" },
+    ],
+    shortcut: "/icons/favicon.ico",
+    apple: "/icons/apple-icon.png",
   },
 };
 
