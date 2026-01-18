@@ -12,11 +12,13 @@
     "author": "",
     "license": "ISC",
     "devDependencies": {
+        "dotenv": "^17.2.3",
         "prisma": "^7.2.0"
     },
     "dependencies": {
         "@hono/node-server": "^1.19.9",
         "@prisma/client": "^7.2.0",
+        "@prisma/extension-accelerate": "^3.0.1",
         "hono": "^4.11.4",
         "tsx": "^4.21.0"
     }
