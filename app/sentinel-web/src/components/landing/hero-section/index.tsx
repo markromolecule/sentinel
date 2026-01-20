@@ -2,8 +2,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Download, ArrowRight, ArrowUpRight } from 'lucide-react';
+import { ArrowRight, ArrowUpRight } from 'lucide-react';
 
 export function HeroSection() {
     return (
@@ -25,15 +24,16 @@ export function HeroSection() {
             <div className="container mx-auto px-6 py-20 relative z-10">
                 <div className="max-w-5xl mx-auto text-center">
                     {/* Headline */}
-                    <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold bg-linear-to-b from-white to-gray-400 bg-clip-text text-transparent mb-8 animate-slide-up leading-[1.15] tracking-tight font-sans">
+                    <h1 className="text-5xl md:text-6xl lg:text-7xl font-medium bg-clip-text text-transparent bg-linear-to-b from-gray-400 to-blue-200 mb-8 animate-slide-up leading-tight tracking-tight font-sans">
                         Secure your next <br className="hidden md:block" />
-                        examination
+                        Examination
                     </h1>
 
                     {/* Subtext */}
                     <p className="text-lg md:text-xl text-gray-400 mb-16 max-w-2xl mx-auto animate-slide-up leading-relaxed" style={{ animationDelay: '0.1s' }}>
                         A mobile and web-based examination security system with gaze and audio monitoring.
-                        Built for educators, ensuring fair testing everywhere.
+                        <span className="border-b border-gray-400/50 mx-2">Built for educators,</span>
+                        ensuring fair testing everywhere.
                     </p>
 
                     {/* CTA Buttons */}
@@ -45,7 +45,7 @@ export function HeroSection() {
                             className="h-14 px-8 text-base font-semibold group"
                         >
                             <Link href="#download" className="flex items-center gap-2">
-                                Download Sentinel
+                                Donwload Sentinel
                                 <ArrowUpRight className="w-5 h-5 ml-1 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1" />
                             </Link>
                         </Button>

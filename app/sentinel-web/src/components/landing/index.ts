@@ -1,2 +1,2 @@
-export { HeroSection } from './hero-section';
-
+export * from './hero-section';
+export * from './feature-section';

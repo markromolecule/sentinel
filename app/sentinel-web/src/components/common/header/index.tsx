@@ -12,7 +12,7 @@ export function Header() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     return (
-        <header className="fixed top-0 left-0 right-0 z-50 pt-1 md:pt-4 lg:pt-8 px-2 lg:px-8 animate-fade-in transition-all duration-300">
+        <header className="absolute lg:fixed top-0 left-0 right-0 z-50 pt-1 md:pt-4 lg:pt-8 px-2 lg:px-8 animate-fade-in transition-all duration-300">
             <div className="w-full lg:container lg:mx-auto">
                 <div className="flex items-center justify-between relative">
                     {/* Logo (Left side) */}
