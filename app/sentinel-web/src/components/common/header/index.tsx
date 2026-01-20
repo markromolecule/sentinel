@@ -11,6 +11,11 @@ import { NAV_ITEMS } from '../_constants';
 export function Header() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+    // Configure URLs for production subdomain routing
+    const APP_URL = process.env.NODE_ENV === 'production'
+        ? 'https://app.sentinel-ph.com'
+        : '';
+
     return (
         <header className="absolute lg:fixed top-0 left-0 right-0 z-50 pt-1 md:pt-4 lg:pt-8 px-2 lg:px-8 animate-fade-in transition-all duration-300">
             <div className="w-full lg:container lg:mx-auto">
@@ -33,7 +38,7 @@ export function Header() {
                             <Link
                                 key={item.name}
                                 href={item.href}
-                                className="text-sm font-medium text-gray-400 hover:text-white transition-colors px-4 py-2 rounded-full hover:bg-white/5"
+                                className="text-base font-medium text-gray-400 hover:text-white transition-colors px-4 py-2 rounded-full hover:bg-white/5"
                             >
                                 {item.name}
                             </Link>
@@ -47,13 +52,13 @@ export function Header() {
                             variant="ghost"
                             className="text-gray-300 hover:text-white hover:bg-white/5 rounded-full"
                         >
-                            <Link href="/login">Log in</Link>
+                            <Link href={`${APP_URL}/auth/login`} target="_blank" rel="noopener noreferrer">Log in</Link>
                         </Button>
                         <Button
                             asChild
                             className="bg-var(--sentinel-primary) hover:bg-(--sentinel-primary)/90 text-white font-medium px-5 rounded-full shadow-lg shadow-(--sentinel-primary)/20"
                         >
-                            <Link href="/register">Register</Link>
+                            <Link href={`${APP_URL}/auth/register`} target="_blank" rel="noopener noreferrer">Register</Link>
                         </Button>
                     </div>
 
@@ -82,7 +87,9 @@ export function Header() {
                                 ))}
                                 <div className="h-px bg-white/10 my-2" />
                                 <Link
-                                    href="/login"
+                                    href={`${APP_URL}/auth/login`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                     className="text-gray-300 hover:text-white py-3 px-4 rounded-xl hover:bg-white/5"
                                     onClick={() => setMobileMenuOpen(false)}
                                 >
@@ -92,7 +99,7 @@ export function Header() {
                                     asChild
                                     className="bg-(--sentinel-primary) hover:bg-(--sentinel-primary)/90 text-white font-medium w-full mt-2 rounded-xl"
                                 >
-                                    <Link href="/register" onClick={() => setMobileMenuOpen(false)}>
+                                    <Link href={`${APP_URL}/auth/register`} target="_blank" rel="noopener noreferrer" onClick={() => setMobileMenuOpen(false)}>
                                         Register
                                     </Link>
                                 </Button>

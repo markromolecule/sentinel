@@ -1,8 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import { FEATURE_ITEMS } from '@/components/landing/_constants';
-import type { FEATURE } from '@/components/landing/_constants';
+import { FEATURE_ITEMS } from '@/app/landing/_constants';
+import type { FEATURE } from '@/app/landing/_constants';
 
 // --- Main Component ---
 export function FeatureSection() {
@@ -21,7 +21,7 @@ export function FeatureSection() {
 // --- Sub Components ---
 function FeatureHeader() {
     return (
-        <div className="flex flex-col items-start text-left md:items-center md:text-center mb-12 md:mb-16 lg:sticky lg:top-24 lg:z-20 lg:bg-[#0f0f10]/80 lg:backdrop-blur-md lg:py-4 lg:rounded-2xl">
+        <div className="flex flex-col items-start text-left md:items-center md:text-center mb-12 md:mb-16 lg:sticky lg:top-24 lg:z-20 lg:bg-[#0f0f10] lg:py-6 lg:rounded-b-2xl lg:mb-24 lg:shadow-xl lg:border-b lg:border-white/5">
             <div className="inline-flex items-center gap-2 mb-6">
                 <Image src="/icons/icon0.svg" alt="Sentinel" width={20} height={20} className="w-5 h-5" />
                 <span className="text-base text-gray-400 font-medium">What you'll get</span>
