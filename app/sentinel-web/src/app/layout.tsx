@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { DM_Sans, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SmoothScroll } from "@/components/common/smooth-scroll";
+import Providers from "./providers";
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -41,7 +42,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <SmoothScroll />
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

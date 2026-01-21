@@ -5,7 +5,7 @@ import { FEATURE_ITEMS } from '@/app/landing/_constants';
 import type { FEATURE } from '@/app/landing/_constants';
 
 // --- Main Component ---
-export function FeatureSection() {
+export default function FeatureSection() {
     return (
         <section id="features" className="py-16 md:py-24 bg-[#0f0f10] relative overflow-hidden">
             <BackgroundGrid />
