@@ -2,7 +2,7 @@ import {
     GazeTrackingVisual,
     AudioAnalysisVisual,
     AnalyticsVisual
-} from "../feature-section/visuals";
+} from "../feature-section/_components/visuals";
 
 export interface FEATURE {
     title: string;
