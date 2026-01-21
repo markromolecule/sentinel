@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useSignUpMutation } from "@/hooks/query/auth/use-sign-up-mutation";
+import { useGoogleLogin } from "@/hooks/query/auth/use-google-login";
 
 export default function RegisterPage() {
     const [formData, setFormData] = useState({
@@ -37,6 +39,53 @@ export default function RegisterPage() {
         if (value.trim()) {
             setErrors(prev => ({ ...prev, [field]: false }));
         }
+    };
+
+    const { loginWithGoogle, isLoading: isGoogleLoading } = useGoogleLogin();
+
+    const { mutate: signUp, isPending: isLoading } = useSignUpMutation({
+        onSuccess: () => {
+            // Handle success (e.g., redirect or show success message)
+            alert('Registration successful! Please check your email to verify your account.')
+        },
+        onError: (error) => {
+            alert(error.message)
+        }
+    })
+
+    const handleSubmit = () => {
+        // Validate fields
+        const newErrors = { ...errors };
+        let hasError = false;
+
+        Object.keys(formData).forEach((key) => {
+            const field = key as keyof typeof formData;
+            if (!formData[field].trim()) {
+                newErrors[field] = true;
+                hasError = true;
+            }
+        });
+
+        if (formData.password !== formData.confirmPassword) {
+            newErrors.confirmPassword = true;
+            hasError = true;
+            alert("Passwords do not match");
+        }
+
+        setErrors(newErrors);
+
+        if (hasError) return;
+
+        signUp({
+            email: formData.email,
+            password: formData.password,
+            options: {
+                data: {
+                    first_name: formData.firstName,
+                    last_name: formData.lastName,
+                }
+            }
+        });
     };
 
     return (
@@ -152,9 +201,11 @@ export default function RegisterPage() {
                     className="w-full h-12 text-base font-semibold group"
                     variant="premium-3d"
                     size="lg"
+                    onClick={handleSubmit}
+                    disabled={isLoading}
                 >
-                    Create account
-                    <ArrowUpRight className="w-5 h-5 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1" />
+                    {isLoading ? "Creating account..." : "Create account"}
+                    {!isLoading && <ArrowUpRight className="w-5 h-5 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1" />}
                 </Button>
 
                 <div className="relative w-full py-2">
@@ -170,6 +221,8 @@ export default function RegisterPage() {
                     variant="secondary-3d"
                     size="lg"
                     className="w-full h-12 flex items-center justify-center gap-3"
+                    onClick={loginWithGoogle}
+                    disabled={isGoogleLoading}
                 >
                     <svg className="w-5 h-5" viewBox="0 0 24 24">
                         <path
@@ -189,7 +242,7 @@ export default function RegisterPage() {
                             fill="#EA4335"
                         />
                     </svg>
-                    <span className="font-semibold">Continue with Google</span>
+                    <span className="font-semibold">{isGoogleLoading ? 'Connecting...' : 'Continue with Google'}</span>
                 </Button>
 
                 <div className="text-center text-sm text-gray-400">
