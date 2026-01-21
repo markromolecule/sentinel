@@ -7,7 +7,7 @@ export function useGoogleLogin() {
 
     const loginWithGoogle = async () => {
         setIsLoading(true)
-        console.log('Initiating Google Login...')
+        console.log('test google login')
         try {
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
@@ -17,8 +17,8 @@ export function useGoogleLogin() {
             })
             if (error) throw error
         } catch (error) {
-            console.error('Google Login Error:', error)
-            alert('Failed to login with Google')
+            console.error('google login error:', error)
+            alert('failed to login with google')
             setIsLoading(false)
         }
     }

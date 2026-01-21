@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { FEATURE_ITEMS } from '@/app/landing/_constants';
 import type { FEATURE } from '@/app/landing/_constants';
 
-// --- Main Component ---
+// Main Component
 export default function FeatureSection() {
     return (
         <section id="features" className="py-16 md:py-24 bg-[#0f0f10] relative overflow-hidden">
@@ -18,7 +18,7 @@ export default function FeatureSection() {
     );
 }
 
-// --- Sub Components ---
+// Sub Components
 function FeatureHeader() {
     return (
         <div className="flex flex-col items-start text-left md:items-center md:text-center mb-12 md:mb-16 lg:sticky lg:top-24 lg:z-20 lg:bg-[#0f0f10] lg:py-6 lg:rounded-b-2xl lg:mb-24 lg:shadow-xl lg:border-b lg:border-white/5">

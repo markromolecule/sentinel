@@ -3,7 +3,7 @@ import { Context, Next } from 'hono'
 import { prisma } from '../db'
 import { HTTPException } from 'hono/http-exception'
 
-// Initialize Supabase Client
+// initialize supabase
 const supabaseUrl = process.env.SUPABASE_URL!
 const supabaseKey = process.env.SUPABASE_ANON_KEY!
 const supabase = createClient(supabaseUrl, supabaseKey)
@@ -12,20 +12,18 @@ export const authMiddleware = async (c: Context, next: Next) => {
     const authHeader = c.req.header('Authorization')
 
     if (!authHeader) {
-        throw new HTTPException(401, { message: 'Missing Authorization Header' })
+        throw new HTTPException(401, { message: 'missing auth token' })
     }
-
-    const token = authHeader.replace('Bearer ', '')
-
-    // Verify Token with Supabase
+    const token = authHeader.replace('bearer ', '')
+    // verify token with supabase
     const { data: { user }, error } = await supabase.auth.getUser(token)
 
     if (error || !user || !user.email) {
-        console.error('Auth Error:', error)
-        throw new HTTPException(401, { message: 'Invalid or Expired Token' })
+        console.error('auth error:', error)
+        throw new HTTPException(401, { message: 'invalid or expired token' })
     }
 
-    // Sync with Prisma (Lazy Sync)
+    // sync with prisma
     try {
         let dbUser = await prisma.user.findUnique({
             where: { email: user.email }
@@ -42,7 +40,7 @@ export const authMiddleware = async (c: Context, next: Next) => {
             })
         }
 
-        // Attach user to context
+        // attach user to context
         c.set('user', dbUser)
         c.set('supabaseUser', user)
 
