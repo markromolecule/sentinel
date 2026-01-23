@@ -11,7 +11,7 @@ import { NAV_ITEMS } from '../_constants';
 export function Header() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-    // Configure URLs for production subdomain routing
+    // configure URLs for production subdomain routing
     const APP_URL = process.env.NODE_ENV === 'production'
         ? 'https://app.sentinel-ph.com'
         : '';
@@ -62,7 +62,7 @@ export function Header() {
                         </Button>
                     </div>
 
-                    {/* Mobile Menu Button (Sheet Trigger) */}
+                    {/* Mobile Menu Button */}
                     <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                         <SheetTrigger asChild>
                             <button
