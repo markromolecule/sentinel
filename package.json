@@ -2,7 +2,7 @@
     "name": "sentinel",
     "version": "0.0.0",
     "private": true,
-    "packageManager": "pnpm@9.15.0",
+    "packageManager": "pnpm@10.28.1",
     "scripts": {
         "dev": "turbo run dev",
         "build": "turbo run build",
@@ -10,7 +10,7 @@
         "clean": "rm -rf node_modules"
     },
     "devDependencies": {
-        "turbo": "latest",
-        "prettier": "latest"
+        "prettier": "latest",
+        "turbo": "latest"
     }
 }
