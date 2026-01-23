@@ -5,7 +5,8 @@
     "moduleResolution": "NodeNext",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@prisma-generated": ["./generated/prisma"]
     },
     "strict": true,
     "skipLibCheck": true,
