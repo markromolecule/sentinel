@@ -25,12 +25,19 @@ export function Header() {
         // In development, use relative path
         return path;
     };
+    const getHomeUrl = () => {
+        if (typeof window !== 'undefined' && window.location.hostname === 'app.sentinelph.tech') {
+            return 'https://sentinelph.tech';
+        }
+        return '/';
+    };
+
     return (
         <header className="absolute lg:fixed top-0 left-0 right-0 z-50 pt-1 md:pt-4 lg:pt-8 px-2 lg:px-8 animate-fade-in transition-all duration-300">
             <div className="w-full lg:container lg:mx-auto">
                 <div className="flex items-center justify-between relative">
                     {/* Logo (Left side) */}
-                    <Link href="/" className="flex items-center gap-3 group">
+                    <Link href={getHomeUrl()} className="flex items-center gap-3 group">
                         <div className="relative w-auto h-[70px] md:h-[80px] lg:h-[115px] aspect-160/60 transition-all duration-300">
                             <Image
                                 src="/icons/sentinel-logo.svg"

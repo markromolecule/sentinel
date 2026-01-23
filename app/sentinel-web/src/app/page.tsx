@@ -1,15 +1,15 @@
-import { Header } from '@/components/common';
-import { HeroSection, FeatureSection } from '@/app/(public)/landing';
-import { Analytics } from "@vercel/analytics/next"
+import { Header, Footer } from '@/components/common';
+import { HeroSection, FeatureSection, HowItWorksSection, DownloadSection } from '@/app/(public)/landing';
 
 export default function Home() {
   return (
     <>
-      <Analytics />
       <Header />
       <HeroSection />
       <FeatureSection />
+      <HowItWorksSection />
+      <DownloadSection />
+      <Footer />
     </>
   );
 }
-
