@@ -11,9 +11,20 @@ import { NAV_ITEMS } from '../_constants';
 export function Header() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-    // configure URLs for production subdomain routing
-    const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    // Configure URLs for production subdomain routing
+    // In production: use app.sentinelph.tech
+    // In development: use relative paths (stays on localhost:3000)
+    const isProduction = typeof window !== 'undefined' &&
+        !window.location.hostname.includes('localhost') &&
+        !window.location.hostname.includes('127.0.0.1');
 
+    const getAuthUrl = (path: string) => {
+        if (isProduction) {
+            return `https://app.sentinelph.tech${path}`;
+        }
+        // In development, use relative path
+        return path;
+    };
     return (
         <header className="absolute lg:fixed top-0 left-0 right-0 z-50 pt-1 md:pt-4 lg:pt-8 px-2 lg:px-8 animate-fade-in transition-all duration-300">
             <div className="w-full lg:container lg:mx-auto">
@@ -50,13 +61,13 @@ export function Header() {
                             variant="ghost"
                             className="text-gray-300 hover:text-white hover:bg-white/5 rounded-full"
                         >
-                            <Link href={`${APP_URL}/auth/login`} target="_blank" rel="noopener noreferrer">Log in</Link>
+                            <Link href={getAuthUrl('/auth/login')}>Log in</Link>
                         </Button>
                         <Button
                             asChild
                             className="bg-var(--sentinel-primary) hover:bg-(--sentinel-primary)/90 text-white font-medium px-5 rounded-full shadow-lg shadow-(--sentinel-primary)/20"
                         >
-                            <Link href={`${APP_URL}/auth/register`} target="_blank" rel="noopener noreferrer">Register</Link>
+                            <Link href={getAuthUrl('/auth/register')}>Register</Link>
                         </Button>
                     </div>
 
@@ -85,9 +96,7 @@ export function Header() {
                                 ))}
                                 <div className="h-px bg-white/10 my-2" />
                                 <Link
-                                    href={`${APP_URL}/auth/login`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                                    href={getAuthUrl('/auth/login')}
                                     className="text-gray-300 hover:text-white py-3 px-4 rounded-xl hover:bg-white/5"
                                     onClick={() => setMobileMenuOpen(false)}
                                 >
@@ -97,7 +106,7 @@ export function Header() {
                                     asChild
                                     className="bg-(--sentinel-primary) hover:bg-(--sentinel-primary)/90 text-white font-medium w-full mt-2 rounded-xl"
                                 >
-                                    <Link href={`${APP_URL}/auth/register`} target="_blank" rel="noopener noreferrer" onClick={() => setMobileMenuOpen(false)}>
+                                    <Link href={getAuthUrl('/auth/register')} onClick={() => setMobileMenuOpen(false)}>
                                         Register
                                     </Link>
                                 </Button>
