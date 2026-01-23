@@ -1,7 +1,7 @@
 import 'dotenv/config'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { users as User } from '@prisma-generated'
+import { users as User } from '../generated/prisma'
 import { User as SupabaseUser } from '@supabase/supabase-js'
 import { authMiddleware } from './middleware/auth'
 
