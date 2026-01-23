@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { DM_Sans, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SmoothScroll } from "@/components/common/smooth-scroll";
+import { SplashscreenProvider } from "@/components/common";
+import { Analytics } from "@vercel/analytics/next";
 import Providers from "./providers";
 
 const dmSans = DM_Sans({
@@ -41,8 +43,11 @@ export default function RootLayout({
         className={`${dmSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
+        <Analytics />
         <SmoothScroll />
-        <Providers>{children}</Providers>
+        <SplashscreenProvider>
+          <Providers>{children}</Providers>
+        </SplashscreenProvider>
       </body>
     </html>
   );
