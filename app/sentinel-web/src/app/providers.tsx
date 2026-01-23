@@ -30,7 +30,7 @@ function ApiHealthCheck() {
 
     if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
         if (data)
-            console.log('API Health Check: Connected to', process.env.NEXT_PUBLIC_API_URL)
+            console.log('API Health Check: Connected to', process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001')
         if (isError)
             console.error('API Health Check: Failed to connect to', process.env.NEXT_PUBLIC_API_URL)
     }
