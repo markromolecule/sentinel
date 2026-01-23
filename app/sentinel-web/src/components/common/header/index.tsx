@@ -14,7 +14,7 @@ export function Header() {
     // configure URLs for production subdomain routing
     const APP_URL = process.env.NODE_ENV === 'production'
         ? 'https://app.sentinel-ph.com'
-        : '';
+        : 'https://app.sentinel-coral.vercel.app';
 
     return (
         <header className="absolute lg:fixed top-0 left-0 right-0 z-50 pt-1 md:pt-4 lg:pt-8 px-2 lg:px-8 animate-fade-in transition-all duration-300">
