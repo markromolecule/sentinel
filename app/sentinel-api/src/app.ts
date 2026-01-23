@@ -12,6 +12,7 @@ type Variables = {
 
 const app = new Hono<{ Variables: Variables }>()
 
+// CORS configuration
 app.use('/*', cors({
     origin: (origin) => {
         const allowedOrigins = [
@@ -22,14 +23,14 @@ app.use('/*', cors({
             'https://sentinelph.tech',
             'https://www.sentinelph.tech'
         ]
-        // Also allow Vercel preview deployments (optional, good for PRs)
+        // Allow Vercel preview deployments
         if (origin && origin.endsWith('.vercel.app')) {
             return origin
         }
         if (allowedOrigins.includes(origin)) {
             return origin
         }
-        return allowedOrigins[0] // Default fallback
+        return allowedOrigins[0]
     },
     allowHeaders: ['Content-Type', 'Authorization'],
     allowMethods: ['POST', 'GET', 'OPTIONS', 'PUT', 'DELETE'],
@@ -38,12 +39,11 @@ app.use('/*', cors({
     credentials: true,
 }))
 
-
+// Routes
 app.get('/', (c) => {
     return c.text('Sentinel API')
 })
 
-// Protected Route Example
 app.get('/me', authMiddleware, (c) => {
     const user = c.get('user')
     return c.json({
@@ -52,4 +52,5 @@ app.get('/me', authMiddleware, (c) => {
     })
 })
 
+// Export the app instance (used by both server.ts and api/index.ts)
 export default app
