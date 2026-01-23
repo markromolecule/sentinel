@@ -13,7 +13,7 @@ export function SplashscreenProvider({ children }: SplashscreenProviderProps) {
     useEffect(() => {
         const timer = setTimeout(() => {
             setShowSplash(false);
-        }, 1500);
+        }, 2200);
 
         return () => clearTimeout(timer);
     }, []);

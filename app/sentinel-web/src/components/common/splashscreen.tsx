@@ -1,3 +1,5 @@
+'use client';
+
 import Image from 'next/image';
 
 interface SplashscreenProps {
@@ -9,7 +11,7 @@ export function Splashscreen({ isVisible }: SplashscreenProps) {
 
     return (
         <div
-            className={`fixed inset-0 z-50 flex items-center justify-center bg-[#0f0f10] transition-opacity duration-500 ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            className={`fixed inset-0 z-50 flex items-center justify-center bg-[#0f0f10] transition-all duration-700 ease-in-out ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-110 pointer-events-none blur-xl'
                 }`}
         >
             {/* Background Effects */}
@@ -23,36 +25,36 @@ export function Splashscreen({ isVisible }: SplashscreenProps) {
             </div>
 
             {/* Logo Container */}
-            <div className="relative z-10 flex flex-col items-center gap-8">
+            <div className="relative z-10 flex flex-col items-center gap-8 transform transition-transform duration-700">
                 {/* Logo with Animation */}
-                <div className="relative animate-fade-in">
-                    <div className="absolute inset-0 bg-[#323d8f]/30 blur-xl rounded-full animate-pulse"></div>
+                <div className="relative animate-fade-in group">
+                    <div className="absolute inset-0 bg-[#323d8f]/30 blur-xl rounded-full animate-pulse group-hover:bg-[#323d8f]/50 transition-colors duration-500"></div>
                     <Image
                         src="/icons/sentinel-logo.svg"
                         alt="Sentinel Logo"
                         width={280}
                         height={80}
                         priority
-                        className="relative animate-slide-up"
+                        className="relative animate-slide-up drop-shadow-2xl"
                     />
                 </div>
 
-                {/* Loading Animation */}
-                <div className="flex gap-2 animate-fade-in" style={{ animationDelay: '0.3s' }}>
-                    <div className="w-2 h-2 bg-[#323d8f] rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-                    <div className="w-2 h-2 bg-[#323d8f] rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-[#323d8f] rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                {/* Loading Animation - Brighter and Glowy */}
+                <div className="flex gap-3 animate-fade-in" style={{ animationDelay: '0.3s' }}>
+                    <div className="w-2.5 h-2.5 bg-blue-400 rounded-full animate-bounce shadow-[0_0_10px_rgba(59,130,246,0.5)]" style={{ animationDelay: '0s' }}></div>
+                    <div className="w-2.5 h-2.5 bg-blue-400 rounded-full animate-bounce shadow-[0_0_10px_rgba(59,130,246,0.5)]" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2.5 h-2.5 bg-blue-400 rounded-full animate-bounce shadow-[0_0_10px_rgba(59,130,246,0.5)]" style={{ animationDelay: '0.2s' }}></div>
                 </div>
 
                 {/* Tagline */}
-                <p className="text-gray-400 text-sm font-medium animate-fade-in tracking-wide" style={{ animationDelay: '0.5s' }}>
+                <p className="text-gray-400 text-sm font-medium animate-slide-up tracking-wide opacity-0" style={{ animationDelay: '0.4s', animationFillMode: 'forwards' }}>
                     Smart Proctoring for Academic Integrity
                 </p>
             </div>
 
-            {/* Scanning Line Effect */}
+            {/* Scanning Line Effect - Faster */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#323d8f] to-transparent animate-scan"></div>
+                <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#323d8f] to-transparent animate-scan" style={{ animationDuration: '1.5s' }}></div>
             </div>
         </div>
     );
