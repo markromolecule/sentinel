@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { RegisterFormData, RegisterFormErrors } from "../../_types";
-import { useSignUpMutation } from "@/hooks/query/auth/use-sign-up-mutation";
+import { useSignUpMutation, SignUpError } from "@/hooks/query/auth/use-sign-up-mutation";
 
 export function useRegisterForm() {
     const [formData, setFormData] = useState<RegisterFormData>({
@@ -19,12 +19,16 @@ export function useRegisterForm() {
         confirmPassword: false
     });
 
+    const [authError, setAuthError] = useState<string | null>(null);
+    const [passwordMismatch, setPasswordMismatch] = useState<boolean>(false);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
     const { mutate: signUp, isPending: isLoading } = useSignUpMutation({
         onSuccess: () => {
-            alert('Registration successful! Please check your email to verify your account.');
+            setSuccessMessage('Registration successful! Please check your email to verify your account.');
         },
-        onError: (error) => {
-            alert(error.message);
+        onError: (error: SignUpError) => {
+            setAuthError(error.message);
         }
     });
 
@@ -38,6 +42,14 @@ export function useRegisterForm() {
         setFormData(prev => ({ ...prev, [field]: value }));
         if (value.trim()) {
             setErrors(prev => ({ ...prev, [field]: false }));
+        }
+        // Clear auth error when user starts typing
+        if (authError) {
+            setAuthError(null);
+        }
+        // Clear password mismatch when editing password fields
+        if ((field === 'password' || field === 'confirmPassword') && passwordMismatch) {
+            setPasswordMismatch(false);
         }
     };
 
@@ -56,12 +68,16 @@ export function useRegisterForm() {
         if (formData.password !== formData.confirmPassword) {
             newErrors.confirmPassword = true;
             hasError = true;
-            alert("Passwords do not match");
+            setPasswordMismatch(true);
         }
 
         setErrors(newErrors);
 
         if (hasError) return;
+
+        // Clear previous errors
+        setAuthError(null);
+        setSuccessMessage(null);
 
         signUp({
             email: formData.email,
@@ -78,6 +94,9 @@ export function useRegisterForm() {
     return {
         formData,
         errors,
+        authError,
+        passwordMismatch,
+        successMessage,
         isLoading,
         handleBlur,
         handleChange,
