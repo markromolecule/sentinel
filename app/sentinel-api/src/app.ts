@@ -17,7 +17,10 @@ app.use('/*', cors({
         const allowedOrigins = [
             'http://localhost:3000',
             'https://sentinel-coral.vercel.app',
-            'https://app.sentinel-ph.com'
+            'https://app.sentinel-ph.com',
+            'https://app.sentinelph.tech',
+            'https://sentinelph.tech',
+            'https://www.sentinelph.tech'
         ]
         // Also allow Vercel preview deployments (optional, good for PRs)
         if (origin && origin.endsWith('.vercel.app')) {
