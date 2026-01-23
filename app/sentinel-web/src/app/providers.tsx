@@ -28,7 +28,7 @@ function ApiHealthCheck() {
     const { useApiHealth } = require('@/hooks/query/api/use-api-health')
     const { data, isError } = useApiHealth()
 
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
         if (data)
             console.log('API Health Check: Connected to', process.env.NEXT_PUBLIC_API_URL)
         if (isError)
