@@ -10,7 +10,7 @@
         "clean": "rm -rf node_modules"
     },
     "devDependencies": {
-        "turbo": "latest",
-        "prettier": "latest"
+        "prettier": "latest",
+        "turbo": "latest"
     }
 }
