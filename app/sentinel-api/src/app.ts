@@ -13,7 +13,21 @@ type Variables = {
 const app = new Hono<{ Variables: Variables }>()
 
 app.use('/*', cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: (origin) => {
+        const allowedOrigins = [
+            'http://localhost:3000',
+            'https://sentinel-coral.vercel.app',
+            'https://app.sentinel-ph.com'
+        ]
+        // Also allow Vercel preview deployments (optional, good for PRs)
+        if (origin && origin.endsWith('.vercel.app')) {
+            return origin
+        }
+        if (allowedOrigins.includes(origin)) {
+            return origin
+        }
+        return allowedOrigins[0] // Default fallback
+    },
     allowHeaders: ['Content-Type', 'Authorization'],
     allowMethods: ['POST', 'GET', 'OPTIONS', 'PUT', 'DELETE'],
     exposeHeaders: ['Content-Length'],

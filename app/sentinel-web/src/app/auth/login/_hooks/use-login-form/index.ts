@@ -20,7 +20,6 @@ export function useLoginForm() {
 
     const { mutate: login, isPending: isLoading } = useLoginMutation({
         onSuccess: () => {
-            // Redirect to dashboard or home after successful login
             router.push('/dashboard');
         },
         onError: (error: LoginError) => {
