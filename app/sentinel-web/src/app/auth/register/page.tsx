@@ -11,6 +11,9 @@ export default function RegisterPage() {
     const {
         formData,
         errors,
+        authError,
+        passwordMismatch,
+        successMessage,
         isLoading,
         handleChange,
         handleBlur,
@@ -24,6 +27,9 @@ export default function RegisterPage() {
                 <RegisterForm
                     formData={formData}
                     errors={errors}
+                    authError={authError}
+                    passwordMismatch={passwordMismatch}
+                    successMessage={successMessage}
                     isLoading={isLoading}
                     handleChange={handleChange}
                     handleBlur={handleBlur}

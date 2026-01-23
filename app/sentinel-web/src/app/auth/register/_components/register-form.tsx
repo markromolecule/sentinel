@@ -2,22 +2,44 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { RegisterFormData, RegisterFormErrors } from "../_types";
 
 interface RegisterFormProps {
     formData: RegisterFormData;
     errors: RegisterFormErrors;
+    authError: string | null;
+    passwordMismatch: boolean;
+    successMessage: string | null;
     isLoading: boolean;
     handleChange: (field: keyof RegisterFormData, value: string) => void;
     handleBlur: (field: keyof RegisterFormData) => void;
     handleSubmit: () => void;
 }
 
-export function RegisterForm({ formData, errors, isLoading, handleChange, handleBlur, handleSubmit }: RegisterFormProps) {
+export function RegisterForm({ formData, errors, authError, passwordMismatch, successMessage, isLoading, handleChange, handleBlur, handleSubmit }: RegisterFormProps) {
     return (
         <div className="space-y-4">
+            {/* Success Message */}
+            {successMessage && (
+                <div className="p-3 rounded-md bg-green-500/10 border border-green-500/20 flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <p className="text-sm font-medium text-green-500">
+                        {successMessage}
+                    </p>
+                </div>
+            )}
+
+            {/* Auth Error Display */}
+            {authError && (
+                <div className="p-3 rounded-md bg-red-500/10 border border-red-500/20">
+                    <p className="text-sm font-medium text-red-500">
+                        {authError}
+                    </p>
+                </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="firstName" className={errors.firstName ? "text-red-500" : ""}>First name</Label>
@@ -28,6 +50,7 @@ export function RegisterForm({ formData, errors, isLoading, handleChange, handle
                         value={formData.firstName}
                         onChange={(e) => handleChange("firstName", e.target.value)}
                         onBlur={() => handleBlur("firstName")}
+                        disabled={isLoading}
                     />
                     {errors.firstName && (
                         <p className="text-[0.8rem] font-medium text-red-500">
@@ -44,6 +67,7 @@ export function RegisterForm({ formData, errors, isLoading, handleChange, handle
                         value={formData.lastName}
                         onChange={(e) => handleChange("lastName", e.target.value)}
                         onBlur={() => handleBlur("lastName")}
+                        disabled={isLoading}
                     />
                     {errors.lastName && (
                         <p className="text-[0.8rem] font-medium text-red-500">
@@ -63,6 +87,7 @@ export function RegisterForm({ formData, errors, isLoading, handleChange, handle
                     value={formData.email}
                     onChange={(e) => handleChange("email", e.target.value)}
                     onBlur={() => handleBlur("email")}
+                    disabled={isLoading}
                 />
                 {errors.email && (
                     <p className="text-[0.8rem] font-medium text-red-500">
@@ -81,6 +106,7 @@ export function RegisterForm({ formData, errors, isLoading, handleChange, handle
                     value={formData.password}
                     onChange={(e) => handleChange("password", e.target.value)}
                     onBlur={() => handleBlur("password")}
+                    disabled={isLoading}
                 />
                 {errors.password && (
                     <p className="text-[0.8rem] font-medium text-red-500">
@@ -99,10 +125,11 @@ export function RegisterForm({ formData, errors, isLoading, handleChange, handle
                     value={formData.confirmPassword}
                     onChange={(e) => handleChange("confirmPassword", e.target.value)}
                     onBlur={() => handleBlur("confirmPassword")}
+                    disabled={isLoading}
                 />
                 {errors.confirmPassword && (
                     <p className="text-[0.8rem] font-medium text-red-500">
-                        Please confirm your password
+                        {passwordMismatch ? "Passwords do not match" : "Please confirm your password"}
                     </p>
                 )}
             </div>

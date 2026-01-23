@@ -1,8 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import { FEATURE_ITEMS } from '@/app/landing/_constants';
-import type { FEATURE } from '@/app/landing/_constants';
+import { FEATURE_ITEMS } from '@/app/(public)/landing/_constants';
+import type { FEATURE } from '@/app/(public)/landing/_constants';
 
 // Main Component
 export default function FeatureSection() {

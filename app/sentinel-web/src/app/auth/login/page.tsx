@@ -11,8 +11,11 @@ export default function LoginPage() {
     const {
         formData,
         errors,
+        authError,
+        isLoading,
         handleChange,
-        handleBlur
+        handleBlur,
+        handleSubmit
     } = useLoginForm();
 
     return (
@@ -22,8 +25,11 @@ export default function LoginPage() {
                 <LoginForm
                     formData={formData}
                     errors={errors}
+                    authError={authError}
+                    isLoading={isLoading}
                     handleChange={handleChange}
                     handleBlur={handleBlur}
+                    handleSubmit={handleSubmit}
                 />
             </CardContent>
             <CardFooter className="flex flex-col gap-4 pt-0">

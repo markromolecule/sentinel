@@ -2,13 +2,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, ArrowUpRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { LoginFormProps } from "../_props";
 
-export function LoginForm({ formData, errors, handleChange, handleBlur }: LoginFormProps) {
+export function LoginForm({ formData, errors, authError, isLoading, handleChange, handleBlur, handleSubmit }: LoginFormProps) {
     return (
         <div className="space-y-4">
+            {/* Auth Error Display */}
+            {authError && (
+                <div className="p-3 rounded-md bg-red-500/10 border border-red-500/20">
+                    <p className="text-sm font-medium text-red-500">
+                        {authError}
+                    </p>
+                </div>
+            )}
+
             <div className="space-y-2">
                 <Label htmlFor="email" className={errors.email ? "text-red-500" : ""}>Email</Label>
                 <Input
@@ -19,6 +28,7 @@ export function LoginForm({ formData, errors, handleChange, handleBlur }: LoginF
                     value={formData.email}
                     onChange={(e) => handleChange("email", e.target.value)}
                     onBlur={() => handleBlur("email")}
+                    disabled={isLoading}
                 />
                 {errors.email && (
                     <p className="text-[0.8rem] font-medium text-red-500">
@@ -36,6 +46,7 @@ export function LoginForm({ formData, errors, handleChange, handleBlur }: LoginF
                     value={formData.password}
                     onChange={(e) => handleChange("password", e.target.value)}
                     onBlur={() => handleBlur("password")}
+                    disabled={isLoading}
                 />
                 {errors.password && (
                     <p className="text-[0.8rem] font-medium text-red-500">
@@ -65,11 +76,12 @@ export function LoginForm({ formData, errors, handleChange, handleBlur }: LoginF
                 className="w-full h-12 text-base font-semibold group"
                 variant="premium-3d"
                 size="lg"
+                onClick={handleSubmit}
+                disabled={isLoading}
             >
-                Sign in
-                <ArrowRight className="w-5 h-5 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1" />
+                {isLoading ? "Signing in..." : "Sign in"}
+                {!isLoading && <ArrowRight className="w-5 h-5 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1" />}
             </Button>
         </div>
-
     );
 }
