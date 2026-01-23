@@ -25,19 +25,21 @@ export const authMiddleware = async (c: Context, next: Next) => {
 
     // sync with prisma
     try {
-        let dbUser = await prisma.user.findUnique({
-            where: { email: user.email }
+        // Use user.id which is the Primary Key. Email is not unique in Prisma's view of auth.users
+        const dbUser = await prisma.users.findUnique({
+            where: { id: user.id },
+            include: {
+                user_profiles: true // Include profile data if needed
+            }
         })
 
+        // Note: we do NOT create users here because auth.users is managed by Supabase Auth.
+        // Also user_profiles are created by Database Triggers.
+
         if (!dbUser) {
-            console.log(`Creating new user for ${user.email}`)
-            dbUser = await prisma.user.create({
-                data: {
-                    email: user.email,
-                    // Map other fields if available in user.user_metadata
-                    // name: user.user_metadata.full_name 
-                }
-            })
+            // Highly unlikely if supabase.auth.getUser succeeded, unless replication lag or manual deletion
+            console.error(`User ${user.id} found in Auth but not in DB (auth.users)`)
+            throw new HTTPException(500, { message: 'User data consistency error' })
         }
 
         // attach user to context
@@ -45,6 +47,9 @@ export const authMiddleware = async (c: Context, next: Next) => {
         c.set('supabaseUser', user)
 
     } catch (dbError) {
+        // recheck if it's the 500 thrown above
+        if (dbError instanceof HTTPException) throw dbError
+
         console.error('Database Sync Error:', dbError)
         throw new HTTPException(500, { message: 'Database Connection Error' })
     }
