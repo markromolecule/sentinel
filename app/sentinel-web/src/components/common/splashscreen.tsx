@@ -54,7 +54,7 @@ export function Splashscreen({ isVisible }: SplashscreenProps) {
 
             {/* Scanning Line Effect - Faster */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#323d8f] to-transparent animate-scan" style={{ animationDuration: '1.5s' }}></div>
+                <div className="absolute top-0 left-0 w-full h-[2px] bg-linear-to-r from-transparent via-[#323d8f] to-transparent animate-scan" style={{ animationDuration: '1.5s' }}></div>
             </div>
         </div>
     );
