@@ -14,7 +14,7 @@ export const authMiddleware = async (c: Context, next: Next) => {
     if (!authHeader) {
         throw new HTTPException(401, { message: 'missing auth token' })
     }
-    const token = authHeader.replace('bearer ', '')
+    const token = authHeader.replace(/^Bearer\s+/i, '')
     // verify token with supabase
     const { data: { user }, error } = await supabase.auth.getUser(token)
 

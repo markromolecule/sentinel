@@ -44,6 +44,9 @@ app.get('/', (c) => {
     return c.text('Sentinel API')
 })
 
+import onboardingRouter from './modules/onboarding/onboarding.controller'
+app.route('/onboarding', onboardingRouter)
+
 app.get('/me', authMiddleware, (c) => {
     const user = c.get('user')
     return c.json({

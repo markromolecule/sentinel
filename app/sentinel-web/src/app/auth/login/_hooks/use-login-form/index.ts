@@ -2,6 +2,7 @@ import { useState } from "react";
 import { LoginFormData, LoginFormErrors } from "../../_types";
 import { useLoginMutation, LoginError } from "@/hooks/query/auth/use-login-mutation";
 import { useRouter } from "next/navigation";
+import { createSupabaseClient } from "@/data/supabase/client";
 
 export function useLoginForm() {
     const router = useRouter();
@@ -19,8 +20,29 @@ export function useLoginForm() {
     const [authError, setAuthError] = useState<string | null>(null);
 
     const { mutate: login, isPending: isLoading } = useLoginMutation({
-        onSuccess: () => {
-            router.push('/dashboard');
+        onSuccess: async (data) => {
+            const user = data.user;
+            const role = user?.user_metadata?.role;
+
+            if (role === 'student') {
+                // Check if student record exists
+                const supabase = createSupabaseClient();
+                const { data: studentData } = await supabase
+                    .from('students')
+                    .select('student_id')
+                    .eq('user_id', user?.id)
+                    .single();
+
+                if (studentData) {
+                    router.push('/student');
+                } else {
+                    router.push('/onboarding');
+                }
+            } else if (role === 'proctor') {
+                router.push('/proctor');
+            } else {
+                router.push('/admin/dashboard');
+            }
         },
         onError: (error: LoginError) => {
             setAuthError(error.message);

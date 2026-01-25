@@ -451,6 +451,7 @@ model class_roles {
 model departments {
   department_id   String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   department_name String     @unique @db.VarChar(100)
+  department_code String?
   sections        sections[]
   students        students[]
   subjects        subjects[]
@@ -502,9 +503,22 @@ model students {
   user_id        String?       @unique @db.Uuid
   student_number String        @unique @db.VarChar(50)
   department_id  String?       @db.Uuid
+  institution_id String?       @db.Uuid
   enrollments    enrollments[]
   departments    departments?  @relation(fields: [department_id], references: [department_id], onDelete: NoAction, onUpdate: NoAction)
+  institutions   institutions? @relation(fields: [institution_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users          users?        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model institutions {
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String     @unique @db.VarChar(255)
+  code       String?    @db.VarChar(50)
+  created_at DateTime?  @default(now()) @db.Timestamptz(6)
+  students   students[]
 
   @@schema("public")
 }

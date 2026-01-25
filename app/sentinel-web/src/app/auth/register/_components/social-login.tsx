@@ -14,7 +14,11 @@ export const SocialLogin: FC = () => {
                 variant="secondary-3d"
                 size="lg"
                 className="w-full h-12 flex items-center justify-center gap-3"
-                onClick={() => loginWithGoogle()}
+                type="button"
+                onClick={() => {
+                    console.log("Google button clicked");
+                    loginWithGoogle();
+                }}
                 disabled={isGoogleLoading}
             >
                 {isGoogleLoading ? (
