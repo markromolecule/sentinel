@@ -19,9 +19,9 @@ export default function LoginPage() {
     } = useLoginForm();
 
     return (
-        <Card className="bg-[#131315] border-white/10 text-white w-full shadow-2xl">
+        <Card className="bg-[#131315] border-white/10 text-white w-full shadow-2xl gap-0">
             <LoginHeader />
-            <CardContent className="space-y-4 p-4 sm:p-6 sm:pb-2">
+            <CardContent className="space-y-4 p-4 sm:p-6 sm:pb-4">
                 <LoginForm
                     formData={formData}
                     errors={errors}

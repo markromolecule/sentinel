@@ -86,6 +86,7 @@ export function useRegisterForm() {
                 data: {
                     first_name: formData.firstName,
                     last_name: formData.lastName,
+                    role: 'student',
                 }
             }
         });

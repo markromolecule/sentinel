@@ -8,11 +8,13 @@ export function useGoogleLogin() {
     const loginWithGoogle = async () => {
         setIsLoading(true)
         console.log('test google login')
+        // Temporary debug alert
+        // alert('Starting Google Login...') 
         try {
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: process.env.NEXT_PUBLIC_CALLBACK_URL || `${window.location.origin}/auth/callback`,
+                    redirectTo: `${window.location.origin}/auth/callback`,
                 },
             })
             if (error) throw error
