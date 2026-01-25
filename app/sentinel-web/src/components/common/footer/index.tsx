@@ -2,28 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Github, Mail } from 'lucide-react';
-
-const FOOTER_LINKS = {
-    product: [
-        { name: 'Features', href: '#features' },
-        { name: 'How it Works', href: '#how-it-works' },
-        { name: 'Download', href: '#download' },
-    ],
-    resources: [
-        { name: 'Documentation', href: '#' },
-        { name: 'Guides', href: '#guides' },
-    ],
-    legal: [
-        { name: 'Privacy Policy', href: '#' },
-        { name: 'Terms of Service', href: '#' },
-    ],
-};
-
-const SOCIAL_LINKS = [
-    { name: 'GitHub', icon: Github, href: '#' },
-    { name: 'Email', icon: Mail, href: 'mailto:hello@sentinelph.tech' },
-];
+import { FOOTER_LINKS, SOCIAL_LINKS } from '@/components/common/_constants';
 
 export function Footer() {
     return (

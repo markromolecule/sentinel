@@ -18,7 +18,7 @@ export default function AuthLayout({
             {/* Glass Back Button - Visible on all screens */}
             <div className="absolute top-6 left-6 z-50">
                 <Button asChild variant="ghost" className="bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 text-gray-300 hover:text-white backdrop-blur-sm transition-all rounded-full px-4">
-                    <Link href="/" className="flex items-center gap-2 text-sm font-medium">
+                    <Link href={process.env.NEXT_PUBLIC_LANDING_URL || '/'} className="flex items-center gap-2 text-sm font-medium">
                         <ArrowLeft className="w-4 h-4" />
                         Back to website
                     </Link>

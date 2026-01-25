@@ -1,22 +1,31 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { Splashscreen } from './splashscreen';
-
-interface SplashscreenProviderProps {
-    children: React.ReactNode;
-}
+import { SplashscreenProviderProps } from './_constants';
 
 export function SplashscreenProvider({ children }: SplashscreenProviderProps) {
-    const [showSplash, setShowSplash] = useState(true);
+    const pathname = usePathname();
+    const isAuthPage = pathname?.startsWith('/auth');
+    const [showSplash, setShowSplash] = useState(!isAuthPage);
 
     useEffect(() => {
+        if (isAuthPage) {
+            setShowSplash(false);
+            return;
+        }
+
         const timer = setTimeout(() => {
             setShowSplash(false);
         }, 2200);
 
         return () => clearTimeout(timer);
-    }, []);
+    }, [isAuthPage]);
+
+    if (isAuthPage) {
+        return <>{children}</>;
+    }
 
     return (
         <>
