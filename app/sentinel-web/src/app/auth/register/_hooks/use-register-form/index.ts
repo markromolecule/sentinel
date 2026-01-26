@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { RegisterFormData, RegisterFormErrors } from "../../_types";
 import { useSignUpMutation, SignUpError } from "@/hooks/query/auth/use-sign-up-mutation";
+import { config } from "@/lib/config";
 
 export function useRegisterForm() {
     const [formData, setFormData] = useState<RegisterFormData>({
@@ -88,7 +89,7 @@ export function useRegisterForm() {
                     last_name: formData.lastName,
                     role: 'student',
                 },
-                emailRedirectTo: `${window.location.origin}/auth/callback`,
+                emailRedirectTo: `${config.appUrl}/auth/callback`,
             }
         });
     };
