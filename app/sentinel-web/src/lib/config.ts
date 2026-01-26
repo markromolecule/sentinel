@@ -13,7 +13,7 @@ export const config = {
     // Frontend URLs
     appUrl: isDevelopment
         ? 'http://localhost:3000'
-        : `https://${APP_SUBDOMAIN}`,
+        : process.env.NEXT_PUBLIC_APP_URL || `https://${APP_SUBDOMAIN}`,
 
     // Backend API URLs
     apiUrl: isDevelopment
