@@ -30,11 +30,11 @@ onboarding.post('/', authMiddleware, async (c) => {
 
         return c.json<ApiResponse<Student>>({
             message: 'Student profile created successfully',
-            data: student as unknown as Student // Cast prisma type to shared type if needed, or let structural typing handle it
+            data: student as unknown as Student
         })
     } catch (error: any) {
         console.error('Onboarding error:', error)
-        return c.json({ error: error.message || 'Internal Server Error' }, 500)
+        return c.json<ApiResponse<Student>>({ error: error.message || 'Internal Server Error' }, 500)
     }
 })
 

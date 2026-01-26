@@ -51,7 +51,6 @@ export function OnboardingForm() {
                             </option>
                         ))}
                     </select>
-                    {/* Chevron icon for custom select style */}
                     <div className="absolute right-3 top-3 pointer-events-none text-gray-500">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="m6 9 6 6 6-6" />
