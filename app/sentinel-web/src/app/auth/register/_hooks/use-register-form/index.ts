@@ -87,7 +87,8 @@ export function useRegisterForm() {
                     first_name: formData.firstName,
                     last_name: formData.lastName,
                     role: 'student',
-                }
+                },
+                emailRedirectTo: `${window.location.origin}/auth/callback`,
             }
         });
     };

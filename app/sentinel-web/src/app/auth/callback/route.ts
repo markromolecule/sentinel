@@ -1,12 +1,13 @@
 
 import { createSupabaseServerClient } from '@/data/supabase/server';
 import { NextResponse } from 'next/server';
+import { config } from '@/lib/config';
 
 export async function GET(request: Request) {
-    const { searchParams, origin } = new URL(request.url);
+    const { searchParams } = new URL(request.url);
     const code = searchParams.get('code');
-    // if "next" is in param, use it as the redirect URL
     const next = searchParams.get('next') ?? '/dashboard';
+    const origin = config.appUrl;
 
     console.log('Auth Callback Hit');
     console.log('Code present:', !!code);
