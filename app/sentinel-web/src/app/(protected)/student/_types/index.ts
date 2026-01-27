@@ -1,5 +1,4 @@
 // Student-related TypeScript types
-
 export type ExamStatus = "available" | "completed" | "in-progress" | "upcoming";
 
 export type ExamDifficulty = "easy" | "medium" | "hard";
@@ -40,6 +39,47 @@ export interface ExamHistory {
     timeSpent: number; // in minutes
     cheated?: boolean;
     cheatingType?: "gaze" | "audio" | "tab_switch" | "screenshot" | "screen_record" | "multiple";
+}
+
+export interface ExamListProps {
+    exams: Exam[];
+    emptyMessage: string;
+}
+
+export interface ExamPaginationProps {
+    currentPage: number;
+    totalPages: number;
+    onPageChange: (page: number) => void;
+}
+
+export interface ExamSearchProps {
+    value: string;
+    onChange: (value: string) => void;
+}
+
+export interface ExamTabsProps {
+    activeTab: "available" | "history";
+    onTabChange: (tab: "available" | "history") => void;
+}
+
+export interface ExamSidebarProps {
+    exam: Exam;
+}
+
+export interface ExamNotFoundProps {
+    onBack: () => void;
+}
+
+export interface ExamInfoBarProps {
+    exam: Exam;
+}
+
+export interface ExamDescriptionProps {
+    description: string;
+}
+
+export interface ExamBannerProps {
+    exam: Exam;
 }
 
 export interface DashboardStats {
