@@ -18,14 +18,27 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useLogoutMutation } from "@/hooks/query/auth/use-logout-mutation";
+import { useRouter } from "next/navigation";
 
 export default function StudentHeader() {
     const pathname = usePathname();
     const [isOpen, setIsOpen] = useState(false);
+    const router = useRouter();
+
+    const { mutate: logout } = useLogoutMutation({
+        onSuccess: () => {
+            router.push("/auth/login");
+        },
+    });
+
+    const handleLogout = () => {
+        logout();
+    };
 
     return (
         <header className="sticky top-0 z-50 w-full border-b border-white/5 bg-[#0f0f10]/80 backdrop-blur-md">
-            <div className="container mx-auto px-0 max-w-7xl h-16 flex items-center justify-between">
+            <div className="container mx-auto px-0 max-w-7xl h-16 flex items-center justify-between relative">
                 {/* Logo */}
                 <div className="flex items-center gap-2">
                     <Link href="/student/exam" className="flex items-center gap-2">
@@ -41,7 +54,7 @@ export default function StudentHeader() {
                 </div>
 
                 {/* Desktop Navigation */}
-                <nav className="hidden md:flex items-center gap-6">
+                <nav className="hidden md:flex items-center gap-6 absolute left-1/2 -translate-x-1/2">
                     {HEADER_NAV_ITEMS.map((item) => (
                         <Link
                             key={item.href}
@@ -64,7 +77,7 @@ export default function StudentHeader() {
 
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#323d8f] to-[#4a5bb8] hidden md:flex items-center justify-center text-white text-xs font-bold ring-2 ring-white/10 ml-2 cursor-pointer hover:ring-white/20 transition-all">
+                            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#323d8f] to-[#4a5bb8] hidden md:flex items-center justify-center text-white text-xs font-bold ml-2 cursor-pointer transition-all">
                                 {MOCK_STUDENT.name.split(" ").map((n) => n[0]).join("")}
                             </div>
                         </DropdownMenuTrigger>
@@ -90,7 +103,10 @@ export default function StudentHeader() {
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="bg-white/10" />
-                            <DropdownMenuItem className="text-red-500 focus:text-red-500 focus:bg-red-500/10 cursor-pointer">
+                            <DropdownMenuItem
+                                className="text-red-500 focus:text-red-500 focus:bg-red-500/10 cursor-pointer"
+                                onClick={handleLogout}
+                            >
                                 <LogOut className="mr-2 h-4 w-4" />
                                 <span>Log out</span>
                             </DropdownMenuItem>
@@ -126,7 +142,11 @@ export default function StudentHeader() {
                                     </Link>
                                 ))}
                                 <div className="h-px bg-white/10 my-2" />
-                                <Button variant="ghost" className="w-full justify-start text-red-500 hover:text-red-400 hover:bg-red-500/10">
+                                <Button
+                                    variant="ghost"
+                                    className="w-full justify-start text-red-500 hover:text-red-400 hover:bg-red-500/10"
+                                    onClick={handleLogout}
+                                >
                                     <LogOut className="w-4 h-4 mr-2" />
                                     Logout
                                 </Button>
