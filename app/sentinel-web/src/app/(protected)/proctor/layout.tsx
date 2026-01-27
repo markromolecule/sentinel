@@ -1,5 +1,3 @@
-import Sidebar from "@/components/protected/Sidebar"
-
 export default function ProctorLayout({
     children,
 }: {
@@ -7,7 +5,6 @@ export default function ProctorLayout({
 }) {
     return (
         <div className="flex">
-            <Sidebar />
             <main className="flex-1 p-4">
                 {children}
             </main>
