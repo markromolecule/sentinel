@@ -6,11 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Clock, User } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { type Exam } from "@/app/(protected)/student/_types";
-
-interface ExamCardProps {
-    exam: Exam;
-}
+import { ExamCardProps } from "@/app/(protected)/student/_types";
 
 export function ExamCard({ exam }: ExamCardProps) {
     return (

@@ -14,7 +14,6 @@ export const HEADER_NAV_ITEMS = [
     { label: "History", href: "/student/history", icon: History },
     { label: "Calendar", href: "/student/calendar", icon: Calendar },
     { label: "Messages", href: "/student/message", icon: MessageSquare },
-    { label: "Settings", href: "/student/setting", icon: Settings },
 ] as const;
 
 // Cheating Report Props    

@@ -3,13 +3,21 @@
 import Link from "next/link";
 import NextImage from "next/image";
 import { usePathname } from "next/navigation";
-import { Bell, Menu } from "lucide-react";
+import { Bell, Menu, User, Settings, LogOut, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { MOCK_STUDENT } from "@/app/(protected)/student/_constants";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { HEADER_NAV_ITEMS } from "@/components/protected/student/_constants";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function StudentHeader() {
     const pathname = usePathname();
@@ -54,9 +62,40 @@ export default function StudentHeader() {
                         <Bell className="w-5 h-5" />
                     </Button>
 
-                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#323d8f] to-[#4a5bb8] hidden md:flex items-center justify-center text-white text-xs font-bold ring-2 ring-white/10 ml-2">
-                        {MOCK_STUDENT.name.split(" ").map((n) => n[0]).join("")}
-                    </div>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#323d8f] to-[#4a5bb8] hidden md:flex items-center justify-center text-white text-xs font-bold ring-2 ring-white/10 ml-2 cursor-pointer hover:ring-white/20 transition-all">
+                                {MOCK_STUDENT.name.split(" ").map((n) => n[0]).join("")}
+                            </div>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56 bg-[#0f0f10] border-white/10 text-white">
+                            <DropdownMenuLabel>
+                                <div className="flex flex-col space-y-1">
+                                    <p className="text-sm font-medium leading-none text-white">{MOCK_STUDENT.name}</p>
+                                    <p className="text-xs leading-none text-white/60">{MOCK_STUDENT.email}</p>
+                                </div>
+                            </DropdownMenuLabel>
+                            <DropdownMenuSeparator className="bg-white/10" />
+                            <DropdownMenuItem asChild className="text-white/80 focus:text-white focus:bg-white/10 cursor-pointer">
+                                <Link href="/student/profile" className="flex w-full items-center">
+                                    <User className="mr-2 h-4 w-4" />
+                                    <span>Profile</span>
+                                </Link>
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem asChild className="text-white/80 focus:text-white focus:bg-white/10 cursor-pointer">
+                                <Link href="/student/setting" className="flex w-full items-center">
+                                    <Settings className="mr-2 h-4 w-4" />
+                                    <span>Settings</span>
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator className="bg-white/10" />
+                            <DropdownMenuItem className="text-red-500 focus:text-red-500 focus:bg-red-500/10 cursor-pointer">
+                                <LogOut className="mr-2 h-4 w-4" />
+                                <span>Log out</span>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
 
                     {/* Mobile Hamburger Menu */}
                     <Sheet>
@@ -88,6 +127,7 @@ export default function StudentHeader() {
                                 ))}
                                 <div className="h-px bg-white/10 my-2" />
                                 <Button variant="ghost" className="w-full justify-start text-red-500 hover:text-red-400 hover:bg-red-500/10">
+                                    <LogOut className="w-4 h-4 mr-2" />
                                     Logout
                                 </Button>
                             </div>

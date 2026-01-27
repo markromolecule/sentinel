@@ -1,186 +1,196 @@
+"use client";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { MOCK_STUDENT } from "../_constants";
-import { User, Bell, Palette, Lock } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Eye, Mic, Bell, Laptop, Camera, Volume2 } from "lucide-react";
 
 export default function StudentSettingPage() {
     return (
-        <div className="min-h-screen p-8 space-y-8">
+        <div className="container mx-auto px-0 max-w-7xl space-y-8 py-8">
             {/* Header */}
             <div className="space-y-2">
                 <h1 className="text-4xl font-bold text-white">Settings</h1>
                 <p className="text-white/60 text-lg">
-                    Manage your account and preferences
+                    Manage your preferences and permissions
                 </p>
             </div>
 
-            {/* Profile Information */}
-            <Card className="glass-dark border-white/10">
-                <CardHeader>
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-[#323d8f]/20 flex items-center justify-center">
-                            <User className="w-5 h-5 text-[#323d8f]" />
-                        </div>
-                        <div>
-                            <CardTitle className="text-white">Profile Information</CardTitle>
-                            <CardDescription className="text-white/60">
-                                Your personal details and student information
-                            </CardDescription>
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <Label className="text-white/60 text-sm">Full Name</Label>
-                                <p className="text-white font-medium text-lg">{MOCK_STUDENT.name}</p>
+            <div className="grid grid-cols-1 gap-8">
+                {/* Proctoring Permissions */}
+                <Card className="glass-dark border-white/10">
+                    <CardHeader>
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-[#323d8f]/20 flex items-center justify-center">
+                                <Eye className="w-5 h-5 text-[#323d8f]" />
                             </div>
-                            <div className="space-y-2">
-                                <Label className="text-white/60 text-sm">Student Number</Label>
-                                <p className="text-white font-medium text-lg">
-                                    {MOCK_STUDENT.studentNumber}
-                                </p>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-white/60 text-sm">Email Address</Label>
-                                <p className="text-white font-medium text-lg">{MOCK_STUDENT.email}</p>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-white/60 text-sm">Enrollment Date</Label>
-                                <p className="text-white font-medium text-lg">
-                                    {new Date(MOCK_STUDENT.enrollmentDate).toLocaleDateString()}
-                                </p>
+                            <div>
+                                <CardTitle className="text-white">Proctoring Permissions</CardTitle>
+                                <CardDescription className="text-white/60">
+                                    Allow Sentinel to access your devices for proctoring
+                                </CardDescription>
                             </div>
                         </div>
-                        <div className="pt-4 border-t border-white/10">
-                            <p className="text-sm text-white/40">
-                                💡 Contact your administrator to update your profile information
-                            </p>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-6">
+                            <div className="flex items-center justify-between py-3 border-b border-white/10">
+                                <div className="space-y-1">
+                                    <Label htmlFor="gaze-tracking" className="text-white font-medium cursor-pointer text-lg">
+                                        Allow Gaze Tracking
+                                    </Label>
+                                    <p className="text-sm text-white/60">
+                                        Required for monitoring eye movement during exams
+                                    </p>
+                                </div>
+                                <Switch
+                                    id="gaze-tracking"
+                                    defaultChecked
+                                    className="data-[state=checked]:bg-[#323d8f]"
+                                />
+                            </div>
 
-            {/* Notification Settings */}
-            <Card className="glass-dark border-white/10">
-                <CardHeader>
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                            <Bell className="w-5 h-5 text-green-500" />
-                        </div>
-                        <div>
-                            <CardTitle className="text-white">Notification Preferences</CardTitle>
-                            <CardDescription className="text-white/60">
-                                Choose what notifications you want to receive
-                            </CardDescription>
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-6">
-                        <div className="flex items-center justify-between py-3 border-b border-white/10">
-                            <div className="space-y-1">
-                                <Label htmlFor="exam-reminders" className="text-white font-medium cursor-pointer">
-                                    Exam Reminders
-                                </Label>
-                                <p className="text-sm text-white/60">
-                                    Get notified about upcoming exams
-                                </p>
+                            <div className="flex items-center justify-between py-3">
+                                <div className="space-y-1">
+                                    <Label htmlFor="audio-recording" className="text-white font-medium cursor-pointer text-lg">
+                                        Allow Audio Recording
+                                    </Label>
+                                    <p className="text-sm text-white/60">
+                                        Required for monitoring background noise
+                                    </p>
+                                </div>
+                                <Switch
+                                    id="audio-recording"
+                                    defaultChecked
+                                    className="data-[state=checked]:bg-[#323d8f]"
+                                />
                             </div>
-                            <Checkbox
-                                id="exam-reminders"
-                                defaultChecked
-                                className="border-white/30 data-[state=checked]:bg-[#323d8f] data-[state=checked]:border-[#323d8f]"
-                            />
                         </div>
+                    </CardContent>
+                </Card>
 
-                        <div className="flex items-center justify-between py-3 border-b border-white/10">
-                            <div className="space-y-1">
-                                <Label htmlFor="result-notifications" className="text-white font-medium cursor-pointer">
-                                    Result Notifications
-                                </Label>
-                                <p className="text-sm text-white/60">
-                                    Get notified when exam results are available
-                                </p>
+                {/* Device Preferences */}
+                <Card className="glass-dark border-white/10">
+                    <CardHeader>
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                                <Laptop className="w-5 h-5 text-blue-500" />
                             </div>
-                            <Checkbox
-                                id="result-notifications"
-                                defaultChecked
-                                className="border-white/30 data-[state=checked]:bg-[#323d8f] data-[state=checked]:border-[#323d8f]"
-                            />
-                        </div>
-
-                        <div className="flex items-center justify-between py-3 border-b border-white/10">
-                            <div className="space-y-1">
-                                <Label htmlFor="new-exams" className="text-white font-medium cursor-pointer">
-                                    New Exams Available
-                                </Label>
-                                <p className="text-sm text-white/60">
-                                    Get notified when new exams are published
-                                </p>
+                            <div>
+                                <CardTitle className="text-white">Device Preferences</CardTitle>
+                                <CardDescription className="text-white/60">
+                                    Select your default input devices
+                                </CardDescription>
                             </div>
-                            <Checkbox
-                                id="new-exams"
-                                defaultChecked
-                                className="border-white/30 data-[state=checked]:bg-[#323d8f] data-[state=checked]:border-[#323d8f]"
-                            />
                         </div>
-
-                        <div className="flex items-center justify-between py-3">
-                            <div className="space-y-1">
-                                <Label htmlFor="email-digest" className="text-white font-medium cursor-pointer">
-                                    Weekly Email Digest
-                                </Label>
-                                <p className="text-sm text-white/60">
-                                    Receive a weekly summary of your activity
-                                </p>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-3">
+                                    <Label className="text-white font-medium flex items-center gap-2">
+                                        <Camera className="w-4 h-4 text-white/60" />
+                                        Camera Source
+                                    </Label>
+                                    <Select defaultValue="facetime">
+                                        <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                                            <SelectValue placeholder="Select camera" />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-[#1a1b1e] border-white/10 text-white">
+                                            <SelectItem value="facetime">FaceTime HD Camera</SelectItem>
+                                            <SelectItem value="external">External Webcam</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-3">
+                                    <Label className="text-white font-medium flex items-center gap-2">
+                                        <Mic className="w-4 h-4 text-white/60" />
+                                        Microphone Source
+                                    </Label>
+                                    <Select defaultValue="macbook">
+                                        <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                                            <SelectValue placeholder="Select microphone" />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-[#1a1b1e] border-white/10 text-white">
+                                            <SelectItem value="macbook">MacBook Pro Microphone</SelectItem>
+                                            <SelectItem value="external">External Microphone</SelectItem>
+                                            <SelectItem value="airpods">AirPods Pro</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </div>
-                            <Checkbox
-                                id="email-digest"
-                                className="border-white/30 data-[state=checked]:bg-[#323d8f] data-[state=checked]:border-[#323d8f]"
-                            />
                         </div>
-                    </div>
-                </CardContent>
-            </Card>
+                    </CardContent>
+                </Card>
 
-            {/* Security */}
-            <Card className="glass-dark border-white/10">
-                <CardHeader>
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
-                            <Lock className="w-5 h-5 text-red-500" />
+                {/* Notification Preferences */}
+                <Card className="glass-dark border-white/10">
+                    <CardHeader>
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
+                                <Bell className="w-5 h-5 text-orange-500" />
+                            </div>
+                            <div>
+                                <CardTitle className="text-white">Notification Preferences</CardTitle>
+                                <CardDescription className="text-white/60">
+                                    Manage your alerts and exam reminders
+                                </CardDescription>
+                            </div>
                         </div>
-                        <div>
-                            <CardTitle className="text-white">Security</CardTitle>
-                            <CardDescription className="text-white/60">
-                                Manage your account security settings
-                            </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-6">
+                            <div className="flex items-center justify-between py-3 border-b border-white/10">
+                                <div className="space-y-1">
+                                    <Label htmlFor="exam-reminders" className="text-white font-medium cursor-pointer text-lg">
+                                        Exam Reminders
+                                    </Label>
+                                    <p className="text-sm text-white/60">
+                                        Get notified 15 minutes before an exam starts
+                                    </p>
+                                </div>
+                                <Switch
+                                    id="exam-reminders"
+                                    defaultChecked
+                                    className="data-[state=checked]:bg-[#323d8f]"
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-between py-3 border-b border-white/10">
+                                <div className="space-y-1">
+                                    <Label htmlFor="results-released" className="text-white font-medium cursor-pointer text-lg">
+                                        Results Released
+                                    </Label>
+                                    <p className="text-sm text-white/60">
+                                        Get notified when your exam results are ready
+                                    </p>
+                                </div>
+                                <Switch
+                                    id="results-released"
+                                    defaultChecked
+                                    className="data-[state=checked]:bg-[#323d8f]"
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-between py-3">
+                                <div className="space-y-1">
+                                    <Label htmlFor="system-updates" className="text-white font-medium cursor-pointer text-lg">
+                                        System Updates
+                                    </Label>
+                                    <p className="text-sm text-white/60">
+                                        Receive information about Sentinel app updates
+                                    </p>
+                                </div>
+                                <Switch
+                                    id="system-updates"
+                                    className="data-[state=checked]:bg-[#323d8f]"
+                                />
+                            </div>
                         </div>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-4">
-                        <div className="p-4 rounded-lg bg-white/5 border border-white/10">
-                            <p className="text-white font-medium mb-2">Password</p>
-                            <p className="text-sm text-white/60 mb-3">
-                                Last changed: Never
-                            </p>
-                            <p className="text-xs text-white/40">
-                                🔒 Contact your administrator to change your password
-                            </p>
-                        </div>
-                        <div className="p-4 rounded-lg bg-white/5 border border-white/10">
-                            <p className="text-white font-medium mb-2">Session Management</p>
-                            <p className="text-sm text-white/60">
-                                Currently signed in on this device
-                            </p>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     );
 }

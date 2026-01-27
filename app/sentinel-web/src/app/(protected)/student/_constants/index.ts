@@ -4,8 +4,12 @@ import type { StudentInfo, Exam, ExamHistory, DashboardStats, NavigationItem } f
 export const MOCK_STUDENT: StudentInfo = {
     id: "1",
     studentNumber: "2024-00123",
+    firstName: "Juan",
+    lastName: "Dela Cruz",
     name: "Juan Dela Cruz",
     email: "juan.delacruz@student.edu",
+    department: "College of Computer Studies",
+    institution: "NU DASMARIÑAS",
     enrollmentDate: "2024-01-15",
 };
 
