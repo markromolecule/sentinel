@@ -1,13 +1,20 @@
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { ProctorSidebar, ProctorHeader } from "@/components/protected/proctor/proctor-sidebar";
+
 export default function ProctorLayout({
     children,
 }: {
-    children: React.ReactNode
+    children: React.ReactNode;
 }) {
     return (
-        <div className="flex">
-            <main className="flex-1 p-4">
-                {children}
-            </main>
-        </div>
-    )
+        <SidebarProvider>
+            <ProctorSidebar />
+            <SidebarInset>
+                <ProctorHeader />
+                <main className="flex-1 p-6">
+                    {children}
+                </main>
+            </SidebarInset>
+        </SidebarProvider>
+    );
 }
