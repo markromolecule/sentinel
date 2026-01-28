@@ -23,14 +23,14 @@ function ExamDetailsContent() {
             {/* Back Button */}
             <button
                 onClick={handleBack}
-                className="text-white/40 hover:text-white transition-colors flex items-center gap-2 w-fit group"
+                className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2 w-fit group"
             >
                 <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
                 Back to Exams
             </button>
 
             {/* Main Content Card */}
-            <div className="bg-[#1a1b26] border border-white/5 rounded-2xl overflow-hidden">
+            <div className="bg-card border border-border/50 rounded-2xl overflow-hidden">
                 {/* Banner */}
                 <ExamBanner exam={exam} />
 

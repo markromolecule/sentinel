@@ -131,12 +131,6 @@
 
   html {
     scroll-behavior: smooth;
-    background-color: #0f0f10;
-  }
-
-  body {
-    @apply bg-background text-foreground;
-    background-color: #0f0f10;
   }
 }
 

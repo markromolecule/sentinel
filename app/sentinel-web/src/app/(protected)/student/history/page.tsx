@@ -48,7 +48,7 @@ export default function StudentHistoryPage() {
                 <HistoryList items={paginatedHistory} />
 
                 {totalPages >= 1 && (
-                    <Pagination className="mt-8 pb-4 text-white dark">
+                    <Pagination className="mt-8 pb-4 text-foreground">
                         <PaginationContent>
                             <PaginationItem>
                                 <PaginationPrevious

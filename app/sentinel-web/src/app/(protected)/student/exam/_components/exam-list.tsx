@@ -5,12 +5,12 @@ import { ExamCard } from "./exam-card";
 export function ExamList({ exams, emptyMessage }: ExamListProps) {
     if (exams.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-20 text-center bg-white/5 rounded-2xl border border-white/5 border-dashed">
-                <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4">
-                    <BookOpen className="w-8 h-8 text-white/20" />
+            <div className="flex flex-col items-center justify-center py-20 text-center bg-muted/50 rounded-2xl border border-border border-dashed">
+                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                    <BookOpen className="w-8 h-8 text-muted-foreground" />
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-2">No exams found</h3>
-                <p className="text-white/40 max-w-md mx-auto">
+                <h3 className="text-xl font-semibold text-foreground mb-2">No exams found</h3>
+                <p className="text-muted-foreground max-w-md mx-auto">
                     {emptyMessage}
                 </p>
             </div>

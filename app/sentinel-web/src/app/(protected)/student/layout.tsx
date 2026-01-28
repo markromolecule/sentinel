@@ -8,7 +8,7 @@ export default function StudentLayout({
     children: React.ReactNode;
 }) {
     return (
-        <div className="min-h-screen bg-[#0f0f10] flex flex-col pb-20 md:pb-0">
+        <div className="min-h-screen bg-background text-foreground flex flex-col pb-20 md:pb-0">
             <StudentHeader />
             <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl">
                 {children}
