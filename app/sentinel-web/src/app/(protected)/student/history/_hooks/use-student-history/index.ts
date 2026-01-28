@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { MOCK_EXAM_HISTORY } from "@/app/(protected)/student/_constants";
 import { HistoryFilterStatus } from "@/app/(protected)/student/history/_types";
-import { UseStudentHistoryReturn } from "./_types";
+import { UseStudentHistoryReturn } from "@/app/(protected)/student/history/_hooks/use-student-history/_types";
 
 export function useStudentHistory(): UseStudentHistoryReturn {
     const [searchQuery, setSearchQuery] = useState("");

@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CheckCircle, XCircle } from "lucide-react";
-import { ExamHeroScoreProps } from "../_types";
+import { ExamHeroScoreProps } from "@/app/(protected)/student/history/details/_types";
 
 export function ExamHeroScore({ percentage, status }: ExamHeroScoreProps) {
     return (

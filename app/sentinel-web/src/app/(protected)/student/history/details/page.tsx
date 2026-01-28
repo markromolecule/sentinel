@@ -1,13 +1,13 @@
 "use client";
 
-import { CheatingReport } from "@/components/protected/student/CheatingReport";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
-import { ExamDetailStats } from "./_components/exam-detail-stats";
-import { ExamHeader } from "./_components/exam-header";
-import { ExamHeroScore } from "./_components/exam-hero-score";
+import { CheatingReport } from "@/components/protected/student/CheatingReport";
+import { ExamDetailStats } from "@/app/(protected)/student/history/details/_components/exam-detail-stats";
+import { ExamHeader } from "@/app/(protected)/student/history/details/_components/exam-header";
+import { ExamHeroScore } from "@/app/(protected)/student/history/details/_components/exam-hero-score";
 import { ExamInfo } from "@/app/(protected)/student/history/details/_components/exam-info";
 import { useExamDetails } from "@/app/(protected)/student/history/details/_hooks/use-exam-details";
 
