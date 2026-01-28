@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,7 @@ import {
     Pencil,
     Trash2,
     Eye,
+    Radio,
 } from "lucide-react";
 import {
     DropdownMenu,
@@ -167,6 +169,23 @@ export default function ProctorExamsPage() {
                                     </div>
                                 )}
                             </div>
+
+                            {/* Monitor Button for Active Exams */}
+                            {exam.status === "active" && (
+                                <Button
+                                    asChild
+                                    className="w-full mt-4 bg-[#323d8f] hover:bg-[#323d8f]/90"
+                                    size="sm"
+                                >
+                                    <Link href={`/proctor/exams/${exam.id}/monitoring`}>
+                                        <span className="relative flex h-2 w-2 mr-2">
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                                        </span>
+                                        Live Monitor
+                                    </Link>
+                                </Button>
+                            )}
                         </Card>
                     ))}
                 </div>
