@@ -1,13 +1,13 @@
 "use client";
 
-import { CheatingReport } from "@/components/protected/student/CheatingReport";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
-import { ExamDetailStats } from "./_components/exam-detail-stats";
-import { ExamHeader } from "./_components/exam-header";
-import { ExamHeroScore } from "./_components/exam-hero-score";
+import { CheatingReport } from "@/components/protected/student/CheatingReport";
+import { ExamDetailStats } from "@/app/(protected)/student/history/details/_components/exam-detail-stats";
+import { ExamHeader } from "@/app/(protected)/student/history/details/_components/exam-header";
+import { ExamHeroScore } from "@/app/(protected)/student/history/details/_components/exam-hero-score";
 import { ExamInfo } from "@/app/(protected)/student/history/details/_components/exam-info";
 import { useExamDetails } from "@/app/(protected)/student/history/details/_hooks/use-exam-details";
 
@@ -17,8 +17,8 @@ function HistoryDetailsContent() {
     if (!historyItem) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-                <AlertTriangle className="w-16 h-16 text-white/20" />
-                <h2 className="text-2xl font-bold text-white">Exam Result Not Found</h2>
+                <AlertTriangle className="w-16 h-16 text-muted-foreground" />
+                <h2 className="text-2xl font-bold text-foreground">Exam Result Not Found</h2>
                 <Button asChild variant="outline">
                     <Link href="/student/history">Return to History</Link>
                 </Button>
@@ -27,7 +27,7 @@ function HistoryDetailsContent() {
     }
 
     return (
-        <div className="space-y-8 pb-10 max-w-5xl mx-auto">
+        <div className="space-y-6 pb-10 max-w-5xl mx-auto pt-2">
             {/* Header / Nav */}
             <ExamHeader
                 subject={historyItem.subject}

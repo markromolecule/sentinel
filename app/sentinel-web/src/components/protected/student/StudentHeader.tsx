@@ -9,6 +9,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { MOCK_STUDENT } from "@/app/(protected)/student/_constants";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { HEADER_NAV_ITEMS } from "@/components/protected/student/_constants";
 import {
     DropdownMenu,
@@ -37,8 +38,8 @@ export default function StudentHeader() {
     };
 
     return (
-        <header className="sticky top-0 z-50 w-full border-b border-white/5 bg-[#0f0f10]/80 backdrop-blur-md">
-            <div className="container mx-auto px-0 max-w-7xl h-16 flex items-center justify-between relative">
+        <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md">
+            <div className="container mx-auto px-0 max-w-7xl h-16 flex items-center justify-between relative text-foreground">
                 {/* Logo */}
                 <div className="flex items-center gap-2">
                     <Link href="/student/exam" className="flex items-center gap-2">
@@ -47,7 +48,7 @@ export default function StudentHeader() {
                                 src="/icons/sentinel-logo.svg"
                                 alt="Sentinel"
                                 fill
-                                className="object-contain"
+                                className="object-contain dark:brightness-0 dark:invert brightness-0"
                             />
                         </div>
                     </Link>
@@ -60,8 +61,8 @@ export default function StudentHeader() {
                             key={item.href}
                             href={item.href}
                             className={cn(
-                                "text-sm font-medium transition-colors hover:text-white",
-                                pathname === item.href || pathname.startsWith(item.href) && item.href !== "/student/exam" ? "text-white" : "text-white/60"
+                                "text-sm font-medium transition-colors hover:text-foreground",
+                                pathname === item.href || pathname.startsWith(item.href) && item.href !== "/student/exam" ? "text-foreground" : "text-muted-foreground"
                             )}
                         >
                             {item.label}
@@ -71,7 +72,11 @@ export default function StudentHeader() {
 
                 {/* Actions & Profile */}
                 <div className="flex items-center gap-2 md:gap-4">
-                    <Button variant="ghost" size="icon" className="text-white/60 hover:text-white hidden sm:flex">
+                    <div className="hidden sm:flex">
+                        <ThemeToggle />
+                    </div>
+
+                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hidden sm:flex">
                         <Bell className="w-5 h-5" />
                     </Button>
 
@@ -81,28 +86,28 @@ export default function StudentHeader() {
                                 {MOCK_STUDENT.name.split(" ").map((n) => n[0]).join("")}
                             </div>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56 bg-[#0f0f10] border-white/10 text-white">
+                        <DropdownMenuContent align="end" className="w-56">
                             <DropdownMenuLabel>
                                 <div className="flex flex-col space-y-1">
-                                    <p className="text-sm font-medium leading-none text-white">{MOCK_STUDENT.name}</p>
-                                    <p className="text-xs leading-none text-white/60">{MOCK_STUDENT.email}</p>
+                                    <p className="text-sm font-medium leading-none">{MOCK_STUDENT.name}</p>
+                                    <p className="text-xs leading-none text-muted-foreground">{MOCK_STUDENT.email}</p>
                                 </div>
                             </DropdownMenuLabel>
-                            <DropdownMenuSeparator className="bg-white/10" />
-                            <DropdownMenuItem asChild className="text-white/80 focus:text-white focus:bg-white/10 cursor-pointer">
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem asChild className="cursor-pointer">
                                 <Link href="/student/profile" className="flex w-full items-center">
                                     <User className="mr-2 h-4 w-4" />
                                     <span>Profile</span>
                                 </Link>
                             </DropdownMenuItem>
 
-                            <DropdownMenuItem asChild className="text-white/80 focus:text-white focus:bg-white/10 cursor-pointer">
+                            <DropdownMenuItem asChild className="cursor-pointer">
                                 <Link href="/student/setting" className="flex w-full items-center">
                                     <Settings className="mr-2 h-4 w-4" />
                                     <span>Settings</span>
                                 </Link>
                             </DropdownMenuItem>
-                            <DropdownMenuSeparator className="bg-white/10" />
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem
                                 className="text-red-500 focus:text-red-500 focus:bg-red-500/10 cursor-pointer"
                                 onClick={handleLogout}
@@ -116,24 +121,28 @@ export default function StudentHeader() {
                     {/* Mobile Hamburger Menu */}
                     <Sheet>
                         <SheetTrigger asChild>
-                            <Button variant="ghost" size="icon" className="md:hidden text-white/60 hover:text-white">
-                                <Menu className="w-5 h-5" />
+                            <Button variant="ghost" size="icon" className="md:hidden text-foreground hover:bg-accent h-10 w-10">
+                                <Menu className="w-6 h-6" />
                             </Button>
                         </SheetTrigger>
-                        <SheetContent side="right" className="bg-[#0f0f10] border-white/10 w-[300px]">
+                        <SheetContent side="right" className="w-[300px] bg-background border-border text-foreground px-6">
                             <SheetHeader>
-                                <SheetTitle className="text-white">Menu</SheetTitle>
+                                <SheetTitle className="text-foreground">Menu</SheetTitle>
                             </SheetHeader>
-                            <div className="flex flex-col gap-2 mt-4">
+                            <div className="flex items-center justify-between mt-4 mb-2 py-2 border-b border-border">
+                                <span className="text-sm font-medium text-foreground">Theme</span>
+                                <ThemeToggle />
+                            </div>
+                            <div className="flex flex-col gap-1 mt-2">
                                 {HEADER_NAV_ITEMS.map((item) => (
                                     <Link key={item.href} href={item.href}>
                                         <Button
                                             variant="ghost"
                                             className={cn(
-                                                "w-full justify-start hover:text-white hover:bg-white/5",
+                                                "w-full justify-start hover:bg-accent hover:text-accent-foreground",
                                                 pathname === item.href || pathname.startsWith(item.href) && item.href !== "/student/exam"
-                                                    ? "text-white bg-white/5"
-                                                    : "text-white/80"
+                                                    ? "bg-accent text-accent-foreground"
+                                                    : "text-muted-foreground"
                                             )}
                                         >
                                             <item.icon className="w-4 h-4 mr-2" />
@@ -141,7 +150,7 @@ export default function StudentHeader() {
                                         </Button>
                                     </Link>
                                 ))}
-                                <div className="h-px bg-white/10 my-2" />
+                                <div className="h-px bg-border my-2" />
                                 <Button
                                     variant="ghost"
                                     className="w-full justify-start text-red-500 hover:text-red-400 hover:bg-red-500/10"

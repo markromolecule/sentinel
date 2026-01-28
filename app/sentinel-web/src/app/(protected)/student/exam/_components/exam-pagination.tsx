@@ -13,7 +13,7 @@ export function ExamPagination({ currentPage, totalPages, onPageChange }: ExamPa
     if (totalPages < 1) return null;
 
     return (
-        <Pagination className="mt-8 pb-4 text-white dark">
+        <Pagination className="mt-8 pb-4 text-foreground">
             <PaginationContent>
                 <PaginationItem>
                     <PaginationPrevious

@@ -62,21 +62,21 @@ export function CheatingReport({ cheated, cheatingType }: CheatingReportProps) {
 
     return (
         <div className="space-y-2">
-            <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-red-500" />
+            <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-destructive" />
                 Proctoring Report
             </h3>
 
-            <div className="bg-[#1a1b26] border border-red-500/20 rounded-xl overflow-hidden">
+            <div className="bg-card border border-destructive/20 rounded-xl overflow-hidden">
                 <div className="p-4 flex items-start gap-4">
-                    <div className="p-2.5 bg-red-500/10 rounded-lg shrink-0">
-                        <Icon className="w-5 h-5 text-red-500" />
+                    <div className="p-2.5 bg-destructive/10 rounded-lg shrink-0">
+                        <Icon className="w-5 h-5 text-destructive" />
                     </div>
                     <div>
-                        <h4 className="text-red-400 font-semibold text-base mb-1">
+                        <h4 className="text-destructive font-semibold text-base mb-1">
                             {details.title}
                         </h4>
-                        <p className="text-white/60 text-sm leading-relaxed">
+                        <p className="text-muted-foreground text-sm leading-relaxed">
                             {details.description}
                         </p>
                     </div>

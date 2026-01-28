@@ -1,4 +1,4 @@
-import { ExamHistory } from "../../../../_types";
+import { ExamHistory } from "@/app/(protected)/student/_types";
 
 export interface UseExamDetailsReturn {
     examId: string | null;

@@ -14,13 +14,13 @@ export function HistoryFilters({
         <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Search className="h-5 w-5 text-white/40" />
+                    <Search className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <Input
                     placeholder="Search exam history..."
                     value={searchQuery}
                     onChange={(e) => onSearchChange(e.target.value)}
-                    className="pl-11 h-12 bg-white/5 border-white/10 text-white placeholder:text-white/40 rounded-xl focus:border-[#323d8f] focus:ring-[#323d8f]/20 transition-all"
+                    className="pl-11 h-12 bg-muted/50 border-border text-foreground placeholder:text-muted-foreground rounded-xl focus:border-primary focus:ring-primary/20 transition-all"
                 />
             </div>
             <div className="flex gap-2 text-sm overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
@@ -30,8 +30,8 @@ export function HistoryFilters({
                     className={cn(
                         "h-12 px-6 shrink-0",
                         statusFilter === "all"
-                            ? "bg-[#323d8f] hover:bg-[#323d8f]/90"
-                            : "bg-white/5 border-white/10 text-white hover:bg-white/10"
+                            ? "bg-primary hover:bg-primary/90 text-primary-foreground"
+                            : "bg-muted/50 border-border text-foreground hover:bg-muted"
                     )}
                 >
                     All
@@ -42,8 +42,8 @@ export function HistoryFilters({
                     className={cn(
                         "h-12 px-6 shrink-0",
                         statusFilter === "passed"
-                            ? "bg-green-600 hover:bg-green-700"
-                            : "bg-white/5 border-white/10 text-white hover:bg-white/10"
+                            ? "bg-green-600 hover:bg-green-700 text-white"
+                            : "bg-muted/50 border-border text-foreground hover:bg-muted"
                     )}
                 >
                     Passed
@@ -54,8 +54,8 @@ export function HistoryFilters({
                     className={cn(
                         "h-12 px-6 shrink-0",
                         statusFilter === "failed"
-                            ? "bg-red-600 hover:bg-red-700"
-                            : "bg-white/5 border-white/10 text-white hover:bg-white/10"
+                            ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                            : "bg-muted/50 border-border text-foreground hover:bg-muted"
                     )}
                 >
                     Failed
