@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, RefreshCw } from "lucide-react";
-import { MonitoringHeaderProps } from "../_types";
+import { MonitoringHeaderProps } from "@/app/(protected)/proctor/exams/[id]/monitoring/_types";
 
 export function MonitoringHeader({ examTitle, examSubject }: MonitoringHeaderProps) {
     return (

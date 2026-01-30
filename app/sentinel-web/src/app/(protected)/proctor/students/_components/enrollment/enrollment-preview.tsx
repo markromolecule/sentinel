@@ -1,6 +1,6 @@
 "use client";
 
-import { ParsedStudent } from "../../_types";
+import { ParsedStudent } from "@/app/(protected)/proctor/students/_types";
 
 type EnrollmentPreviewProps = {
     students: ParsedStudent[];

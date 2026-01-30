@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
-import { DashboardStatsProps } from "../_types";
+import { DashboardStatsProps } from "@/app/(protected)/proctor/dashboard/_types";
 
 export function DashboardStats({ stats }: DashboardStatsProps) {
     return (

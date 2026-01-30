@@ -1,7 +1,7 @@
 "use client";
 
 import { Users } from "lucide-react";
-import { MonitoringStatsProps } from "../_types";
+import { MonitoringStatsProps } from "@/app/(protected)/proctor/exams/[id]/monitoring/_types";
 
 export function MonitoringStats({ stats }: MonitoringStatsProps) {
     return (

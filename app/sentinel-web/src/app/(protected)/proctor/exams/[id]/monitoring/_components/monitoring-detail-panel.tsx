@@ -3,9 +3,9 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, Camera } from "lucide-react";
-import { MonitoringDetailPanelProps } from "../_types";
-import { StudentDetailCard } from "./student-detail-card";
-import { FlagEventList } from "./flag-event-list";
+import { MonitoringDetailPanelProps } from "@/app/(protected)/proctor/exams/[id]/monitoring/_types";
+import { StudentDetailCard } from "@/app/(protected)/proctor/exams/[id]/monitoring/_components/student-detail-card";
+import { FlagEventList } from "@/app/(protected)/proctor/exams/[id]/monitoring/_components/flag-event-list";
 
 export function MonitoringDetailPanel({ student }: MonitoringDetailPanelProps) {
     if (!student) {
