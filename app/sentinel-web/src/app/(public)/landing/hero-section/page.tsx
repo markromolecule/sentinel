@@ -53,7 +53,7 @@ export default function HeroSection() {
                         <Button
                             asChild
                             size="lg"
-                            variant="premium-dark"
+                            variant="premium-outline"
                             className="h-14 px-8 text-base font-medium backdrop-blur-sm group"
                         >
                             <Link href="#features" className="flex items-center gap-2">
