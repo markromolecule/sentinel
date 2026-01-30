@@ -19,15 +19,20 @@ const buttonVariants = cva(
         ghost:
           "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
         link: "text-primary underline-offset-4 hover:underline",
-        "premium-3d": "bg-(--sentinel-primary) text-white border-b-4 border-[#1e2456] rounded-xl hover:bg-(--sentinel-primary)/90 active:border-b-2 active:border-b-transparent active:translate-y-[2px] transition-all",
-        "secondary-3d": "bg-white text-[#131315] border-b-4 border-gray-300 rounded-xl hover:bg-gray-50 active:border-b-2 active:border-b-transparent active:translate-y-[2px] transition-all",
-        "premium-dark": "bg-white/5 border border-white/10 text-white rounded-full hover:bg-white/10 hover:border-white/20 transition-all",
+        "premium-3d":
+          "bg-[#323d8f] text-white shadow-[0_4px_0_0_#21285e] hover:bg-[#2c357d] hover:shadow-[0_2px_0_0_#21285e] hover:translate-y-[2px] active:shadow-none active:translate-y-[4px] border-none transition-all",
+        "secondary-3d":
+          "bg-white text-zinc-900 shadow-[0_4px_0_0_#e4e4e7] hover:shadow-[0_2px_0_0_#e4e4e7] hover:translate-y-[2px] active:shadow-none active:translate-y-[4px] border-none transition-all",
+        "premium-outline":
+          "bg-white/5 text-white border border-white/10 hover:bg-white/10 transition-colors backdrop-blur-sm",
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",
+        xs: "h-6 gap-1 rounded-md px-2 text-xs has-[>svg]:px-1.5 [&_svg:not([class*='size-'])]:size-3",
         sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
         lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
         icon: "size-9",
+        "icon-xs": "size-6 rounded-md [&_svg:not([class*='size-'])]:size-3",
         "icon-sm": "size-8",
         "icon-lg": "size-10",
       },
@@ -40,29 +45,23 @@ const buttonVariants = cva(
 )
 
 export interface ButtonProps
-  extends React.ComponentProps<"button">,
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
   VariantProps<typeof buttonVariants> {
   asChild?: boolean
 }
 
-function Button({
-  className,
-  variant = "default",
-  size = "default",
-  asChild = false,
-  ...props
-}: ButtonProps) {
-  const Comp = asChild ? Slot : "button"
-
-  return (
-    <Comp
-      data-slot="button"
-      data-variant={variant}
-      data-size={size}
-      className={cn(buttonVariants({ variant, size, className }))}
-      {...props}
-    />
-  )
-}
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant, size, asChild = false, ...props }, ref) => {
+    const Comp = asChild ? Slot : "button"
+    return (
+      <Comp
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        {...props}
+      />
+    )
+  }
+)
+Button.displayName = "Button"
 
 export { Button, buttonVariants }
