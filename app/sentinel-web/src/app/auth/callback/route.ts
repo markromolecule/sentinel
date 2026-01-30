@@ -9,14 +9,9 @@ export async function GET(request: Request) {
     const next = searchParams.get('next') ?? '/dashboard';
     const origin = config.appUrl;
 
-    console.log('Auth Callback Hit');
-    console.log('Code present:', !!code);
-
     if (code) {
         const supabase = await createSupabaseServerClient();
         const { error } = await supabase.auth.exchangeCodeForSession(code);
-
-        console.log('Exchange Code Error:', error);
 
         if (!error) {
             // Check User Role and Redirection Logic
