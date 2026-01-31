@@ -17,8 +17,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  applicationName: "SentinelPH",
   title: "Sentinel | Smart Proctoring for Academic Integrity",
   description: "Sentinel is a mobile and web platform for securing online exams, monitoring student focus, and preventing academic dishonesty. It's built for educators, ensuring fair testing everywhere.",
+  openGraph: {
+    siteName: "SentinelPH",
+    type: "website",
+    locale: "en_US",
+  },
   icons: {
     icon: [
       { url: "/icons/icon0.svg", type: "image/svg+xml" },
@@ -43,6 +49,18 @@ export default function RootLayout({
         className={`${dmSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: "SentinelPH",
+              alternateName: ["Sentinel", 'Sentinel Proctoring'],
+              url: process.env.NEXT_PUBLIC_APP_URL || "https://www.sentinelph.tech",
+            }),
+          }}
+        />
         <Analytics />
         <SmoothScroll />
         <SplashscreenProvider>
