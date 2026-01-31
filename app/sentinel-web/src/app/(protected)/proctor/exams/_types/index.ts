@@ -1,4 +1,4 @@
-import { ProctorExam } from "../../_types";
+import { ProctorExam } from "@/app/(protected)/proctor/_types";
 
 export type ExamsPageHeaderProps = {
     onCreateClick: () => void;

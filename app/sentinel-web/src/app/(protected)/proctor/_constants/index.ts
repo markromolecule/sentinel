@@ -1,4 +1,4 @@
-import type { ProctorInfo, Student, ProctorExam, NavigationItem } from "../_types";
+import type { ProctorInfo, Student, ProctorExam, NavigationItem } from "@/app/(protected)/proctor/_types";
 
 // Mock proctor information
 export const MOCK_PROCTOR: ProctorInfo = {
