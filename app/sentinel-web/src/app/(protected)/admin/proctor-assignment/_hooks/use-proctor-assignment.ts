@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ProctorAssignment } from "../_types";
+import { ProctorAssignment } from "@/app/(protected)/admin/_types";
 
 interface UseProctorAssignmentProps {
     assignments: ProctorAssignment[];

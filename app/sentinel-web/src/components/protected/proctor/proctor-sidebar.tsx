@@ -12,7 +12,10 @@ import {
     LogOut,
     ChevronUp,
     Megaphone,
+    Calendar,
+    UserCheck,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 import {
     Sidebar,
@@ -20,6 +23,7 @@ import {
     SidebarFooter,
     SidebarGroup,
     SidebarGroupContent,
+    SidebarGroupLabel,
     SidebarHeader,
     SidebarMenu,
     SidebarMenuButton,
@@ -54,7 +58,7 @@ export function ProctorSidebar() {
     const { state } = useSidebar();
     const isCollapsed = state === "collapsed";
 
-    const { mutate: logout } = useLogoutMutation({
+    const { mutate: logout, isPending } = useLogoutMutation({
         onSuccess: () => {
             router.push("/auth/login");
         },
@@ -64,50 +68,126 @@ export function ProctorSidebar() {
         logout();
     };
 
+    const overviewItems = [
+        {
+            title: "Dashboard",
+            url: "/proctor/dashboard",
+            icon: LayoutDashboard,
+        },
+        {
+            title: "Calendar",
+            url: "/proctor/calendar",
+            icon: Calendar,
+        },
+    ];
+
+    const examItems = [
+        {
+            title: "My Exams",
+            url: "/proctor/exams",
+            icon: FileText,
+        },
+        {
+            title: "Create Exam",
+            url: "/proctor/exams?create=true",
+            icon: Settings,
+        },
+        {
+            title: "Proctor Assignment",
+            url: "/proctor/assignment",
+            icon: UserCheck,
+        },
+    ];
+
+    const studentItems = [
+        {
+            title: "Students",
+            url: "/proctor/students",
+            icon: Users,
+        },
+    ];
+
+    const navExams = [
+        {
+            title: "My Exams",
+            url: "/proctor/exams",
+            icon: FileText,
+        },
+        {
+            title: "Proctor Assignment",
+            url: "/proctor/assignment",
+            icon: UserCheck,
+        },
+    ];
+
+
+    const communicationItems = [
+        {
+            title: "Messages",
+            url: "/proctor/messages",
+            icon: MessageSquare,
+        },
+        {
+            title: "Announcements",
+            url: "/proctor/announcements",
+            icon: Megaphone,
+        },
+    ];
+
+    const renderMenuItems = (items: { title: string; url: string; icon: any }[]) => {
+        return items.map((item) => (
+            <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton asChild isActive={pathname === item.url} tooltip={item.title}>
+                    <Link href={item.url}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                    </Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+        ));
+    };
+
     return (
-        <Sidebar className="border-r border-border/40">
+        <Sidebar collapsible="icon" className="border-r border-border/40">
             {/* Header with Logo */}
-            <SidebarHeader className="border-b border-border/40 px-4 py-4">
-                <Link href="/proctor/dashboard" className="flex items-center gap-2">
-                    <div className={cn("relative transition-all", isCollapsed ? "w-8 h-8" : "w-36 h-10")}>
+            <SidebarHeader className="border-b border-border/40 h-16 flex items-center justify-center p-0">
+                <div className="flex items-center gap-2 p-4 w-full h-full">
+                    <div className="relative h-12 w-24">
                         <NextImage
                             src="/icons/sentinel-logo.svg"
                             alt="Sentinel"
                             fill
-                            className="object-contain brightness-0 dark:brightness-0 dark:invert"
+                            className="object-contain object-left brightness-0 dark:brightness-0 dark:invert"
                         />
                     </div>
-                </Link>
+                </div>
             </SidebarHeader>
 
-            {/* Navigation */}
-            <SidebarContent className="px-2 py-4">
+            <SidebarContent>
                 <SidebarGroup>
+                    <SidebarGroupLabel>Overview</SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            {PROCTOR_NAV_ITEMS.map((item) => {
-                                const Icon = iconMap[item.icon];
-                                const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+                            {renderMenuItems(overviewItems)}
+                        </SidebarMenu>
+                    </SidebarGroupContent>
+                </SidebarGroup>
 
-                                return (
-                                    <SidebarMenuItem key={item.href}>
-                                        <SidebarMenuButton
-                                            asChild
-                                            isActive={isActive}
-                                            tooltip={item.label}
-                                            className={cn(
-                                                "transition-colors",
-                                                isActive && "bg-[#323d8f]/10 text-[#323d8f] font-medium hover:bg-[#323d8f]/15"
-                                            )}
-                                        >
-                                            <Link href={item.href}>
-                                                {Icon && <Icon className={cn("w-5 h-5", isActive && "text-[#323d8f]")} />}
-                                                <span>{item.label}</span>
-                                            </Link>
-                                        </SidebarMenuButton>
-                                    </SidebarMenuItem>
-                                );
-                            })}
+                <SidebarGroup>
+                    <SidebarGroupLabel>Management</SidebarGroupLabel>
+                    <SidebarGroupContent>
+                        <SidebarMenu>
+                            {renderMenuItems(navExams)}
+                            {renderMenuItems(studentItems)}
+                        </SidebarMenu>
+                    </SidebarGroupContent>
+                </SidebarGroup>
+
+                <SidebarGroup>
+                    <SidebarGroupLabel>Communication</SidebarGroupLabel>
+                    <SidebarGroupContent>
+                        <SidebarMenu>
+                            {renderMenuItems(communicationItems)}
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
@@ -116,53 +196,17 @@ export function ProctorSidebar() {
             {/* Footer with User Profile */}
             <SidebarFooter className="border-t border-border/40 p-2">
                 <SidebarMenu>
-                    {/* Theme Toggle */}
                     <SidebarMenuItem>
-                        <div className={cn("flex items-center gap-2 px-2 py-1.5", isCollapsed && "justify-center")}>
-                            {!isCollapsed && <span className="text-sm text-muted-foreground">Theme</span>}
-                            <ThemeToggle />
-                        </div>
-                    </SidebarMenuItem>
-
-                    {/* User Profile Dropdown */}
-                    <SidebarMenuItem>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <SidebarMenuButton
-                                    size="lg"
-                                    className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                                >
-                                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#323d8f] to-[#4a5bb8] flex items-center justify-center text-white text-xs font-bold shrink-0">
-                                        {MOCK_PROCTOR.name.split(" ").map((n) => n[0]).join("")}
-                                    </div>
-                                    <div className="flex flex-col gap-0.5 leading-none">
-                                        <span className="font-medium text-sm">{MOCK_PROCTOR.name}</span>
-                                        <span className="text-xs text-muted-foreground truncate">{MOCK_PROCTOR.email}</span>
-                                    </div>
-                                    <ChevronUp className="ml-auto h-4 w-4" />
-                                </SidebarMenuButton>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent
-                                side="top"
-                                className="w-[--radix-dropdown-menu-trigger-width] min-w-56"
-                                align="start"
-                            >
-                                <DropdownMenuItem asChild className="cursor-pointer">
-                                    <Link href="/proctor/settings" className="flex w-full items-center">
-                                        <Settings className="mr-2 h-4 w-4" />
-                                        <span>Settings</span>
-                                    </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                    className="text-red-500 focus:text-red-500 focus:bg-red-500/10 cursor-pointer"
-                                    onClick={handleLogout}
-                                >
-                                    <LogOut className="mr-2 h-4 w-4" />
-                                    <span>Log out</span>
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                        <SidebarMenuButton
+                            size="lg"
+                            className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                            onClick={handleLogout}
+                            disabled={isPending}
+                            tooltip="Logout"
+                        >
+                            <LogOut className="h-4 w-4" />
+                            <span>{isPending ? "Logging out..." : "Logout"}</span>
+                        </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarFooter>

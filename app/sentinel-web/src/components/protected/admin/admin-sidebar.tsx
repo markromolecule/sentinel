@@ -22,6 +22,8 @@ import {
     FileText,
     Megaphone,
     LogOut,
+    MessageSquare,
+    Calendar,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -50,8 +52,13 @@ export function AdminSidebar() {
     const dashboardItems = [
         {
             title: "Dashboard",
-            url: "/admin",
+            url: "/admin/dashboard",
             icon: LayoutDashboard,
+        },
+        {
+            title: "Calendar",
+            url: "/admin/calendar",
+            icon: Calendar,
         },
     ];
 
@@ -62,14 +69,14 @@ export function AdminSidebar() {
             icon: Users,
         },
         {
-            title: "Exam Configuration",
-            url: "/admin/exam-config",
-            icon: Settings,
-        },
-        {
             title: "Proctor Assignment",
             url: "/admin/proctor-assignment",
             icon: UserCheck,
+        },
+        {
+            title: "Exam Configuration",
+            url: "/admin/exam-config",
+            icon: Settings,
         },
     ];
 
@@ -87,6 +94,11 @@ export function AdminSidebar() {
     ];
 
     const communicationItems = [
+        {
+            title: "Messages",
+            url: "/admin/messages",
+            icon: MessageSquare,
+        },
         {
             title: "Announcements",
             url: "/admin/announcements",
@@ -158,16 +170,21 @@ export function AdminSidebar() {
                     </SidebarGroupContent>
                 </SidebarGroup>
             </SidebarContent>
-            <SidebarFooter className="border-t border-sidebar-border p-4">
-                <Button
-                    variant="ghost"
-                    className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50"
-                    onClick={handleLogout}
-                    disabled={isPending}
-                >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>{isPending ? "Logging out..." : "Logout"}</span>
-                </Button>
+            <SidebarFooter className="border-t border-sidebar-border p-2">
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton
+                            size="lg"
+                            className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                            onClick={handleLogout}
+                            disabled={isPending}
+                            tooltip="Logout"
+                        >
+                            <LogOut className="h-4 w-4" />
+                            <span>{isPending ? "Logging out..." : "Logout"}</span>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
             </SidebarFooter>
             <SidebarRail />
         </Sidebar>

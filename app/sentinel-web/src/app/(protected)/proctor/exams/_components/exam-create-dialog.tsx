@@ -44,6 +44,7 @@ export function ExamCreateDialog({ open, onOpenChange }: ExamCreateDialogProps) 
         duration: "60",
         passingScore: "60",
         scheduledDate: "",
+        assignedProctor: "user-1",
     });
 
     const handleClose = () => {
@@ -54,6 +55,7 @@ export function ExamCreateDialog({ open, onOpenChange }: ExamCreateDialogProps) 
             duration: "60",
             passingScore: "60",
             scheduledDate: "",
+            assignedProctor: "user-1",
         });
         onOpenChange(false);
     };
@@ -119,6 +121,27 @@ export function ExamCreateDialog({ open, onOpenChange }: ExamCreateDialogProps) 
                                 ))}
                             </SelectContent>
                         </Select>
+                    </div>
+
+                    {/* Assigned Proctor */}
+                    <div className="space-y-2">
+                        <Label>Assign Proctor</Label>
+                        <Select
+                            value={formData.assignedProctor}
+                            onValueChange={(value) => setFormData({ ...formData, assignedProctor: value })}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a proctor" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="user-1">Me (Current User)</SelectItem>
+                                <SelectItem value="proctor-2">Jane Smith</SelectItem>
+                                <SelectItem value="proctor-3">Dr. Alan Turing</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground">
+                            You can assign this exam to yourself or another proctor.
+                        </p>
                     </div>
 
                     {/* Duration and Passing Score */}
