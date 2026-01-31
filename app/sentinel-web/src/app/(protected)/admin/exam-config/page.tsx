@@ -1,7 +1,7 @@
 "use client";
 
-import { ExamConfigForm } from "../_components/exam-config";
-import { MOCK_EXAM_CONFIG } from "../_constants";
+import { ExamConfigForm } from "@/app/(protected)/admin/exam-config/_components";
+import { MOCK_EXAM_CONFIG } from "@/app/(protected)/admin/_constants";
 
 export default function ExamConfigPage() {
     return (

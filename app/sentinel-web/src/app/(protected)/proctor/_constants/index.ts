@@ -112,6 +112,42 @@ export const PROCTOR_NAV_ITEMS: NavigationItem[] = [
         href: "/proctor/messages",
         icon: "MessageSquare",
     },
+    {
+        label: "Announcements",
+        href: "/proctor/announcements",
+        icon: "Megaphone",
+    },
+];
+
+// Mock announcements
+export const MOCK_ANNOUNCEMENTS = [
+    {
+        id: "1",
+        title: "System Maintenance Scheduled",
+        content: "The system will undergo scheduled maintenance on Sunday, Feb 5th from 2:00 AM to 4:00 AM. Please save your work.",
+        targetAudience: ["all"],
+        status: "published",
+        author: "Admin Team",
+        publishedAt: "2026-01-28 09:00 AM",
+    },
+    {
+        id: "2",
+        title: "New Exam Proctoring Guidelines",
+        content: "Please review the updated proctoring guidelines document available in the resources section. Effective immediately.",
+        targetAudience: ["proctors"],
+        status: "published",
+        author: "Academic Affairs",
+        publishedAt: "2026-01-25 02:30 PM",
+    },
+    {
+        id: "3",
+        title: "Welcome to Sentinel v2.0",
+        content: "We are excited to announce the release of Sentinel v2.0 with improved dashboard and analytics features.",
+        targetAudience: ["all"],
+        status: "published",
+        author: "Dev Team",
+        publishedAt: "2026-01-20 08:00 AM",
+    },
 ];
 
 // Dashboard statistics

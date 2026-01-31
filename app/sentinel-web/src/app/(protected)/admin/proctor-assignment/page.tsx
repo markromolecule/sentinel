@@ -1,7 +1,7 @@
 "use client";
 
-import { ProctorAssignmentList } from "../_components/proctor-assignment-list";
-import { MOCK_PROCTOR_ASSIGNMENTS } from "../_constants";
+import { ProctorAssignmentList } from "@/app/(protected)/admin/proctor-assignment/_components";
+import { MOCK_PROCTOR_ASSIGNMENTS } from "@/app/(protected)/admin/_constants";
 
 export default function ProctorAssignmentPage() {
     return (

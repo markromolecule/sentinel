@@ -11,6 +11,7 @@ import {
     Settings,
     LogOut,
     ChevronUp,
+    Megaphone,
 } from "lucide-react";
 
 import {
@@ -44,6 +45,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
     Users,
     FileText,
     MessageSquare,
+    Megaphone,
 };
 
 export function ProctorSidebar() {

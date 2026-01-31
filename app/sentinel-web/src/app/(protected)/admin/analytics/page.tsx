@@ -1,7 +1,10 @@
 "use client";
 
-import { AnalyticsReportsList } from "@/app/(protected)/admin/_components/analytics-reports-list";
-import { ExamCompletionChart, IncidentTrendsChart } from "@/app/(protected)/admin/_components/analytics-charts";
+import {
+    AnalyticsReportsList,
+    ExamCompletionChart,
+    IncidentTrendsChart
+} from "@/app/(protected)/admin/analytics/_components/index";
 import { MOCK_REPORTS, MOCK_EXAM_COMPLETION_DATA, MOCK_INCIDENT_TRENDS } from "@/app/(protected)/admin/_constants";
 
 export default function AnalyticsPage() {

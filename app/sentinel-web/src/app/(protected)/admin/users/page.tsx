@@ -1,6 +1,6 @@
 "use client";
 
-import { UserManagementTable } from "@/app/(protected)/admin/_components/user-management";
+import { UserManagementTable } from "@/app/(protected)/admin/users/_components";
 import { MOCK_USERS } from "@/app/(protected)/admin/_constants";
 
 export default function UserManagementPage() {

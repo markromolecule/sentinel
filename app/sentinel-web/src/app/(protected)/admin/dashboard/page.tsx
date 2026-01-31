@@ -1,7 +1,6 @@
 "use client";
 
-import { AdminStatsCards } from "@/app/(protected)/admin/_components/admin-stats-cards";
-import { SystemHealth } from "@/app/(protected)/admin/_components/system-health";
+import { AdminStatsCards, SystemHealth } from "@/app/(protected)/admin/dashboard/_components";
 import { MOCK_SYSTEM_STATS, MOCK_RECENT_ACTIVITY } from "@/app/(protected)/admin/_constants";
 
 export default function AdminDashboard() {

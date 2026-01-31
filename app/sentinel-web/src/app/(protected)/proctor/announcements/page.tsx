@@ -1,7 +1,7 @@
 "use client";
 
-import { AnnouncementsList } from "@/app/(protected)/admin/announcements/_components";
-import { MOCK_ANNOUNCEMENTS } from "@/app/(protected)/admin/_constants";
+import { AnnouncementsList } from "@/app/(protected)/proctor/announcements/_components/announcements-list";
+import { MOCK_ANNOUNCEMENTS } from "@/app/(protected)/proctor/_constants";
 
 export default function AnnouncementsPage() {
     return (

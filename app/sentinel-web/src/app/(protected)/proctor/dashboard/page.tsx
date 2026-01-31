@@ -6,12 +6,13 @@ import {
     CalendarDays,
     MessageSquare,
 } from "lucide-react";
-import { MOCK_DASHBOARD_STATS, MOCK_PROCTOR_EXAMS, MOCK_STUDENTS } from "@/app/(protected)/proctor/_constants";
+import { MOCK_DASHBOARD_STATS, MOCK_PROCTOR_EXAMS, MOCK_STUDENTS, MOCK_ANNOUNCEMENTS } from "@/app/(protected)/proctor/_constants";
 import { DashboardStats } from "@/app/(protected)/proctor/dashboard/_components/dashboard-stats";
 import { QuickActions } from "@/app/(protected)/proctor/dashboard/_components/quick-actions";
 import { PerformanceOverview } from "@/app/(protected)/proctor/dashboard/_components/performance-overview";
 import { RecentExams } from "@/app/(protected)/proctor/dashboard/_components/recent-exams";
 import { RecentStudents } from "@/app/(protected)/proctor/dashboard/_components/recent-students";
+import { AnnouncementsWidget } from "@/app/(protected)/proctor/dashboard/_components/announcements-widget";
 
 export default function ProctorDashboardPage() {
     const recentExams = MOCK_PROCTOR_EXAMS.slice(0, 3);
@@ -66,9 +67,14 @@ export default function ProctorDashboardPage() {
             <DashboardStats stats={stats} />
 
             {/* Quick Actions & Performance */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <QuickActions />
-                <PerformanceOverview />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <QuickActions />
+                        <PerformanceOverview />
+                    </div>
+                </div>
+                <AnnouncementsWidget announcements={MOCK_ANNOUNCEMENTS} />
             </div>
 
             {/* Recent Activity */}
