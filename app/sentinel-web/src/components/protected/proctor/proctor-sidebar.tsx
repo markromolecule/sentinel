@@ -14,6 +14,7 @@ import {
     Megaphone,
     Calendar,
     UserCheck,
+    BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -81,27 +82,9 @@ export function ProctorSidebar() {
         },
     ];
 
-    const examItems = [
-        {
-            title: "My Exams",
-            url: "/proctor/exams",
-            icon: FileText,
-        },
-        {
-            title: "Create Exam",
-            url: "/proctor/exams?create=true",
-            icon: Settings,
-        },
-        {
-            title: "Proctor Assignment",
-            url: "/proctor/assignment",
-            icon: UserCheck,
-        },
-    ];
-
     const studentItems = [
         {
-            title: "Students",
+            title: "Student Management",
             url: "/proctor/students",
             icon: Users,
         },
@@ -109,9 +92,14 @@ export function ProctorSidebar() {
 
     const navExams = [
         {
-            title: "My Exams",
+            title: "Exam Management",
             url: "/proctor/exams",
             icon: FileText,
+        },
+        {
+            title: "Subject Management",
+            url: "/proctor/subjects",
+            icon: BookOpen,
         },
         {
             title: "Proctor Assignment",

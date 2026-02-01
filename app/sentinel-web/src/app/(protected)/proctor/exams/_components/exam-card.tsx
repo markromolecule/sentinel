@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
     FileText,
     Clock,
@@ -24,89 +25,56 @@ import { ExamCardProps } from "../_types";
 
 export function ExamCard({ exam }: ExamCardProps) {
     return (
-        <Card className="p-5 border-border/50 hover:shadow-md transition-shadow">
-            <div className="flex items-start justify-between mb-3">
-                <div className="flex-1">
-                    <span
-                        className={cn(
-                            "text-xs font-medium px-2 py-1 rounded-full",
-                            exam.status === "active"
-                                ? "bg-emerald-100 text-emerald-700"
-                                : exam.status === "draft"
-                                    ? "bg-amber-100 text-amber-700"
-                                    : "bg-gray-100 text-gray-700"
-                        )}
-                    >
-                        {exam.status.charAt(0).toUpperCase() + exam.status.slice(1)}
-                    </span>
+        <Card className="group relative overflow-hidden transition-all hover:shadow-md border-border/60">
+            <div className="p-4 space-y-3">
+                <div className="flex items-start justify-between">
+                    <Badge variant={
+                        exam.status === "active" ? "default" :
+                            exam.status === "draft" ? "secondary" : "outline"
+                    } className="mb-2">
+                        {exam.status}
+                    </Badge>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 -mt-2 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                                <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem>View Details</DropdownMenuItem>
+                            <DropdownMenuItem>Edit</DropdownMenuItem>
+                            <DropdownMenuItem className="text-red-500">Delete</DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 -mt-1">
-                            <MoreHorizontal className="w-4 h-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem className="cursor-pointer">
-                            <Eye className="w-4 h-4 mr-2" />
-                            View Details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="cursor-pointer">
-                            <Pencil className="w-4 h-4 mr-2" />
-                            Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="cursor-pointer text-red-500 focus:text-red-500">
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
 
-            <h3 className="text-lg font-semibold text-foreground mb-1 line-clamp-1">
-                {exam.title}
-            </h3>
-            <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                {exam.description}
-            </p>
-
-            <div className="space-y-2 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4" />
-                    <span>{exam.subject}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
-                    <span>{exam.duration} minutes</span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4" />
-                    <span>{exam.studentsCount} students</span>
-                </div>
-                {exam.scheduledDate && (
-                    <div className="flex items-center gap-2">
-                        <CalendarDays className="w-4 h-4" />
-                        <span>{new Date(exam.scheduledDate).toLocaleDateString()}</span>
+                <div>
+                    <h3 className="font-semibold tracking-tight text-foreground line-clamp-1" title={exam.title}>
+                        {exam.title}
+                    </h3>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                        <FileText className="w-3.5 h-3.5" />
+                        <span className="truncate">{exam.subject}</span>
                     </div>
-                )}
-            </div>
+                </div>
 
-            {/* Monitor Button for Active Exams */}
-            {exam.status === "active" && (
-                <Button
-                    asChild
-                    className="w-full mt-4 bg-[#323d8f] hover:bg-[#323d8f]/90"
-                    size="sm"
-                >
-                    <Link href={`/proctor/exams/${exam.id}/monitoring`}>
-                        <span className="relative flex h-2 w-2 mr-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
-                        </span>
-                        Live Monitor
-                    </Link>
-                </Button>
-            )}
+                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground pt-2 border-t border-border/50">
+                    <div className="flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>{exam.duration}m</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <Users className="w-3.5 h-3.5" />
+                        <span>{exam.studentsCount} students</span>
+                    </div>
+                    {exam.scheduledDate && (
+                        <div className="flex items-center gap-1.5 col-span-2">
+                            <CalendarDays className="w-3.5 h-3.5" />
+                            <span>{new Date(exam.scheduledDate).toLocaleDateString()}</span>
+                        </div>
+                    )}
+                </div>
+            </div>
         </Card>
     );
 }

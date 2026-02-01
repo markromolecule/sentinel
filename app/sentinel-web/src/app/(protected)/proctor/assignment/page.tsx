@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Separator } from "@/components/ui/separator";
 import {
     Table,
     TableBody,
@@ -40,86 +41,85 @@ export default function ProctorAssignmentPage() {
     );
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex flex-col gap-6 md:p-6 p-4">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Proctor Assignment</h1>
+                    <h1 className="text-2xl font-bold tracking-tight">Proctor Assignment</h1>
                     <p className="text-muted-foreground">
                         Manage proctor assignments for examinations.
                     </p>
                 </div>
-                <div className="flex items-center gap-2">
-                    <Button className="bg-[#323d8f] hover:bg-[#323d8f]/90">
-                        <UserCheck className="w-4 h-4 mr-2" />
-                        Assign Proctor
-                    </Button>
+                <Button className="bg-[#323d8f] hover:bg-[#323d8f]/90">
+                    <UserCheck className="w-4 h-4 mr-2" />
+                    Assign Proctor
+                </Button>
+            </div>
+
+            <Separator />
+
+            {/* Search Bar */}
+            <div className="w-full max-w-sm">
+                <div className="relative">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Search exams..."
+                        className="pl-9"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
                 </div>
             </div>
 
-            <div className="bg-card rounded-xl border border-border shadow-sm p-4">
-                <div className="flex items-center gap-2 mb-4">
-                    <div className="relative flex-1 max-w-sm">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Search exams..."
-                            className="pl-9"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-                </div>
-
-                <div className="rounded-md border">
-                    <Table>
-                        <TableHeader>
+            <div className="rounded-md border">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="pl-4">Exam Title</TableHead>
+                            <TableHead>Subject</TableHead>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Assigned Proctor</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right pr-4">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {filteredExams.length === 0 ? (
                             <TableRow>
-                                <TableHead>Exam Title</TableHead>
-                                <TableHead>Subject</TableHead>
-                                <TableHead>Date</TableHead>
-                                <TableHead>Assigned Proctor</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
+                                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                                    No exams found
+                                </TableCell>
                             </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filteredExams.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                                        No exams found
+                        ) : (
+                            filteredExams.map((exam) => (
+                                <TableRow key={exam.id}>
+                                    <TableCell className="font-medium pl-4">{exam.title}</TableCell>
+                                    <TableCell>{exam.subject}</TableCell>
+                                    <TableCell>
+                                        {exam.scheduledDate || "Unscheduled"}
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center gap-2">
+                                            <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">
+                                                {exam.assignedProctor.split(" ").map(n => n[0]).join("")}
+                                            </div>
+                                            {exam.assignedProctor}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge variant={exam.status === 'active' ? 'default' : 'secondary'}>
+                                            {exam.status}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right pr-4">
+                                        <Button variant="ghost" size="sm">
+                                            Reassign
+                                        </Button>
                                     </TableCell>
                                 </TableRow>
-                            ) : (
-                                filteredExams.map((exam) => (
-                                    <TableRow key={exam.id}>
-                                        <TableCell className="font-medium">{exam.title}</TableCell>
-                                        <TableCell>{exam.subject}</TableCell>
-                                        <TableCell>
-                                            {exam.scheduledDate || "Unscheduled"}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-2">
-                                                <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">
-                                                    {exam.assignedProctor.split(" ").map(n => n[0]).join("")}
-                                                </div>
-                                                {exam.assignedProctor}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge variant={exam.status === 'active' ? 'default' : 'secondary'}>
-                                                {exam.status}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <Button variant="ghost" size="sm">
-                                                Reassign
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
+                            ))
+                        )}
+                    </TableBody>
+                </Table>
             </div>
         </div>
     );
