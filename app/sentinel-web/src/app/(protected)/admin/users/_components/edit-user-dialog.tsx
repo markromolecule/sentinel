@@ -26,7 +26,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 import { useEffect } from "react";
@@ -81,7 +81,7 @@ export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps
         }
     }, [user, form]);
 
-    const role = form.watch("role");
+    const role = useWatch({ control: form.control, name: "role" });
 
     function onSubmit(values: z.infer<typeof formSchema>) {
         console.log("Updating user:", values);

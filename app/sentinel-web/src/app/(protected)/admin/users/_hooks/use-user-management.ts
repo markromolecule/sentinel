@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AdminUser, AdminUserRole } from "@/app/(protected)/admin/_types";
+import { AdminUser } from "@/app/(protected)/admin/_types";
 
 interface UseUserManagementProps {
     users: AdminUser[];

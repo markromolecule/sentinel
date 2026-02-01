@@ -16,7 +16,7 @@ import {
 import {
     LayoutDashboard,
     Users,
-    Settings,
+    ClipboardList,
     UserCheck,
     BarChart3,
     FileText,
@@ -25,12 +25,11 @@ import {
     MessageSquare,
     Calendar,
     BookOpen,
-    ClipboardList,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
-import { Button } from "@/components/ui/button";
+
 import { useLogoutMutation } from "@/hooks/query/auth/use-logout-mutation";
 import { toast } from "sonner";
 

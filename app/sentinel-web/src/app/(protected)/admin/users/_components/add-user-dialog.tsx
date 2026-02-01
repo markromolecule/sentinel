@@ -13,7 +13,6 @@ import {
 import {
     Form,
     FormControl,
-    FormDescription,
     FormField,
     FormItem,
     FormLabel,
@@ -28,7 +27,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 import { useState } from "react";
@@ -65,7 +64,7 @@ export function AddUserDialog() {
         },
     });
 
-    const role = form.watch("role");
+    const role = useWatch({ control: form.control, name: "role" });
 
     function onSubmit(values: z.infer<typeof formSchema>) {
         console.log(values);

@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Eye, User, Clock } from "lucide-react";
+import { AlertTriangle, Eye, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -13,12 +13,12 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
-import { useState } from "react";
+
 import { FlaggedIncident } from "@/app/(protected)/admin/dashboard/_types";
 import { MOCK_FLAGGED_INCIDENTS, incidentLabels } from "@/app/(protected)/admin/dashboard/_constants";
 
 export function FlaggedIncidentsWidget() {
-    const [selectedIncident, setSelectedIncident] = useState<FlaggedIncident | null>(null);
+
 
     const getSeverityBadge = (severity: FlaggedIncident["severity"]) => {
         switch (severity) {
@@ -68,7 +68,7 @@ export function FlaggedIncidentsWidget() {
 
                             <Dialog>
                                 <DialogTrigger asChild>
-                                    <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setSelectedIncident(incident)}>
+                                    <Button variant="outline" size="sm" className="h-7 text-xs">
                                         <Eye className="h-3 w-3 mr-1" />
                                         Review
                                     </Button>
