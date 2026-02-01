@@ -70,6 +70,7 @@ export const MOCK_CONVERSATIONS: Conversation[] = [
     },
 ];
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const MOCK_MESSAGES: Record<string, any[]> = {
     "conv-1": [
         {

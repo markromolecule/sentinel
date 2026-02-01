@@ -31,7 +31,7 @@ export default function SubjectsPage() {
                     </div>
                     <h3 className="mt-4 text-lg font-semibold">No subjects added</h3>
                     <p className="mb-4 mt-2 text-sm text-muted-foreground max-w-sm">
-                        You haven't added any subjects yet. Click the button above to add your first subject.
+                        You haven&apos;t added any subjects yet. Click the button above to add your first subject.
                     </p>
                     <AddSubjectDialog />
                 </div>

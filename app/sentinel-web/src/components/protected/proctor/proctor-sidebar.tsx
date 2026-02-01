@@ -122,7 +122,7 @@ export function ProctorSidebar() {
         },
     ];
 
-    const renderMenuItems = (items: { title: string; url: string; icon: any }[]) => {
+    const renderMenuItems = (items: { title: string; url: string; icon: React.ElementType }[]) => {
         return items.map((item) => (
             <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton asChild isActive={pathname === item.url} tooltip={item.title}>

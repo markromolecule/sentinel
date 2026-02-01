@@ -44,16 +44,7 @@ export function EventDialog({
     const [startTime, setStartTime] = useState("");
     const [endTime, setEndTime] = useState("");
 
-    useEffect(() => {
-        if (open) {
-            setTitle("");
-            setDescription("");
-            setType("event");
-            setTargetAudience("all");
-            setStartTime("");
-            setEndTime("");
-        }
-    }, [open]);
+
 
     const handleSave = () => {
         if (!title || !selectedDate) return;
@@ -70,8 +61,20 @@ export function EventDialog({
         onOpenChange(false);
     };
 
+    const handleOpenChange = (newOpen: boolean) => {
+        if (!newOpen) {
+            setTitle("");
+            setDescription("");
+            setType("event");
+            setTargetAudience("all");
+            setStartTime("");
+            setEndTime("");
+        }
+        onOpenChange(newOpen);
+    };
+
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
                     <DialogTitle>Add Event / Announcement</DialogTitle>

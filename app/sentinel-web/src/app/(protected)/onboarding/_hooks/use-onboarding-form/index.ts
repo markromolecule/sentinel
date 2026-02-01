@@ -116,9 +116,10 @@ export function useOnboardingForm() {
             router.push('/student');
             router.refresh();
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Onboarding error:", err);
-            setError(err.message || "Failed to save student details.");
+            const message = err instanceof Error ? err.message : "Failed to save student details.";
+            setError(message);
         } finally {
             setIsLoading(false);
         }

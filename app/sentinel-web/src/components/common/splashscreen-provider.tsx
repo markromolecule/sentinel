@@ -11,10 +11,7 @@ export function SplashscreenProvider({ children }: SplashscreenProviderProps) {
     const [showSplash, setShowSplash] = useState(!isAuthPage);
 
     useEffect(() => {
-        if (isAuthPage) {
-            setShowSplash(false);
-            return;
-        }
+
 
         const timer = setTimeout(() => {
             setShowSplash(false);
@@ -29,9 +26,9 @@ export function SplashscreenProvider({ children }: SplashscreenProviderProps) {
 
     return (
         <>
-            <Splashscreen isVisible={showSplash} />
+            <Splashscreen isVisible={showSplash && !isAuthPage} />
             <div
-                className={`transition-opacity duration-500 ${!showSplash ? 'opacity-100' : 'opacity-0'
+                className={`transition-opacity duration-500 ${!showSplash || isAuthPage ? 'opacity-100' : 'opacity-0'
                     }`}
             >
                 {children}

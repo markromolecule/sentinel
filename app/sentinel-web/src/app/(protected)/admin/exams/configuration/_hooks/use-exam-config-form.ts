@@ -6,6 +6,7 @@ import { FormValues, UseExamConfigFormProps } from "@/app/(protected)/admin/exam
 
 export function useExamConfigForm({ defaultValues }: UseExamConfigFormProps) {
     const form = useForm<FormValues>({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         resolver: zodResolver(formSchema) as any,
         defaultValues: {
             name: defaultValues.name,

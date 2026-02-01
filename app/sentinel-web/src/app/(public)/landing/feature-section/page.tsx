@@ -24,10 +24,10 @@ function FeatureHeader() {
         <div className="flex flex-col items-start text-left md:items-center md:text-center mb-12 md:mb-16 lg:sticky lg:top-24 lg:z-20 lg:bg-[#0f0f10] lg:py-6 lg:rounded-b-2xl lg:mb-24 lg:shadow-xl lg:border-b lg:border-white/5">
             <div className="inline-flex items-center gap-2 mb-6">
                 <Image src="/icons/icon0.svg" alt="Sentinel" width={20} height={20} className="w-5 h-5" />
-                <span className="text-base text-gray-400 font-medium">What you'll get</span>
+                <span className="text-base text-gray-400 font-medium">What you&apos;ll get</span>
             </div>
             <h2 className="text-3xl md:text-5xl lg:text-5xl font-normal text-blue-200 mb-6 font-sans tracking-tight max-w-3xl leading-tight">
-                We'll help you secure and monitor examinations with ease.
+                We&apos;ll help you secure and monitor examinations with ease.
             </h2>
         </div>
     );
