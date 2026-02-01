@@ -24,6 +24,8 @@ import {
     LogOut,
     MessageSquare,
     Calendar,
+    BookOpen,
+    ClipboardList,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -69,14 +71,19 @@ export function AdminSidebar() {
             icon: Users,
         },
         {
-            title: "Proctor Assignment",
-            url: "/admin/proctor-assignment",
-            icon: UserCheck,
+            title: "Subject Management",
+            url: "/admin/subjects",
+            icon: BookOpen,
         },
         {
-            title: "Exam Configuration",
-            url: "/admin/exam-config",
-            icon: Settings,
+            title: "Exam Management",
+            url: "/admin/exams",
+            icon: ClipboardList,
+        },
+        {
+            title: "Proctor Assignment",
+            url: "/admin/proctor/assignment",
+            icon: UserCheck,
         },
     ];
 

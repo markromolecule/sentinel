@@ -1,10 +1,10 @@
 "use client";
 
-import { useExamConfigForm } from "@/app/(protected)/admin/exam-config/_hooks/use-exam-config-form";
-import { BasicInfoSection } from "@/app/(protected)/admin/exam-config/_components/basic-info-section";
-import { DeviceHardwareSection } from "@/app/(protected)/admin/exam-config/_components/device-hardware-section";
-import { AiRulesSection } from "@/app/(protected)/admin/exam-config/_components/ai-rules-section";
-import { SecuritySettingsSection } from "@/app/(protected)/admin/exam-config/_components/security-settings-section";
+import { useExamConfigForm } from "@/app/(protected)/admin/exams/configuration/_hooks/use-exam-config-form";
+import { BasicInfoSection } from "@/app/(protected)/admin/exams/configuration/_components/basic-info-section";
+import { DeviceHardwareSection } from "@/app/(protected)/admin/exams/configuration/_components/device-hardware-section";
+import { AiRulesSection } from "@/app/(protected)/admin/exams/configuration/_components/ai-rules-section";
+import { SecuritySettingsSection } from "@/app/(protected)/admin/exams/configuration/_components/security-settings-section";
 import { Button } from "@/components/ui/button";
 import {
     Form,

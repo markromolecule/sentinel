@@ -7,6 +7,7 @@ export interface Subject {
     code: string;
     section: string;
     createdAt: Date;
+    createdBy: string; // Name of proctor/creator
 }
 
 // Define the state type
@@ -19,6 +20,7 @@ export type AddSubjectPayload = {
     title: string;
     code: string;
     section: string;
+    createdBy?: string; // Optional for now, defaults to "Current User" if not provided
 };
 
 // Define the actions type
@@ -37,6 +39,7 @@ export const DEFAULT_SUBJECT_STORE_STATE: SubjectStoreState = {
             code: "CS201",
             section: "A",
             createdAt: new Date(),
+            createdBy: "Maria Santos",
         },
         {
             id: "2",
@@ -44,6 +47,7 @@ export const DEFAULT_SUBJECT_STORE_STATE: SubjectStoreState = {
             code: "CS101",
             section: "B",
             createdAt: new Date(),
+            createdBy: "Juan Dela Cruz",
         },
         {
             id: "3",
@@ -51,6 +55,7 @@ export const DEFAULT_SUBJECT_STORE_STATE: SubjectStoreState = {
             code: "IT305",
             section: "A",
             createdAt: new Date(),
+            createdBy: "Maria Santos",
         },
     ],
 };
@@ -69,6 +74,7 @@ export const useSubjectStore = create(
                 const newSubject: Subject = {
                     id: crypto.randomUUID(),
                     ...payload,
+                    createdBy: payload.createdBy || "Current User",
                     createdAt: new Date(),
                 };
                 state.subjects.push(newSubject);

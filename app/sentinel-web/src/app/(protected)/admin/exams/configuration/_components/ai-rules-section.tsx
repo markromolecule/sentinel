@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/form";
 import { Switch } from "@/components/ui/switch";
 import { useFormContext } from "react-hook-form";
-import { FormValues } from "@/app/(protected)/admin/exam-config/_types";
+import { FormValues } from "@/app/(protected)/admin/exams/configuration/_types";
 
 export function AiRulesSection() {
     const { control } = useFormContext<FormValues>();

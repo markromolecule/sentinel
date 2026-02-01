@@ -1,8 +1,8 @@
 import { useForm, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { formSchema } from "@/app/(protected)/admin/exam-config/_constants";
-import { FormValues, UseExamConfigFormProps } from "@/app/(protected)/admin/exam-config/_types";
+import { formSchema } from "@/app/(protected)/admin/exams/configuration/_constants";
+import { FormValues, UseExamConfigFormProps } from "@/app/(protected)/admin/exams/configuration/_types";
 
 export function useExamConfigForm({ defaultValues }: UseExamConfigFormProps) {
     const form = useForm<FormValues>({

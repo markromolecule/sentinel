@@ -34,6 +34,7 @@ export type ProctorExam = {
     status: "draft" | "active" | "completed";
     studentsCount: number;
     createdAt: string;
+    createdBy?: string;
 };
 
 export type EnrollmentFileColumn =

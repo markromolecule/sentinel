@@ -23,28 +23,20 @@ export function UserManagementTable({ users }: UserManagementTableProps) {
     } = useUserManagement({ users });
 
     return (
-        <Card>
-            <CardHeader className="space-y-1">
-                <CardTitle>User Directory</CardTitle>
-                <CardDescription>
-                    Manage system access, roles, and account status.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <UserTableToolbar
-                    searchQuery={searchQuery}
-                    onSearchChange={setSearchQuery}
-                    currentTab={currentTab}
-                    onTabChange={setCurrentTab}
-                />
-                <UserTable users={filteredUsers} onEdit={setEditingUser} />
-            </CardContent>
+        <div className="space-y-4">
+            <UserTableToolbar
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                currentTab={currentTab}
+                onTabChange={setCurrentTab}
+            />
+            <UserTable users={filteredUsers} onEdit={setEditingUser} />
 
             <EditUserDialog
                 user={editingUser}
                 open={!!editingUser}
                 onOpenChange={(open) => !open && setEditingUser(null)}
             />
-        </Card>
+        </div>
     );
 }
