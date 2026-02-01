@@ -1,7 +1,6 @@
 "use client";
 
-import { AdminStatsCards } from "@/app/(protected)/admin/_components/admin-stats-cards";
-import { SystemHealth } from "@/app/(protected)/admin/_components/system-health";
+import { AdminStatsCards, SystemHealth, ActiveSessionsWidget, FlaggedIncidentsWidget } from "@/app/(protected)/admin/dashboard/_components";
 import { MOCK_SYSTEM_STATS, MOCK_RECENT_ACTIVITY } from "@/app/(protected)/admin/_constants";
 
 export default function AdminDashboard() {
@@ -13,6 +12,12 @@ export default function AdminDashboard() {
 
             <div className="space-y-4">
                 <AdminStatsCards stats={MOCK_SYSTEM_STATS} />
+
+                <div className="grid gap-4 lg:grid-cols-2">
+                    <ActiveSessionsWidget />
+                    <FlaggedIncidentsWidget />
+                </div>
+
                 <SystemHealth recentActivity={MOCK_RECENT_ACTIVITY} />
             </div>
         </div>

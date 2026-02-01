@@ -19,41 +19,36 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { useSubjectStore } from "@/stores/use-subject-store";
 
 type ExamCreateDialogProps = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
 };
 
-const subjects = [
-    "Data Structures",
-    "Programming Fundamentals",
-    "Web Development",
-    "Database Management",
-    "Software Engineering",
-    "Computer Networks",
-    "Operating Systems",
-    "Algorithms",
-];
-
 export function ExamCreateDialog({ open, onOpenChange }: ExamCreateDialogProps) {
+    const subjects = useSubjectStore((state) => state.subjects);
     const [formData, setFormData] = useState({
         title: "",
         description: "",
+        type: "",
         subject: "",
         duration: "60",
         passingScore: "60",
         scheduledDate: "",
+        assignedProctor: "user-1",
     });
 
     const handleClose = () => {
         setFormData({
             title: "",
             description: "",
+            type: "",
             subject: "",
             duration: "60",
             passingScore: "60",
             scheduledDate: "",
+            assignedProctor: "user-1",
         });
         onOpenChange(false);
     };
@@ -65,11 +60,11 @@ export function ExamCreateDialog({ open, onOpenChange }: ExamCreateDialogProps) 
         handleClose();
     };
 
-    const isValid = formData.title && formData.subject && formData.duration;
+    const isValid = formData.title && formData.subject && formData.duration && formData.type;
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className="sm:max-w-lg data-[state=open]:animate-none data-[state=closed]:animate-none">
                 <DialogHeader>
                     <DialogTitle>Create New Exam</DialogTitle>
                     <DialogDescription>
@@ -101,25 +96,69 @@ export function ExamCreateDialog({ open, onOpenChange }: ExamCreateDialogProps) 
                         />
                     </div>
 
-                    {/* Subject */}
-                    <div className="space-y-2">
-                        <Label>Subject *</Label>
-                        <Select
-                            value={formData.subject}
-                            onValueChange={(value) => setFormData({ ...formData, subject: value })}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select a subject" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {subjects.map((subject) => (
-                                    <SelectItem key={subject} value={subject}>
-                                        {subject}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                    {/* Type */}
+
+
+                    <div className="grid grid-cols-2 gap-4">
+                        {/* Subject */}
+                        <div className="space-y-2">
+                            <Label>Subject *</Label>
+                            <Select
+                                value={formData.subject}
+                                onValueChange={(value) => setFormData({ ...formData, subject: value })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a subject" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {subjects.map((subject) => (
+                                        <SelectItem key={subject.id} value={subject.id}>
+                                            {subject.code} - {subject.title}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* Type */}
+                        <div className="space-y-2">
+                            <Label>Type *</Label>
+                            <Select
+                                value={formData.type}
+                                onValueChange={(value) => setFormData({ ...formData, type: value })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="quiz">Quiz</SelectItem>
+                                    <SelectItem value="exam">Exam</SelectItem>
+                                    <SelectItem value="activity">Activity</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* Assigned Proctor */}
+                        <div className="space-y-2 col-span-2">
+                            <Label>Assign Proctor</Label>
+                            <Select
+                                value={formData.assignedProctor}
+                                onValueChange={(value) => setFormData({ ...formData, assignedProctor: value })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a proctor" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="user-1">Me (Current User)</SelectItem>
+                                    <SelectItem value="proctor-2">Jane Smith</SelectItem>
+                                    <SelectItem value="proctor-3">Dr. Alan Turing</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
+                    <p className="text-xs text-muted-foreground">
+                        You can assign this exam to yourself or another proctor.
+                    </p>
 
                     {/* Duration and Passing Score */}
                     <div className="grid grid-cols-2 gap-4">

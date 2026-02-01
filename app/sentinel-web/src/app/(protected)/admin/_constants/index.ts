@@ -203,8 +203,7 @@ export const MOCK_AUDIT_LOGS: AuditLog[] = [
         resourceType: "Auth",
         resourceId: "N/A",
         details: "Successful login from 192.168.1.1",
-        timestamp: "2024-10-26 08:00:01",
-        ipAddress: "192.168.1.1"
+        timestamp: "2024-10-26 08:00:01"
     },
     {
         id: "LOG-002",
@@ -213,8 +212,7 @@ export const MOCK_AUDIT_LOGS: AuditLog[] = [
         resourceType: "Exam",
         resourceId: "EXM-101",
         details: "Started monitoring session",
-        timestamp: "2024-10-26 09:00:00",
-        ipAddress: "10.0.0.5"
+        timestamp: "2024-10-26 09:00:00"
     }
 ];
 

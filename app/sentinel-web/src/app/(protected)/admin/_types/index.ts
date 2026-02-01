@@ -72,7 +72,6 @@ export interface AuditLog {
     resourceId: string;
     details: string;
     timestamp: string;
-    ipAddress: string;
 }
 
 export interface Announcement {

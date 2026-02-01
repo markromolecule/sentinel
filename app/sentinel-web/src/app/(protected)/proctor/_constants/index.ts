@@ -62,6 +62,7 @@ export const MOCK_PROCTOR_EXAMS: ProctorExam[] = [
         status: "active",
         studentsCount: 45,
         createdAt: "2026-01-20",
+        createdBy: "Maria Santos",
     },
     {
         id: "2",
@@ -74,6 +75,7 @@ export const MOCK_PROCTOR_EXAMS: ProctorExam[] = [
         status: "draft",
         studentsCount: 0,
         createdAt: "2026-01-25",
+        createdBy: "Maria Santos",
     },
     {
         id: "3",
@@ -87,6 +89,7 @@ export const MOCK_PROCTOR_EXAMS: ProctorExam[] = [
         status: "completed",
         studentsCount: 52,
         createdAt: "2026-01-05",
+        createdBy: "Juan Dela Cruz",
     },
 ];
 
@@ -111,6 +114,42 @@ export const PROCTOR_NAV_ITEMS: NavigationItem[] = [
         label: "Messages",
         href: "/proctor/messages",
         icon: "MessageSquare",
+    },
+    {
+        label: "Announcements",
+        href: "/proctor/announcements",
+        icon: "Megaphone",
+    },
+];
+
+// Mock announcements
+export const MOCK_ANNOUNCEMENTS = [
+    {
+        id: "1",
+        title: "System Maintenance Scheduled",
+        content: "The system will undergo scheduled maintenance on Sunday, Feb 5th from 2:00 AM to 4:00 AM. Please save your work.",
+        targetAudience: ["all"],
+        status: "published",
+        author: "Admin Team",
+        publishedAt: "2026-01-28 09:00 AM",
+    },
+    {
+        id: "2",
+        title: "New Exam Proctoring Guidelines",
+        content: "Please review the updated proctoring guidelines document available in the resources section. Effective immediately.",
+        targetAudience: ["proctors"],
+        status: "published",
+        author: "Academic Affairs",
+        publishedAt: "2026-01-25 02:30 PM",
+    },
+    {
+        id: "3",
+        title: "Welcome to Sentinel v2.0",
+        content: "We are excited to announce the release of Sentinel v2.0 with improved dashboard and analytics features.",
+        targetAudience: ["all"],
+        status: "published",
+        author: "Dev Team",
+        publishedAt: "2026-01-20 08:00 AM",
     },
 ];
 

@@ -1,7 +1,7 @@
 "use client";
 
-import { AuditLogTable } from "../_components/audit-log-table";
-import { MOCK_AUDIT_LOGS } from "../_constants";
+import { AuditLogTable } from "@/app/(protected)/admin/logs/_components";
+import { MOCK_AUDIT_LOGS } from "@/app/(protected)/admin/_constants";
 
 export default function SystemLogsPage() {
     return (

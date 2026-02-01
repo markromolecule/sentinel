@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState, type ReactNode } from 'react'
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
+import { useApiHealth } from '@/hooks/query/api/use-api-health'
 
 export default function Providers({ children }: { children: ReactNode }) {
     const [queryClient] = useState(
@@ -35,7 +36,6 @@ export default function Providers({ children }: { children: ReactNode }) {
 }
 
 function ApiHealthCheck() {
-    const { useApiHealth } = require('@/hooks/query/api/use-api-health')
     const { data, isError } = useApiHealth()
 
     if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
