@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseClient } from "@/data/supabase/client";
-import { Department } from "@sentinel/shared";
+import { Department } from "@sentinel/shared/src/types";
 
 export function useOnboardingForm() {
     const router = useRouter();

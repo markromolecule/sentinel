@@ -1,4 +1,5 @@
 import type { ProctorInfo, Student, ProctorExam, NavigationItem } from "@/app/(protected)/proctor/_types";
+import type { Announcement } from "@sentinel/shared/src/types";
 
 // Mock proctor information
 export const MOCK_PROCTOR: ProctorInfo = {
@@ -15,6 +16,9 @@ export const MOCK_PROCTOR: ProctorInfo = {
 export const MOCK_STUDENTS: Student[] = [
     {
         id: "1",
+        userId: "USR-101",
+        role: "student",
+        status: "active",
         studentNo: "2024-00123",
         firstName: "Juan",
         lastName: "Dela Cruz",
@@ -26,6 +30,9 @@ export const MOCK_STUDENTS: Student[] = [
     },
     {
         id: "2",
+        userId: "USR-102",
+        role: "student",
+        status: "active",
         studentNo: "2024-00124",
         firstName: "Maria",
         lastName: "Garcia",
@@ -37,6 +44,9 @@ export const MOCK_STUDENTS: Student[] = [
     },
     {
         id: "3",
+        userId: "USR-103",
+        role: "student",
+        status: "active",
         studentNo: "2024-00125",
         firstName: "Pedro",
         lastName: "Reyes",
@@ -56,7 +66,7 @@ export const MOCK_PROCTOR_EXAMS: ProctorExam[] = [
         description: "Comprehensive midterm examination covering arrays, linked lists, and trees",
         subject: "Data Structures",
         duration: 120,
-        questionsCount: 50,
+        questionCount: 50,
         passingScore: 70,
         scheduledDate: "2026-02-01",
         status: "active",
@@ -70,7 +80,7 @@ export const MOCK_PROCTOR_EXAMS: ProctorExam[] = [
         description: "Quiz on HTML and CSS fundamentals",
         subject: "Web Development",
         duration: 45,
-        questionsCount: 20,
+        questionCount: 20,
         passingScore: 60,
         status: "draft",
         studentsCount: 0,
@@ -83,7 +93,7 @@ export const MOCK_PROCTOR_EXAMS: ProctorExam[] = [
         description: "Final examination for programming fundamentals course",
         subject: "Programming Fundamentals",
         duration: 180,
-        questionsCount: 75,
+        questionCount: 75,
         passingScore: 65,
         scheduledDate: "2026-01-10",
         status: "completed",
@@ -123,7 +133,7 @@ export const PROCTOR_NAV_ITEMS: NavigationItem[] = [
 ];
 
 // Mock announcements
-export const MOCK_ANNOUNCEMENTS = [
+export const MOCK_ANNOUNCEMENTS: Announcement[] = [
     {
         id: "1",
         title: "System Maintenance Scheduled",

@@ -1,55 +1,35 @@
-// Student-related TypeScript types
-export type ExamStatus = "available" | "completed" | "in-progress" | "upcoming";
+import {
+    Exam,
+    ExamStatus,
+    ExamDifficulty,
+    ExamHistory,
+    Student as SharedStudent,
+    User,
+    SystemStat
+} from "@sentinel/shared";
 
-// Exam difficulty levels
-export type ExamDifficulty = "easy" | "medium" | "hard";
+// Re-export shared types
+export type { Exam, ExamStatus, ExamDifficulty, ExamHistory };
 
 // Student information
-export interface StudentInfo {
-    id: string;
-    studentNumber: string;
-    firstName: string;
-    lastName: string;
-    name: string; // Full name for backward compatibility or convenience
-    email: string;
-    department: string;
-    institution: string;
+// Extending SharedStudent to maintain access to core fields
+// mapping legacy fields for backward compatibility
+export interface StudentInfo extends SharedStudent {
+    // Legacy support
+    /** @deprecated Use studentNo from SharedStudent */
+    studentNumber?: string;
+    /** @deprecated Use departmentId or fetch relationship */
+    department?: string;
+    /** @deprecated Use institutionId or fetch relationship */
+    institution?: string;
+    /** @deprecated Use avatarUrl from User */
     avatar?: string;
-    enrollmentDate: string;
-}
-
-// Exam information
-export interface Exam {
-    id: string;
-    title: string;
-    subject: string;
-    description: string;
-    duration: number; // in minutes
-    questionsCount: number;
-    status: ExamStatus;
-    difficulty: ExamDifficulty;
-    scheduledDate?: string;
-    passingScore: number;
-    professor: string;
-}
-
-// Exam history
-export interface ExamHistory {
-    id: string;
-    examId: string;
-    examTitle: string;
-    subject: string;
-    dateTaken: string;
-    score: number;
-    totalScore: number;
-    percentage: number;
-    status: "passed" | "failed";
-    timeSpent: number; // in minutes
-    cheated?: boolean;
-    cheatingType?: "gaze" | "audio" | "tab_switch" | "screenshot" | "screen_record" | "multiple";
+    /** @deprecated Use createdAt from User */
+    enrollmentDate?: string;
 }
 
 // Dashboard statistics
+// Keeping this specific shape as it matches the API response likely
 export interface DashboardStats {
     totalExams: number;
     completedExams: number;

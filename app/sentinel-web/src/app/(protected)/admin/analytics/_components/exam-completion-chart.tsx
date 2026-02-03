@@ -2,7 +2,7 @@
 
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ChartProps } from "../_types";
+import { ChartProps } from "@/app/(protected)/admin/analytics/_types";
 
 export function ExamCompletionChart({ data }: ChartProps) {
     return (

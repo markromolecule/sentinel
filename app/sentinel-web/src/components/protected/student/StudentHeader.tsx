@@ -83,13 +83,13 @@ export default function StudentHeader() {
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#323d8f] to-[#4a5bb8] hidden md:flex items-center justify-center text-white text-xs font-bold ml-2 cursor-pointer transition-all">
-                                {MOCK_STUDENT.name.split(" ").map((n) => n[0]).join("")}
+                                {MOCK_STUDENT.firstName[0]}{MOCK_STUDENT.lastName[0]}
                             </div>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-56">
                             <DropdownMenuLabel>
                                 <div className="flex flex-col space-y-1">
-                                    <p className="text-sm font-medium leading-none">{MOCK_STUDENT.name}</p>
+                                    <p className="text-sm font-medium leading-none">{MOCK_STUDENT.firstName} {MOCK_STUDENT.lastName}</p>
                                     <p className="text-xs leading-none text-muted-foreground">{MOCK_STUDENT.email}</p>
                                 </div>
                             </DropdownMenuLabel>

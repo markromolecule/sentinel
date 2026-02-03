@@ -13,10 +13,10 @@ export default function StudentProfilePage() {
         <div className="container mx-auto max-w-3xl p-6 space-y-8">
             <div className="flex flex-col items-center justify-center space-y-4">
                 <div className="h-24 w-24 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-primary-foreground text-3xl font-bold ring-4 ring-border/10 shadow-2xl">
-                    {MOCK_STUDENT.name.split(" ").map((n) => n[0]).join("")}
+                    {MOCK_STUDENT.firstName[0]}{MOCK_STUDENT.lastName[0]}
                 </div>
                 <div className="text-center">
-                    <h1 className="text-2xl font-bold text-foreground">{MOCK_STUDENT.name}</h1>
+                    <h1 className="text-2xl font-bold text-foreground">{MOCK_STUDENT.firstName} {MOCK_STUDENT.lastName}</h1>
                     <p className="text-muted-foreground">{MOCK_STUDENT.email}</p>
                 </div>
             </div>

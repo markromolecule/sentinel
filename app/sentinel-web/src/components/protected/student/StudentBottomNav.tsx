@@ -44,7 +44,7 @@ export default function StudentBottomNav() {
                     <DrawerTrigger asChild>
                         <div className="flex flex-col items-center justify-center py-2 gap-1 rounded-lg transition-colors text-muted-foreground hover:text-foreground cursor-pointer">
                             <div className="h-6 w-6 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-primary-foreground text-[8px] font-bold ring-2 ring-border/10">
-                                {MOCK_STUDENT.name.split(" ").map((n) => n[0]).join("")}
+                                {MOCK_STUDENT.firstName[0]}{MOCK_STUDENT.lastName[0]}
                             </div>
                             <span className="text-[10px] font-medium">Profile</span>
                         </div>
@@ -53,10 +53,10 @@ export default function StudentBottomNav() {
                         <div className="mx-auto w-full max-w-sm">
                             <DrawerHeader className="flex flex-col items-center gap-4 py-6">
                                 <div className="h-20 w-20 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-primary-foreground text-2xl font-bold ring-4 ring-border/10">
-                                    {MOCK_STUDENT.name.split(" ").map((n) => n[0]).join("")}
+                                    {MOCK_STUDENT.firstName[0]}{MOCK_STUDENT.lastName[0]}
                                 </div>
                                 <div className="text-center space-y-1">
-                                    <DrawerTitle className="text-lg font-semibold text-foreground">{MOCK_STUDENT.name}</DrawerTitle>
+                                    <div className="font-semibold text-foreground text-sm">{MOCK_STUDENT.firstName} {MOCK_STUDENT.lastName}</div>
                                     <p className="text-sm text-muted-foreground">{MOCK_STUDENT.email}</p>
                                 </div>
                             </DrawerHeader>
