@@ -25,9 +25,11 @@ export interface User {
 
 export interface AdminUser extends User {
     status: UserStatus;
-    lastActive?: string;
+    last_active?: string;
     department?: string;
-    studentNo?: string; // For students
+    student_no?: string; // For students
+    created_at?: Date | string | null;
+    updated_at?: Date | string | null;
 }
 
 // Student & Academic
@@ -37,18 +39,33 @@ export interface Student {
     student_number: string;
     department_id?: string | null;
     institution_id?: string | null;
+    created_at?: Date | string | null;
+    created_by?: Date | string | null;
 }
 
 export interface Department {
     department_id: string;
     department_name: string;
     department_code?: string | null;
+    created_at?: Date | string | null;
+    created_by?: Date | string | null;
 }
 
 export interface Institution {
     id: string;
     name: string;
     code?: string | null;
+    createdAt: Date;
+    createdBy: string;
+}
+
+export interface Subject {
+    id: string;
+    title: string;
+    code: string;
+    section: string;
+    created_at: string | null;
+    created_by: string | null; // Name of proctor/creator
 }
 
 // Exam Configuration
