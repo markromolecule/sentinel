@@ -1,10 +1,10 @@
 "use client";
 
-
 import { AdminUser } from "@/app/(protected)/admin/_types";
 import { useUserManagement } from "@/app/(protected)/admin/users/_hooks/use-user-management";
 import { UserTableToolbar } from "@/app/(protected)/admin/users/_components/user-table-toolbar";
-import { UserTable } from "@/app/(protected)/admin/users/_components/user-table";
+import { DataTable } from "@/components/ui/data-table/data-table";
+import { columns } from "./columns";
 import { EditUserDialog } from "@/app/(protected)/admin/users/_components/edit-user-dialog";
 
 interface UserManagementTableProps {
@@ -22,15 +22,22 @@ export function UserManagementTable({ users }: UserManagementTableProps) {
         setEditingUser,
     } = useUserManagement({ users });
 
+    const userColumns = columns(setEditingUser);
+
     return (
         <div className="space-y-4">
-            <UserTableToolbar
-                searchQuery={searchQuery}
-                onSearchChange={setSearchQuery}
-                currentTab={currentTab}
-                onTabChange={setCurrentTab}
+            <DataTable 
+                columns={userColumns} 
+                data={filteredUsers} 
+                searchKey="email"
+                searchPlaceholder="Filter emails..."
+                toolbarActions={
+                    <UserTableToolbar
+                        currentTab={currentTab}
+                        onTabChange={setCurrentTab}
+                    />
+                }
             />
-            <UserTable users={filteredUsers} onEdit={setEditingUser} />
 
             <EditUserDialog
                 user={editingUser}

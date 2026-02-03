@@ -1,19 +1,8 @@
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
-
-export interface Subject {
-    id: string;
-    title: string;
-    code: string;
-    section: string;
-    createdAt: Date;
-    createdBy: string; // Name of proctor/creator
-}
-
-// Define the state type
-export type SubjectStoreState = {
-    subjects: Subject[];
-};
+import { type Subject } from "@sentinel/shared/src/types";
+import { DEFAULT_SUBJECT_STORE_STATE } from "@/app/(protected)/admin/subjects/_constants";
+import { SubjectStoreState } from "@/app/(protected)/admin/subjects/_types";
 
 // Define the action payload type
 export type AddSubjectPayload = {
@@ -28,36 +17,6 @@ export type SubjectStoreActions = {
     addSubject: (payload: AddSubjectPayload) => void;
     removeSubject: (id: string) => void;
     setSubjects: (subjects: Subject[]) => void;
-};
-
-// Default state constant
-export const DEFAULT_SUBJECT_STORE_STATE: SubjectStoreState = {
-    subjects: [
-        {
-            id: "1",
-            title: "Data Structures",
-            code: "CS201",
-            section: "A",
-            createdAt: new Date(),
-            createdBy: "Maria Santos",
-        },
-        {
-            id: "2",
-            title: "Programming Fundamentals",
-            code: "CS101",
-            section: "B",
-            createdAt: new Date(),
-            createdBy: "Juan Dela Cruz",
-        },
-        {
-            id: "3",
-            title: "Web Development",
-            code: "IT305",
-            section: "A",
-            createdAt: new Date(),
-            createdBy: "Maria Santos",
-        },
-    ],
 };
 
 // Combined store type
@@ -75,7 +34,7 @@ export const useSubjectStore = create(
                     id: crypto.randomUUID(),
                     ...payload,
                     createdBy: payload.createdBy || "Current User",
-                    createdAt: new Date(),
+                    createdAt: new Date().toISOString(),
                 };
                 state.subjects.push(newSubject);
             });

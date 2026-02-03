@@ -12,7 +12,7 @@ export function ExamSidebar({ exam }: ExamSidebarProps) {
                         <span className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Questions</span>
                         <div className="flex items-center gap-2 text-xl font-bold text-foreground">
                             <HelpCircle className="w-5 h-5 text-primary" />
-                            {exam.questionsCount}
+                            {exam.questionCount}
                         </div>
                     </div>
                     <div>

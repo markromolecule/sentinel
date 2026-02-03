@@ -1,7 +1,7 @@
 "use client";
 
 import { useSubjectStore } from "@/stores/use-subject-store";
-import { SubjectsList } from "./_components/subjects-list";
+import { SubjectsList } from "@/app/(protected)/admin/subjects/_components/subjects-list";
 
 export default function AdminSubjectsPage() {
     const subjects = useSubjectStore((state) => state.subjects);

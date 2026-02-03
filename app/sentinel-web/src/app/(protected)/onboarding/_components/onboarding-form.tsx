@@ -46,8 +46,8 @@ export function OnboardingForm() {
                     >
                         <option value="" disabled>Select Department</option>
                         {departments.map((dept) => (
-                            <option key={dept.department_id} value={dept.department_id}>
-                                {dept.department_name} {dept.department_code ? `(${dept.department_code})` : ''}
+                            <option key={dept.id} value={dept.id}>
+                                {dept.name} {dept.code ? `(${dept.code})` : ''}
                             </option>
                         ))}
                     </select>

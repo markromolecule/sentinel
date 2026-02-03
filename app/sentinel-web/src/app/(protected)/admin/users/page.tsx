@@ -2,6 +2,7 @@
 
 import { UserManagementTable } from "@/app/(protected)/admin/users/_components";
 import { MOCK_USERS } from "@/app/(protected)/admin/_constants";
+import { AddUserDialog } from "@/app/(protected)/admin/users/_components/add-user-dialog";
 
 export default function UserManagementPage() {
     return (
@@ -13,6 +14,7 @@ export default function UserManagementPage() {
                         Manage system access, roles, and account status.
                     </p>
                 </div>
+                <AddUserDialog />
             </div>
             <UserManagementTable users={MOCK_USERS} />
         </div>

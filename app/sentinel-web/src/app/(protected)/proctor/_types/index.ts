@@ -1,41 +1,34 @@
-// Proctor types for the portal
+import {
+    ProctorInfo,
+    Student as SharedStudent,
+    Exam as SharedExam, // Unified Exam
+    User
+} from "@sentinel/shared/src/types";
 
-export type ProctorInfo = {
-    id: string;
-    firstName: string;
-    lastName: string;
-    name: string;
-    email: string;
-    department: string;
-    institution: string;
-};
+export type { ProctorInfo };
 
-export type Student = {
-    id: string;
-    studentNo: string;
-    firstName: string;
-    lastName: string;
-    section: string;
-    subject: string;
-    term: string;
-    email?: string;
-    enrolledAt: string;
-};
+// Student projection for Proctor view
+export interface Student extends SharedStudent {
+    /** @deprecated Use createdAt */
+    enrolledAt?: string;
+}
 
-export type ProctorExam = {
-    id: string;
-    title: string;
-    description: string;
-    subject: string;
-    duration: number;
-    questionsCount: number;
-    passingScore: number;
-    scheduledDate?: string;
-    status: "draft" | "active" | "completed";
+// Proctor Exam
+// Local ProctorExam matches Shared Exam mostly.
+export interface ProctorExam extends SharedExam {
+    // Local requires studentsCount
     studentsCount: number;
-    createdAt: string;
-    createdBy?: string;
-};
+    // Local requires createdBy
+    createdBy?: string; // Shared has optional
+    // Local createdAt string vs Shared ??
+    // Shared Exam doesn't have createdAt?
+    // Let's check Shared Exam definition.
+    // Shared Exam definition:
+    // ... status, studentsCount, assignedStudents.
+    // It is missing createdAt!
+    // I need to add createdAt to Shared Exam.
+    createdAt: string; 
+}
 
 export type EnrollmentFileColumn =
     | "student_no"
@@ -47,7 +40,7 @@ export type EnrollmentFileColumn =
 
 export type EnrollmentFileResult = {
     success: boolean;
-    data: Omit<Student, "id" | "enrolledAt">[];
+    data: Omit<Student, "id" | "enrolledAt" | "userId" | "role" | "studentNo"> & { studentNo: string }[]; // Adjusting for specific upload shape
     errors: string[];
     detectedColumns: EnrollmentFileColumn[];
 };
