@@ -32,7 +32,7 @@ export default function ProctorExamsPage() {
                         Manage your examinations and assessments.
                     </p>
                 </div>
-                <Button onClick={() => setIsCreateOpen(true)} className="bg-[#323d8f] hover:bg-[#323d8f]/90">
+                <Button onClick={() => setIsCreateOpen(true)} className="bg-[#323d8f] hover:bg-[#323d8f]/90 text-white">
                     <Plus className="w-4 h-4 mr-2" />
                     Create Exam
                 </Button>
@@ -40,24 +40,28 @@ export default function ProctorExamsPage() {
 
             <Separator />
 
-            {/* Search and Tabs */}
-            <ExamsFilterBar
-                searchQuery={searchQuery}
-                onSearchChange={setSearchQuery}
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
-            />
-
-            {/* Exam Table */}
-            {filteredExams.length > 0 ? (
-                <ExamsTable exams={filteredExams} />
-            ) : (
-                /* Empty State */
-                <ExamEmptyState
-                    isSearching={!!searchQuery}
-                    onCreateClick={() => setIsCreateOpen(true)}
-                />
-            )}
+            <div className="flex flex-col gap-4">
+                {/* Exam Table */}
+                {filteredExams.length > 0 ? (
+                    <ExamsTable 
+                        exams={filteredExams}
+                        toolbarActions={
+                            <ExamsFilterBar
+                                searchQuery={searchQuery}
+                                onSearchChange={setSearchQuery}
+                                activeTab={activeTab}
+                                onTabChange={setActiveTab}
+                            />
+                        }
+                    />
+                ) : (
+                    /* Empty State */
+                    <ExamEmptyState
+                        isSearching={!!searchQuery}
+                        onCreateClick={() => setIsCreateOpen(true)}
+                    />
+                )}
+            </div>
 
             {/* Create Exam Dialog */}
             <ExamCreateDialog open={isCreateOpen} onOpenChange={setIsCreateOpen} />

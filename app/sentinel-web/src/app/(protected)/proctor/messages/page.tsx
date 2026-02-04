@@ -13,7 +13,7 @@ export default function ProctorMessagesPage() {
                 <div className="p-4 border-b border-border/50 space-y-4">
                     <div className="flex items-center justify-between">
                         <h2 className="text-xl font-bold text-foreground">Messages</h2>
-                        <Button size="sm" className="bg-[#323d8f] hover:bg-[#323d8f]/90">
+                        <Button size="sm" className="bg-[#323d8f] hover:bg-[#323d8f]/90 text-white">
                             <Plus className="w-4 h-4 mr-2" />
                             New Chat
                         </Button>
@@ -38,7 +38,7 @@ export default function ProctorMessagesPage() {
                             Start a conversation with your students.
                         </p>
                     </div>
-                    <Button className="bg-[#323d8f] hover:bg-[#323d8f]/90">
+                    <Button className="bg-[#323d8f] hover:bg-[#323d8f]/90 text-white">
                         <Plus className="w-4 h-4 mr-2" />
                         Start Chatting
                     </Button>
@@ -55,7 +55,7 @@ export default function ProctorMessagesPage() {
                     <p className="text-muted-foreground max-w-sm mx-auto">
                         Select a conversation from the left to start chatting, or create a new one.
                     </p>
-                    <Button className="bg-[#323d8f] hover:bg-[#323d8f]/90">
+                    <Button className="bg-[#323d8f] hover:bg-[#323d8f]/90 text-white">
                         Create First Chat
                     </Button>
                 </div>

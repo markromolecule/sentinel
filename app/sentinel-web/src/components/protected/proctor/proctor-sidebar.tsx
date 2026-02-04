@@ -29,6 +29,7 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    SidebarRail,
     SidebarTrigger,
     useSidebar,
 } from "@/components/ui/sidebar";
@@ -138,14 +139,24 @@ export function ProctorSidebar() {
     return (
         <Sidebar collapsible="icon" className="border-r border-border/40">
             {/* Header with Logo */}
-            <SidebarHeader className="border-b border-border/40 h-16 flex items-center justify-center p-0">
+            <SidebarHeader className="border-b border-border/40 h-20 flex items-center justify-center p-0">
                 <div className="flex items-center gap-2 p-4 w-full h-full">
-                    <div className="relative h-12 w-24">
+                    {/* Light Mode Logo */}
+                    <div className="relative h-16 w-40 dark:hidden">
                         <NextImage
-                            src="/icons/sentinel-logo.svg"
+                            src="/icons/light-sentinel-logo.svg"
                             alt="Sentinel"
                             fill
-                            className="object-contain object-left brightness-0 dark:brightness-0 dark:invert"
+                            className="object-contain object-left"
+                        />
+                    </div>
+                    {/* Dark Mode Logo */}
+                    <div className="relative h-16 w-40 hidden dark:block">
+                        <NextImage
+                            src="/icons/dark-sentinel-logo.svg"
+                            alt="Sentinel"
+                            fill
+                            className="object-contain object-left"
                         />
                     </div>
                 </div>
@@ -179,6 +190,16 @@ export function ProctorSidebar() {
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
+
+                <SidebarGroup className="mt-auto">
+                    <SidebarGroupContent>
+                        <SidebarMenu>
+                            <SidebarMenuItem>
+                                <ThemeToggle />
+                            </SidebarMenuItem>
+                        </SidebarMenu>
+                    </SidebarGroupContent>
+                </SidebarGroup>
             </SidebarContent>
 
             {/* Footer with User Profile */}
@@ -198,6 +219,7 @@ export function ProctorSidebar() {
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarFooter>
+            <SidebarRail />
         </Sidebar>
     );
 }

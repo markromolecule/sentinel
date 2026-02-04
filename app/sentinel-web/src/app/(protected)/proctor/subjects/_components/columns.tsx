@@ -27,6 +27,12 @@ export const columns = (onRemove: (id: string) => void): ColumnDef<Subject>[] =>
     ),
   },
   {
+    accessorKey: "department",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Department" />
+    ),
+  },
+  {
     id: "actions",
     cell: ({ row }) => {
       const subject = row.original

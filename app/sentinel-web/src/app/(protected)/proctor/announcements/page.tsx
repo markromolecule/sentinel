@@ -14,7 +14,7 @@ export default function AnnouncementsPage() {
                         Stay updated with the latest news and system notifications.
                     </p>
                 </div>
-                <Button className="bg-[#323d8f] hover:bg-[#323d8f]/90">
+                <Button className="bg-[#323d8f] hover:bg-[#323d8f]/90 text-white">
                     <Plus className="w-4 h-4 mr-2" />
                     Post Announcement
                 </Button>

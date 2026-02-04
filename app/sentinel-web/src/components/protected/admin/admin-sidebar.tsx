@@ -143,6 +143,7 @@ export function AdminSidebar() {
                             alt="Sentinel Logo"
                             fill
                             className="object-contain object-left"
+                            priority
                         />
                     </div>
                     {/* Dark Mode Logo */}
@@ -152,6 +153,7 @@ export function AdminSidebar() {
                             alt="Sentinel Logo"
                             fill
                             className="object-contain object-left"
+                            priority
                         />
                     </div>
                 </div>
