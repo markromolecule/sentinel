@@ -1,5 +1,11 @@
 import { Header, Footer } from '@/components/common';
-import { HeroSection, FeatureSection, HowItWorksSection, DownloadSection } from '@/app/(public)/landing';
+import { 
+  HeroSection, 
+  FeatureSection, 
+  HowItWorksSection, 
+  CompareSection,
+  DownloadSection 
+} from '@/app/(public)/landing';
 
 export default function Home() {
   return (
@@ -8,6 +14,7 @@ export default function Home() {
       <HeroSection />
       <FeatureSection />
       <HowItWorksSection />
+      <CompareSection />
       <DownloadSection />
       <Footer />
     </>

@@ -4,7 +4,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { ArrowUpRight, CheckCircle } from "lucide-react";
 import Link from "next/link";
-import { RegisterFormData, RegisterFormErrors } from "../_types";
+import { RegisterFormData, RegisterFormErrors } from "@sentinel/shared";
 
 interface RegisterFormProps {
     formData: RegisterFormData;

@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   applicationName: "SentinelPH",
-  title: "Sentinel | Smart Proctoring for Academic Integrity",
+  title: "SentinelPH | Smart Proctoring for Academic Integrity",
   description: "Sentinel is a mobile and web platform for securing online exams, monitoring student focus, and preventing academic dishonesty. It's built for educators, ensuring fair testing everywhere.",
   openGraph: {
     siteName: "SentinelPH",
@@ -44,7 +44,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <meta name="apple-mobile-web-app-title" content="Sentinel" />
+      <meta name="apple-mobile-web-app-title" content="SentinelPH" />
       <body
         className={`${dmSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning

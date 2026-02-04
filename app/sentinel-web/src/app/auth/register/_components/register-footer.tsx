@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { CardFooter } from "@/components/ui/card";
 
 export function RegisterFooter() {
     return (

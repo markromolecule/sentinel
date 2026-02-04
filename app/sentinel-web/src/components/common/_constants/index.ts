@@ -4,6 +4,7 @@ import { Github, Mail } from 'lucide-react';
 export const NAV_ITEMS = [
     { name: 'Features', href: '#features' },
     { name: 'How it Works', href: '#how-it-works' },
+    { name: 'Compare', href: '#compare' },
     { name: 'Download', href: '#download' },
 ] as const;
 
