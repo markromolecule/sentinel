@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LoginFormData, LoginFormErrors } from "../../_types";
+import { LoginFormData, LoginFormErrors } from "@sentinel/shared";
 import { useLoginMutation, LoginError } from "@/hooks/query/auth/use-login-mutation";
 import { useRouter } from "next/navigation";
 import { createSupabaseClient } from "@/data/supabase/client";
@@ -39,7 +39,7 @@ export function useLoginForm() {
                     router.push('/onboarding');
                 }
             } else if (role === 'proctor') {
-                router.push('/proctor');
+                router.push('/proctor/dashboard');
             } else {
                 router.push('/admin/dashboard');
             }

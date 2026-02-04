@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { RegisterFormData, RegisterFormErrors } from "../../_types";
+import { RegisterFormData, RegisterFormErrors } from "@sentinel/shared";
 import { useSignUpMutation, SignUpError } from "@/hooks/query/auth/use-sign-up-mutation";
 import { config } from "@/lib/config";
 

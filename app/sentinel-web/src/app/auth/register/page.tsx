@@ -1,11 +1,11 @@
 'use client';
 
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { RegisterHeader } from "./_components/register-header";
-import { RegisterForm } from "./_components/register-form";
-import { SocialLogin } from "./_components/social-login";
-import { RegisterFooter } from "./_components/register-footer";
-import { useRegisterForm } from "./_hooks/use-register-form";
+import { RegisterHeader } from "@/app/auth/register/_components/register-header";
+import { RegisterForm } from "@/app/auth/register/_components/register-form";
+import { SocialLogin } from "@/app/auth/register/_components/social-login";
+import { RegisterFooter } from "@/app/auth/register/_components/register-footer";
+import { useRegisterForm } from "@/app/auth/register/_hooks/use-register-form";
 
 export default function RegisterPage() {
     const {

@@ -1,11 +1,11 @@
 'use client';
 
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { LoginHeader } from "./_components/login-header";
-import { LoginForm } from "./_components/login-form";
-import { SocialLogin } from "./_components/social-login";
-import { LoginFooter } from "./_components/login-footer";
-import { useLoginForm } from "./_hooks/use-login-form";
+import { LoginHeader } from "@/app/auth/login/_components/login-header";
+import { LoginForm } from "@/app/auth/login/_components/login-form";
+import { SocialLogin } from "@/app/auth/login/_components/social-login";
+import { LoginFooter } from "@/app/auth/login/_components/login-footer";
+import { useLoginForm } from "@/app/auth/login/_hooks/use-login-form";
 
 export default function LoginPage() {
     const {
