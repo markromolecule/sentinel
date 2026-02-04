@@ -75,6 +75,7 @@ export interface Subject {
     title: string;
     code: string;
     section: string;
+    department: string;
     createdAt: string | null;
     createdBy: string | null; // Name of proctor/creator
 }

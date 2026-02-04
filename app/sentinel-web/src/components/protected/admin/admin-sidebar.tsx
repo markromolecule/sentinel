@@ -25,6 +25,7 @@ import {
     MessageSquare,
     Calendar,
     BookOpen,
+    Building2,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -32,6 +33,7 @@ import Image from "next/image";
 
 import { useLogoutMutation } from "@/hooks/query/auth/use-logout-mutation";
 import { toast } from "sonner";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export function AdminSidebar() {
     const pathname = usePathname();
@@ -73,6 +75,11 @@ export function AdminSidebar() {
             title: "Subject Management",
             url: "/admin/subjects",
             icon: BookOpen,
+        },
+        {
+            title: "Department Management",
+            url: "/admin/departments",
+            icon: Building2,
         },
         {
             title: "Exam Management",
@@ -126,15 +133,27 @@ export function AdminSidebar() {
     };
 
     return (
-        <Sidebar collapsible="icon">
-            <SidebarHeader className="border-b border-sidebar-border h-16 flex items-center justify-center p-0">
+        <Sidebar>
+            <SidebarHeader className="border-b border-sidebar-border h-20 flex items-center justify-center p-0">
                 <div className="flex items-center gap-2 p-4 w-full h-full">
-                    <div className="relative h-12 w-24">
+                    {/* Light Mode Logo */}
+                    <div className="relative h-8 w-40 dark:hidden">
                         <Image
-                            src="/icons/sentinel-logo.svg"
+                            src="/icons/light-sentinel-logo.svg"
                             alt="Sentinel Logo"
                             fill
                             className="object-contain object-left"
+                            priority
+                        />
+                    </div>
+                    {/* Dark Mode Logo */}
+                    <div className="relative h-8 w-40 hidden dark:block">
+                        <Image
+                            src="/icons/dark-sentinel-logo.svg"
+                            alt="Sentinel Logo"
+                            fill
+                            className="object-contain object-left"
+                            priority
                         />
                     </div>
                 </div>
@@ -175,8 +194,18 @@ export function AdminSidebar() {
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
+
+                <SidebarGroup className="mt-auto">
+                    <SidebarGroupContent>
+                        <SidebarMenu>
+                            <SidebarMenuItem>
+                                <ThemeToggle />
+                            </SidebarMenuItem>
+                        </SidebarMenu>
+                    </SidebarGroupContent>
+                </SidebarGroup>
             </SidebarContent>
-            <SidebarFooter className="border-t border-sidebar-border p-2">
+            <SidebarFooter className="border-t border-sidebar-border p-4 gap-4">
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton

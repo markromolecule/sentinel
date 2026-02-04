@@ -24,7 +24,7 @@ export default function ProctorAssignmentPage() {
                         Manage proctor assignments for examinations.
                     </p>
                 </div>
-                <Button className="bg-[#323d8f] hover:bg-[#323d8f]/90">
+                <Button className="bg-[#323d8f] hover:bg-[#323d8f]/90 text-white">
                     <UserCheck className="w-4 h-4 mr-2" />
                     Assign Proctor
                 </Button>

@@ -452,6 +452,8 @@ model departments {
   department_id   String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   department_name String     @unique @db.VarChar(100)
   department_code String?
+  created_at      DateTime?  @db.Date
+  created_by      String?
   sections        sections[]
   students        students[]
   subjects        subjects[]

@@ -6,24 +6,11 @@ import { UserPlus } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { MOCK_STUDENTS } from "@/app/(protected)/proctor/_constants";
 import { StudentEnrollmentDialog } from "@/app/(protected)/proctor/students/_components/student-enrollment-dialog";
-import { StudentsSearch } from "@/app/(protected)/proctor/students/_components/students-search";
 import { StudentsTable } from "@/app/(protected)/proctor/students/_components/students-table";
 import { StudentsEmptyState } from "@/app/(protected)/proctor/students/_components/students-empty-state";
 
 export default function ProctorStudentsPage() {
-    const [searchQuery, setSearchQuery] = useState("");
     const [isEnrollmentOpen, setIsEnrollmentOpen] = useState(false);
-
-    const filteredStudents = MOCK_STUDENTS.filter((student) => {
-        const searchLower = searchQuery.toLowerCase();
-        return (
-            student.firstName.toLowerCase().includes(searchLower) ||
-            student.lastName.toLowerCase().includes(searchLower) ||
-            student.studentNo.toLowerCase().includes(searchLower) ||
-            student.section.toLowerCase().includes(searchLower) ||
-            student.subject.toLowerCase().includes(searchLower)
-        );
-    });
 
     return (
         <div className="flex flex-col gap-6 md:p-6 p-4">
@@ -36,7 +23,7 @@ export default function ProctorStudentsPage() {
                 </div>
                 <Button
                     onClick={() => setIsEnrollmentOpen(true)}
-                    className="bg-[#323d8f] hover:bg-[#323d8f]/90"
+                    className="bg-[#323d8f] hover:bg-[#323d8f]/90 text-white"
                 >
                     <UserPlus className="w-4 h-4 mr-2" />
                     Add Students
@@ -45,21 +32,13 @@ export default function ProctorStudentsPage() {
 
             <Separator />
 
-            {/* Search Bar */}
-            <div className="w-full max-w-sm">
-                <StudentsSearch
-                    searchQuery={searchQuery}
-                    onSearchChange={setSearchQuery}
-                />
-            </div>
-
             {/* Students Table */}
-            {filteredStudents.length > 0 ? (
-                <StudentsTable students={filteredStudents} />
+            {MOCK_STUDENTS.length > 0 ? (
+                <StudentsTable students={MOCK_STUDENTS} />
             ) : (
                 /* Empty State */
                 <StudentsEmptyState
-                    isSearching={!!searchQuery}
+                    isSearching={false}
                     onAddClick={() => setIsEnrollmentOpen(true)}
                 />
             )}

@@ -1,7 +1,6 @@
-
 'use client';
 
-import { OnboardingForm } from "./_components/onboarding-form";
+import { OnboardingForm } from "@/app/(protected)/onboarding/_components/onboarding-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function OnboardingPage() {

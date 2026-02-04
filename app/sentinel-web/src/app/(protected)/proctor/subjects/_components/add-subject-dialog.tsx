@@ -22,19 +22,21 @@ export function AddSubjectDialog() {
         title: "",
         code: "",
         section: "",
+        department: "",
     });
 
     const addSubject = useSubjectStore((state) => state.addSubject);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (formData.title.trim() && formData.code.trim() && formData.section.trim()) {
+        if (formData.title.trim() && formData.code.trim() && formData.section.trim() && formData.department.trim()) {
             addSubject({
                 title: formData.title.trim(),
                 code: formData.code.trim(),
                 section: formData.section.trim(),
+                department: formData.department.trim(),
             });
-            setFormData({ title: "", code: "", section: "" });
+            setFormData({ title: "", code: "", section: "", department: "" });
             setOpen(false);
         }
     };
@@ -47,7 +49,7 @@ export function AddSubjectDialog() {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button>
+                <Button className="bg-[#323d8f] hover:bg-[#323d8f]/90 text-white">
                     <Plus className="mr-2 h-4 w-4" />
                     Add Subject
                 </Button>
@@ -98,11 +100,24 @@ export function AddSubjectDialog() {
                                 placeholder="e.g. A"
                             />
                         </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="department" className="text-right">
+                                Dept
+                            </Label>
+                            <Input
+                                id="department"
+                                value={formData.department}
+                                onChange={handleChange}
+                                className="col-span-3"
+                                placeholder="e.g. Mathematics"
+                            />
+                        </div>
                     </div>
                     <DialogFooter>
                         <Button
                             type="submit"
-                            disabled={!formData.title.trim() || !formData.code.trim() || !formData.section.trim()}
+                            disabled={!formData.title.trim() || !formData.code.trim() || !formData.section.trim() || !formData.department.trim()}
+                            className="bg-[#323d8f] hover:bg-[#323d8f]/90 text-white"
                         >
                             Add Subject
                         </Button>

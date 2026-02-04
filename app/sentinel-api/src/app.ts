@@ -47,6 +47,9 @@ app.get('/', (c) => {
 import onboardingRouter from './modules/onboarding/onboarding.controller'
 app.route('/onboarding', onboardingRouter)
 
+import departmentsRouter from './modules/departments/departments.controller'
+app.route('/departments', departmentsRouter)
+
 app.get('/me', authMiddleware, (c) => {
     const user = c.get('user')
     return c.json({

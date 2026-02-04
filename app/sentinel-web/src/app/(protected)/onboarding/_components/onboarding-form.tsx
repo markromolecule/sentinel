@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, ArrowRight } from "lucide-react";
-import { useOnboardingForm } from "../_hooks/use-onboarding-form";
+import { useOnboardingForm } from "@/app/(protected)/onboarding/_hooks/use-onboarding-form";
 
 export function OnboardingForm() {
     const {

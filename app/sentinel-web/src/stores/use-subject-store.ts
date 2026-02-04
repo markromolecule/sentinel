@@ -9,6 +9,7 @@ export type AddSubjectPayload = {
     title: string;
     code: string;
     section: string;
+    department: string;
     createdBy?: string; // Optional for now, defaults to "Current User" if not provided
 };
 
@@ -33,6 +34,7 @@ export const useSubjectStore = create(
                 const newSubject: Subject = {
                     id: crypto.randomUUID(),
                     ...payload,
+                    department: payload.department,
                     createdBy: payload.createdBy || "Current User",
                     createdAt: new Date().toISOString(),
                 };

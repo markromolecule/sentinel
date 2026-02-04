@@ -6,7 +6,7 @@ import {
     Student as SharedStudent,
     User,
     SystemStat
-} from "@sentinel/shared";
+} from "@sentinel/shared/src/types";
 
 // Re-export shared types
 export type { Exam, ExamStatus, ExamDifficulty, ExamHistory };
