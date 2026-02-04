@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Check, X, Smartphone, Monitor, Bot, Coins, Headset } from "lucide-react";
+import { Check, X } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -9,53 +9,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-
-const features = [
-  {
-    name: "Supported Devices",
-    description: "Access via modern web browsers or mobile apps",
-    sentinel: "Mobile & Web",
-    proctorU: "Desktop Only",
-    seb: "Desktop Only",
-    icon: Monitor
-  },
-  {
-    name: "Tracking & Audio",
-    description: "Live gaze tracking and automated audio flags",
-    sentinel: true,
-    proctorU: true,
-    seb: false,
-    icon: Bot
-  },
-  {
-    name: "Native Mobile App",
-    description: "Dedicated Android app for secure monitoring",
-    sentinel: "Full Support",
-    proctorU: "Limited to Web",
-    seb: false,
-    icon: Smartphone
-  },
-  {
-    name: "Pricing Model",
-    description: "Professional plans that fit any budget",
-    sentinel: "Starts FREE",
-    proctorU: "$15 / Session",
-    seb: "Open-source",
-    icon: Coins
-  },
-  {
-    name: "Regional Support",
-    description: "24/7 technical support based in the Philippines",
-    sentinel: "Local",
-    proctorU: "US-Based",
-    seb: "Community",
-    icon: Headset
-  }
-];
+import { FEATURES } from "@/app/(public)/landing/_constants";
 
 export default function CompareSection() {
   return (
-    <section id="compare" className="py-20 md:py-28 bg-[#0f0f10] relative overflow-hidden border-t border-white/5">
+    <section id="compare" className="py-20 md:py-28 bg-[#0f0f10] relative overflow-hidden">
       {/* Background Grid */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-size:40px_40px mask-linear-gradient(to_bottom,black_40%,transparent_100%) pointer-events-none"></div>
 
@@ -95,7 +53,7 @@ export default function CompareSection() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {features.map((feature, index) => (
+                  {FEATURES.map((feature, index) => (
                     <TableRow key={index} className="border-white/5 hover:bg-white/5 transition-colors group/row">
                       <TableCell className="font-medium pl-6 md:pl-10 py-4 md:py-8">
                         <div className="flex items-center gap-3 md:gap-5">
