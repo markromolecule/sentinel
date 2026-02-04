@@ -25,6 +25,7 @@ import {
     MessageSquare,
     Calendar,
     BookOpen,
+    Building2,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -73,6 +74,11 @@ export function AdminSidebar() {
             title: "Subject Management",
             url: "/admin/subjects",
             icon: BookOpen,
+        },
+        {
+            title: "Department Management",
+            url: "/admin/departments",
+            icon: Building2,
         },
         {
             title: "Exam Management",

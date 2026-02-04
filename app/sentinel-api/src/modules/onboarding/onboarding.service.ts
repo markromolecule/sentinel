@@ -20,7 +20,7 @@ export class OnboardingService {
 
             if (existingStudent) {
                 throw new Error('Student profile already exists')
-            }
+            }   
 
             // Create student record
             const newStudent = await prisma.students.create({

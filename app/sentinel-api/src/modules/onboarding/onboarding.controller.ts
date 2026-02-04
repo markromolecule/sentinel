@@ -40,10 +40,19 @@ onboarding.post('/', authMiddleware, async (c) => {
 
 onboarding.get('/departments', authMiddleware, async (c) => {
     try {
-        const departments = await OnboardingService.getDepartments()
+        const rawDepartments = await OnboardingService.getDepartments()
+        
+        const departments: Department[] = rawDepartments.map(dept => ({
+            id: dept.department_id,
+            name: dept.department_name,
+            code: dept.department_code,
+            createdAt: dept.created_at,
+            createdBy: dept.created_by
+        }))
+
         return c.json<ApiResponse<Department[]>>({
             message: 'Departments fetched successfully',
-            data: departments as unknown as Department[]
+            data: departments
         })
     } catch (error: any) {
         console.error('Fetch departments error:', error)

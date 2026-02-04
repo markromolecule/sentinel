@@ -38,7 +38,8 @@ export function useOnboardingForm() {
 
                 // 2. Fetch Departments
                 const deptResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/onboarding/departments`, {
-                    headers: { 'Authorization': `Bearer ${session.access_token}` }
+                    headers: { 'Authorization': `Bearer ${session.access_token}` },
+                    cache: 'no-store'
                 });
 
                 if (deptResponse.ok) {
@@ -47,7 +48,7 @@ export function useOnboardingForm() {
                         setDepartments(result.data);
                     }
                 } else {
-                    console.error("Failed to fetch departments");
+                    console.error("Failed to fetch departments", deptResponse.status);
                 }
 
             } catch (err) {
