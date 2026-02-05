@@ -22,6 +22,9 @@ import {
 import { useLogoutMutation } from "@/hooks/query/auth/use-logout-mutation";
 import { useRouter } from "next/navigation";
 
+import { MOCK_NOTIFICATIONS } from "@/app/(protected)/student/notifications/_constants";
+import { format } from "date-fns";
+
 export default function StudentHeader() {
     const pathname = usePathname();
     const [isOpen, setIsOpen] = useState(false);
@@ -36,6 +39,8 @@ export default function StudentHeader() {
     const handleLogout = () => {
         logout();
     };
+    
+    const recentNotifications = MOCK_NOTIFICATIONS.slice(0, 4);
 
     return (
         <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md">
@@ -44,11 +49,19 @@ export default function StudentHeader() {
                 <div className="flex items-center gap-2">
                     <Link href="/student/exam" className="flex items-center gap-2">
                         <div className="w-40 h-12 relative">
+                            {/* Light Mode Logo (Dark Text) */}
                             <NextImage
-                                src="/icons/sentinel-logo.svg"
+                                src="/icons/light-sentinel-logo.svg"
                                 alt="Sentinel"
                                 fill
-                                className="object-contain dark:brightness-0 dark:invert brightness-0"
+                                className="object-contain dark:hidden"
+                            />
+                            {/* Dark Mode Logo (Light Text) */}
+                             <NextImage
+                                src="/icons/dark-sentinel-logo.svg"
+                                alt="Sentinel"
+                                fill
+                                className="object-contain hidden dark:block"
                             />
                         </div>
                     </Link>
@@ -76,9 +89,49 @@ export default function StudentHeader() {
                         <ThemeToggle />
                     </div>
 
-                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hidden sm:flex">
-                        <Bell className="w-5 h-5" />
-                    </Button>
+                    <DropdownMenu>
+                         <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hidden sm:flex relative">
+                                <Bell className="w-5 h-5" />
+                                {recentNotifications.some(n => !n.isRead) && (
+                                    <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full" />
+                                )}
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-80">
+                            <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            {recentNotifications.length === 0 ? (
+                                <div className="p-4 text-center text-sm text-muted-foreground">
+                                    No new notifications
+                                </div>
+                            ) : (
+                                <div className="flex flex-col">
+                                    {recentNotifications.map((notification) => (
+                                        <DropdownMenuItem key={notification.id} className="cursor-pointer flex flex-col items-start gap-1 p-3">
+                                            <div className="flex w-full justify-between items-start">
+                                                <span className={cn("font-medium text-sm", !notification.isRead && "text-blue-600 dark:text-blue-400")}>
+                                                    {notification.title}
+                                                </span>
+                                                <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
+                                                    {format(notification.date, "MMM d")}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground line-clamp-2">
+                                                {notification.message}
+                                            </p>
+                                        </DropdownMenuItem>
+                                    ))}
+                                </div>
+                            )}
+                             <DropdownMenuSeparator />
+                            <DropdownMenuItem asChild className="cursor-pointer justify-center text-center font-medium text-primary">
+                                <Link href="/student/notifications" className="w-full">
+                                    View all notifications
+                                </Link>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
 
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -150,6 +203,13 @@ export default function StudentHeader() {
                                         </Button>
                                     </Link>
                                 ))}
+                                {/* Notification Link for Mobile */}
+                                <Link href="/student/notifications">
+                                    <Button variant="ghost" className="w-full justify-start hover:bg-accent hover:text-accent-foreground text-muted-foreground">
+                                        <Bell className="w-4 h-4 mr-2" />
+                                        Notifications
+                                    </Button>
+                                </Link>
                                 <div className="h-px bg-border my-2" />
                                 <Button
                                     variant="ghost"
