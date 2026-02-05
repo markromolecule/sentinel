@@ -11,7 +11,7 @@ export default function StudentSettingPage() {
         <div className="container mx-auto px-0 max-w-7xl space-y-8 py-8">
             {/* Header */}
             <div className="space-y-2">
-                <h1 className="text-4xl font-bold text-foreground">Settings</h1>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-[#323d8f] to-[#4a5bb8] bg-clip-text text-transparent">Settings</h1>
                 <p className="text-muted-foreground text-lg">
                     Manage your preferences and permissions
                 </p>

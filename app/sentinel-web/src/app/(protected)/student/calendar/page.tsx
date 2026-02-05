@@ -133,7 +133,7 @@ export default function StudentCalendarPage() {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-4">
                 <div>
-                    <h1 className="text-3xl md:text-4xl font-bold text-foreground">Calendar</h1>
+                    <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#323d8f] to-[#4a5bb8] bg-clip-text text-transparent">Calendar</h1>
                     <p className="text-muted-foreground text-base md:text-lg">
                         Manage your schedule and personal reminders.
                     </p>
