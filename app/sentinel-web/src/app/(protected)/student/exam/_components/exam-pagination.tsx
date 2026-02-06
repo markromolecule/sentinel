@@ -31,6 +31,7 @@ export function ExamPagination({ currentPage, totalPages, onPageChange }: ExamPa
                             isActive={page === currentPage}
                             onClick={() => onPageChange(page)}
                             className="cursor-pointer select-none"
+                            size="sm"
                         >
                             {page}
                         </PaginationLink>

@@ -1,10 +1,10 @@
 "use client";
 
-import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { AnnouncementsList } from "@/app/(protected)/admin/announcements/_components/announcements-list";
 import { MOCK_ANNOUNCEMENTS } from "@/app/(protected)/admin/_constants";
+import { AddAnnouncementDialog } from "@/app/(protected)/admin/announcements/_components/add-announcement-dialog";
 
 
 
@@ -18,10 +18,7 @@ export default function AnnouncementsPage() {
                         Manage system-wide announcements and notifications.
                     </p>
                 </div>
-                <Button className="bg-[#323d8f] hover:bg-[#323d8f]/90">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Post Announcement
-                </Button>
+                <AddAnnouncementDialog />
             </div>
 
             <Separator />

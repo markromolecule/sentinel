@@ -86,7 +86,7 @@ export function AddDepartmentDialog({ open, onOpenChange, departmentToEdit }: Ad
         <Dialog open={show} onOpenChange={handleOpenChange}>
              {!onOpenChange && (
                 <DialogTrigger asChild>
-                    <Button>Add Department</Button>
+                    <Button className="bg-[#323d8f] hover:bg-[#323d8f]/90">Add Department</Button>
                 </DialogTrigger>
             )}
             <DialogContent className="sm:max-w-[425px]">

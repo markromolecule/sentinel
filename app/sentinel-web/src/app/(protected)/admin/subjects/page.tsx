@@ -2,19 +2,21 @@
 
 import { useSubjectStore } from "@/stores/use-subject-store";
 import { SubjectsList } from "@/app/(protected)/admin/subjects/_components/subjects-list";
+import { AddSubjectDialog } from "@/app/(protected)/admin/subjects/_components/add-subject-dialog";
 
 export default function AdminSubjectsPage() {
     const subjects = useSubjectStore((state) => state.subjects);
 
     return (
         <div className="flex flex-col gap-6 md:p-6 p-4">
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">Subject Management</h1>
                     <p className="text-muted-foreground">
                         View and manage all subjects created by proctors.
                     </p>
                 </div>
+                <AddSubjectDialog />
             </div>
 
             <SubjectsList subjects={subjects} />
