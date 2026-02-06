@@ -2,8 +2,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { BarChart, HelpCircle, Trophy } from "lucide-react";
 import { ExamSidebarProps } from "@/app/(protected)/student/_types";
+import { useRouter } from "next/navigation";
 
 export function ExamSidebar({ exam }: ExamSidebarProps) {
+    const router = useRouter();
     return (
         <div className="space-y-4">
             <Card className="bg-muted/50 border-border/50">
@@ -34,8 +36,10 @@ export function ExamSidebar({ exam }: ExamSidebarProps) {
 
             <Button
                 size="lg"
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
+                variant="premium-3d"
+                className="w-full font-semibold"
                 disabled={exam.status === 'upcoming'}
+                onClick={() => router.push(`/student/exam/${exam.id}/configuration`)}
             >
                 {exam.status === 'upcoming' ? 'Available Soon' : 'Start Exam'}
             </Button>

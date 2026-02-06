@@ -95,20 +95,16 @@ export const columns = (onEdit: (user: AdminUser) => void): ColumnDef<AdminUser>
     },
   },
   {
-    accessorKey: "department",
+    accessorKey: "studentNo",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Department / ID" />
+      <DataTableColumnHeader column={column} title="Student No." />
     ),
     cell: ({ row }) => {
         const user = row.original;
+        // Prioritize showing student number, fallback to "-" if not available
         return (
-            <div className="flex flex-col">
-                <span className="text-sm font-medium">{user.department || "N/A"}</span>
-                {user.studentNo && (
-                    <span className="text-xs text-muted-foreground font-mono">
-                        {user.studentNo}
-                    </span>
-                )}
+            <div className="font-mono text-sm">
+                {user.studentNo || "-"}
             </div>
         )
     },

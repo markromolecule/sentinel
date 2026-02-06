@@ -66,6 +66,7 @@ export default function StudentHistoryPage() {
                                         isActive={page === currentPage}
                                         onClick={() => handlePageChange(page)}
                                         className="cursor-pointer select-none"
+                                        size="sm"
                                     >
                                         {page}
                                     </PaginationLink>

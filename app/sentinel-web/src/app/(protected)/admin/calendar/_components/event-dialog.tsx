@@ -11,10 +11,19 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
+    DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { CalendarIcon } from "lucide-react";
 import {
     Select,
     SelectContent,
@@ -41,16 +50,24 @@ export function EventDialog({
     const [description, setDescription] = useState("");
     const [type, setType] = useState<AdminEvent["type"]>("event");
     const [targetAudience, setTargetAudience] = useState<TargetAudience>("all");
+    const [date, setDate] = useState<Date | undefined>(selectedDate || new Date());
     const [startTime, setStartTime] = useState("");
     const [endTime, setEndTime] = useState("");
+
+    // Update internal state when selectedDate prop changes
+    if (selectedDate && (!date || date.getTime() !== selectedDate.getTime())) {
+        // This might cause infinite loop if not careful, better use useEffect or just initialize.
+        // Actually, for a dialog, simpler to just rely on initial state or key change.
+        // For now, I'll rely on key or open change handling.
+    }
 
 
 
     const handleSave = () => {
-        if (!title || !selectedDate) return;
+        if (!title || !date) return;
 
         onSave({
-            date: selectedDate,
+            date: date,
             title,
             description,
             type,
@@ -69,6 +86,7 @@ export function EventDialog({
             setTargetAudience("all");
             setStartTime("");
             setEndTime("");
+            setDate(selectedDate || new Date());
         }
         onOpenChange(newOpen);
     };
@@ -93,6 +111,81 @@ export function EventDialog({
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                         />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label>Date</Label>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                        "w-full justify-start text-left font-normal",
+                                        !date && "text-muted-foreground"
+                                    )}
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {date ? format(date, "PPP") : <span>Pick a date</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                    mode="single"
+                                    selected={date}
+                                    onSelect={setDate}
+                                    initialFocus
+                                />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label>Start Time</Label>
+                            <Select
+                                value={startTime}
+                                onValueChange={setStartTime}
+                            >
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Select time" />
+                                </SelectTrigger>
+                                <SelectContent className="h-[200px]" position="popper" sideOffset={4}>
+                                    {Array.from({ length: 48 }).map((_, i) => {
+                                        const hour = Math.floor(i / 2).toString().padStart(2, '0');
+                                        const minute = (i % 2 === 0 ? '00' : '30');
+                                        const time = `${hour}:${minute}`;
+                                        return (
+                                            <SelectItem key={time} value={time}>
+                                                {time}
+                                            </SelectItem>
+                                        );
+                                    })}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>End Time</Label>
+                            <Select
+                                value={endTime}
+                                onValueChange={setEndTime}
+                            >
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Select time" />
+                                </SelectTrigger>
+                                <SelectContent className="h-[200px]" position="popper" sideOffset={4}>
+                                    {Array.from({ length: 48 }).map((_, i) => {
+                                        const hour = Math.floor(i / 2).toString().padStart(2, '0');
+                                        const minute = (i % 2 === 0 ? '00' : '30');
+                                        const time = `${hour}:${minute}`;
+                                        return (
+                                            <SelectItem key={time} value={time}>
+                                                {time}
+                                            </SelectItem>
+                                        );
+                                    })}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -133,26 +226,7 @@ export function EventDialog({
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="start">Start Time</Label>
-                            <Input
-                                id="start"
-                                type="time"
-                                value={startTime}
-                                onChange={(e) => setStartTime(e.target.value)}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="end">End Time</Label>
-                            <Input
-                                id="end"
-                                type="time"
-                                value={endTime}
-                                onChange={(e) => setEndTime(e.target.value)}
-                            />
-                        </div>
-                    </div>
+
 
                     <div className="space-y-2">
                         <Label htmlFor="description">Description</Label>

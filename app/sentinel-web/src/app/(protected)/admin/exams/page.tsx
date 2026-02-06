@@ -16,7 +16,7 @@ export default function AdminExamsPage() {
                         View and monitor all examinations across the system.
                     </p>
                 </div>
-                <Button asChild>
+                <Button asChild className="bg-[#323d8f] hover:bg-[#323d8f]/90">
                     <Link href="/admin/exams/configuration">
                         <Settings className="mr-2 h-4 w-4" />
                         Configure Defaults

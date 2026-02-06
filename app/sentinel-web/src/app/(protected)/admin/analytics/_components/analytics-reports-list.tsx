@@ -24,7 +24,7 @@ export function AnalyticsReportsList({ reports }: AnalyticsReportsListProps) {
                         Download administrative reports on system usage and exam integrity.
                     </CardDescription>
                 </div>
-                <Button>
+                <Button className="bg-[#323d8f] hover:bg-[#323d8f]/90">
                     <FileBarChart className="mr-2 h-4 w-4" />
                     Generate New Report
                 </Button>

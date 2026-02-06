@@ -5,7 +5,7 @@ import { ExamBannerProps } from "@/app/(protected)/student/_types";
 
 export function ExamBanner({ exam }: ExamBannerProps) {
     return (
-        <div className="h-48 md:h-64 relative bg-gradient-to-br from-primary to-primary/80">
+        <div className="h-48 md:h-64 relative bg-gradient-to-br from-[#1e255e] to-black">
             {/* Placeholder content since we don't have real stock images yet, using a pattern/gradient */}
             <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-20"></div>
             <div className="absolute inset-0 flex items-center justify-center">

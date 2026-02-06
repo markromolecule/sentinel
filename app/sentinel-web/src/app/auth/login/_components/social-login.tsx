@@ -11,7 +11,7 @@ export const SocialLogin: FC = () => {
     return (
         <>
             <Button
-                variant="secondary-3d"
+                variant="white-3d"
                 size="lg"
                 className="w-full h-12 flex items-center justify-center gap-3 mt-0"
                 onClick={() => loginWithGoogle()}

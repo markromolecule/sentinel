@@ -94,7 +94,7 @@ export default function AdminCalendarPage() {
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button onClick={() => setIsAddEventOpen(true)}>
+                    <Button onClick={() => setIsAddEventOpen(true)} className="bg-[#323d8f] hover:bg-[#323d8f]/90">
                         <Plus className="w-4 h-4 mr-2" />
                         Add Event
                     </Button>
