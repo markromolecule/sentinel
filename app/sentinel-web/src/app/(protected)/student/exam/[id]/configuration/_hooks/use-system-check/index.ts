@@ -22,12 +22,26 @@ export function useSystemCheck(videoRef: RefObject<HTMLVideoElement | null>): Us
           const getPermissions = async () => {
                try {
                     const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                    
+                    // Ensure all tracks are enabled
+                    mediaStream.getTracks().forEach(track => {
+                         track.enabled = true;
+                    });
+                    
                     setStream(mediaStream);
                     setHasCameraPermission(true);
                     setHasMicPermission(true);
 
                     if (videoRef.current) {
                          videoRef.current.srcObject = mediaStream;
+                         
+                         // Explicitly play the video to ensure it starts in all environments
+                         try {
+                              await videoRef.current.play();
+                         } catch (playError) {
+                              console.error("Error playing video:", playError);
+                              // Video play might be blocked, but stream is still available
+                         }
                     }
                } catch (err) {
                     console.error("Error accessing media devices:", err);

@@ -1,10 +1,10 @@
 "use client";
 
-import { useExamConfigForm } from "@/app/(protected)/admin/exams/configuration/_hooks/use-exam-config-form";
-import { BasicInfoSection } from "@/app/(protected)/admin/exams/configuration/_components/basic-info-section";
-import { DeviceHardwareSection } from "@/app/(protected)/admin/exams/configuration/_components/device-hardware-section";
-import { AiRulesSection } from "@/app/(protected)/admin/exams/configuration/_components/ai-rules-section";
-import { SecuritySettingsSection } from "@/app/(protected)/admin/exams/configuration/_components/security-settings-section";
+import { useExamConfigForm } from "@/app/(protected)/proctor/exams/configuration/_hooks/use-exam-config-form";
+import { BasicInfoSection } from "@/app/(protected)/proctor/exams/configuration/_components/basic-info-section";
+import { DeviceHardwareSection } from "@/app/(protected)/proctor/exams/configuration/_components/device-hardware-section";
+import { AiRulesSection } from "@/app/(protected)/proctor/exams/configuration/_components/ai-rules-section";
+import { SecuritySettingsSection } from "@/app/(protected)/proctor/exams/configuration/_components/security-settings-section";
 import { Button } from "@/components/ui/button";
 import {
     Form,
@@ -16,7 +16,7 @@ import {
     TabsList,
     TabsTrigger,
 } from "@/components/ui/tabs";
-import { ExamConfig } from "@/app/(protected)/admin/_types";
+import { ExamConfig } from "@/app/(protected)/admin/_types"; // Keeping admin types for now as they are re-exported shared types, or I can use shared directly
 
 interface ExamConfigFormProps {
     defaultValues: ExamConfig;

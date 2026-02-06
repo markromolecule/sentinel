@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
 import { MOCK_PROCTOR_EXAMS } from "@/app/(protected)/proctor/_constants";
 import { ExamCreateDialog } from "@/app/(protected)/proctor/exams/_components/exam-create-dialog";
@@ -32,10 +33,18 @@ export default function ProctorExamsPage() {
                         Manage your examinations and assessments.
                     </p>
                 </div>
-                <Button onClick={() => setIsCreateOpen(true)} className="bg-[#323d8f] hover:bg-[#323d8f]/90 text-white">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Exam
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" asChild>
+                        <Link href="/proctor/exams/configuration">
+                            <Settings className="w-4 h-4 mr-2" />
+                            Configuration
+                        </Link>
+                    </Button>
+                    <Button onClick={() => setIsCreateOpen(true)} className="bg-[#323d8f] hover:bg-[#323d8f]/90 text-white">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create Exam
+                    </Button>
+                </div>
             </div>
 
             <Separator />
@@ -43,7 +52,7 @@ export default function ProctorExamsPage() {
             <div className="flex flex-col gap-4">
                 {/* Exam Table */}
                 {filteredExams.length > 0 ? (
-                    <ExamsTable 
+                    <ExamsTable
                         exams={filteredExams}
                         toolbarActions={
                             <ExamsFilterBar
