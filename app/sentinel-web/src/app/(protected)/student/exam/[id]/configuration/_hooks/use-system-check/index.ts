@@ -15,36 +15,28 @@ export function useSystemCheck(videoRef: RefObject<HTMLVideoElement | null>): Us
                const userAgent = typeof window.navigator === "undefined" ? "" : navigator.userAgent;
                const mobile = MOBILE_USER_AGENT_REGEX.test(userAgent);
                setIsMobile(mobile);
+               console.log("[SystemCheck] Platform checked:", mobile ? "Mobile" : "Desktop");
           };
           checkMobile();
 
           // Request Permissions
           const getPermissions = async () => {
+               console.log("[SystemCheck] Requesting permissions...");
                try {
                     const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                    console.log("[SystemCheck] Permissions granted. Tracks count:", mediaStream.getTracks().length);
                     
                     // Ensure all tracks are enabled
                     mediaStream.getTracks().forEach(track => {
                          track.enabled = true;
+                         console.log(`[SystemCheck] Track [${track.kind}] enabled: ${track.label}`);
                     });
                     
                     setStream(mediaStream);
                     setHasCameraPermission(true);
                     setHasMicPermission(true);
-
-                    if (videoRef.current) {
-                         videoRef.current.srcObject = mediaStream;
-                         
-                         // Explicitly play the video to ensure it starts in all environments
-                         try {
-                              await videoRef.current.play();
-                         } catch (playError) {
-                              console.error("Error playing video:", playError);
-                              // Video play might be blocked, but stream is still available
-                         }
-                    }
                } catch (err) {
-                    console.error("Error accessing media devices:", err);
+                    console.error("[SystemCheck] Error accessing media devices:", err);
                     toast.error("Failed to access camera or microphone. Please allow permissions.");
                     setHasCameraPermission(false);
                     setHasMicPermission(false);
@@ -55,16 +47,47 @@ export function useSystemCheck(videoRef: RefObject<HTMLVideoElement | null>): Us
 
           // Cleanup
           return () => {
+               console.log("[SystemCheck] Cleaning up initial effect");
                if (stream) {
                     stream.getTracks().forEach(track => track.stop());
                }
           };
-     }, []); // Dependency array remains empty as per original logic
+     }, []);
+
+     // Robust video attachment effect
+     useEffect(() => {
+          if (hasCameraPermission && stream && videoRef.current) {
+               console.log("[SystemCheck] Attaching stream to video element");
+               const videoElement = videoRef.current;
+               
+               // Assign stream
+               if (videoElement.srcObject !== stream) {
+                    videoElement.srcObject = stream;
+               }
+               
+               // Attempt playback
+               const playVideo = async () => {
+                    try {
+                         await videoElement.play();
+                         console.log("[SystemCheck] Video playback started successfully");
+                    } catch (playError) {
+                         console.error("[SystemCheck] Error playing video:", playError);
+                         // If it's an AbortError, it might be due to rapid mounting/unmounting, 
+                         // which is usually fine if subsequent attempts succeed.
+                    }
+               };
+
+               playVideo();
+          } else if (hasCameraPermission && stream && !videoRef.current) {
+               console.log("[SystemCheck] Stream ready but videoRef is still null - waiting for mount...");
+          }
+     }, [hasCameraPermission, stream, videoRef.current]);
 
      // Handle stream cleanup when the component unmounts
      useEffect(() => {
         return () => {
             if (stream) {
+                console.log("[SystemCheck] Stopping all tracks on unmount");
                 stream.getTracks().forEach(track => track.stop());
             }
         };
