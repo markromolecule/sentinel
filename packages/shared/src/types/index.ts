@@ -1,5 +1,5 @@
 
-export * from "../constants";
+export * from "@/constants";
 
 // Student
 export interface ApiResponse<T> {
