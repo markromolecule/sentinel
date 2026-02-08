@@ -9,13 +9,10 @@ import { useLoginForm } from "@/app/auth/login/_hooks/use-login-form";
 
 export default function LoginPage() {
     const {
-        formData,
-        errors,
+        form,
         authError,
         isLoading,
-        handleChange,
-        handleBlur,
-        handleSubmit
+        onSubmit
     } = useLoginForm();
 
     return (
@@ -23,13 +20,10 @@ export default function LoginPage() {
             <LoginHeader />
             <CardContent className="space-y-4 p-4 sm:p-6 sm:pb-4">
                 <LoginForm
-                    formData={formData}
-                    errors={errors}
+                    form={form}
                     authError={authError}
                     isLoading={isLoading}
-                    handleChange={handleChange}
-                    handleBlur={handleBlur}
-                    handleSubmit={handleSubmit}
+                    onSubmit={onSubmit}
                 />
             </CardContent>
             <CardFooter className="flex flex-col gap-4 pt-0">

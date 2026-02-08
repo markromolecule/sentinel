@@ -26,19 +26,14 @@ import * as z from "zod";
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { useSubjectStore } from "@/stores/use-subject-store";
-
-const formSchema = z.object({
-    code: z.string().min(2, "Code must be at least 2 characters"),
-    title: z.string().min(3, "Title must be at least 3 characters"),
-    section: z.string().min(1, "Section is required"),
-});
+import { subjectFormSchema, SubjectFormValues } from "../_constants/subject-schema";
 
 export function AddSubjectDialog() {
     const [open, setOpen] = useState(false);
     const addSubject = useSubjectStore((state) => state.addSubject);
 
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
+    const form = useForm<SubjectFormValues>({
+        resolver: zodResolver(subjectFormSchema),
         defaultValues: {
             code: "",
             title: "",
@@ -46,7 +41,7 @@ export function AddSubjectDialog() {
         },
     });
 
-    function onSubmit(values: z.infer<typeof formSchema>) {
+    function onSubmit(values: SubjectFormValues) {
         // Mock ID generation
         const newSubject = {
             id: `SUB-${Math.floor(Math.random() * 1000)}`,

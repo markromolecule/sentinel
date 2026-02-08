@@ -41,19 +41,12 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
-
-const formSchema = z.object({
-    title: z.string().min(2, "Title must be at least 2 characters"),
-    content: z.string().min(10, "Content must be at least 10 characters"),
-    targetAudience: z.string().min(1, "Please select a target audience"),
-    status: z.enum(["draft", "published"]),
-    publishedAt: z.string().optional(),
-});
+import { announcementFormSchema, AnnouncementFormValues } from "../_constants/announcement-schema";
 
 export function AddAnnouncementDialog() {
     const [open, setOpen] = useState(false);
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
+    const form = useForm<AnnouncementFormValues>({
+        resolver: zodResolver(announcementFormSchema),
         defaultValues: {
             title: "",
             content: "",
@@ -63,7 +56,7 @@ export function AddAnnouncementDialog() {
         },
     });
 
-    function onSubmit(values: z.infer<typeof formSchema>) {
+    function onSubmit(values: AnnouncementFormValues) {
         // Force status to draft for new announcements
         const submissionValues = { ...values, status: "draft" };
         console.log("Submitting announcement:", submissionValues);

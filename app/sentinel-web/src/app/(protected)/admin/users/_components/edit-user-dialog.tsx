@@ -31,23 +31,9 @@ import { toast } from "sonner";
 import * as z from "zod";
 import { useEffect } from "react";
 import { AdminUser } from "@/app/(protected)/admin/_types";
+import { userFormSchema, UserFormValues } from "../_constants/user-schema";
 
-const formSchema = z.object({
-    firstName: z.string().min(2, "First name must be at least 2 characters"),
-    lastName: z.string().min(2, "Last name must be at least 2 characters"),
-    email: z.string().email("Invalid email address"),
-    role: z.enum(["admin", "proctor", "instructor", "student"]),
-    department: z.string().optional(),
-    studentNo: z.string().optional(),
-}).refine((data) => {
-    if (data.role === "student" && !data.studentNo) {
-        return false;
-    }
-    return true;
-}, {
-    message: "Student ID is required for students",
-    path: ["studentNo"],
-});
+
 
 interface EditUserDialogProps {
     user: AdminUser | null;
@@ -56,8 +42,8 @@ interface EditUserDialogProps {
 }
 
 export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps) {
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
+    const form = useForm<UserFormValues>({
+        resolver: zodResolver(userFormSchema),
         defaultValues: {
             firstName: "",
             lastName: "",
@@ -83,7 +69,7 @@ export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps
 
     const role = useWatch({ control: form.control, name: "role" });
 
-    function onSubmit(values: z.infer<typeof formSchema>) {
+    function onSubmit(values: UserFormValues) {
         console.log("Updating user:", values);
         toast.success(`User ${values.firstName} ${values.lastName} updated successfully`);
         onOpenChange(false);

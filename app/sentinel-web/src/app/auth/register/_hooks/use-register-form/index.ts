@@ -1,28 +1,25 @@
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
-import { RegisterFormData, RegisterFormErrors } from "@sentinel/shared";
+import { RegisterSchema, RegisterSchemaType } from "@sentinel/shared";
 import { useSignUpMutation, SignUpError } from "@/hooks/query/auth/use-sign-up-mutation";
 import { config } from "@/lib/config";
 
 export function useRegisterForm() {
-    const [formData, setFormData] = useState<RegisterFormData>({
-        firstName: "",
-        lastName: "",
-        email: "",
-        password: "",
-        confirmPassword: ""
-    });
-
-    const [errors, setErrors] = useState<RegisterFormErrors>({
-        firstName: false,
-        lastName: false,
-        email: false,
-        password: false,
-        confirmPassword: false
-    });
-
     const [authError, setAuthError] = useState<string | null>(null);
-    const [passwordMismatch, setPasswordMismatch] = useState<boolean>(false);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+    const form = useForm<RegisterSchemaType>({
+        resolver: zodResolver(RegisterSchema),
+        defaultValues: {
+            firstName: "",
+            lastName: "",
+            email: "",
+            password: "",
+            confirmPassword: "",
+            terms: false
+        }
+    });
 
     const { mutate: signUp, isPending: isLoading } = useSignUpMutation({
         onSuccess: () => {
@@ -33,60 +30,17 @@ export function useRegisterForm() {
         }
     });
 
-    const handleBlur = (field: keyof RegisterFormData) => {
-        if (!formData[field].trim()) {
-            setErrors(prev => ({ ...prev, [field]: true }));
-        }
-    };
-
-    const handleChange = (field: keyof RegisterFormData, value: string) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
-        if (value.trim()) {
-            setErrors(prev => ({ ...prev, [field]: false }));
-        }
-        // Clear auth error when user starts typing
-        if (authError) {
-            setAuthError(null);
-        }
-        // Clear password mismatch when editing password fields
-        if ((field === 'password' || field === 'confirmPassword') && passwordMismatch) {
-            setPasswordMismatch(false);
-        }
-    };
-
-    const handleSubmit = () => {
-        const newErrors = { ...errors };
-        let hasError = false;
-
-        Object.keys(formData).forEach((key) => {
-            const field = key as keyof RegisterFormData;
-            if (!formData[field].trim()) {
-                newErrors[field] = true;
-                hasError = true;
-            }
-        });
-
-        if (formData.password !== formData.confirmPassword) {
-            newErrors.confirmPassword = true;
-            hasError = true;
-            setPasswordMismatch(true);
-        }
-
-        setErrors(newErrors);
-
-        if (hasError) return;
-
-        // Clear previous errors
+    const onSubmit = (data: RegisterSchemaType) => {
         setAuthError(null);
         setSuccessMessage(null);
 
         signUp({
-            email: formData.email,
-            password: formData.password,
+            email: data.email,
+            password: data.password,
             options: {
                 data: {
-                    first_name: formData.firstName,
-                    last_name: formData.lastName,
+                    first_name: data.firstName,
+                    last_name: data.lastName,
                     role: 'student',
                 },
                 emailRedirectTo: `${config.appUrl}/auth/callback`,
@@ -95,14 +49,10 @@ export function useRegisterForm() {
     };
 
     return {
-        formData,
-        errors,
+        form,
         authError,
-        passwordMismatch,
         successMessage,
         isLoading,
-        handleBlur,
-        handleChange,
-        handleSubmit
+        onSubmit: form.handleSubmit(onSubmit)
     };
 }

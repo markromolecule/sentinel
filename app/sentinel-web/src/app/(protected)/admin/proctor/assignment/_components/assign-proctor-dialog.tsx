@@ -31,6 +31,7 @@ import { toast } from "sonner";
 import * as z from "zod";
 import { useEffect } from "react";
 import { AssignProctorDialogProps } from "../_types";
+import { assignmentFormSchema, AssignmentFormValues } from "@sentinel/shared";
 
 // Mock data for dropdowns (replace with API data later)
 const MOCK_PROCTORS = [
@@ -45,17 +46,11 @@ const MOCK_EXAMS = [
     { id: "exam_3", name: "PHYS101: Physics I" },
 ];
 
-const formSchema = z.object({
-    proctorId: z.string().min(1, "Proctor is required"),
-    examId: z.string().min(1, "Exam is required"),
-    notes: z.string().optional(),
-});
-
 export function AssignProctorDialog({ assignment, open, onOpenChange }: AssignProctorDialogProps) {
     const isEditing = !!assignment;
 
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
+    const form = useForm<AssignmentFormValues>({
+        resolver: zodResolver(assignmentFormSchema),
         defaultValues: {
             proctorId: "",
             examId: "",
@@ -79,7 +74,7 @@ export function AssignProctorDialog({ assignment, open, onOpenChange }: AssignPr
         }
     }, [assignment, form, open]);
 
-    function onSubmit(values: z.infer<typeof formSchema>) {
+    function onSubmit(values: AssignmentFormValues) {
         console.log("Submitting assignment:", values);
 
         // Find names for toast message

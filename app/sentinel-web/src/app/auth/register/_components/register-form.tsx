@@ -4,21 +4,20 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { ArrowUpRight, CheckCircle } from "lucide-react";
 import Link from "next/link";
-import { RegisterFormData, RegisterFormErrors } from "@sentinel/shared";
+import { RegisterSchemaType } from "@sentinel/shared";
+import { UseFormReturn } from "react-hook-form";
 
 interface RegisterFormProps {
-    formData: RegisterFormData;
-    errors: RegisterFormErrors;
+    form: UseFormReturn<RegisterSchemaType>;
     authError: string | null;
-    passwordMismatch: boolean;
     successMessage: string | null;
     isLoading: boolean;
-    handleChange: (field: keyof RegisterFormData, value: string) => void;
-    handleBlur: (field: keyof RegisterFormData) => void;
-    handleSubmit: () => void;
+    onSubmit: () => void;
 }
 
-export function RegisterForm({ formData, errors, authError, passwordMismatch, successMessage, isLoading, handleChange, handleBlur, handleSubmit }: RegisterFormProps) {
+export function RegisterForm({ form, authError, successMessage, isLoading, onSubmit }: RegisterFormProps) {
+    const { register, formState: { errors } } = form;
+
     return (
         <div className="space-y-4">
             {/* Success Message */}
@@ -47,14 +46,12 @@ export function RegisterForm({ formData, errors, authError, passwordMismatch, su
                         id="firstName"
                         placeholder="John"
                         className={`bg-[#0f0f10] border-white/10 text-white placeholder:text-gray-500 focus-visible:ring-blue-500 ${errors.firstName ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                        value={formData.firstName}
-                        onChange={(e) => handleChange("firstName", e.target.value)}
-                        onBlur={() => handleBlur("firstName")}
                         disabled={isLoading}
+                        {...register("firstName")}
                     />
                     {errors.firstName && (
                         <p className="text-[0.8rem] font-medium text-red-500">
-                            First name is required
+                            {errors.firstName.message}
                         </p>
                     )}
                 </div>
@@ -64,14 +61,12 @@ export function RegisterForm({ formData, errors, authError, passwordMismatch, su
                         id="lastName"
                         placeholder="Doe"
                         className={`bg-[#0f0f10] border-white/10 text-white placeholder:text-gray-500 focus-visible:ring-blue-500 ${errors.lastName ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                        value={formData.lastName}
-                        onChange={(e) => handleChange("lastName", e.target.value)}
-                        onBlur={() => handleBlur("lastName")}
                         disabled={isLoading}
+                        {...register("lastName")}
                     />
                     {errors.lastName && (
                         <p className="text-[0.8rem] font-medium text-red-500">
-                            Last name is required
+                            {errors.lastName.message}
                         </p>
                     )}
                 </div>
@@ -84,14 +79,12 @@ export function RegisterForm({ formData, errors, authError, passwordMismatch, su
                     type="email"
                     placeholder="doe@example.com"
                     className={`bg-[#0f0f10] border-white/10 text-white placeholder:text-gray-500 focus-visible:ring-blue-500 ${errors.email ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                    value={formData.email}
-                    onChange={(e) => handleChange("email", e.target.value)}
-                    onBlur={() => handleBlur("email")}
                     disabled={isLoading}
+                    {...register("email")}
                 />
                 {errors.email && (
                     <p className="text-[0.8rem] font-medium text-red-500">
-                        Email is required
+                        {errors.email.message}
                     </p>
                 )}
             </div>
@@ -103,14 +96,12 @@ export function RegisterForm({ formData, errors, authError, passwordMismatch, su
                     type="password"
                     placeholder="Enter your password"
                     className={`bg-[#0f0f10] border-white/10 text-white focus-visible:ring-blue-500 ${errors.password ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                    value={formData.password}
-                    onChange={(e) => handleChange("password", e.target.value)}
-                    onBlur={() => handleBlur("password")}
                     disabled={isLoading}
+                    {...register("password")}
                 />
                 {errors.password && (
                     <p className="text-[0.8rem] font-medium text-red-500">
-                        Password is required
+                        {errors.password.message}
                     </p>
                 )}
             </div>
@@ -122,20 +113,23 @@ export function RegisterForm({ formData, errors, authError, passwordMismatch, su
                     type="password"
                     placeholder="Confirm your password"
                     className={`bg-[#0f0f10] border-white/10 text-white focus-visible:ring-blue-500 ${errors.confirmPassword ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                    value={formData.confirmPassword}
-                    onChange={(e) => handleChange("confirmPassword", e.target.value)}
-                    onBlur={() => handleBlur("confirmPassword")}
                     disabled={isLoading}
+                    {...register("confirmPassword")}
                 />
                 {errors.confirmPassword && (
                     <p className="text-[0.8rem] font-medium text-red-500">
-                        {passwordMismatch ? "Passwords do not match" : "Please confirm your password"}
+                        {errors.confirmPassword.message}
                     </p>
                 )}
             </div>
 
             <div className="flex items-center space-x-2 pt-2">
-                <Checkbox id="terms" className="border-white/20 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500" />
+                <Checkbox
+                    id="terms"
+                    className={`border-white/20 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 ${errors.terms ? "border-red-500" : ""}`}
+                    onCheckedChange={(checked) => form.setValue("terms", checked as boolean)}
+                    {...register("terms")}
+                />
                 <label
                     htmlFor="terms"
                     className="text-sm font-medium leading-none text-gray-400 peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
@@ -143,12 +137,17 @@ export function RegisterForm({ formData, errors, authError, passwordMismatch, su
                     I agree to the <Link href="#" className="text-blue-400 hover:underline">Terms of Service</Link> and <Link href="#" className="text-blue-400 hover:underline">Privacy Policy</Link>
                 </label>
             </div>
+            {errors.terms && (
+                <p className="text-[0.8rem] font-medium text-red-500">
+                    {errors.terms.message}
+                </p>
+            )}
 
             <Button
                 className="w-full h-12 text-base font-semibold group mt-2"
                 variant="premium-3d"
                 size="lg"
-                onClick={handleSubmit}
+                onClick={onSubmit}
                 disabled={isLoading}
             >
                 {isLoading ? "Creating account..." : "Create account"}
