@@ -4,7 +4,7 @@
     "slug": "sentinel-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/icon0.svg",
     "scheme": "sentinelmobile",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -23,17 +23,17 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.ico"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/icon0.svg",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#323d8f",
           "dark": {
             "backgroundColor": "#000000"
           }

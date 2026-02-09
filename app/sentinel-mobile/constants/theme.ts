@@ -5,7 +5,9 @@
 
 import { Platform } from 'react-native';
 
-const tintColorLight = '#0a7ea4';
+const sentinelPrimary = '#323d8f';
+const sentinelDarkBg = '#0f0f10';
+const tintColorLight = sentinelPrimary;
 const tintColorDark = '#fff';
 
 export const Colors = {
@@ -16,14 +18,22 @@ export const Colors = {
     icon: '#687076',
     tabIconDefault: '#687076',
     tabIconSelected: tintColorLight,
+    primary: sentinelPrimary,
+    input: '#f4f4f5', // oklch(0.922 0 0) approx
+    border: '#e4e4e7', // oklch(0.922 0 0) approx
+    card: '#fff',
   },
   dark: {
     text: '#ECEDEE',
-    background: '#151718',
+    background: sentinelDarkBg,
     tint: tintColorDark,
     icon: '#9BA1A6',
     tabIconDefault: '#9BA1A6',
     tabIconSelected: tintColorDark,
+    primary: '#fff', // Or inverted primary if needed, but web dark primary is oklch(0.922 0 0) which is almost white
+    input: '#27272a', // oklch(0.269 0 0) approx for muted/input
+    border: '#27272a',
+    card: '#18181b', // oklch(0.205 0 0) approx
   },
 };
 
