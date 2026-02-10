@@ -4,9 +4,19 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { LoginFormProps } from "../_props";
+import { LoginSchemaType } from "@sentinel/shared";
+import { UseFormReturn } from "react-hook-form";
 
-export function LoginForm({ formData, errors, authError, isLoading, handleChange, handleBlur, handleSubmit }: LoginFormProps) {
+interface LoginFormProps {
+    form: UseFormReturn<LoginSchemaType>;
+    authError: string | null;
+    isLoading: boolean;
+    onSubmit: () => void;
+}
+
+export function LoginForm({ form, authError, isLoading, onSubmit }: LoginFormProps) {
+    const { register, formState: { errors } } = form;
+
     return (
         <div className="space-y-4">
             {/* Auth Error Display */}
@@ -25,14 +35,12 @@ export function LoginForm({ formData, errors, authError, isLoading, handleChange
                     type="email"
                     placeholder="doe@example.com"
                     className={`bg-[#0f0f10] border-white/10 text-white placeholder:text-gray-500 focus-visible:ring-blue-500 ${errors.email ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                    value={formData.email}
-                    onChange={(e) => handleChange("email", e.target.value)}
-                    onBlur={() => handleBlur("email")}
                     disabled={isLoading}
+                    {...register("email")}
                 />
                 {errors.email && (
                     <p className="text-[0.8rem] font-medium text-red-500">
-                        Email is required
+                        {errors.email.message}
                     </p>
                 )}
             </div>
@@ -43,19 +51,22 @@ export function LoginForm({ formData, errors, authError, isLoading, handleChange
                     type="password"
                     placeholder="Enter your password"
                     className={`bg-[#0f0f10] border-white/10 text-white focus-visible:ring-blue-500 ${errors.password ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                    value={formData.password}
-                    onChange={(e) => handleChange("password", e.target.value)}
-                    onBlur={() => handleBlur("password")}
                     disabled={isLoading}
+                    {...register("password")}
                 />
                 {errors.password && (
                     <p className="text-[0.8rem] font-medium text-red-500">
-                        Password is required
+                        {errors.password.message}
                     </p>
                 )}
                 <div className="flex items-center justify-between pt-2 mb-8">
                     <div className="flex items-center space-x-2">
-                        <Checkbox id="remember" className="border-white/20 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500" />
+                        <Checkbox
+                            id="remember"
+                            className="border-white/20 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
+                            onCheckedChange={(checked) => form.setValue("remember", checked as boolean)}
+                            {...register("remember")}
+                        />
                         <label
                             htmlFor="remember"
                             className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-gray-400"
@@ -76,7 +87,7 @@ export function LoginForm({ formData, errors, authError, isLoading, handleChange
                 className="w-full h-12 text-base font-semibold group"
                 variant="premium-3d"
                 size="lg"
-                onClick={handleSubmit}
+                onClick={onSubmit}
                 disabled={isLoading}
             >
                 {isLoading ? "Signing in..." : "Sign in"}

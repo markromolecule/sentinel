@@ -9,15 +9,11 @@ import { useRegisterForm } from "@/app/auth/register/_hooks/use-register-form";
 
 export default function RegisterPage() {
     const {
-        formData,
-        errors,
+        form,
         authError,
-        passwordMismatch,
         successMessage,
         isLoading,
-        handleChange,
-        handleBlur,
-        handleSubmit
+        onSubmit
     } = useRegisterForm();
 
     return (
@@ -25,15 +21,11 @@ export default function RegisterPage() {
             <RegisterHeader />
             <CardContent className="space-y-4 p-4 sm:p-6 sm:pb-4">
                 <RegisterForm
-                    formData={formData}
-                    errors={errors}
+                    form={form}
                     authError={authError}
-                    passwordMismatch={passwordMismatch}
                     successMessage={successMessage}
                     isLoading={isLoading}
-                    handleChange={handleChange}
-                    handleBlur={handleBlur}
-                    handleSubmit={handleSubmit}
+                    onSubmit={onSubmit}
                 />
             </CardContent>
             <CardFooter className="flex flex-col gap-4 pt-0">

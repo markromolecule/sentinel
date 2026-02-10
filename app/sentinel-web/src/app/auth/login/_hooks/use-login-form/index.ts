@@ -1,23 +1,23 @@
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
-import { LoginFormData, LoginFormErrors } from "@sentinel/shared";
+import { LoginSchema, LoginSchemaType } from "@sentinel/shared";
 import { useLoginMutation, LoginError } from "@/hooks/query/auth/use-login-mutation";
 import { useRouter } from "next/navigation";
 import { createSupabaseClient } from "@/data/supabase/client";
 
 export function useLoginForm() {
     const router = useRouter();
-
-    const [formData, setFormData] = useState<LoginFormData>({
-        email: "",
-        password: ""
-    });
-
-    const [errors, setErrors] = useState<LoginFormErrors>({
-        email: false,
-        password: false
-    });
-
     const [authError, setAuthError] = useState<string | null>(null);
+
+    const form = useForm<LoginSchemaType>({
+        resolver: zodResolver(LoginSchema),
+        defaultValues: {
+            email: "",
+            password: "",
+            remember: false
+        }
+    });
 
     const { mutate: login, isPending: isLoading } = useLoginMutation({
         onSuccess: async (data) => {
@@ -49,58 +49,18 @@ export function useLoginForm() {
         }
     });
 
-    const handleBlur = (field: keyof LoginFormData) => {
-        if (!formData[field].trim()) {
-            setErrors(prev => ({ ...prev, [field]: true }));
-        }
-    };
-
-    const handleChange = (field: keyof LoginFormData, value: string) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
-        if (value.trim()) {
-            setErrors(prev => ({ ...prev, [field]: false }));
-        }
-        // Clear auth error when user starts typing
-        if (authError) {
-            setAuthError(null);
-        }
-    };
-
-    const handleSubmit = () => {
-        // Validate fields
-        const newErrors = { ...errors };
-        let hasError = false;
-
-        if (!formData.email.trim()) {
-            newErrors.email = true;
-            hasError = true;
-        }
-        if (!formData.password.trim()) {
-            newErrors.password = true;
-            hasError = true;
-        }
-
-        setErrors(newErrors);
-
-        if (hasError) return;
-
-        // Clear previous auth errors
+    const onSubmit = (data: LoginSchemaType) => {
         setAuthError(null);
-
-        // Attempt login
         login({
-            email: formData.email,
-            password: formData.password
+            email: data.email,
+            password: data.password
         });
     };
 
     return {
-        formData,
-        errors,
+        form,
         authError,
         isLoading,
-        handleBlur,
-        handleChange,
-        handleSubmit
+        onSubmit: form.handleSubmit(onSubmit)
     };
 }

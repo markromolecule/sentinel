@@ -1,19 +1,24 @@
 {
-    "name": "sentinel",
-    "version": "0.0.0",
-    "private": true,
-    "engines": {
-        "node": ">=22.0.0"
-    },
-    "packageManager": "pnpm@10.28.0",
-    "scripts": {
-        "dev": "turbo run dev",
-        "build": "turbo run build",
-        "lint": "turbo run lint",
-        "clean": "rm -rf node_modules"
-    },
-    "devDependencies": {
-        "prettier": "latest",
-        "turbo": "latest"
-    }
+  "name": "sentinel",
+  "version": "0.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "packageManager": "pnpm@10.28.0",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "clean": "rm -rf node_modules"
+  },
+  "devDependencies": {
+    "@types/react": "~19.1.10",
+    "prettier": "latest",
+    "turbo": "latest",
+    "typescript": "~5.9.2"
+  },
+  "dependencies": {
+    "expo": "^54.0.33"
+  }
 }
