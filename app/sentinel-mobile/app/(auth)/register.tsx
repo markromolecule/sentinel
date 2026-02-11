@@ -23,14 +23,14 @@ export default function RegisterScreen() {
                email: '',
                password: '',
                confirmPassword: '',
-               terms: false,
+               terms: true,
           },
      });
 
      const onSubmit = (data: RegisterSchemaType) => {
           console.log(data);
           // Mock register success - navigate to onboarding or main app
-          // router.replace('/onboarding');
+          router.replace('/(onboarding)');
      };
 
      const handleGoogleRegister = () => {
@@ -173,21 +173,7 @@ export default function RegisterScreen() {
                               {errors.confirmPassword && <Text style={styles.error}>{errors.confirmPassword.message}</Text>}
                          </View>
 
-                         <View style={styles.termsGroup}>
-                              <Controller
-                                   control={control}
-                                   name="terms"
-                                   render={({ field: { onChange, value } }) => (
-                                        <Switch
-                                             value={value}
-                                             onValueChange={onChange}
-                                             trackColor={{ false: Colors.light.border, true: Colors.light.primary }}
-                                        />
-                                   )}
-                              />
-                              <Text style={styles.termsText}>I agree to the Terms and Conditions</Text>
-                         </View>
-                         {errors.terms && <Text style={styles.error}>{errors.terms.message}</Text>}
+
 
                          <View style={styles.actions}>
                               <TouchableOpacity style={styles.button} onPress={handleSubmit(onSubmit)}>
