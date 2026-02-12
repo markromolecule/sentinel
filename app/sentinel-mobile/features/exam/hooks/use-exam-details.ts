@@ -4,7 +4,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { mockExams } from '@/data/exams';
 import { DIFFICULTY_CONFIG, DEFAULT_DIFFICULTY_CONFIG } from '@/features/exam/constants';
-import { type UseExamDetailsReturn } from '@/features/exam/types';
+import { type UseExamDetailsReturn } from '@/types/exam';
 
 export function useExamDetails(): UseExamDetailsReturn {
      const router = useRouter();

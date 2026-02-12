@@ -72,7 +72,7 @@ export const useExamSession = () => {
                         style: 'destructive',
                         onPress: () => {
                             console.log('Exam submitted:', { answers, sessionId });
-                            router.replace('/(tabs)');
+                            router.replace('/(tabs)/exam');
                         }
                     },
                 ]

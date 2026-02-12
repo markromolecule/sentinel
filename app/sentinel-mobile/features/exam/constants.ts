@@ -1,4 +1,4 @@
-import { type DifficultyConfig } from '@/features/exam/types';
+import { type DifficultyConfig } from '@/types/exam';
 
 // ─── Difficulty ───
 

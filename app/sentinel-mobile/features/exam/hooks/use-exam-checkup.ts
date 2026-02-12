@@ -6,7 +6,7 @@ import { useAudioRecorder, useAudioRecorderState, AudioModule, RecordingPresets 
 import { useCameraPermissions } from 'expo-camera';
 import { Colors } from '@/constants/theme';
 import { mockExams } from '@/data/exams';
-import { type CameraFacing, type UseExamCheckupReturn } from '@/features/exam/types';
+import { type CameraFacing, type UseExamCheckupReturn } from '@/types/exam';
 
 const MIC_THRESHOLD = 0.15;
 const METERING_INTERVAL = 150;

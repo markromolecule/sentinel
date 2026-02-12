@@ -5,7 +5,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { mockExams } from '@/data/exams';
 import { CONSENT_ITEMS } from '@/features/exam/constants';
-import { type UseExamConsentReturn } from '@/features/exam/types';
+import { type UseExamConsentReturn } from '@/types/exam';
 
 export function useExamConsent(): UseExamConsentReturn {
      const router = useRouter();

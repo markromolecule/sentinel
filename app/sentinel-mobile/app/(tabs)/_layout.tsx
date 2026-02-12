@@ -30,7 +30,7 @@ export default function TabLayout() {
                }}
           >
                <Tabs.Screen
-                    name="index"
+                    name="exam/index"
                     options={{
                          title: 'Home',
                          tabBarAccessibilityLabel: 'Home tab',
@@ -40,7 +40,7 @@ export default function TabLayout() {
                     }}
                />
                <Tabs.Screen
-                    name="history"
+                    name="history/index"
                     options={{
                          title: 'History',
                          tabBarAccessibilityLabel: 'History tab',

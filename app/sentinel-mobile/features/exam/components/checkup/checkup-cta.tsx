@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity } from 'react-native';
-import { type CheckupCTAProps } from '@/features/exam/types';
+import { type CheckupCTAProps } from '@/types/exam';
 
 export function CheckupCTA({ colors, onPress }: CheckupCTAProps) {
      return (

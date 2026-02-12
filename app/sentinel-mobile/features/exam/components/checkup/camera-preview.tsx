@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView } from 'expo-camera';
-import { type CameraPreviewProps } from '@/features/exam/types';
+import { type CameraPreviewProps } from '@/types/exam';
 
 export function CameraPreview({
      cameraFacing,
