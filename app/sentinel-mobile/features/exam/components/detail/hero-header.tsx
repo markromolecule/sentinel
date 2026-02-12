@@ -14,33 +14,29 @@ export function HeroHeader({ exam, isDark, colors, insetTop, onBack }: HeroHeade
                colors={gradientColors}
                start={{ x: 0, y: 0 }}
                end={{ x: 1, y: 1 }}
-               style={{ paddingTop: insetTop + 12, paddingBottom: 32, paddingHorizontal: 24 }}
+               style={{ paddingTop: insetTop + 16, paddingBottom: 32, paddingHorizontal: 24 }}
           >
                {/* Nav Row */}
                <TouchableOpacity
-                    className="w-10 h-10 rounded-full items-center justify-center"
-                    style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}
+                    style={{
+                         width: 40,
+                         height: 40,
+                         borderRadius: 20,
+                         alignItems: 'center',
+                         justifyContent: 'center',
+                         backgroundColor: 'rgba(255,255,255,0.15)',
+                         alignSelf: 'flex-start',
+                         marginBottom: 10,
+                    }}
                     onPress={onBack}
                     accessibilityLabel="Go back"
                     accessibilityRole="button"
                >
-                    <Ionicons name="arrow-back" size={22} color="#fff" />
+                    <Ionicons name="chevron-back" size={22} color="#fff" />
                </TouchableOpacity>
 
                {/* Title Block */}
-               <View style={{ marginTop: 28 }}>
-                    <View
-                         className="self-start px-3 py-1 rounded-full"
-                         style={{ backgroundColor: 'rgba(255,255,255,0.18)' }}
-                    >
-                         <Text
-                              className="text-xs font-semibold"
-                              style={{ color: 'rgba(255,255,255,0.9)', letterSpacing: 0.5 }}
-                         >
-                              {STATUS_LABELS[exam.status] ?? exam.status.toUpperCase()}
-                         </Text>
-                    </View>
-
+               <View>
                     <Text
                          style={{
                               fontSize: 28,
@@ -53,7 +49,6 @@ export function HeroHeader({ exam, isDark, colors, insetTop, onBack }: HeroHeade
                     >
                          {exam.title}
                     </Text>
-
                     <Text
                          style={{
                               fontSize: 15,
@@ -62,7 +57,7 @@ export function HeroHeader({ exam, isDark, colors, insetTop, onBack }: HeroHeade
                               lineHeight: 20,
                          }}
                     >
-                         {exam.subject}  ·  {exam.professor}
+                         {exam.subject}  |  {exam.professor}
                     </Text>
                </View>
           </LinearGradient>
