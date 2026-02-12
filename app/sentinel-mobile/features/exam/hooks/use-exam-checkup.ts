@@ -148,9 +148,12 @@ export function useExamCheckup(): UseExamCheckupReturn {
      const handleStartExam = async () => {
           // Stop metering before navigating to the actual exam to release the mic
           await stopMicMetering();
-          console.log('Navigating to exam session...');
-          // Add your navigation logic here, e.g.:
-          // router.push(`/exam/${id}/session`);
+          
+          // Generate a simple session ID
+          const sessionId = `sess_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+          
+          console.log('Navigating to exam session:', sessionId);
+          router.replace(`/exam/${id}/session/${sessionId}`);
      };
 
      return {
