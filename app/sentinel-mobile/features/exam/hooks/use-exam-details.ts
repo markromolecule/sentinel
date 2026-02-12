@@ -3,8 +3,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { mockExams } from '@/data/exams';
-import { DIFFICULTY_CONFIG, DEFAULT_DIFFICULTY_CONFIG } from '@/app/exam/[id]/details/_constants';
-import { type UseExamDetailsReturn } from '@/app/exam/[id]/details/_types';
+import { DIFFICULTY_CONFIG, DEFAULT_DIFFICULTY_CONFIG } from '@/features/exam/constants';
+import { type UseExamDetailsReturn } from '@/features/exam/types';
 
 export function useExamDetails(): UseExamDetailsReturn {
      const router = useRouter();

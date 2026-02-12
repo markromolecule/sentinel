@@ -1,4 +1,5 @@
-import { View, Text, SafeAreaView, useColorScheme } from 'react-native';
+import { View, Text, useColorScheme } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
 
 export default function MessagesScreen() {

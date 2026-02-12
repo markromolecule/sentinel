@@ -1,5 +1,5 @@
 import { View, Text } from 'react-native';
-import { type InstructionsListProps } from '@/app/exam/[id]/details/_types';
+import { type InstructionsListProps } from '@/features/exam/types';
 
 export function InstructionsList({ instructions, isDark, colors }: InstructionsListProps) {
      return (

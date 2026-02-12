@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity } from 'react-native';
-import { type BottomCTAProps } from '@/app/exam/[id]/details/_types';
+import { type BottomCTAProps } from '@/features/exam/types';
 
 export function BottomCTA({ colors, onPress }: BottomCTAProps) {
      return (

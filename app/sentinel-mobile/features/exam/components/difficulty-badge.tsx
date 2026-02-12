@@ -1,6 +1,6 @@
 import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { type DifficultyBadgeProps } from '@/app/exam/[id]/details/_types';
+import { type DifficultyBadgeProps } from '@/features/exam/types';
 
 export function DifficultyBadge({ difficulty, config }: DifficultyBadgeProps) {
      return (

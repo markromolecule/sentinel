@@ -1,12 +1,12 @@
 import { View, ScrollView, StatusBar } from 'react-native';
-import { useExamDetails } from '@/app/exam/[id]/details/_hooks/use-exam-details';
-import { HeroHeader } from '@/app/exam/[id]/details/_components/hero-header';
-import { QuickInfoBar } from '@/app/exam/[id]/details/_components/quick-info-bar';
-import { DifficultyBadge } from '@/app/exam/[id]/details/_components/difficulty-badge';
-import { AboutSection } from '@/app/exam/[id]/details/_components/about-section';
-import { InstructionsList } from '@/app/exam/[id]/details/_components/instructions-list';
-import { BottomCTA } from '@/app/exam/[id]/details/_components/bottom-cta';
-import { ExamNotFound } from '@/app/exam/[id]/details/_components/exam-not-found';
+import { useExamDetails } from '@/features/exam/hooks/use-exam-details';
+import { HeroHeader } from '@/features/exam/components/hero-header';
+import { QuickInfoBar } from '@/features/exam/components/quick-info-bar';
+import { DifficultyBadge } from '@/features/exam/components/difficulty-badge';
+import { AboutSection } from '@/features/exam/components/about-section';
+import { InstructionsList } from '@/features/exam/components/instructions-list';
+import { BottomCTA } from '@/features/exam/components/bottom-cta';
+import { ExamNotFound } from '@/features/exam/components/exam-not-found';
 
 export default function ExamDetailsScreen() {
      const {

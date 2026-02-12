@@ -1,5 +1,5 @@
 import { View, Text } from 'react-native';
-import { type AboutSectionProps } from '@/app/exam/[id]/details/_types';
+import { type AboutSectionProps } from '@/features/exam/types';
 
 export function AboutSection({ description, isDark, colors }: AboutSectionProps) {
      return (

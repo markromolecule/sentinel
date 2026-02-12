@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { type ExamNotFoundProps } from '@/app/exam/[id]/details/_types';
+import { type ExamNotFoundProps } from '@/features/exam/types';
 
 export function ExamNotFound({ colors, onGoBack }: ExamNotFoundProps) {
      return (

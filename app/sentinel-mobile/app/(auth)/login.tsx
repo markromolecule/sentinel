@@ -141,7 +141,7 @@ export default function LoginScreen() {
 
                          <View style={styles.divider}>
                               <View style={styles.dividerLine} />
-                              <Text style={styles.dividerText}>OR</Text>
+                              <Text style={styles.dividerText}>OR CONTINUE WITH</Text>
                               <View style={styles.dividerLine} />
                          </View>
 
