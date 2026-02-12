@@ -75,3 +75,106 @@ export type ExamNotFoundProps = {
      colors: ThemeColors;
      onGoBack: () => void;
 };
+
+// ─── Consent Types ───
+
+export type ConsentItem = {
+     label: string;
+     key: string;
+     checked: boolean;
+};
+
+export type UseExamConsentReturn = {
+     exam: Exam | undefined;
+     colors: ThemeColors;
+     isDark: boolean;
+     insets: { top: number; bottom: number };
+     cameraGranted: boolean;
+     micGranted: boolean;
+     agreements: ConsentItem[];
+     allAccepted: boolean;
+     toggleCamera: () => void;
+     toggleMic: () => void;
+     toggleAgreement: (index: number) => void;
+     handleGoBack: () => void;
+     handleContinue: () => void;
+};
+
+export type ConsentHeaderProps = {
+     examTitle: string;
+     isDark: boolean;
+     colors: ThemeColors;
+     insetTop: number;
+     onBack: () => void;
+};
+
+export type PermissionCardProps = {
+     icon: 'camera' | 'mic';
+     title: string;
+     description: string;
+     granted: boolean;
+     onToggle: () => void;
+     colors: ThemeColors;
+     isDark: boolean;
+};
+
+export type ConsentAgreementsProps = {
+     agreements: ConsentItem[];
+     onToggle: (index: number) => void;
+     colors: ThemeColors;
+     isDark: boolean;
+};
+
+export type ConsentCTAProps = {
+     colors: ThemeColors;
+     enabled: boolean;
+     onPress: () => void;
+};
+
+// ─── Check-Up Types ───
+
+export type CameraFacing = 'front' | 'back';
+
+export type UseExamCheckupReturn = {
+     exam: Exam | undefined;
+     colors: ThemeColors;
+     isDark: boolean;
+     insets: { top: number; bottom: number };
+     cameraFacing: CameraFacing;
+     cameraReady: boolean;
+     micLevel: number;
+     micDetected: boolean;
+     onCameraReady: () => void;
+     flipCamera: () => void;
+     handleGoBack: () => void;
+     handleStartExam: () => void;
+};
+
+export type CheckupHeaderProps = {
+     examTitle: string;
+     isDark: boolean;
+     colors: ThemeColors;
+     insetTop: number;
+     onBack: () => void;
+};
+
+export type CameraPreviewProps = {
+     cameraFacing: CameraFacing;
+     cameraReady: boolean;
+     onCameraReady: () => void;
+     onFlip: () => void;
+     colors: ThemeColors;
+     isDark: boolean;
+};
+
+export type MicLevelMeterProps = {
+     level: number;
+     detected: boolean;
+     colors: ThemeColors;
+     isDark: boolean;
+};
+
+export type CheckupCTAProps = {
+     colors: ThemeColors;
+     onPress: () => void;
+};

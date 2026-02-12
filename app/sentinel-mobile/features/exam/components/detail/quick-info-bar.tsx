@@ -13,7 +13,7 @@ type StatItemProps = {
 function StatItem({ icon, value, label, colors, hasBorder = false }: StatItemProps) {
      return (
           <View
-               className="flex-1 items-center py-5"
+               className="flex-1 items-center py-5 mb-4 mt-4"
                style={hasBorder ? { borderRightWidth: 1, borderRightColor: colors.border } : undefined}
           >
                <Ionicons name={icon} size={20} color={colors.icon} />

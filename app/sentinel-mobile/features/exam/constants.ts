@@ -27,3 +27,20 @@ export const STATUS_LABELS: Record<string, string> = {
      upcoming: 'UPCOMING',
      completed: 'COMPLETED',
 };
+
+// ─── Consent ───
+
+export const CONSENT_ITEMS = [
+  {
+    label: 'I agree to be monitored via camera during this exam',
+    key: 'camera-monitoring',
+  },
+  {
+    label: 'I agree to have my microphone recorded for integrity verification',
+    key: 'mic-recording',
+  },
+  {
+    label: 'I understand that any violations will be flagged and reviewed',
+    key: 'violations',
+  },
+];

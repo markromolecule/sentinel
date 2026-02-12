@@ -41,8 +41,11 @@ export default function HomeScreen() {
 
      return (
           <SafeAreaView
-               style={{ flex: 1, backgroundColor: colors.primary }}
-               className="flex-1"
+               style={{
+                    flex: 1,
+                    backgroundColor: colors.primary
+               }}
+               edges={['top']}
           >
                <StatusBar
                     barStyle="light-content"

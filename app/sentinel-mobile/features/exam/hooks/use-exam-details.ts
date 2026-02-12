@@ -22,15 +22,9 @@ export function useExamDetails(): UseExamDetailsReturn {
 
      const handleStartExam = () => {
           if (!exam) return;
-          Alert.alert(
-               'Start Exam',
-               `You are about to start "${exam.title}". Ensure you have a stable internet connection before proceeding.`,
-               [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Start Now', onPress: () => console.log('Starting exam...') },
-               ]
-          );
+          router.push(`/exam/${id}/details/consent`);
      };
+
 
      const handleOptOut = () => {
           Alert.alert(

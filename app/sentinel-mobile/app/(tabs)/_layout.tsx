@@ -2,7 +2,7 @@ import { Tabs } from 'expo-router';
 import React from 'react';
 import { useColorScheme } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/theme';
+import { Colors } from '@/constants/theme';
 
 export default function TabLayout() {
      const colorScheme = useColorScheme();
@@ -16,8 +16,9 @@ export default function TabLayout() {
                     tabBarInactiveTintColor: colors.tabIconDefault,
                     tabBarStyle: {
                          backgroundColor: colors.card,
-                         borderTopWidth: 1,
-                         borderTopColor: colors.border,
+                         borderTopWidth: 0,
+                         elevation: 0,
+                         shadowOpacity: 0,
                          paddingBottom: 8,
                          paddingTop: 8,
                          height: 84,
