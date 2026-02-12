@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Modal, TextInput, useColorScheme, Platform, KeyboardAvoidingView } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, TextInput, useColorScheme, Platform, KeyboardAvoidingView, TouchableWithoutFeedback } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
 
@@ -23,11 +23,17 @@ export const AddNoteModal = ({ visible, onClose, onSave, selectedDate, noteText,
                animationType="fade"
                onRequestClose={onClose}
           >
-               <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-                    <KeyboardAvoidingView
-                         behavior={Platform.OS === "ios" ? "padding" : "height"}
-                         className="w-full"
+               <KeyboardAvoidingView
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                    style={{ flex: 1 }}
+               >
+                    <View
+                         style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}
                     >
+                         <TouchableWithoutFeedback onPress={onClose}>
+                              <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
+                         </TouchableWithoutFeedback>
+
                          <View
                               className="p-6 rounded-t-3xl"
                               style={{ backgroundColor: colors.background }}
@@ -69,8 +75,8 @@ export const AddNoteModal = ({ visible, onClose, onSave, selectedDate, noteText,
                                    <Text className="text-white font-bold text-base">Save Note</Text>
                               </TouchableOpacity>
                          </View>
-                    </KeyboardAvoidingView>
-               </View>
+                    </View>
+               </KeyboardAvoidingView>
           </Modal>
      );
 };

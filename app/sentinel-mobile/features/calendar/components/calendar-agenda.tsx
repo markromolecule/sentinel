@@ -13,6 +13,10 @@ interface CalendarAgendaProps {
      onViewableItemsChanged: any;
 }
 
+const viewabilityConfig = {
+     itemVisiblePercentThreshold: 50
+};
+
 const DayItem = ({ date, events, onDeleteNote }: { date: Date, events: Record<string, CalendarEvent[]>, onDeleteNote: any }) => {
      const colorScheme = useColorScheme();
      const colors = Colors[colorScheme ?? 'light'];
@@ -64,7 +68,7 @@ export const CalendarAgenda = ({ agendaDays, events, onDeleteNote, flatListRef, 
                keyExtractor={(item) => formatDateKey(item)}
                renderItem={renderDayItem}
                onViewableItemsChanged={onViewableItemsChanged}
-               viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
+               viewabilityConfig={viewabilityConfig}
                showsVerticalScrollIndicator={false}
                contentContainerStyle={{ paddingTop: 20, paddingBottom: 100 }}
           />

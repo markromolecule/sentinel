@@ -16,8 +16,8 @@ export const TodayButton = ({ visible, onPress }: TodayButtonProps) => {
 
      return (
           <TouchableOpacity
-               className="absolute bottom-24 right-6 px-4 py-3 rounded-full flex-row items-center shadow-lg"
-               style={{ backgroundColor: colors.card, elevation: 4 }}
+               className="px-4 py-3 rounded-full flex-row items-center shadow-lg"
+               style={{ backgroundColor: colors.card, elevation: 4, zIndex: 50, position: 'absolute', bottom: 30, left: 20 }}
                onPress={onPress}
           >
                <Ionicons name="calendar" size={16} color={colors.text} />
