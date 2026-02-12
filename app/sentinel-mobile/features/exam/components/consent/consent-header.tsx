@@ -2,7 +2,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { HERO_GRADIENT } from '@/features/exam/constants';
-import { type ConsentHeaderProps } from '@/features/exam/types';
+import { type ConsentHeaderProps } from '@/types/exam';
 
 export function ConsentHeader({ examTitle, isDark, colors, insetTop, onBack }: ConsentHeaderProps) {
      const gradientColors = isDark

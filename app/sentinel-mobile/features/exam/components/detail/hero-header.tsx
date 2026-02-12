@@ -2,7 +2,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { HERO_GRADIENT, STATUS_LABELS } from '@/features/exam/constants';
-import { type HeroHeaderProps } from '@/features/exam/types';
+import { type HeroHeaderProps } from '@/types/exam';
 
 export function HeroHeader({ exam, isDark, colors, insetTop, onBack }: HeroHeaderProps) {
      const gradientColors = isDark

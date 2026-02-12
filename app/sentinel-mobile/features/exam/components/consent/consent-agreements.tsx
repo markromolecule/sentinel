@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { type ConsentAgreementsProps } from '@/features/exam/types';
+import { type ConsentAgreementsProps } from '@/types/exam';
 
 export function ConsentAgreements({ agreements, onToggle, colors, isDark }: ConsentAgreementsProps) {
      return (

@@ -1,6 +1,6 @@
 import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { type QuickInfoBarProps, type ThemeColors } from '@/features/exam/types';
+import { type QuickInfoBarProps, type ThemeColors } from '@/types/exam';
 
 type StatItemProps = {
      icon: keyof typeof Ionicons.glyphMap;

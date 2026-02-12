@@ -178,3 +178,73 @@ export type CheckupCTAProps = {
      colors: ThemeColors;
      onPress: () => void;
 };
+
+// ─── Session Types ───
+
+export type Question = {
+     id: string;
+     questionNumber: number;
+     text: string;
+     options: string[];
+     correctAnswer: string;
+     explanation?: string;
+};
+
+export type UseExamSessionReturn = {
+     exam: Exam | undefined;
+     colors: ThemeColors;
+     isDark: boolean;
+     insets: { top: number; bottom: number };
+     questions: Question[];
+     currentQuestionIndex: number;
+     answers: Record<string, string>;
+     drawerOpen: boolean;
+     timeRemaining: number;
+     isFirst: boolean;
+     isLast: boolean;
+     goToQuestion: (index: number) => void;
+     handleAnswer: (questionId: string, answer: string) => void;
+     toggleDrawer: () => void;
+     handleNext: () => void;
+     handlePrev: () => void;
+     handleSubmit: () => void;
+     timeUp: boolean;
+};
+
+export type SessionHeaderProps = {
+     examTitle: string;
+     isDark: boolean;
+     colors: ThemeColors;
+     insetTop: number;
+     timeRemaining: number;
+     onBack: () => void;
+};
+
+export type QuestionCardProps = {
+     question: Question;
+     selectedAnswer: string;
+     onAnswer: (answer: string) => void;
+     colors: ThemeColors;
+     isDark: boolean;
+};
+
+export type QuestionDrawerProps = {
+     questions: Question[];
+     answers: Record<string, string>;
+     onSelectQuestion: (index: number) => void;
+     onClose: () => void;
+     colors: ThemeColors;
+     isDark: boolean;
+};
+
+export type SessionFooterProps = {
+     onPrev: () => void;
+     onNext: () => void;
+     onToggleDrawer: () => void;
+     isFirst: boolean;
+     isLast: boolean;
+     currentIndex: number;
+     totalQuestions: number;
+     colors: ThemeColors;
+     isDark: boolean;
+};

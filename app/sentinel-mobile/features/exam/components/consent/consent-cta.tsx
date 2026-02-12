@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity } from 'react-native';
-import { type ConsentCTAProps } from '@/features/exam/types';
+import { type ConsentCTAProps } from '@/types/exam';
 
 export function ConsentCTA({ colors, enabled, onPress }: ConsentCTAProps) {
      return (

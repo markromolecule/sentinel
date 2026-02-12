@@ -8,7 +8,7 @@ import Animated, {
      runOnJS,
      Easing
 } from 'react-native-reanimated';
-import { ThemeColors } from '@/features/exam/types';
+import { ThemeColors } from '@/types/exam';
 
 interface QuestionDrawerProps {
      visible: boolean;

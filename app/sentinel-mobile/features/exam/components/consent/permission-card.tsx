@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { type PermissionCardProps } from '@/features/exam/types';
+import { type PermissionCardProps } from '@/types/exam';
 
 const ICON_MAP = {
      camera: { name: 'camera' as const, grantedName: 'camera' as const },

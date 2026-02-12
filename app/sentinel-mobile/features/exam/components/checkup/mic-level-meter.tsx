@@ -1,6 +1,6 @@
 import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { type MicLevelMeterProps } from '@/features/exam/types';
+import { type MicLevelMeterProps } from '@/types/exam';
 
 export function MicLevelMeter({ level, detected, colors, isDark }: MicLevelMeterProps) {
      const barWidth = `${Math.round(level * 100)}%` as const;
