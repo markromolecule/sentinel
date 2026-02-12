@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, TouchableOpacity, useColorScheme } from 'react-native';
+import { View, Text, TouchableOpacity, useColorScheme } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
 
@@ -15,15 +15,20 @@ export const TodayButton = ({ visible, onPress }: TodayButtonProps) => {
      if (!visible) return null;
 
      return (
-          <TouchableOpacity
-               className="px-4 py-3 rounded-full flex-row items-center shadow-lg"
-               style={{ backgroundColor: colors.card, elevation: 4, zIndex: 50, position: 'absolute', bottom: 30, left: 20 }}
-               onPress={onPress}
+          <View
+               style={{ position: 'absolute', bottom: 30, left: 0, right: 0, alignItems: 'center', zIndex: 50 }}
+               pointerEvents="box-none"
           >
-               <Ionicons name="calendar" size={16} color={colors.text} />
-               <Text className="ml-2 font-bold text-xs" style={{ color: colors.text }}>
-                    TODAY
-               </Text>
-          </TouchableOpacity>
+               <TouchableOpacity
+                    className="px-4 py-3 rounded-full flex-row items-center shadow-lg"
+                    style={{ backgroundColor: colors.primary, elevation: 4 }}
+                    onPress={onPress}
+               >
+                    <Ionicons name="calendar" size={16} color="#fff" />
+                    <Text className="ml-2 font-bold text-xs" style={{ color: '#fff' }}>
+                         TODAY
+                    </Text>
+               </TouchableOpacity>
+          </View>
      );
 };
