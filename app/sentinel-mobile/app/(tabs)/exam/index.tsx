@@ -80,6 +80,7 @@ export default function HomeScreen() {
                               className="ml-3"
                               accessibilityLabel="Profile"
                               accessibilityRole="button"
+                              onPress={() => router.push('/profile' as any)}
                          >
                               <View
                                    className="w-12 h-12 rounded-full items-center justify-center"
