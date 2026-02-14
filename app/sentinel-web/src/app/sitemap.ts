@@ -18,6 +18,36 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 1.0,
     },
+    {
+      url: `${baseUrl}/landing/hero-section`,
+      lastModified: currentDate,
+      changeFrequency: 'monthly',
+      priority: 1.0,
+    },
+    {
+      url: `${baseUrl}/landing/feature-section`,
+      lastModified: currentDate,
+      changeFrequency: 'monthly',
+      priority: 1.0,
+    },
+    {
+      url: `${baseUrl}/landing/how-it-works-section`,
+      lastModified: currentDate,
+      changeFrequency: 'monthly',
+      priority: 1.0,
+    },
+    {
+      url: `${baseUrl}/landing/compare-section`,
+      lastModified: currentDate,
+      changeFrequency: 'monthly',
+      priority: 1.0,
+    },
+    {
+      url: `${baseUrl}/landing/download-section`,
+      lastModified: currentDate,
+      changeFrequency: 'monthly',
+      priority: 1.0,
+    },
     // Auth pages
     {
       url: `${baseUrl}/auth/login`,

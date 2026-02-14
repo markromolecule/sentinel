@@ -1,34 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import { UserPlus, Smartphone, Shield, BarChart3, ChevronRight } from 'lucide-react';
-
-const STEPS = [
-    {
-        number: '01',
-        icon: UserPlus,
-        title: 'Create Exam Session',
-        description: 'Proctors set up exams for their institution and configure session details.',
-    },
-    {
-        number: '02',
-        icon: Smartphone,
-        title: 'Assign Students',
-        description: 'Enroll students into the session or import a masterlist for seamless participation.',
-    },
-    {
-        number: '03',
-        icon: Shield,
-        title: 'Start Monitoring',
-        description: 'Real-time gaze tracking, audio analysis, and flagging activate automatically during exams.',
-    },
-    {
-        number: '04',
-        icon: BarChart3,
-        title: 'Review Results',
-        description: 'Proctors review detailed reports, analytics, and flagged behaviors after each session.',
-    },
-];
+import { ChevronRight } from 'lucide-react';
+import { STEPS } from '@/app/(public)/landing/how-it-works-section/_constants';
 
 export default function HowItWorksSection() {
     return (
@@ -36,7 +10,7 @@ export default function HowItWorksSection() {
             {/* Background Grid */}
             <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-size:40px_40px mask-linear-gradient(to_bottom,black_40%,transparent_100%) pointer-events-none"></div>
 
-            <div className="container mx-auto px-6 relative z-10">
+            <div className="container mx-auto px-6 lg:px-8 relative z-10">
                 {/* Section Header */}
                 <div className="flex flex-col items-start text-left md:items-center md:text-center mb-16">
                     <div className="inline-flex items-center gap-2 mb-6">
@@ -52,14 +26,14 @@ export default function HowItWorksSection() {
                 </div>
 
                 {/* Steps Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-12 max-w-6xl mx-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 lg:gap-8 w-full mx-auto">
                     {STEPS.map((step, index) => (
                         <StepCard key={index} {...step} isLast={index === STEPS.length - 1} />
                     ))}
                 </div>
 
                 {/* Connection Line (Desktop only) */}
-                <div className="hidden lg:block absolute top-1/2 left-[10%] right-[10%] h-px bg-linear-to-r from-transparent via-white/10 to-transparent -translate-y-20 pointer-events-none"></div>
+                <div className="hidden lg:block absolute top-1/2 left-[5%] right-[5%] h-px bg-linear-to-r from-transparent via-white/10 to-transparent -translate-y-20 pointer-events-none"></div>
             </div>
         </section>
     );
@@ -99,7 +73,7 @@ function StepCard({ number, icon: Icon, title, description, isLast }: StepCardPr
 
             {/* Arrow connector (hidden on mobile, shown on desktop except last) */}
             {!isLast && (
-                <div className="hidden lg:flex absolute -right-10 top-1/2 -translate-y-1/2 z-10">
+                <div className="hidden lg:flex absolute -right-6 md:-right-8 top-1/2 -translate-y-1/2 z-10">
                     <ChevronRight className="w-8 h-8 text-blue-500/40" strokeWidth={1} />
                 </div>
             )}

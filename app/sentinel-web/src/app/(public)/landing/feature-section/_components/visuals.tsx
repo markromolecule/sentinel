@@ -31,11 +31,6 @@ export function AudioAnalysisVisual() {
                     ></div>
                 ))}
             </div>
-            {/* Notification Badge */}
-            <div className="absolute top-10 right-10 bg-[#1a1a1c] border border-white/10 rounded-lg p-2 px-3 shadow-xl backdrop-blur-md flex items-center gap-2 animate-float">
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                <span className="text-xs text-gray-300 font-mono">Noise Detected</span>
-            </div>
         </div>
     );
 }
@@ -48,14 +43,6 @@ export function AnalyticsVisual() {
                 <svg className="w-full h-24 stroke-blue-500/50 fill-none stroke-2" viewBox="0 0 100 40" preserveAspectRatio="none">
                     <path d="M0,40 Q25,40 35,20 T70,30 T100,5" className="animate-draw-path" strokeDasharray="100" strokeDashoffset="100" />
                 </svg>
-            </div>
-            {/* Data Points */}
-            <div className="absolute top-12 right-20 bg-[#1a1a1c]/90 border border-white/10 rounded-lg p-2 shadow-2xl backdrop-blur-md">
-                <div className="flex items-center gap-2 mb-1">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-                    <span className="text-[10px] text-gray-400 uppercase tracking-wider">Integrity Score</span>
-                </div>
-                <div className="text-lg font-bold text-white">98.5%</div>
             </div>
         </div>
     );
