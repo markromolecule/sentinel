@@ -6,10 +6,84 @@ import {
     conversationDetailSchema,
     listConversationsResponseSchema,
     listConversationMessagesResponseSchema,
+    messageRecipientSchema,
 } from './message-schema';
 
 describe('Message Schemas', () => {
+    describe('messageRecipientSchema', () => {
+        it('should validate a correct recipient object', () => {
+            const valid = {
+                userId: '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d',
+                name: 'John Doe',
+                avatarUrl: 'https://example.com/avatar.png',
+                role: 'student',
+                status: 'ACTIVE',
+                institution: {
+                    id: '550e8400-e29b-41d4-a716-446655440000',
+                    name: 'Sentinel Academy',
+                },
+            };
+            expect(messageRecipientSchema.safeParse(valid).success).toBe(true);
+        });
+
+        it('should allow nullable and optional avatarUrl', () => {
+            const valid = {
+                userId: '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d',
+                name: 'John Doe',
+                role: 'student',
+                status: 'ACTIVE',
+                institution: {
+                    id: '550e8400-e29b-41d4-a716-446655440000',
+                    name: 'Sentinel Academy',
+                },
+            };
+            expect(messageRecipientSchema.safeParse(valid).success).toBe(true);
+
+            const validNull = {
+                userId: '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d',
+                name: 'John Doe',
+                avatarUrl: null,
+                role: 'student',
+                status: 'ACTIVE',
+                institution: {
+                    id: '550e8400-e29b-41d4-a716-446655440000',
+                    name: 'Sentinel Academy',
+                },
+            };
+            expect(messageRecipientSchema.safeParse(validNull).success).toBe(true);
+        });
+
+        it('should reject invalid userId uuid', () => {
+            const invalid = {
+                userId: 'invalid-uuid',
+                name: 'John Doe',
+                role: 'student',
+                status: 'ACTIVE',
+                institution: {
+                    id: '550e8400-e29b-41d4-a716-446655440000',
+                    name: 'Sentinel Academy',
+                },
+            };
+            expect(messageRecipientSchema.safeParse(invalid).success).toBe(false);
+        });
+
+        it('should reject invalid status value', () => {
+            const invalid = {
+                userId: '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d',
+                name: 'John Doe',
+                role: 'student',
+                status: 'PENDING',
+                institution: {
+                    id: '550e8400-e29b-41d4-a716-446655440000',
+                    name: 'Sentinel Academy',
+                },
+            };
+            expect(messageRecipientSchema.safeParse(invalid).success).toBe(false);
+        });
+    });
+
     describe('messageParticipantSchema', () => {
+
         it('should validate a correct participant object', () => {
             const valid = {
                 userId: '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d',

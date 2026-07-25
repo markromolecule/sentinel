@@ -67,3 +67,4 @@ export const createDirectConversationRouteHandler: AppRouteHandler<
         return respondWithRouteError(c, error, 'Create direct conversation error:');
     }
 };
+

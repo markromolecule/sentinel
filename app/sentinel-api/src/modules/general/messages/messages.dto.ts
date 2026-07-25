@@ -137,3 +137,38 @@ export const markConversationReadSchema = {
         })
         .openapi('MarkConversationReadResponse'),
 };
+
+// ─── GET /messages/recipients ─────────────────────────────────────────────────
+
+export const messageRecipientOpenApi = z
+    .object({
+        userId: z.string().uuid(),
+        name: z.string(),
+        avatarUrl: z.string().nullable().optional(),
+        role: z.string(),
+        status: z.enum(['ACTIVE', 'INACTIVE']),
+        institution: z.object({
+            id: z.string().uuid(),
+            name: z.string(),
+        }),
+    })
+    .openapi('MessageRecipient');
+
+export const getMessageRecipientsSchema = {
+    query: z.object({
+        search: z.string().trim().min(2, 'Search term must be at least 2 characters').max(100, 'Search term is too long'),
+        limit: z
+            .string()
+            .optional()
+            .transform((val) => (val ? parseInt(val, 10) : 20))
+            .pipe(z.number().int().min(1).max(20)),
+    }),
+    response: z
+        .object({
+            success: z.boolean(),
+            message: z.string(),
+            data: z.array(messageRecipientOpenApi),
+        })
+        .openapi('GetMessageRecipientsResponse'),
+};
+

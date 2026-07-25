@@ -18,8 +18,10 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@sentinel/ui';
-import { MOCK_NOTIFICATIONS } from '@sentinel/shared/constants';
-import { format, formatDistanceToNow } from 'date-fns';
+import { WebNotificationDropdown } from '../common/web-notification-dropdown';
+import { resolveStudentNotificationHref } from '@/app/(protected)/student/notifications/_lib/map-app-notification-to-student-notification';
+
+const STUDENT_HEADER_NOTIFICATION_QUERY_KEY = ['notifications', 'student-header'] as const;
 
 export default function StudentHeader() {
     const pathname = usePathname();
@@ -34,9 +36,6 @@ export default function StudentHeader() {
     const handleLogout = () => {
         logout(undefined);
     };
-
-    // Student-facing activity notifications were explicitly deferred from the Phase 4 V1 rollout.
-    const recentNotifications = MOCK_NOTIFICATIONS.slice(0, 4);
 
     const initials = profile ? `${profile.firstName?.[0] || ''}${profile.lastName?.[0] || ''}` : '';
     const fullName = profile ? `${profile.firstName || ''} ${profile.lastName || ''}` : '';
@@ -95,106 +94,13 @@ export default function StudentHeader() {
                         <ThemeToggle />
                     </div>
 
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-muted-foreground hover:text-foreground relative hidden sm:flex"
-                            >
-                                <Bell className="h-5 w-5" />
-                                {recentNotifications.some((n) => !n.isRead) && (
-                                    <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500" />
-                                )}
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-80">
-                            <div className="flex items-center justify-between px-4 py-3">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-base font-semibold">Notifications</span>
-                                    {recentNotifications.filter((n) => !n.isRead).length > 0 && (
-                                        <span className="bg-primary/10 text-primary flex items-center justify-center rounded-full px-2.5 py-0.5 text-xs font-medium">
-                                            {recentNotifications.filter((n) => !n.isRead).length}{' '}
-                                            new
-                                        </span>
-                                    )}
-                                </div>
-                                {recentNotifications.filter((n) => !n.isRead).length > 0 && (
-                                    <button
-                                        className="text-muted-foreground hover:text-foreground text-xs transition-colors outline-none"
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            // Mock mark all as read for student since it's mock data currently
-                                            recentNotifications.forEach((n) => {
-                                                n.isRead = true;
-                                            });
-                                        }}
-                                    >
-                                        Mark all as read
-                                    </button>
-                                )}
-                            </div>
-                            <DropdownMenuSeparator />
-                            {recentNotifications.length === 0 ? (
-                                <div className="text-muted-foreground p-4 text-center text-sm">
-                                    No new notifications
-                                </div>
-                            ) : (
-                                <div className="flex flex-col">
-                                    {recentNotifications.map((notification) => (
-                                        <DropdownMenuItem
-                                            key={notification.id}
-                                            className={cn(
-                                                'flex cursor-pointer flex-col items-start gap-1.5 p-4 transition-colors',
-                                                !notification.isRead
-                                                    ? 'bg-background hover:bg-accent'
-                                                    : 'hover:bg-accent opacity-80',
-                                            )}
-                                        >
-                                            <div className="flex w-full items-start justify-between gap-3">
-                                                <div className="flex items-center gap-2">
-                                                    {!notification.isRead && (
-                                                        <span className="bg-primary h-2 w-2 flex-shrink-0 rounded-full" />
-                                                    )}
-                                                    <span
-                                                        className={cn(
-                                                            'text-sm font-semibold',
-                                                            !notification.isRead
-                                                                ? 'text-foreground'
-                                                                : 'text-foreground/80',
-                                                        )}
-                                                    >
-                                                        {notification.title}
-                                                    </span>
-                                                </div>
-                                                <span className="text-muted-foreground ml-2 text-xs whitespace-nowrap">
-                                                    {formatDistanceToNow(
-                                                        new Date(notification.date),
-                                                        {
-                                                            addSuffix: true,
-                                                        },
-                                                    )}
-                                                </span>
-                                            </div>
-                                            <p className="text-muted-foreground line-clamp-2 text-xs">
-                                                {notification.message}
-                                            </p>
-                                        </DropdownMenuItem>
-                                    ))}
-                                </div>
-                            )}
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                                asChild
-                                className="text-primary cursor-pointer justify-center text-center font-medium"
-                            >
-                                <Link href="/student/notifications" className="w-full">
-                                    View all notifications
-                                </Link>
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                    <WebNotificationDropdown
+                        queryKey={STUDENT_HEADER_NOTIFICATION_QUERY_KEY}
+                        viewAllHref="/student/notifications"
+                        resolveNotificationHref={resolveStudentNotificationHref}
+                        triggerClassName="text-muted-foreground hover:text-foreground hidden sm:flex"
+                    />
+
 
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>

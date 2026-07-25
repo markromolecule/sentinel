@@ -9,7 +9,7 @@ import {
     usePresence,
     useProfileQuery,
     useSendMessageMutation,
-    useUsersQuery,
+    useMessageRecipientsQuery,
 } from '@sentinel/hooks';
 import type {
     ConversationDetail,
@@ -85,6 +85,12 @@ const EMPTY_MESSAGES: Array<{
 export function MessagingPageClient() {
     const pathname = usePathname();
     const isMessagesRoute = pathname === '/messages';
+    const isStudentRoute = pathname.includes('/student');
+    const isInstructorRoute = pathname.includes('/instructor');
+
+    const searchParams = useSearchParams();
+    const urlConversationId = searchParams ? searchParams.get('conversationId') : null;
+
     const { profile, isLoading: isProfileLoading, error: profileError } = useProfileQuery();
     const { onlineUserIds } = usePresence();
     const permissionKeys = profile?.activePermissionKeys ?? [];
@@ -102,6 +108,20 @@ export function MessagingPageClient() {
     const deferredDirectorySearch = useDeferredValue(directorySearch);
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
     const lastMarkedConversationIdRef = useRef<string | null>(null);
+
+    const [isMobile, setIsMobile] = useState(false);
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    useEffect(() => {
+        if (urlConversationId) {
+            setSelectedConversationId(urlConversationId);
+        }
+    }, [urlConversationId]);
 
     const conversationsQuery = useConversationsQuery({
         enabled: canViewMessages && !!profile,
@@ -122,11 +142,10 @@ export function MessagingPageClient() {
         },
     });
     const markConversationReadMutation = useMarkConversationReadMutation();
-    const directoryQuery = useUsersQuery({
-        search: deferredDirectorySearch,
-        limit: 20,
-        enabled: isDirectoryOpen && canCreateMessages,
-    });
+    const directoryQuery = useMessageRecipientsQuery(
+        isDirectoryOpen ? deferredDirectorySearch : '',
+        20,
+    );
 
     useMessageRealtime({
         enabled: canViewMessages,
@@ -140,13 +159,15 @@ export function MessagingPageClient() {
         (conversation) => conversation.conversationId === selectedConversationId,
     );
     const effectiveSelectedConversationId =
-        selectedConversationId === null
-            ? (conversations[0]?.conversationId ?? '')
-            : selectedConversationId !== '' &&
-                !selectedConversationExists &&
-                pendingConversation?.conversationId !== selectedConversationId
+        isMobile
+            ? (selectedConversationId ?? '')
+            : selectedConversationId === null
               ? (conversations[0]?.conversationId ?? '')
-              : selectedConversationId;
+              : selectedConversationId !== '' &&
+                  !selectedConversationExists &&
+                  pendingConversation?.conversationId !== selectedConversationId
+                ? (conversations[0]?.conversationId ?? '')
+                : selectedConversationId;
     useMessageRealtime({
         enabled: canViewMessages && !!effectiveSelectedConversationId,
         conversationId: effectiveSelectedConversationId || undefined,
@@ -166,11 +187,20 @@ export function MessagingPageClient() {
     const selectedMessages = messagesQuery.data ?? EMPTY_MESSAGES;
 
     const selectableUsers = (directoryQuery.data ?? [])
-        .filter((user) => user.id !== profile?.id)
+        .map((u) => ({
+            id: u.userId,
+            firstName: u.name,
+            lastName: '',
+            role: u.role ?? 'student',
+            status: u.status,
+            institution: u.institution?.name ?? undefined,
+            avatarUrl: u.avatarUrl,
+        }))
         .sort(
             (left, right) =>
                 Number(onlineUserIds.has(right.id)) - Number(onlineUserIds.has(left.id)),
         );
+
 
     function selectConversation(conversation: ConversationSummary) {
         startTransition(() => {
@@ -184,13 +214,18 @@ export function MessagingPageClient() {
     }
 
     async function handleSendMessage() {
-        if (!effectiveSelectedConversationId || !canCreateMessages) {
+        if (
+            !effectiveSelectedConversationId ||
+            !canCreateMessages ||
+            !messageDraft.trim() ||
+            sendMessageMutation.isPending
+        ) {
             return;
         }
 
         await sendMessageMutation.mutateAsync({
             conversationId: effectiveSelectedConversationId,
-            content: messageDraft,
+            content: messageDraft.trim(),
         });
     }
 
@@ -227,7 +262,6 @@ export function MessagingPageClient() {
         });
     }, [effectiveSelectedConversationId, markConversationReadMutation, selectedConversation]);
 
-    const searchParams = useSearchParams();
     const targetUserId = searchParams?.get('userId') ?? null;
 
     useEffect(() => {
@@ -452,7 +486,7 @@ function MessagingPageFrame({
     );
 }
 
-function MessagingPageSkeleton() {
+export function MessagingPageSkeleton() {
     return (
         <MessagingPageFrame
             title="Messages"
@@ -681,6 +715,7 @@ function NewConversationPanel({
         role: string;
         institution?: string;
         status: string;
+        avatarUrl?: string | null;
     }>;
     isMessagesRoute?: boolean;
 }) {
@@ -736,7 +771,7 @@ function NewConversationPanel({
                             const participant: MessageParticipant = {
                                 userId: user.id,
                                 name: [user.firstName, user.lastName].filter(Boolean).join(' '),
-                                avatarUrl: null,
+                                avatarUrl: user.avatarUrl || null,
                                 role: user.role,
                                 status:
                                     user.status?.toUpperCase() === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE',

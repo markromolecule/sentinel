@@ -18,16 +18,23 @@ import {
     markConversationReadRoute,
     markConversationReadRouteHandler,
 } from './controllers/mark-conversation-read.controller';
+import {
+    getMessageRecipientsRoute,
+    getMessageRecipientsRouteHandler,
+} from './controllers/get-message-recipients.controller';
+
 
 const messagesRoutes = new OpenAPIHono<HonoEnv>();
 
 messagesRoutes.use('*', authMiddleware);
 
 messagesRoutes
+    .openapi(getMessageRecipientsRoute, getMessageRecipientsRouteHandler)
     .openapi(getConversationsRoute, getConversationsRouteHandler)
     .openapi(getConversationMessagesRoute, getConversationMessagesRouteHandler)
     .openapi(createDirectConversationRoute, createDirectConversationRouteHandler)
     .openapi(sendMessageRoute, sendMessageRouteHandler)
     .openapi(markConversationReadRoute, markConversationReadRouteHandler);
+
 
 export default messagesRoutes;

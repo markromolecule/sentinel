@@ -1,11 +1,8 @@
 import { type DbClient } from '@sentinel/db';
 import { type CreateCalendarEventBody } from '../../../calendar/calendar.dto';
-import {
-    getUserDisplayName,
-    getUserPrimaryRole,
-    notifyInstitutionActivity,
-    type SupportedActorRole,
-} from './activity-notification-base.service';
+import * as activityBase from './activity-notification-base.service';
+import { type SupportedActorRole } from './activity-notification-base.service';
+
 
 const DEFAULT_CALENDAR_AUDIENCE_RECIPIENT_ROLES = [
     'student',
@@ -60,8 +57,8 @@ export class CalendarActivityNotificationService {
         eventId: string;
         payload: CreateCalendarEventBody;
     }) {
-        const actorName = await getUserDisplayName(args.dbClient, args.actorUserId);
-        const actorRole = await getUserPrimaryRole(args.dbClient, args.actorUserId);
+        const actorName = await activityBase.getUserDisplayName(args.dbClient, args.actorUserId);
+        const actorRole = await activityBase.getUserPrimaryRole(args.dbClient, args.actorUserId);
         const roleNames = mapCalendarAudienceToRecipientRoles({
             targetAudience: args.payload.targetAudience,
             actorRole,
@@ -71,7 +68,7 @@ export class CalendarActivityNotificationService {
             return;
         }
 
-        await notifyInstitutionActivity({
+        await activityBase.notifyInstitutionActivity({
             dbClient: args.dbClient,
             actorUserId: args.actorUserId,
             institutionId: args.institutionId,

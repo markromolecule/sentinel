@@ -10,9 +10,10 @@ import {
     useMessageRealtime,
     usePresence,
     useProfileQuery,
-    useUsersQuery,
+    useMessageRecipientsQuery,
     useCreateDirectConversationMutation,
 } from '@sentinel/hooks';
+
 import { Conversation, Message } from '../../_types';
 import { DEEP_LINK_PARAM } from '../../_constants';
 import { UseProctorMessagesReturn } from './_types';
@@ -52,11 +53,12 @@ export function useProctorMessages(): UseProctorMessagesReturn {
 
     // Query system users for direct messaging directory
     const deferredDirectorySearch = useDeferredValue(directorySearch);
-    const directoryQuery = useUsersQuery({
-        search: deferredDirectorySearch,
-        enabled: showDirectory,
-    });
+    const directoryQuery = useMessageRecipientsQuery(
+        showDirectory ? deferredDirectorySearch : '',
+        20,
+    );
     const rawDirectoryUsers = directoryQuery.data ?? [];
+
 
     const createDirectConversationMutation = useCreateDirectConversationMutation({
         onSuccess: (conversation) => {
@@ -196,8 +198,15 @@ export function useProctorMessages(): UseProctorMessagesReturn {
     const selectedConversation =
         mappedConversations.find((c) => c.id === selectedConversationId) || null;
 
-    // Filter out logged-in user from searchable user directory list
-    const directoryUsersFiltered = rawDirectoryUsers.filter((u) => u.id !== currentUserId);
+    // Filter out logged-in user and map properties to UI format
+    const directoryUsersFiltered = rawDirectoryUsers.map((u: any) => ({
+        id: u.userId,
+        name: u.name,
+        avatarUrl: u.avatarUrl,
+        role: u.role,
+        institution: u.institution?.name ?? null,
+    }));
+
 
     // Map DB ConversationMessage to UI Message
     const mappedMessages: Message[] = currentMessagesRaw.map((m) => ({

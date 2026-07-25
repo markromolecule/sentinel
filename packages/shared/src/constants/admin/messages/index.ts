@@ -12,4 +12,7 @@ export const MESSAGES_QUERY_KEYS = {
     conversations: () => ['/messages', 'conversations'] as const,
     messages: (conversationId: string) =>
         ['/messages', 'conversations', conversationId, 'messages'] as const,
+    recipients: (search: string, limit?: number) =>
+        ['/messages', 'recipients', { search, limit }] as const,
 };
+

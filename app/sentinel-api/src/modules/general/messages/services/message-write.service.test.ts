@@ -6,6 +6,7 @@ import {
     markConversationRead,
 } from './message-write.service';
 import * as dataLayer from '../data';
+import { NotificationService } from '../../notification/notification.service';
 
 vi.mock('../data', () => ({
     findDirectConversationData: vi.fn(),
@@ -14,6 +15,12 @@ vi.mock('../data', () => ({
     createMessageData: vi.fn(),
     markConversationReadData: vi.fn(),
     getConversationByIdData: vi.fn(),
+}));
+
+vi.mock('../../notification/notification.service', () => ({
+    NotificationService: {
+        createNotification: vi.fn(),
+    },
 }));
 
 describe('message-write.service', () => {
@@ -29,13 +36,21 @@ describe('message-write.service', () => {
         // Standard mock Kysely DbClient with selectFrom and transaction support
         mockDbClient = {
             selectFrom: vi.fn().mockReturnThis(),
+            innerJoin: vi.fn().mockReturnThis(),
+            leftJoin: vi.fn().mockReturnThis(),
             select: vi.fn().mockReturnThis(),
             where: vi.fn().mockReturnThis(),
+            whereRef: vi.fn().mockReturnThis(),
+            orderBy: vi.fn().mockReturnThis(),
+            limit: vi.fn().mockReturnThis(),
             executeTakeFirst: vi.fn(),
             transaction: vi.fn().mockReturnValue({
                 execute: vi.fn((cb) => cb(mockDbClient)),
             }),
         } as any;
+
+
+
     });
 
     describe('createDirectConversation', () => {
@@ -48,7 +63,10 @@ describe('message-write.service', () => {
         });
 
         it('should throw 404 if recipient profile does not exist', async () => {
-            mockDbClient.executeTakeFirst.mockResolvedValueOnce(undefined); // Recipient lookup fails
+            mockDbClient.executeTakeFirst
+                .mockResolvedValueOnce({ institution_id: 'inst-1' }) // requesterProfile
+                .mockResolvedValueOnce({ roleName: 'instructor' }) // requesterRole
+                .mockResolvedValueOnce(undefined); // recipient exists check fails
 
             await expect(
                 createDirectConversation(mockDbClient, { userId, recipientId }),
@@ -58,8 +76,11 @@ describe('message-write.service', () => {
         });
 
         it('should return existing conversation if found', async () => {
-            // 1. Recipient check
-            mockDbClient.executeTakeFirst.mockResolvedValueOnce({ user_id: recipientId });
+            // 1. Requester profile/role checks + Recipient check
+            mockDbClient.executeTakeFirst
+                .mockResolvedValueOnce({ institution_id: 'inst-1' }) // requesterProfile
+                .mockResolvedValueOnce({ roleName: 'instructor' }) // requesterRole
+                .mockResolvedValueOnce({ user_id: recipientId }); // recipient check
             // 2. Existing check
             vi.mocked(dataLayer.findDirectConversationData).mockResolvedValue(conversationId);
             // 3. Get by ID
@@ -82,8 +103,12 @@ describe('message-write.service', () => {
         });
 
         it('should create new conversation if not exists', async () => {
-            // 1. Recipient check
-            mockDbClient.executeTakeFirst.mockResolvedValueOnce({ user_id: recipientId });
+            // 1. Requester profile/role checks + Recipient check + Log sender check
+            mockDbClient.executeTakeFirst
+                .mockResolvedValueOnce({ institution_id: 'inst-1' }) // requesterProfile
+                .mockResolvedValueOnce({ roleName: 'instructor' }) // requesterRole
+                .mockResolvedValueOnce({ user_id: recipientId }) // recipient check
+                .mockResolvedValueOnce({ institution_id: 'inst-1' }); // log sender profile check
             // 2. Existing check -> null
             vi.mocked(dataLayer.findDirectConversationData).mockResolvedValue(null);
             // 3. Create conversation -> new ID
@@ -109,7 +134,46 @@ describe('message-write.service', () => {
             });
             expect(result.conversationId).toBe(conversationId);
         });
+
+        it('should throw 404 for student requesters if recipient is ineligible', async () => {
+            mockDbClient.executeTakeFirst
+                .mockResolvedValueOnce({ institution_id: 'inst-1' }) // requesterProfile
+                .mockResolvedValueOnce({ roleName: 'student' }) // requesterRole (student)
+                .mockResolvedValueOnce(undefined); // assertEligibleDirectMessageRecipient returns nothing (ineligible)
+
+            await expect(
+                createDirectConversation(mockDbClient, { userId, recipientId }),
+            ).rejects.toThrowError(
+                new HTTPException(404, { message: 'Message recipient not found.' }),
+            );
+        });
+
+        it('should allow student direct conversation if recipient is eligible', async () => {
+            mockDbClient.executeTakeFirst
+                .mockResolvedValueOnce({ institution_id: 'inst-1' }) // requesterProfile
+                .mockResolvedValueOnce({ roleName: 'student' }) // requesterRole (student)
+                .mockResolvedValueOnce({ userId: recipientId }) // assertEligibleDirectMessageRecipient matches eligible recipient
+                .mockResolvedValueOnce({ institution_id: 'inst-1' }); // log sender profile check
+            
+            vi.mocked(dataLayer.findDirectConversationData).mockResolvedValue(null);
+            vi.mocked(dataLayer.createConversationData).mockResolvedValue(conversationId);
+            
+            const mockConv = {
+                conversationId,
+                type: 'DIRECT',
+                createdAt: new Date(),
+                participants: [
+                    { userId, name: 'User A', role: 'student' },
+                    { userId: recipientId, name: 'User B', role: 'student' },
+                ],
+            };
+            vi.mocked(dataLayer.getConversationByIdData).mockResolvedValue(mockConv as any);
+
+            const result = await createDirectConversation(mockDbClient, { userId, recipientId });
+            expect(result.conversationId).toBe(conversationId);
+        });
     });
+
 
     describe('sendMessage', () => {
         const content = 'Hello!';
@@ -156,7 +220,105 @@ describe('message-write.service', () => {
                 }),
             );
         });
+
+        describe('sendMessage notifications', () => {
+            const longContent = 'Hello, this is a very long message that should be truncated when used in the notification preview text to keep things clean and concise.';
+
+            it('sends notifications to other participants with correct metadata and institutionId', async () => {
+                const mockExecuteTakeFirst = vi.fn()
+                    .mockResolvedValueOnce({ conversation_id: conversationId })
+                    .mockResolvedValueOnce({ institution_id: 'inst-789' })
+                    .mockResolvedValueOnce({ first_name: 'John', last_name: 'Doe' });
+
+                const mockExecute = vi.fn().mockResolvedValueOnce([{ user_id: 'other-user-1' }]);
+
+                const mockDb = {
+                    selectFrom: vi.fn().mockReturnThis(),
+                    select: vi.fn().mockReturnThis(),
+                    where: vi.fn().mockReturnThis(),
+                    insertInto: vi.fn().mockReturnThis(),
+                    values: vi.fn().mockReturnThis(),
+                    executeTakeFirst: mockExecuteTakeFirst,
+                    execute: mockExecute,
+                } as any;
+
+                const mockMessage = {
+                    messageId: 'b3cd17f8-fb3a-4be0-80de-4ff45037d032',
+                    conversationId,
+                    senderId: userId,
+                    content: longContent,
+                    status: 'SENT',
+                    createdAt: new Date(),
+                };
+                vi.mocked(dataLayer.createMessageData).mockResolvedValue(mockMessage as any);
+
+                await sendMessage(mockDb, {
+                    conversationId,
+                    senderId: userId,
+                    content: longContent,
+                });
+
+                expect(NotificationService.createNotification).toHaveBeenCalledWith({
+                    dbClient: mockDb,
+                    recipientUserId: 'other-user-1',
+                    actorUserId: userId,
+                    institutionId: 'inst-789',
+                    title: 'New Message',
+                    message: 'John Doe messaged you: "Hello, this is a very long message that should be truncat..."',
+                    actionType: 'INSTITUTION_ACTIVITY_CREATED',
+                    resourceType: 'INSTITUTION_ACTIVITY',
+                    resourceId: conversationId,
+                    resourceLabel: 'Message Thread',
+                    metadata: {
+                        institutionId: 'inst-789',
+                        conversationId,
+                        senderId: userId,
+                    },
+                });
+            });
+
+            it('does not roll back message if notification throws error', async () => {
+                const mockExecuteTakeFirst = vi.fn()
+                    .mockResolvedValueOnce({ conversation_id: conversationId })
+                    .mockResolvedValueOnce({ institution_id: 'inst-789' })
+                    .mockResolvedValueOnce({ first_name: 'John', last_name: 'Doe' });
+
+                const mockExecute = vi.fn().mockResolvedValueOnce([{ user_id: 'other-user-1' }]);
+
+                const mockDb = {
+                    selectFrom: vi.fn().mockReturnThis(),
+                    select: vi.fn().mockReturnThis(),
+                    where: vi.fn().mockReturnThis(),
+                    insertInto: vi.fn().mockReturnThis(),
+                    values: vi.fn().mockReturnThis(),
+                    executeTakeFirst: mockExecuteTakeFirst,
+                    execute: mockExecute,
+                } as any;
+
+
+                const mockMessage = {
+                    messageId: 'b3cd17f8-fb3a-4be0-80de-4ff45037d032',
+                    conversationId,
+                    senderId: userId,
+                    content: 'Hi',
+                    status: 'SENT',
+                    createdAt: new Date(),
+                };
+                vi.mocked(dataLayer.createMessageData).mockResolvedValue(mockMessage as any);
+                vi.mocked(NotificationService.createNotification).mockRejectedValueOnce(new Error('DB Error'));
+
+                const result = await sendMessage(mockDb, {
+                    conversationId,
+                    senderId: userId,
+                    content: 'Hi',
+                });
+
+                expect(result.content).toBe('Hi');
+                expect(NotificationService.createNotification).toHaveBeenCalled();
+            });
+        });
     });
+
 
     describe('markConversationRead', () => {
         it('should mark conversation as read if user is participant', async () => {

@@ -20,6 +20,7 @@ const {
     mockUsePresence,
     mockUseProfileQuery,
     mockUseUsersQuery,
+    mockUseMessageRecipientsQuery,
     mockUseCreateDirectConversationMutation,
 } = vi.hoisted(() => ({
     mockUseConversationsQuery: vi.fn(),
@@ -30,6 +31,7 @@ const {
     mockUsePresence: vi.fn(),
     mockUseProfileQuery: vi.fn(),
     mockUseUsersQuery: vi.fn(),
+    mockUseMessageRecipientsQuery: vi.fn(),
     mockUseCreateDirectConversationMutation: vi.fn(),
 }));
 
@@ -42,8 +44,10 @@ vi.mock('@sentinel/hooks', () => ({
     usePresence: mockUsePresence,
     useProfileQuery: mockUseProfileQuery,
     useUsersQuery: mockUseUsersQuery,
+    useMessageRecipientsQuery: mockUseMessageRecipientsQuery,
     useCreateDirectConversationMutation: mockUseCreateDirectConversationMutation,
 }));
+
 
 vi.mock('./_components/message-list', () => ({
     MessageList: () => <div data-testid="message-list">Message List</div>,
@@ -95,6 +99,12 @@ describe('ProctorMessagesPage - Replicated Layout and Functionality Tests', () =
             data: [],
             isLoading: false,
         });
+
+        mockUseMessageRecipientsQuery.mockReturnValue({
+            data: [],
+            isLoading: false,
+        });
+
     });
 
     it('should call handleStartConversation once per targetUserId parameter, and avoid duplicate calls', async () => {

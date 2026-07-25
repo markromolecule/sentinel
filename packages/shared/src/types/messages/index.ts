@@ -7,7 +7,9 @@ import {
     conversationDetailSchema,
     listConversationsResponseSchema,
     listConversationMessagesResponseSchema,
+    messageRecipientSchema,
 } from '../../schema/messages/message-schema';
+
 
 /**
  * Participant of a conversation.
@@ -59,3 +61,9 @@ export interface CreateDirectConversationPayload {
 export interface SendMessagePayload {
     content: string;
 }
+
+/**
+ * A messageable recipient.
+ */
+export type MessageRecipient = z.infer<typeof messageRecipientSchema>;
+

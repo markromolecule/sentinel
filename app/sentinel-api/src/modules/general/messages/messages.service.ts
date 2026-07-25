@@ -1,5 +1,6 @@
 import * as queryService from './services/message-query.service';
 import * as writeService from './services/message-write.service';
+import { listEligibleMessageRecipients } from './services/message-recipient-eligibility.service';
 
 /**
  * Messages Service Facade.
@@ -10,6 +11,11 @@ export const MessagesService = {
      * Lists all conversations the user is participating in.
      */
     listConversations: queryService.listConversations,
+
+    /**
+     * Lists eligible message recipients based on institution search criteria.
+     */
+    listMessageRecipients: listEligibleMessageRecipients,
 
     /**
      * Lists all messages in a conversation, verifying participant access.
@@ -31,3 +37,4 @@ export const MessagesService = {
      */
     markConversationRead: writeService.markConversationRead,
 };
+

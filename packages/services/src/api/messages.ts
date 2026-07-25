@@ -2,7 +2,9 @@ import type {
     ConversationSummary,
     ConversationDetail,
     ConversationMessage,
+    MessageRecipient,
 } from '@sentinel/shared/types';
+
 import type { ApiClientType } from '../api-client';
 
 interface ApiResponse<T> {
@@ -131,3 +133,31 @@ export async function markConversationRead(
 
     return response.data;
 }
+
+/**
+ * Fetches message recipients for conversation directory selection.
+ *
+ * @param apiClient The API client instance.
+ * @param params Query parameters including search term and limit.
+ * @returns A promise resolving to an array of message recipients.
+ */
+export async function getMessageRecipients(
+    apiClient: ApiClientType,
+    params: { search: string; limit?: number },
+): Promise<MessageRecipient[]> {
+    const query = new URLSearchParams({ search: params.search.trim() });
+    if (params.limit !== undefined) {
+        query.append('limit', String(params.limit));
+    }
+
+    const response = (await apiClient(`/messages/recipients?${query.toString()}`, {
+        method: 'GET',
+    })) as ApiResponse<MessageRecipient[]>;
+
+    if (!response.success) {
+        throw new Error(response.error || response.message || 'Failed to fetch recipients');
+    }
+
+    return response.data || [];
+}
+
