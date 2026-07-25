@@ -41,17 +41,37 @@ function mapNotificationPriority(notification: AppNotification): Notification['p
     return 'medium';
 }
 
-function mapNotificationLink(notification: AppNotification): string | undefined {
+/**
+ * Resolves the destination URL for a student notification based on its resource and metadata.
+ * 
+ * @param notification - The app notification to resolve a link for.
+ * @returns The destination path or undefined if unsupported.
+ */
+export function resolveStudentNotificationHref(notification: AppNotification): string | undefined {
+    if (!notification.resource) {
+        return undefined;
+    }
+
+    if (notification.resource.type === 'ANNOUNCEMENT' && notification.resource.id) {
+        return '/student/classroom';
+    }
+
+    if (notification.resource.type === 'INSTITUTION_ACTIVITY') {
+        const metadata = notification.metadata as Record<string, unknown> | null;
+        if (metadata?.conversationId) {
+            return `/student/message?conversationId=${metadata.conversationId}`;
+        }
+        if (metadata?.calendarEventId || metadata?.eventType) {
+            return '/student/calendar';
+        }
+    }
+
     if (notification.resource.type === 'EXAM_ASSIGNMENT' && notification.resource.id) {
         return `/student/exam/${notification.resource.id}/instruction`;
     }
 
     if (notification.resource.type === 'INSTRUCTOR_SUBJECT_REQUEST' && notification.resource.id) {
         return '/student/history';
-    }
-
-    if (notification.resource.type === 'ANNOUNCEMENT' && notification.resource.id) {
-        return '/student/classroom';
     }
 
     return undefined;
@@ -68,6 +88,7 @@ export function mapAppNotificationToStudentNotification(
         priority: mapNotificationPriority(notification),
         isRead: notification.status === 'READ',
         date: new Date(notification.createdAt),
-        link: mapNotificationLink(notification),
+        link: resolveStudentNotificationHref(notification),
     };
 }
+

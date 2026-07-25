@@ -60,8 +60,11 @@ describe('AnnouncementNotificationService', () => {
                 expect.objectContaining({
                     recipientUserId: 'user-1',
                     actorUserId: 'author-789',
+                    institutionId: 'inst-456',
                     actionType: 'ANNOUNCEMENT_PUBLISHED',
                     resourceType: 'ANNOUNCEMENT',
+                    resourceId: 'ann-123',
+                    resourceLabel: 'New Policy',
                     title: 'New Announcement',
                     message: 'Jane Doe published: "New Policy"',
                     metadata: {
@@ -71,6 +74,7 @@ describe('AnnouncementNotificationService', () => {
                     },
                 }),
             );
+
         });
     });
 

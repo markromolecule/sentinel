@@ -3,30 +3,6 @@ import { ActivityNotificationService } from './activity-notification.service';
 import { NotificationService } from '../notification.service';
 import { CalendarActivityNotificationService } from './activity/calendar-activity-notification.service';
 
-vi.mock('../notification.service', () => ({
-    NotificationService: {
-        createNotification: vi.fn(),
-    },
-}));
-
-vi.mock('./activity/calendar-activity-notification.service', () => ({
-    CalendarActivityNotificationService: {
-        notifyCalendarEventCreated: vi.fn(),
-    },
-}));
-
-vi.mock('./activity/activity-notification-base.service', async (importOriginal) => {
-    const actual = await importOriginal<typeof import('./activity-notification-base.service')>();
-    return {
-        ...actual,
-        getRecipientRolesForActorRole: vi.fn().mockImplementation(async (db, actorRole) => {
-            if (actorRole === 'support') return ['admin', 'superadmin'];
-            if (actorRole === 'admin' || actorRole === 'superadmin')
-                return ['support', 'superadmin', 'admin', 'instructor'];
-            return ['admin', 'superadmin'];
-        }),
-    };
-});
 
 type FakeBuilderResult = {
     execute?: any[];
@@ -93,7 +69,9 @@ function createFakeDbClient(results: FakeBuilderResult[]) {
 
 describe('ActivityNotificationService', () => {
     beforeEach(() => {
-        vi.clearAllMocks();
+        vi.restoreAllMocks();
+        vi.spyOn(NotificationService, 'createNotification').mockResolvedValue({} as any);
+        vi.spyOn(CalendarActivityNotificationService, 'notifyCalendarEventCreated').mockResolvedValue(undefined as any);
     });
 
     it('notifies institution approvers for a new subject enrollment request', async () => {

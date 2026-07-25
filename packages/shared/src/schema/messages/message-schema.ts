@@ -78,3 +78,19 @@ export const listConversationsResponseSchema = z.object({
 export const listConversationMessagesResponseSchema = z.object({
     items: z.array(messageSummarySchema),
 });
+
+/**
+ * Schema for a message recipient.
+ */
+export const messageRecipientSchema = z.object({
+    userId: z.string().uuid(),
+    name: z.string(),
+    avatarUrl: z.string().nullable().optional(),
+    role: z.string(),
+    status: z.enum(['ACTIVE', 'INACTIVE']),
+    institution: z.object({
+        id: z.string().uuid(),
+        name: z.string(),
+    }),
+});
+

@@ -5,23 +5,12 @@ import {
 } from './calendar-activity-notification.service';
 import * as activityBaseService from './activity-notification-base.service';
 
-vi.mock('./activity-notification-base.service', async () => {
-    const actual = await vi.importActual<typeof import('./activity-notification-base.service')>(
-        './activity-notification-base.service',
-    );
-
-    return {
-        ...actual,
-        getUserDisplayName: vi.fn(),
-        getUserPrimaryRole: vi.fn(),
-        notifyInstitutionActivity: vi.fn(),
-    };
-});
-
 describe('CalendarActivityNotificationService', () => {
     beforeEach(() => {
-        vi.clearAllMocks();
+        vi.restoreAllMocks();
     });
+
+
 
     describe('mapCalendarAudienceToRecipientRoles', () => {
         it('excludes support recipients for support-created ALL events', () => {
@@ -91,8 +80,9 @@ describe('CalendarActivityNotificationService', () => {
     describe('notifyCalendarEventCreated', () => {
         it('routes calendar event creation through shared institution activity notifications', async () => {
             const dbClient = {} as any;
-            vi.mocked(activityBaseService.getUserDisplayName).mockResolvedValue('Morgan Admin');
-            vi.mocked(activityBaseService.getUserPrimaryRole).mockResolvedValue('admin');
+            vi.spyOn(activityBaseService, 'getUserDisplayName').mockResolvedValue('Morgan Admin');
+            vi.spyOn(activityBaseService, 'getUserPrimaryRole').mockResolvedValue('admin');
+            vi.spyOn(activityBaseService, 'notifyInstitutionActivity').mockResolvedValue(undefined as any);
 
             await CalendarActivityNotificationService.notifyCalendarEventCreated({
                 dbClient,
@@ -135,8 +125,9 @@ describe('CalendarActivityNotificationService', () => {
 
         it('routes instructor-only events with narrowed recipient roles', async () => {
             const dbClient = {} as any;
-            vi.mocked(activityBaseService.getUserDisplayName).mockResolvedValue('Morgan Admin');
-            vi.mocked(activityBaseService.getUserPrimaryRole).mockResolvedValue('admin');
+            vi.spyOn(activityBaseService, 'getUserDisplayName').mockResolvedValue('Morgan Admin');
+            vi.spyOn(activityBaseService, 'getUserPrimaryRole').mockResolvedValue('admin');
+            vi.spyOn(activityBaseService, 'notifyInstitutionActivity').mockResolvedValue(undefined as any);
 
             await CalendarActivityNotificationService.notifyCalendarEventCreated({
                 dbClient,
@@ -168,8 +159,9 @@ describe('CalendarActivityNotificationService', () => {
 
         it('skips notification fan-out for SPECIFIC_GROUP until group resolution exists', async () => {
             const dbClient = {} as any;
-            vi.mocked(activityBaseService.getUserDisplayName).mockResolvedValue('Morgan Admin');
-            vi.mocked(activityBaseService.getUserPrimaryRole).mockResolvedValue('admin');
+            vi.spyOn(activityBaseService, 'getUserDisplayName').mockResolvedValue('Morgan Admin');
+            vi.spyOn(activityBaseService, 'getUserPrimaryRole').mockResolvedValue('admin');
+            vi.spyOn(activityBaseService, 'notifyInstitutionActivity').mockResolvedValue(undefined as any);
 
             await CalendarActivityNotificationService.notifyCalendarEventCreated({
                 dbClient,
@@ -188,4 +180,5 @@ describe('CalendarActivityNotificationService', () => {
             expect(activityBaseService.notifyInstitutionActivity).not.toHaveBeenCalled();
         });
     });
+
 });

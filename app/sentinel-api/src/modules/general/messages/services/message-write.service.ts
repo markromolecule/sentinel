@@ -11,6 +11,8 @@ import {
 import { mapConversationDetailRecord, mapMessageRecord } from './message-mapper';
 import { NotificationService } from '../../notification/notification.service';
 import { LogsService } from '../../logs/logs.service';
+import { assertEligibleDirectMessageRecipient } from './message-recipient-eligibility.service';
+
 
 /**
  * Creates a direct 1:1 conversation between two users.
@@ -28,16 +30,47 @@ export async function createDirectConversation(
         throw new HTTPException(400, { message: 'Cannot start a conversation with yourself.' });
     }
 
-    // 1. Verify that the recipient exists
-    const recipientExists = await dbClient
+    const requesterProfile = await dbClient
         .selectFrom('user_profiles')
-        .select('user_id')
-        .where('user_id', '=', recipientId)
+        .select(['institution_id'])
+        .where('user_id', '=', userId)
         .executeTakeFirst();
+    const institutionId = requesterProfile?.institution_id;
 
-    if (!recipientExists) {
-        throw new HTTPException(404, { message: 'Recipient user profile not found.' });
+    const roleRow = await dbClient
+        .selectFrom('user_roles as ur')
+        .innerJoin('roles as r', 'r.role_id', 'ur.role_id')
+        .select('r.role_name as roleName')
+        .where('ur.user_id', '=', userId)
+        .orderBy('r.is_system', 'desc')
+        .orderBy('r.domain_scope', 'asc')
+        .executeTakeFirst();
+    const requesterRole = roleRow?.roleName ?? null;
+
+    if (requesterRole === 'student') {
+        if (!institutionId) {
+            throw new HTTPException(400, { message: 'Institution ID is required for student conversations.' });
+        }
+        await assertEligibleDirectMessageRecipient(dbClient, {
+            requesterUserId: userId,
+            requesterRole,
+            institutionId,
+            recipientId,
+        });
+    } else {
+        // 1. Verify that the recipient exists
+        const recipientExists = await dbClient
+            .selectFrom('user_profiles')
+            .select('user_id')
+            .where('user_id', '=', recipientId)
+            .executeTakeFirst();
+
+        if (!recipientExists) {
+            throw new HTTPException(404, { message: 'Recipient user profile not found.' });
+        }
     }
+
+
 
     // 2. Check if a direct conversation already exists
     const existingId = await findDirectConversationData(dbClient, {
@@ -140,6 +173,13 @@ export async function sendMessage(
         content,
     });
 
+    const senderProfile = await dbClient
+        .selectFrom('user_profiles')
+        .select(['institution_id'])
+        .where('user_id', '=', senderId)
+        .executeTakeFirst();
+    const activeInstitutionId = senderProfile?.institution_id ?? undefined;
+
     // 3. Trigger database notifications for other participants in the conversation
     try {
         const otherParticipants = await dbClient
@@ -165,6 +205,7 @@ export async function sendMessage(
                     dbClient,
                     recipientUserId: participant.user_id,
                     actorUserId: senderId,
+                    institutionId: activeInstitutionId,
                     title: 'New Message',
                     message: `${senderName} messaged you: "${
                         content.length > 60 ? content.slice(0, 57) + '...' : content
@@ -173,6 +214,11 @@ export async function sendMessage(
                     resourceType: 'INSTITUTION_ACTIVITY',
                     resourceId: conversationId,
                     resourceLabel: 'Message Thread',
+                    metadata: {
+                        institutionId: activeInstitutionId || null,
+                        conversationId,
+                        senderId,
+                    },
                 });
             }
         }
@@ -180,12 +226,6 @@ export async function sendMessage(
         console.error('Failed to trigger database notification for message:', err);
     }
 
-    const senderProfile = await dbClient
-        .selectFrom('user_profiles')
-        .select(['institution_id'])
-        .where('user_id', '=', senderId)
-        .executeTakeFirst();
-    const activeInstitutionId = senderProfile?.institution_id ?? undefined;
 
     if (activeInstitutionId) {
         try {

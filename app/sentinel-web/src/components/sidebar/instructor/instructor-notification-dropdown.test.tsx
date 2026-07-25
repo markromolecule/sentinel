@@ -20,6 +20,13 @@ vi.mock('@sentinel/hooks', () => ({
     useDeleteNotificationsMutation: (...args: any[]) => mockUseDeleteNotificationsMutation(...args),
 }));
 
+vi.mock('next/navigation', () => ({
+    useRouter: () => ({
+        push: vi.fn(),
+    }),
+}));
+
+
 vi.mock('@sentinel/services', async () => {
     const actual = await vi.importActual<typeof import('@sentinel/services')>('@sentinel/services');
 

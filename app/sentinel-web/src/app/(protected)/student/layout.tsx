@@ -44,7 +44,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                     {children}
                 </PageShell>
             </main>
-            <StudentFooter />
+            {!isMessages && <StudentFooter />}
             <StudentBottomNav />
         </div>
     );

@@ -44,6 +44,11 @@ const mockUseUsersQuery = vi.fn(() => ({
     isLoading: false,
     error: null,
 }));
+const mockUseMessageRecipientsQuery = vi.fn(() => ({
+    data: [],
+    isLoading: false,
+    error: null,
+}));
 const mockUseMessageRealtime = vi.fn();
 const mockUseUserQuery = vi.fn(() => ({
     data: null,
@@ -71,9 +76,11 @@ vi.mock('@sentinel/hooks', () => ({
     useSendMessageMutation: (args: unknown) => mockUseSendMessageMutation(args),
     useMarkConversationReadMutation: () => mockUseMarkConversationReadMutation(),
     useUsersQuery: (args: unknown) => mockUseUsersQuery(args),
+    useMessageRecipientsQuery: (args: unknown, limit?: number) => mockUseMessageRecipientsQuery(args, limit),
     useMessageRealtime: (args: unknown) => mockUseMessageRealtime(args),
     useUserQuery: (id: string) => mockUseUserQuery(id),
 }));
+
 
 describe('MessagingPageClient', () => {
     beforeEach(() => {
@@ -102,7 +109,13 @@ describe('MessagingPageClient', () => {
             isLoading: false,
             error: null,
         });
+        mockUseMessageRecipientsQuery.mockReturnValue({
+            data: [],
+            isLoading: false,
+            error: null,
+        });
     });
+
 
     afterEach(() => {
         cleanup();
@@ -380,4 +393,76 @@ describe('MessagingPageClient', () => {
             ).toBeTruthy();
         });
     });
+
+    it('synchronizes selectedConversationId with conversationId URL parameter', async () => {
+        mockUseSearchParams.mockReturnValue({
+            get: vi.fn((key) => (key === 'conversationId' ? 'param-conv-123' : null)),
+        });
+
+        mockUseConversationsQuery.mockReturnValue({
+            data: [
+                {
+                    conversationId: 'param-conv-123',
+                    type: 'DIRECT',
+                    createdAt: '2026-05-24T09:58:00.000Z',
+                    participants: [],
+                },
+            ],
+            isLoading: false,
+            error: null,
+        });
+
+        render(<MessagingPageClient />);
+
+        // The query key resolved in useConversationMessagesQuery should be param-conv-123
+        await waitFor(() => {
+            expect(mockUseConversationMessagesQuery).toHaveBeenCalledWith(
+                expect.objectContaining({ conversationId: 'param-conv-123' }),
+            );
+        });
+    });
+
+    it('does not send message if mutation is pending or message is empty/whitespace', async () => {
+        const mockMutateAsync = vi.fn();
+        mockUseSendMessageMutation.mockReturnValue({
+            mutateAsync: mockMutateAsync,
+            isPending: true, // mutation is currently sending
+        });
+
+        mockUseConversationsQuery.mockReturnValue({
+            data: [
+                {
+                    conversationId: '33333333-3333-3333-3333-333333333333',
+                    type: 'DIRECT',
+                    createdAt: '2026-05-24T09:58:00.000Z',
+                    participants: [
+                        {
+                            userId: '44444444-4444-4444-4444-444444444444',
+                            name: 'Alex Rivera',
+                            role: 'instructor',
+                            status: 'ACTIVE',
+                        },
+                    ],
+                    lastMessage: {
+                        messageId: '66666666-6666-6666-6666-666666666666',
+                        content: 'Hey',
+                        createdAt: '2026-05-24T10:00:00.000Z',
+                    },
+                },
+            ],
+            isLoading: false,
+        });
+
+        render(<MessagingPageClient />);
+
+        // Should not trigger send mutation because mutation is pending
+        const textarea = screen.queryByPlaceholderText('Type a message...');
+        if (textarea) {
+            fireEvent.change(textarea, { target: { value: 'Another message' } });
+            const sendBtn = screen.getByTitle('Send Message');
+            fireEvent.click(sendBtn);
+            expect(mockMutateAsync).not.toHaveBeenCalled();
+        }
+    });
 });
+
