@@ -11,7 +11,6 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
     const pathname = usePathname();
     const isExamFlowPage =
         pathname?.startsWith('/student/exam/') && !/^\/student\/exam\/?$/.test(pathname);
-
     const isMessages = pathname === '/student/message';
 
     if (isExamFlowPage) {
@@ -26,25 +25,35 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         <div
             className={cn(
                 'bg-background text-foreground flex min-h-screen flex-col pb-20 md:pb-0',
-                isMessages && 'h-screen !min-h-0 overflow-hidden',
+                isMessages &&
+                    'h-dvh overflow-hidden md:h-auto md:min-h-screen md:overflow-visible',
             )}
         >
             <StudentHeader />
             <main
                 className={cn(
                     'flex-1',
-                    isMessages ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : '',
+                    isMessages ? 'flex min-h-0 flex-1 flex-col overflow-hidden md:block md:overflow-visible' : '',
                 )}
             >
                 <PageShell
-                    maxWidth={isMessages ? 'full' : '2xl'}
                     container={!isMessages}
-                    className={cn(isMessages ? 'min-h-0 flex-1 gap-0 overflow-hidden p-0' : '')}
+                    maxWidth={isMessages ? 'full' : '2xl'}
+                    className={cn(
+                        isMessages &&
+                            'min-h-0 flex-1 gap-0 overflow-hidden p-0 md:mx-auto md:px-4 md:sm:px-6 md:p-6 md:max-w-7xl md:flex-none md:overflow-visible md:gap-6',
+                    )}
                 >
                     {children}
                 </PageShell>
             </main>
-            {!isMessages && <StudentFooter />}
+            {!isMessages ? (
+                <StudentFooter />
+            ) : (
+                <div className="hidden md:block">
+                    <StudentFooter />
+                </div>
+            )}
             <StudentBottomNav />
         </div>
     );
