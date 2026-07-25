@@ -103,7 +103,7 @@ export async function assertEligibleDirectMessageRecipient(
                 .selectFrom('user_roles as ur_sub')
                 .innerJoin('roles as r_sub', 'r_sub.role_id', 'ur_sub.role_id')
                 .select('r_sub.role_name')
-                .whereRef('ur_sub.user_id', '=', 'up.user_id')
+                .whereRef('ur_sub.user_id', '=', 'up.user_id' as any)
                 .orderBy('r_sub.is_system', 'desc')
                 .orderBy('r_sub.domain_scope', 'asc')
                 .limit(1)

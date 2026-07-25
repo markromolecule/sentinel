@@ -4,9 +4,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@sentinel/ui';
 import { BOTTOM_NAV_ITEMS } from '@sentinel/shared/constants';
-import { MOCK_STUDENT } from '@sentinel/shared/constants';
+import { useLogoutMutation, useProfileQuery } from '@sentinel/hooks';
 import { User, Settings, LogOut } from 'lucide-react';
-import { useLogoutMutation } from '@sentinel/hooks';
 import {
     Drawer,
     DrawerClose,
@@ -19,6 +18,7 @@ import { Button } from '@sentinel/ui';
 
 export default function StudentBottomNav() {
     const pathname = usePathname();
+    const { profile, isLoading } = useProfileQuery();
 
     const { mutate: logout, isPending: isLoggingOut } = useLogoutMutation({
         onSuccess: () => {
@@ -29,6 +29,10 @@ export default function StudentBottomNav() {
     const handleLogout = () => {
         logout(undefined);
     };
+
+    const initials = profile ? `${profile.firstName?.[0] || ''}${profile.lastName?.[0] || ''}` : '';
+    const fullName = profile ? `${profile.firstName || ''} ${profile.lastName || ''}` : '';
+    const email = profile?.email || '';
 
     return (
         <div className="bg-background border-border/40 pb-safe fixed right-0 bottom-0 left-0 z-50 border-t md:hidden">
@@ -57,9 +61,18 @@ export default function StudentBottomNav() {
                 <Drawer>
                     <DrawerTrigger asChild>
                         <div className="text-muted-foreground hover:text-foreground flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg py-2 transition-colors">
-                            <div className="from-primary to-primary/80 text-primary-foreground ring-border/10 flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br text-[8px] font-bold ring-2">
-                                {MOCK_STUDENT.firstName[0]}
-                                {MOCK_STUDENT.lastName[0]}
+                            <div className="relative flex h-6 w-6 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#323d8f] to-[#4a5bb8] text-[8px] font-bold text-white ring-2 ring-white/10 shadow-sm">
+                                {isLoading ? (
+                                    '...'
+                                ) : profile?.avatarUrl ? (
+                                    <img
+                                        src={profile.avatarUrl}
+                                        alt={`${profile.firstName || ''} avatar`}
+                                        className="h-full w-full object-cover"
+                                    />
+                                ) : (
+                                    initials
+                                )}
                             </div>
                             <span className="text-[10px] font-medium">Profile</span>
                         </div>
@@ -67,16 +80,25 @@ export default function StudentBottomNav() {
                     <DrawerContent className="bg-background border-border/40 text-foreground border-t">
                         <div className="mx-auto w-full max-w-sm">
                             <DrawerHeader className="flex flex-col items-center gap-4 py-6">
-                                <div className="from-primary to-primary/80 text-primary-foreground ring-border/10 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br text-2xl font-bold ring-4">
-                                    {MOCK_STUDENT.firstName[0]}
-                                    {MOCK_STUDENT.lastName[0]}
+                                <div className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#323d8f] to-[#4a5bb8] text-2xl font-bold text-white ring-4 ring-white/10 shadow-md">
+                                    {isLoading ? (
+                                        '...'
+                                    ) : profile?.avatarUrl ? (
+                                        <img
+                                            src={profile.avatarUrl}
+                                            alt={`${profile.firstName || ''} avatar`}
+                                            className="h-full w-full object-cover"
+                                        />
+                                    ) : (
+                                        initials
+                                    )}
                                 </div>
                                 <div className="space-y-1 text-center">
                                     <div className="text-foreground text-sm font-semibold">
-                                        {MOCK_STUDENT.firstName} {MOCK_STUDENT.lastName}
+                                        {isLoading ? 'Loading...' : fullName}
                                     </div>
                                     <p className="text-muted-foreground text-sm">
-                                        {MOCK_STUDENT.email}
+                                        {isLoading ? '' : email}
                                     </p>
                                 </div>
                             </DrawerHeader>

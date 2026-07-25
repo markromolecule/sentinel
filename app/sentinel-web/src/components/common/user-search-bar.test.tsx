@@ -187,4 +187,22 @@ describe('UserSearchBar', () => {
             expect(parsed[0].firstName).toBe('Alice');
         }
     });
+
+    it('renders iconOnly mode and opens search popover on click', () => {
+        const { getByRole, getByPlaceholderText, queryByPlaceholderText } = render(
+            <UserSearchBar redirectPath="/student/message" iconOnly={true} />,
+        );
+
+        // Input should not be visible before clicking trigger
+        expect(queryByPlaceholderText('Search users by name...')).toBeNull();
+
+        // Find and click the icon trigger button
+        const button = getByRole('button');
+        expect(button).toBeTruthy();
+        fireEvent.click(button);
+
+        // Now the input should be visible in the popover
+        const input = getByPlaceholderText('Search users by name...');
+        expect(input).toBeTruthy();
+    });
 });

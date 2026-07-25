@@ -4,12 +4,12 @@ import { useLogoutMutation, useProfileQuery } from '@sentinel/hooks';
 import Link from 'next/link';
 import NextImage from 'next/image';
 import { usePathname } from 'next/navigation';
-import { Bell, Menu, User, Settings, LogOut } from 'lucide-react';
+import { Bell, Menu, User, Settings, LogOut, Sun, Moon, Monitor, Check } from 'lucide-react';
 import { Button } from '@sentinel/ui';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@sentinel/ui';
 import { cn } from '@sentinel/ui';
-import { ThemeToggle } from '@sentinel/ui';
 import { HEADER_NAV_ITEMS } from '@sentinel/shared/constants';
+import { useTheme } from 'next-themes';
+import { UserSearchBar } from '@/components/common/user-search-bar';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -26,6 +26,13 @@ const STUDENT_HEADER_NOTIFICATION_QUERY_KEY = ['notifications', 'student-header'
 export default function StudentHeader() {
     const pathname = usePathname();
     const { profile, isLoading } = useProfileQuery();
+    const { theme, setTheme } = useTheme();
+
+    const themeOptions = [
+        { name: 'Light', value: 'light', icon: Sun },
+        { name: 'Dark', value: 'dark', icon: Moon },
+        { name: 'System', value: 'system', icon: Monitor },
+    ];
 
     const { mutate: logout } = useLogoutMutation({
         onSuccess: () => {
@@ -90,9 +97,7 @@ export default function StudentHeader() {
 
                 {/* Actions & Profile */}
                 <div className="relative z-10 flex shrink-0 items-center gap-2 md:gap-4">
-                    <div className="hidden sm:flex">
-                        <ThemeToggle />
-                    </div>
+                    <UserSearchBar redirectPath="/student/message" iconOnly={true} />
 
                     <WebNotificationDropdown
                         queryKey={STUDENT_HEADER_NOTIFICATION_QUERY_KEY}
@@ -104,7 +109,7 @@ export default function StudentHeader() {
 
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <div className="relative ml-2 hidden h-8 w-8 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#323d8f] to-[#4a5bb8] text-xs font-bold text-white transition-all md:flex">
+                            <div className="relative ml-2 flex h-8 w-8 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#323d8f] to-[#4a5bb8] text-xs font-bold text-white transition-all">
                                 {isLoading ? (
                                     '...'
                                 ) : profile?.avatarUrl ? (
@@ -139,12 +144,31 @@ export default function StudentHeader() {
                                 </Link>
                             </DropdownMenuItem>
 
-                            <DropdownMenuItem asChild className="cursor-pointer">
+                             <DropdownMenuItem asChild className="cursor-pointer">
                                 <Link href="/student/setting" className="flex w-full items-center">
                                     <Settings className="mr-2 h-4 w-4" />
                                     <span>Settings</span>
                                 </Link>
                             </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <div className="px-2 py-1.5">
+                                <p className="text-muted-foreground mb-2 px-2 text-xs font-semibold">Theme</p>
+                                <div className="space-y-0.5">
+                                    {themeOptions.map((opt) => (
+                                        <DropdownMenuItem
+                                            key={opt.value}
+                                            className="focus:bg-accent cursor-pointer justify-between px-2 py-1.5"
+                                            onClick={() => setTheme(opt.value)}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <opt.icon className="h-3.5 w-3.5" />
+                                                <span className="text-sm">{opt.name}</span>
+                                            </div>
+                                            {theme === opt.value && <Check className="text-primary h-3 w-3" />}
+                                        </DropdownMenuItem>
+                                    ))}
+                                </div>
+                            </div>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                                 className="cursor-pointer text-red-500 focus:bg-red-500/10 focus:text-red-500"
@@ -156,69 +180,7 @@ export default function StudentHeader() {
                         </DropdownMenuContent>
                     </DropdownMenu>
 
-                    {/* Mobile Hamburger Menu */}
-                    <Sheet>
-                        <SheetTrigger asChild>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-foreground hover:bg-accent h-10 w-10 md:hidden"
-                            >
-                                <Menu className="h-6 w-6" />
-                            </Button>
-                        </SheetTrigger>
-                        <SheetContent
-                            side="right"
-                            className="bg-background border-border text-foreground w-[300px] px-6"
-                        >
-                            <SheetHeader>
-                                <SheetTitle className="text-foreground">Menu</SheetTitle>
-                            </SheetHeader>
-                            <div className="border-border mt-4 mb-2 flex items-center justify-between border-b py-2">
-                                <span className="text-foreground text-sm font-medium">Theme</span>
-                                <ThemeToggle />
-                            </div>
-                            <div className="mt-2 flex flex-col gap-1">
-                                {HEADER_NAV_ITEMS.map((item) => (
-                                    <Link key={item.href} href={item.href}>
-                                        <Button
-                                            variant="ghost"
-                                            className={cn(
-                                                'hover:bg-accent hover:text-accent-foreground w-full justify-start',
-                                                pathname === item.href ||
-                                                    (pathname.startsWith(item.href) &&
-                                                        item.href !== '/student/exam')
-                                                    ? 'bg-accent text-accent-foreground'
-                                                    : 'text-muted-foreground',
-                                            )}
-                                        >
-                                            <item.icon className="mr-2 h-4 w-4" />
-                                            {item.label}
-                                        </Button>
-                                    </Link>
-                                ))}
-                                {/* Notification Link for Mobile */}
-                                <Link href="/student/notifications">
-                                    <Button
-                                        variant="ghost"
-                                        className="hover:bg-accent hover:text-accent-foreground text-muted-foreground w-full justify-start"
-                                    >
-                                        <Bell className="mr-2 h-4 w-4" />
-                                        Notifications
-                                    </Button>
-                                </Link>
-                                <div className="bg-border my-2 h-px" />
-                                <Button
-                                    variant="ghost"
-                                    className="w-full justify-start text-red-500 hover:bg-red-500/10 hover:text-red-400"
-                                    onClick={handleLogout}
-                                >
-                                    <LogOut className="mr-2 h-4 w-4" />
-                                    Logout
-                                </Button>
-                            </div>
-                        </SheetContent>
-                    </Sheet>
+
                 </div>
             </div>
         </header>

@@ -61,7 +61,7 @@ export async function getMessageRecipientsData(
                 .selectFrom('user_roles as ur_sub')
                 .innerJoin('roles as r_sub', 'r_sub.role_id', 'ur_sub.role_id')
                 .select('r_sub.role_name')
-                .whereRef('ur_sub.user_id', '=', 'up.user_id')
+                .whereRef('ur_sub.user_id', '=', 'up.user_id' as any)
                 .orderBy('r_sub.is_system', 'desc')
                 .orderBy('r_sub.domain_scope', 'asc')
                 .limit(1)
@@ -77,7 +77,7 @@ export async function getMessageRecipientsData(
             eb.or([
                 eb('up.first_name', 'ilike', `%${search}%`),
                 eb('up.last_name', 'ilike', `%${search}%`),
-                sql`trim(concat_ws(' ', up.first_name, up.last_name)) ilike ${`%${search}%`}`,
+                eb(sql`trim(concat_ws(' ', up.first_name, up.last_name))`, 'ilike', `%${search}%`),
             ]),
         )
         // Rbac 'messages:view' permission check

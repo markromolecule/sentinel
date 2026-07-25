@@ -57,7 +57,7 @@ import {
     type ReactNode,
     type RefObject,
 } from 'react';
-import { StatusBadge } from '@/components/common/displays/status-badge';
+
 import { useSearchParams, usePathname } from 'next/navigation';
 import { ChatListHeader } from './components/chat-list/chat-list-standard';
 import { ParticipantProfileDialog } from './components/participant-profile-dialog';
@@ -338,14 +338,14 @@ export function MessagingPageClient() {
             className={cn(
                 isMessagesRoute
                     ? 'flex h-full min-h-0 flex-1 overflow-hidden'
-                    : 'grid h-[calc(100vh-11rem)] min-h-[560px] gap-4 md:grid-cols-[22rem_minmax(0,1fr)]',
+                    : 'grid h-full min-h-0 overflow-hidden md:h-[calc(100vh-20rem)] md:min-h-[520px] md:overflow-visible gap-4 md:grid-cols-[22rem_minmax(0,1fr)]',
             )}
         >
             <aside
                 className={cn(
                     isMessagesRoute
                         ? 'border-border bg-card h-full w-full shrink-0 flex-col border-r md:w-[320px] lg:w-[380px]'
-                        : 'bg-muted/40 border-border/60 flex min-h-0 flex-col overflow-hidden rounded-3xl border',
+                        : 'bg-muted/40 border-border/60 flex min-h-0 flex-col overflow-hidden h-full w-full md:rounded-3xl md:border',
                     effectiveSelectedConversationId
                         ? isMessagesRoute
                             ? 'hidden md:flex'
@@ -396,7 +396,7 @@ export function MessagingPageClient() {
                 className={cn(
                     isMessagesRoute
                         ? 'bg-background relative flex h-full w-full flex-1 flex-col overflow-hidden'
-                        : 'bg-background border-border/60 min-h-0 overflow-hidden rounded-3xl border',
+                        : 'bg-background border-border/60 min-h-0 overflow-hidden h-full w-full md:rounded-3xl md:border',
                     effectiveSelectedConversationId
                         ? 'flex'
                         : isMessagesRoute
@@ -470,17 +470,14 @@ export function MessagingPageClient() {
 }
 
 function MessagingPageFrame({
-    title,
-    description,
     children,
 }: {
-    title: string;
-    description: string;
+    title?: string;
+    description?: string;
     children: ReactNode;
 }) {
     return (
-        <div className="flex flex-col gap-6 p-4 md:p-6">
-            <PageHeader title={title} description={description} />
+        <div className="flex flex-col h-full w-full min-h-0 flex-1 overflow-hidden md:overflow-visible">
             {children}
         </div>
     );
@@ -492,14 +489,14 @@ export function MessagingPageSkeleton() {
             title="Messages"
             description="Collaborate across your institution network in one thread-based inbox."
         >
-            <div className="grid h-[calc(100vh-11rem)] min-h-[560px] gap-4 md:grid-cols-[22rem_minmax(0,1fr)]">
-                <div className="space-y-3 rounded-3xl border p-4">
+            <div className="grid h-full md:h-[calc(100vh-20rem)] md:min-h-[520px] gap-4 md:grid-cols-[22rem_minmax(0,1fr)]">
+                <div className="space-y-3 md:rounded-3xl md:border p-4">
                     <Skeleton className="h-10 w-full rounded-xl" />
                     <Skeleton className="h-10 w-full rounded-xl" />
                     <Skeleton className="h-20 w-full rounded-2xl" />
                     <Skeleton className="h-20 w-full rounded-2xl" />
                 </div>
-                <div className="space-y-4 rounded-3xl border p-4">
+                <div className="space-y-4 md:rounded-3xl md:border p-4">
                     <Skeleton className="h-14 w-full rounded-2xl" />
                     <Skeleton className="h-[60%] w-full rounded-2xl" />
                     <Skeleton className="h-24 w-full rounded-2xl" />
@@ -662,13 +659,7 @@ function ConversationList({
                                                     </span>
                                                 </div>
                                             </div>
-                                            <div className="mt-3 flex items-center gap-2">
-                                                <StatusBadge
-                                                    status={activity.label}
-                                                    variant="secondary"
-                                                    className="px-2 py-0 text-[10px]"
-                                                    label={activity.label}
-                                                />
+                                            <div className="mt-2">
                                                 <span className="text-muted-foreground truncate text-sm">
                                                     {conversation.lastMessage?.content ??
                                                         'No messages yet'}
@@ -808,12 +799,7 @@ function NewConversationPanel({
                                                 'No institution assigned'}
                                         </p>
                                     </div>
-                                    <StatusBadge
-                                        status={activity.label}
-                                        variant="secondary"
-                                        className="px-2 py-0 text-[10px]"
-                                        label={activity.label}
-                                    />
+
                                 </button>
                             );
                         })
@@ -870,8 +856,8 @@ function ConversationPanel({
         <>
             <div
                 className={cn(
-                    'bg-background/80 border-border/60 flex items-center justify-between border-b px-4 py-3 md:px-6',
-                    isMessagesRoute ? 'bg-card h-16 shrink-0 px-4 py-0 md:h-20 md:px-6' : '',
+                    'bg-background/80 border-border/60 flex items-center justify-between border-b px-4 py-3 shrink-0 md:px-6',
+                    isMessagesRoute ? 'bg-card h-16 px-4 py-0 md:h-20 md:px-6' : '',
                 )}
             >
                 <div className="flex items-center gap-3">
@@ -902,23 +888,7 @@ function ConversationPanel({
                             >
                                 {participant?.name ?? 'Conversation'}
                             </h2>
-                            {!isMessagesRoute && (
-                                <>
-                                    <StatusBadge
-                                        status={activity.label}
-                                        variant="secondary"
-                                        className="px-2 py-0 text-[10px]"
-                                        label={activity.label}
-                                    />
-                                    {participant?.status ? (
-                                        <StatusBadge
-                                            status={participant.status}
-                                            variant="secondary"
-                                            className="px-2 py-0 text-[10px]"
-                                        />
-                                    ) : null}
-                                </>
-                            )}
+
                         </div>
                         {isMessagesRoute ? (
                             participant?.institution?.name && (
@@ -1024,11 +994,12 @@ function ConversationPanel({
                     <div ref={messagesEndRef} />
                 </div>
             </ScrollArea>
-            <Separator />
+            <Separator className="shrink-0" />
             <div
                 className={cn(
+                    'shrink-0',
                     isMessagesRoute
-                        ? 'bg-card border-border mt-auto shrink-0 border-t p-4 md:p-6'
+                        ? 'bg-card border-border mt-auto border-t p-4 md:p-6'
                         : 'bg-background p-4 md:p-6',
                 )}
             >
@@ -1063,7 +1034,7 @@ function ConversationPanel({
                             value={messageDraft}
                             onChange={(event) => onMessageDraftChange(event.target.value)}
                             onKeyDown={(event) => {
-                                if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+                                if (event.key === 'Enter' && !event.shiftKey) {
                                     event.preventDefault();
                                     void onSendMessage();
                                 }
@@ -1074,7 +1045,8 @@ function ConversationPanel({
                                     : 'You can view this conversation, but sending is disabled.'
                             }
                             disabled={!canCreateMessages || isSendingMessage}
-                            className="min-h-24 rounded-2xl"
+                            className="h-11 min-h-0 resize-none rounded-2xl py-3 px-4"
+                            style={{ fieldSizing: 'fixed' }}
                         />
                     )}
                     <Button
@@ -1084,7 +1056,7 @@ function ConversationPanel({
                         className={cn(
                             isMessagesRoute
                                 ? 'bg-primary hover:bg-primary/90 h-12 w-12 shrink-0 rounded-md transition-colors'
-                                : 'h-11 rounded-2xl px-4',
+                                : 'h-11 w-11 shrink-0 rounded-full flex items-center justify-center',
                         )}
                     >
                         {isSendingMessage ? (

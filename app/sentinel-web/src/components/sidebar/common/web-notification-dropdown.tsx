@@ -132,7 +132,7 @@ export function WebNotificationDropdown({
                     <div className="relative">
                         <Bell className="h-[22px] w-[22px]" />
                         {unreadCount > 0 && (
-                            <span className="bg-destructive ring-background animate-in fade-in zoom-in-75 absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] leading-none font-bold text-white shadow-sm ring-2 duration-200">
+                            <span className="bg-destructive ring-background animate-in fade-in zoom-in-75 absolute top-0 right-0 translate-x-1/2 -translate-y-1/2 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] leading-none font-bold text-white shadow-sm ring-2 duration-200">
                                 {unreadCount > 99 ? '99+' : unreadCount}
                             </span>
                         )}
