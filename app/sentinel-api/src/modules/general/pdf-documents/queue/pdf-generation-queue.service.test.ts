@@ -35,6 +35,10 @@ vi.mock('../../../../lib/redis/redis.service', () => ({
 
 vi.mock('@sentinel/db', () => ({
     dbClient: { connection: 'mock-db' },
+    transactionStorage: {
+        getStore: vi.fn(),
+        run: vi.fn((ctx, callback) => callback()),
+    },
 }));
 
 vi.mock('./pdf-generation-job-processor.service', () => ({

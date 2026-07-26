@@ -1,4 +1,4 @@
-import { type DbClient } from '@sentinel/db';
+import { type DbClient, executeTransaction } from '@sentinel/db';
 import { PdfStorageService } from '../storage/pdf-storage.service';
 import { LogsService } from '../../logs/logs.service';
 
@@ -44,7 +44,7 @@ export class PdfCleanupService {
                 }
 
                 // 3. Update database status to EXPIRED and clear coordinates
-                await dbClient.transaction().execute(async (trx) => {
+                await executeTransaction(async (trx) => {
                     await trx
                         .updateTable('analytics_reports')
                         .set({
@@ -60,7 +60,7 @@ export class PdfCleanupService {
                 if (record.institution_id) {
                     try {
                         await LogsService.createLog(dbClient, {
-                            userId: 'system-cleanup-worker',
+                            resourceType: 'system',
                             action: 'PDF_EXPORT_PURGED',
                             activeInstitutionId: record.institution_id,
                             details: {

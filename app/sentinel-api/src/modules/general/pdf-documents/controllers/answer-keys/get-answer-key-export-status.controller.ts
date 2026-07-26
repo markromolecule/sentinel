@@ -41,10 +41,8 @@ export const getAnswerKeyExportStatusHandler: AppRouteHandler<
     const dbClient = c.get('dbClient');
 
     requirePdfDocumentAccess({
-        role: c.get('role'),
         activePermissionKeys: c.get('activePermissionKeys'),
         requiredPermissions: ['pdf_templates:view', 'reports:view'],
-        missingRoleMessage: 'Forbidden. Support role required.',
         missingPermissionMessage: 'Forbidden. Insufficient privileges.',
     });
 

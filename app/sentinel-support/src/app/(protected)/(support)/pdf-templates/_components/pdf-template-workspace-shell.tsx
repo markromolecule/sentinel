@@ -14,7 +14,9 @@ export function PdfTemplateWorkspaceShell({ children }: PdfTemplateWorkspaceShel
 
     const activeSection: PdfTemplateSection = pathname.includes('/examinations')
         ? 'examinations'
-        : 'reports';
+        : pathname.includes('/branding')
+          ? 'branding'
+          : 'reports';
 
     return (
         <div className="relative flex min-h-[calc(100vh-64px)] flex-col lg:-m-6 lg:h-[calc(100vh-64px)] lg:min-h-[calc(100vh-64px)] lg:flex-row lg:items-stretch">

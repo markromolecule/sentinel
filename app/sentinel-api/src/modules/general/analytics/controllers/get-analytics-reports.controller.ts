@@ -38,15 +38,6 @@ export const getAnalyticsReportsRouteHandler: AppRouteHandler<
     typeof getAnalyticsReportsRoute
 > = async (c) => {
     try {
-        const role = c.get('role');
-
-        if (role !== 'support') {
-            return c.json(
-                { success: false, error: 'Forbidden. Support role required.' },
-                403 as any,
-            );
-        }
-
         requireActivePermission(
             c,
             ['reports:view'],
@@ -54,7 +45,23 @@ export const getAnalyticsReportsRouteHandler: AppRouteHandler<
         );
 
         const query = c.req.valid('query');
-        const targetInstitutionId = query.institutionId || query.institution_id;
+        const role = c.get('role');
+        const authedInstitutionId = c.get('institutionId');
+
+        let targetInstitutionId: string | undefined = authedInstitutionId;
+        if (
+            (role === 'support' || role === 'superadmin') &&
+            (query.institutionId || query.institution_id)
+        ) {
+            targetInstitutionId = query.institutionId || query.institution_id;
+        }
+
+        if (!targetInstitutionId && role !== 'support' && role !== 'superadmin') {
+            return c.json(
+                { success: false, error: 'Unauthorized. Institution ID not found.' },
+                401 as any,
+            );
+        }
 
         if (targetInstitutionId) {
             const instExists = await c

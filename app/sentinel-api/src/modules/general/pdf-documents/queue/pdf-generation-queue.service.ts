@@ -6,7 +6,7 @@ import {
     getPdfGenerationMode,
 } from './pdf-generation-queue.config';
 import { PdfGenerationJobProcessor } from './pdf-generation-job-processor.service';
-import { dbClient } from '@sentinel/db';
+import { dbClient, transactionStorage } from '@sentinel/db';
 
 export class PdfGenerationQueueService {
     private queue: Queue | null = null;
@@ -44,19 +44,26 @@ export class PdfGenerationQueueService {
                 `[PdfGenerationQueueService] PDF generation mode is "sync". Executing job ${exportId} directly in the API process...`,
             );
 
-            // Fire and forget: run the job asynchronously in background without blocking Hono route
-            void PdfGenerationJobProcessor.processJob(dbClient, exportId, documentKind)
-                .then(() => {
-                    console.log(
-                        `[PdfGenerationQueueService] Direct job ${exportId} completed successfully.`,
-                    );
-                })
-                .catch((err) => {
-                    console.error(
-                        `[PdfGenerationQueueService] Direct job ${exportId} failed:`,
-                        err,
-                    );
-                });
+            const activeTrx = transactionStorage.getStore();
+            const runJob = () =>
+                PdfGenerationJobProcessor.processJob(dbClient, exportId, documentKind)
+                    .then(() => {
+                        console.log(
+                            `[PdfGenerationQueueService] Direct job ${exportId} completed successfully.`,
+                        );
+                    })
+                    .catch((err) => {
+                        console.error(
+                            `[PdfGenerationQueueService] Direct job ${exportId} failed:`,
+                            err,
+                        );
+                    });
+
+            if (activeTrx) {
+                void transactionStorage.run(activeTrx, runJob);
+            } else {
+                void runJob();
+            }
 
             return;
         }

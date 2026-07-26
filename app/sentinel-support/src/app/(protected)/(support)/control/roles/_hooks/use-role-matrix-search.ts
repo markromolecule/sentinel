@@ -25,6 +25,7 @@ export function useRoleMatrixSearch() {
     const {
         data: filteredPermissions = EMPTY_PERMISSIONS,
         isLoading: isPermissionsLoading,
+        isFetching: isPermissionsFetching,
         error: permissionsError,
     } = useAccessControlPermissionsQuery(debouncedSearchValue);
 
@@ -35,7 +36,7 @@ export function useRoleMatrixSearch() {
         [filteredPermissions],
     );
 
-    const isBusy = isLoading || isPermissionsLoading;
+    const isBusy = isLoading || (isPermissionsLoading && filteredPermissions.length === 0);
     const pageError = error || permissionsError;
 
     return {
@@ -47,6 +48,7 @@ export function useRoleMatrixSearch() {
         filteredPermissions,
         groupedPermissions,
         isBusy,
+        isSearching: isPermissionsFetching,
         pageError,
     };
 }

@@ -42,7 +42,6 @@ export const getBrandingRoute = createRoute({
 
 export const getBrandingHandler: AppRouteHandler<typeof getBrandingRoute> = async (c) => {
     requirePdfDocumentAccess({
-        role: c.get('role'),
         activePermissionKeys: c.get('activePermissionKeys'),
         requiredPermissions: [
             'institution_branding:manage',

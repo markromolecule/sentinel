@@ -56,7 +56,6 @@ export const uploadBrandingRoute = createRoute({
 export const uploadBrandingHandler: AppRouteHandler<typeof uploadBrandingRoute> = async (c) => {
     const user = c.get('user');
     requirePdfDocumentAccess({
-        role: c.get('role'),
         activePermissionKeys: c.get('activePermissionKeys'),
         requiredPermissions: 'institution_branding:manage',
         missingPermissionMessage: 'Forbidden. Missing institution_branding:manage permission.',

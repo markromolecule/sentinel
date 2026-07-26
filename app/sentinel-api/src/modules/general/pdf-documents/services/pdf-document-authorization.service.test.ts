@@ -48,30 +48,27 @@ function createDbClient(
 }
 
 describe('pdf-document-authorization.service', () => {
-    it('allows support callers with one matching permission', () => {
+    it('allows any role with one matching permission', () => {
         expect(() =>
             requirePdfDocumentAccess({
-                role: 'support',
                 activePermissionKeys: ['pdf_templates:view'],
                 requiredPermissions: ['pdf_templates:view', 'pdf_templates:manage'],
             }),
         ).not.toThrow();
     });
 
-    it('rejects non-support callers', () => {
+    it('allows non-support roles when they hold the required permission', () => {
         expect(() =>
             requirePdfDocumentAccess({
-                role: 'admin',
-                activePermissionKeys: ['pdf_templates:view'],
-                requiredPermissions: 'pdf_templates:view',
+                activePermissionKeys: ['reports:export'],
+                requiredPermissions: 'reports:export',
             }),
-        ).toThrowError(/Support role is required/);
+        ).not.toThrow();
     });
 
-    it('rejects support callers without the required permission', () => {
+    it('rejects callers without the required permission', () => {
         expect(() =>
             requirePdfDocumentAccess({
-                role: 'support',
                 activePermissionKeys: ['institutions:view'],
                 requiredPermissions: 'pdf_templates:manage',
             }),

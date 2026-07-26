@@ -43,7 +43,6 @@ export const deleteTemplateOverrideHandler: AppRouteHandler<
 > = async (c) => {
     const user = c.get('user');
     requirePdfDocumentAccess({
-        role: c.get('role'),
         activePermissionKeys: c.get('activePermissionKeys'),
         requiredPermissions: 'pdf_templates:manage',
         missingPermissionMessage: 'Forbidden. Missing pdf_templates:manage permission.',

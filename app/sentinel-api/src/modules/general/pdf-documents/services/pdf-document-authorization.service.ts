@@ -3,27 +3,20 @@ import { HTTPException } from 'hono/http-exception';
 import { hasActivePermission } from '../../../../lib/permissions';
 
 type RequirePdfDocumentAccessArgs = {
-    role?: string | null;
     activePermissionKeys?: string[];
     requiredPermissions: string | string[];
-    missingRoleMessage?: string;
     missingPermissionMessage?: string;
 };
 
 /**
- * Enforces Support-role access plus at least one required active permission for PDF document routes.
+ * Enforces at least one required active permission for PDF document routes.
+ * Access is role-agnostic — any authenticated user holding a required permission is granted access.
  */
 export function requirePdfDocumentAccess({
-    role,
     activePermissionKeys = [],
     requiredPermissions,
-    missingRoleMessage = 'Forbidden. Support role is required.',
     missingPermissionMessage = 'Forbidden. Missing required PDF document permission.',
 }: RequirePdfDocumentAccessArgs): void {
-    if (String(role ?? '').toLowerCase() !== 'support') {
-        throw new HTTPException(403, { message: missingRoleMessage });
-    }
-
     if (!hasActivePermission(activePermissionKeys, requiredPermissions)) {
         throw new HTTPException(403, { message: missingPermissionMessage });
     }

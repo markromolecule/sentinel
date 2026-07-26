@@ -273,11 +273,34 @@ describe('Analytics Controllers', () => {
             });
         });
 
-        it('returns 403 Forbidden if caller lacks support role', async () => {
-            const app = createTestApp(['reports:view'], 'instructor');
+        it('returns 403 Forbidden if caller lacks reports:view permission', async () => {
+            const app = createTestApp([], 'support');
             const res = await app.request('/reports');
 
             expect(res.status).toBe(403);
+        });
+
+        it('fetches reports successfully for non-support roles when authorized with reports:view', async () => {
+            const mockData = {
+                records: [],
+                total_records: 0,
+                limit: 10,
+                page: 1,
+            };
+            vi.spyOn(AnalyticsService, 'getReports').mockResolvedValue(mockData);
+
+            const app = createTestApp(['reports:view'], 'admin');
+            const res = await app.request('/reports?limit=10&page=1');
+            const body = await res.json();
+
+            expect(res.status).toBe(200);
+            expect(AnalyticsService.getReports).toHaveBeenCalledWith({
+                dbClient: expect.any(Object),
+                institutionId: '12345678-1234-4234-8234-1234567890fe',
+                limit: 10,
+                page: 1,
+            });
+            expect(body.success).toBe(true);
         });
     });
 
@@ -331,8 +354,8 @@ describe('Analytics Controllers', () => {
             });
         });
 
-        it('returns 403 Forbidden if caller lacks support role', async () => {
-            const app = createTestApp(['reports:generate'], 'instructor');
+        it('returns 403 Forbidden if caller lacks reports:generate permission', async () => {
+            const app = createTestApp([], 'support');
             const res = await app.request('/reports', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -344,6 +367,50 @@ describe('Analytics Controllers', () => {
             });
 
             expect(res.status).toBe(403);
+        });
+
+        it('triggers report generation successfully for non-support roles when authorized with reports:generate', async () => {
+            const mockCreated = {
+                reportId: 'rep-999',
+                title: 'New Report',
+                type: 'ANALYTICS_OVERALL',
+                generatedAt: '2026-05-22T08:30:00.000Z',
+                format: 'pdf',
+                status: 'PENDING',
+                fileUrl: null,
+                createdBy: 'user-123',
+                institutionId: '12345678-1234-4234-8234-1234567890fe',
+                failureCode: null,
+                failureMessage: null,
+                expiresAt: null,
+                retryCount: 0,
+            };
+            vi.spyOn(AnalyticsService, 'generateReport').mockResolvedValue(mockCreated);
+
+            const app = createTestApp(['reports:generate'], 'admin');
+            const res = await app.request('/reports', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: 'New Report',
+                    period: 'LAST_30_DAYS',
+                    timezone: 'Asia/Manila',
+                }),
+            });
+            const body = await res.json();
+
+            expect(res.status).toBe(202);
+            expect(AnalyticsService.generateReport).toHaveBeenCalledWith({
+                dbClient: expect.any(Object),
+                userId: 'user-123',
+                title: 'New Report',
+                institutionId: '12345678-1234-4234-8234-1234567890fe',
+                period: 'LAST_30_DAYS',
+                timezone: 'Asia/Manila',
+                startDate: undefined,
+                endDate: undefined,
+            });
+            expect(body.success).toBe(true);
         });
     });
 

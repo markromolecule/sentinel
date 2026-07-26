@@ -1,9 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PdfCleanupService } from './pdf-cleanup.service';
 
-const { deletePdfMock, createLogMock } = vi.hoisted(() => ({
+const { deletePdfMock, createLogMock, executeTransactionMock } = vi.hoisted(() => ({
     deletePdfMock: vi.fn().mockResolvedValue(undefined),
     createLogMock: vi.fn().mockResolvedValue(undefined),
+    executeTransactionMock: vi.fn(async (callback) => {
+        return callback({
+            updateTable: () => ({
+                set: () => ({
+                    where: () => ({
+                        execute: vi.fn().mockResolvedValue(undefined),
+                    }),
+                }),
+            }),
+        });
+    }),
 }));
 
 vi.mock('../storage/pdf-storage.service', () => ({
@@ -16,6 +27,10 @@ vi.mock('../../logs/logs.service', () => ({
     LogsService: {
         createLog: createLogMock,
     },
+}));
+
+vi.mock('@sentinel/db', () => ({
+    executeTransaction: executeTransactionMock,
 }));
 
 describe('PdfCleanupService', () => {
@@ -34,6 +49,17 @@ describe('PdfCleanupService', () => {
         };
 
         const updateExecuteMock = vi.fn().mockResolvedValue(undefined);
+        executeTransactionMock.mockImplementationOnce(async (callback) => {
+            return callback({
+                updateTable: () => ({
+                    set: () => ({
+                        where: () => ({
+                            execute: updateExecuteMock,
+                        }),
+                    }),
+                }),
+            });
+        });
 
         const dbClient = {
             selectFrom: vi.fn().mockReturnValue({
@@ -44,18 +70,6 @@ describe('PdfCleanupService', () => {
                         }),
                     }),
                 }),
-            }),
-            transaction: () => ({
-                execute: async (callback: any) =>
-                    callback({
-                        updateTable: () => ({
-                            set: () => ({
-                                where: () => ({
-                                    execute: updateExecuteMock,
-                                }),
-                            }),
-                        }),
-                    }),
             }),
         } as any;
 
@@ -89,6 +103,17 @@ describe('PdfCleanupService', () => {
         };
 
         const updateExecuteMock = vi.fn().mockResolvedValue(undefined);
+        executeTransactionMock.mockImplementationOnce(async (callback) => {
+            return callback({
+                updateTable: () => ({
+                    set: () => ({
+                        where: () => ({
+                            execute: updateExecuteMock,
+                        }),
+                    }),
+                }),
+            });
+        });
 
         const dbClient = {
             selectFrom: vi.fn().mockReturnValue({
@@ -99,18 +124,6 @@ describe('PdfCleanupService', () => {
                         }),
                     }),
                 }),
-            }),
-            transaction: () => ({
-                execute: async (callback: any) =>
-                    callback({
-                        updateTable: () => ({
-                            set: () => ({
-                                where: () => ({
-                                    execute: updateExecuteMock,
-                                }),
-                            }),
-                        }),
-                    }),
             }),
         } as any;
 

@@ -22,6 +22,7 @@ export function useRoleMatrix() {
         searchValue,
         setSearchValue,
         isBusy,
+        isSearching,
         pageError,
     } = useRoleMatrixSearch();
 
@@ -69,6 +70,7 @@ export function useRoleMatrix() {
 
         // State
         isBusy,
+        isSearching,
         pageError,
         editorOpen,
         selectedRole,

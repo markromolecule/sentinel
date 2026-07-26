@@ -1,5 +1,6 @@
 import { createRoute, z } from '@hono/zod-openapi';
 import { type AppRouteHandler } from '../../../../types/hono';
+import { executeTransaction } from '@sentinel/db';
 import { HTTPException } from 'hono/http-exception';
 import { pdfGenerationQueueService } from '../queue/pdf-generation-queue.service';
 import { LogsService } from '../../logs/logs.service';
@@ -50,17 +51,15 @@ export const postPdfExportRetryHandler: AppRouteHandler<typeof postPdfExportRetr
     const user = c.get('user');
 
     requirePdfDocumentAccess({
-        role: c.get('role'),
         activePermissionKeys: c.get('activePermissionKeys'),
         requiredPermissions: ['pdf_templates:manage', 'reports:generate'],
-        missingRoleMessage: 'Access denied: Support role required.',
         missingPermissionMessage: 'Forbidden: Insufficient privileges.',
     });
 
     const { exportId } = c.req.valid('param');
 
     try {
-        const result = await dbClient.transaction().execute(async (trx) => {
+        const result = await executeTransaction(async (trx) => {
             // Check analytics_reports first
             let record = await trx
                 .selectFrom('analytics_reports')

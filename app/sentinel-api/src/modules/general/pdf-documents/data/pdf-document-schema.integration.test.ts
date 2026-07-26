@@ -6,29 +6,49 @@ describe('PDF Document Schema Integration', () => {
     testWithDbClient(
         'should enforce partial unique index on published global templates',
         async ({ dbClient }) => {
-            // 1. Insert first published global template
-            await dbClient
-                .insertInto('pdf_templates')
-                .values({
-                    document_kind: 'ANALYTICS_OVERALL',
-                    version: 1,
-                    status: 'PUBLISHED',
-                    header_config: JSON.stringify({ logo_placement: 'LEFT' }),
-                    footer_config: JSON.stringify({ page_numbers: true }),
-                })
-                .execute();
+            // 1. Check if first published global template already exists
+            const existingFirst = await dbClient
+                .selectFrom('pdf_templates')
+                .selectAll()
+                .where('institution_id', 'is', null)
+                .where('document_kind', '=', 'ANALYTICS_OVERALL')
+                .where('status', '=', 'PUBLISHED')
+                .executeTakeFirst();
+
+            if (!existingFirst) {
+                await dbClient
+                    .insertInto('pdf_templates')
+                    .values({
+                        document_kind: 'ANALYTICS_OVERALL',
+                        version: 1,
+                        status: 'PUBLISHED',
+                        header_config: JSON.stringify({ logo_placement: 'LEFT' }),
+                        footer_config: JSON.stringify({ page_numbers: true }),
+                    })
+                    .execute();
+            }
 
             // 2. Insert second published global template of different kind (should succeed)
-            await dbClient
-                .insertInto('pdf_templates')
-                .values({
-                    document_kind: 'EXAM_ANSWER_KEY',
-                    version: 1,
-                    status: 'PUBLISHED',
-                    header_config: JSON.stringify({ logo_placement: 'RIGHT' }),
-                    footer_config: JSON.stringify({ page_numbers: true }),
-                })
-                .execute();
+            const existingSecond = await dbClient
+                .selectFrom('pdf_templates')
+                .selectAll()
+                .where('institution_id', 'is', null)
+                .where('document_kind', '=', 'EXAM_ANSWER_KEY')
+                .where('status', '=', 'PUBLISHED')
+                .executeTakeFirst();
+
+            if (!existingSecond) {
+                await dbClient
+                    .insertInto('pdf_templates')
+                    .values({
+                        document_kind: 'EXAM_ANSWER_KEY',
+                        version: 1,
+                        status: 'PUBLISHED',
+                        header_config: JSON.stringify({ logo_placement: 'RIGHT' }),
+                        footer_config: JSON.stringify({ page_numbers: true }),
+                    })
+                    .execute();
+            }
 
             // 3. Insert global draft template of same kind (should succeed)
             await dbClient

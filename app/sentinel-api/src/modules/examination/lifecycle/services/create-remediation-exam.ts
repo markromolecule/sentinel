@@ -1,4 +1,4 @@
-import { type DbClient } from '@sentinel/db';
+import { type DbClient, executeTransaction } from '@sentinel/db';
 import { HTTPException } from 'hono/http-exception';
 import crypto from 'crypto';
 
@@ -45,7 +45,7 @@ export async function createRemediationExam(args: {
         });
     }
 
-    return await dbClient.transaction().execute(async (tx) => {
+    return await executeTransaction(async (tx) => {
         const newExamId = crypto.randomUUID();
 
         // 1. Insert cloned exam
