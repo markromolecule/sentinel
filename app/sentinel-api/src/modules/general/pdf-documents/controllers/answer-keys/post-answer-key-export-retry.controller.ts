@@ -1,5 +1,6 @@
 import { createRoute, z } from '@hono/zod-openapi';
 import { type AppRouteHandler } from '../../../../../types/hono';
+import { executeTransaction } from '@sentinel/db';
 import { pdfGenerationQueueService } from '../../queue/pdf-generation-queue.service';
 import { LogsService } from '../../../logs/logs.service';
 import {
@@ -51,7 +52,7 @@ export const postAnswerKeyExportRetryHandler: AppRouteHandler<
     const { exportId } = c.req.valid('param');
 
     try {
-        const result = await dbClient.transaction().execute(async (trx) => {
+        const result = await executeTransaction(async (trx) => {
             const row = await trx
                 .selectFrom('exam_answer_key_exports')
                 .selectAll()

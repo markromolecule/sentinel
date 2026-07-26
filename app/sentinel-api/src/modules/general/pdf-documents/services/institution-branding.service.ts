@@ -1,4 +1,4 @@
-import { type DbClient } from '@sentinel/db';
+import { type DbClient, executeTransaction } from '@sentinel/db';
 import { PdfStorageService, UploadedLogoMetadata } from '../storage/pdf-storage.service';
 
 export class InstitutionBrandingService {
@@ -32,7 +32,7 @@ export class InstitutionBrandingService {
         logo: UploadedLogoMetadata,
         userId: string,
     ) {
-        return await dbClient.transaction().execute(async (trx) => {
+        return await executeTransaction(async (trx) => {
             const oldBranding = await trx
                 .selectFrom('institution_pdf_branding')
                 .select(['logo_storage_bucket', 'logo_storage_path'])
@@ -97,7 +97,7 @@ export class InstitutionBrandingService {
      * @returns old logo details to delete
      */
     static async deleteBranding(dbClient: DbClient, institutionId: string) {
-        return await dbClient.transaction().execute(async (trx) => {
+        return await executeTransaction(async (trx) => {
             const oldBranding = await trx
                 .selectFrom('institution_pdf_branding')
                 .select(['logo_storage_bucket', 'logo_storage_path'])
