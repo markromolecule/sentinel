@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type { AccessControlRole } from '@sentinel/shared/types';
-import { Badge, SearchBar, FacetedFilter } from '@sentinel/ui';
+import { Badge, SearchBar, FacetedFilter, cn } from '@sentinel/ui';
 import {
     AccessControlEmptyState,
     AccessControlErrorState,
@@ -28,6 +28,7 @@ export function RoleMatrixView() {
 
         // State
         isBusy,
+        isSearching,
         pageError,
         roleToDelete,
         searchValue,
@@ -155,25 +156,32 @@ export function RoleMatrixView() {
                     />
                 </div>
             ) : (
-                <RoleMatrixTable
-                    sortedRoles={filteredRoles}
-                    groupedPermissions={groupedPermissions}
-                    draftPermissionIdsByRoleId={draftPermissionIdsByRoleId}
-                    savingRoleIds={savingRoleIds}
-                    collapsedCategoryKeys={collapsedCategoryKeys}
-                    collapsedModuleKeys={collapsedModuleKeys}
-                    editingRoleId={editingRoleId}
-                    editingRoleName={editingRoleName}
-                    onToggleCategory={toggleCategory}
-                    onToggleModule={toggleModule}
-                    onPermissionToggle={handlePermissionToggle}
-                    onStartRoleNameEdit={startRoleNameEdit}
-                    onSubmitRoleNameEdit={submitRoleNameEdit}
-                    onSetEditingRoleId={setEditingRoleId}
-                    onSetEditingRoleName={setEditingRoleName}
-                    onSetRoleToDelete={setRoleToDelete}
-                    onSetRoleToReset={setRoleToReset}
-                />
+                <div
+                    className={cn(
+                        'transition-opacity duration-200',
+                        isSearching && 'pointer-events-none opacity-50',
+                    )}
+                >
+                    <RoleMatrixTable
+                        sortedRoles={filteredRoles}
+                        groupedPermissions={groupedPermissions}
+                        draftPermissionIdsByRoleId={draftPermissionIdsByRoleId}
+                        savingRoleIds={savingRoleIds}
+                        collapsedCategoryKeys={collapsedCategoryKeys}
+                        collapsedModuleKeys={collapsedModuleKeys}
+                        editingRoleId={editingRoleId}
+                        editingRoleName={editingRoleName}
+                        onToggleCategory={toggleCategory}
+                        onToggleModule={toggleModule}
+                        onPermissionToggle={handlePermissionToggle}
+                        onStartRoleNameEdit={startRoleNameEdit}
+                        onSubmitRoleNameEdit={submitRoleNameEdit}
+                        onSetEditingRoleId={setEditingRoleId}
+                        onSetEditingRoleName={setEditingRoleName}
+                        onSetRoleToDelete={setRoleToDelete}
+                        onSetRoleToReset={setRoleToReset}
+                    />
+                </div>
             )}
 
             <DeleteRoleDialog

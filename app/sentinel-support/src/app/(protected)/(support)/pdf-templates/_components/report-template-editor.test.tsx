@@ -83,12 +83,6 @@ vi.mock('./template-status-card', () => ({
     ),
 }));
 
-vi.mock('./branding-upload-card', () => ({
-    BrandingUploadCard: ({ globalMessage }: any) => (
-        <div>{globalMessage ?? 'Branding upload controls'}</div>
-    ),
-}));
-
 describe('ReportTemplateEditor', () => {
     const baseProps = {
         scopeValue: '__global__',
@@ -107,14 +101,6 @@ describe('ReportTemplateEditor', () => {
         footerConfig: {} as any,
         onHeaderChange: vi.fn(),
         onFooterChange: vi.fn(),
-        branding: null,
-        brandingDisabled: false,
-        brandingGlobalMessage:
-            'Branding is available only for parent-institution overrides. Global (Sentinel) uses the standard platform identity.',
-        isUploadingBranding: false,
-        isRemovingBranding: false,
-        onUploadBranding: vi.fn(),
-        onRemoveBranding: vi.fn(),
         isGeneratingPreview: false,
         onGeneratePreview: vi.fn(),
         showResetOverride: false,
@@ -131,31 +117,17 @@ describe('ReportTemplateEditor', () => {
         expect(container.textContent).toContain('Generate preview');
     });
 
-    it('switches tabs and shows the global branding empty state', () => {
-        render(<ReportTemplateEditor {...baseProps} />);
-
-        fireEvent.click(screen.getByRole('tab', { name: 'Branding' }));
-
-        expect(
-            screen.getByText(/Branding is available only for parent-institution overrides/i),
-        ).toBeTruthy();
-    });
-
     it('shows reset confirmation and preview loading for parent overrides', () => {
         render(
             <ReportTemplateEditor
                 {...baseProps}
                 scopeValue="parent-1"
                 scopeLabel="Parent One"
-                brandingGlobalMessage={null}
                 isGeneratingPreview
                 showResetOverride
             />,
         );
 
-        fireEvent.click(screen.getByRole('tab', { name: 'Branding' }));
-
-        expect(screen.getByText('Branding upload controls')).toBeTruthy();
         expect(screen.getByText('Generating...')).toBeTruthy();
 
         fireEvent.click(screen.getByText('Reset to global'));

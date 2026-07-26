@@ -5,13 +5,10 @@ import PdfTemplateReportsPage from './page';
 
 const mockUseInstitutionsQuery = vi.fn();
 const mockUsePdfTemplatesQuery = vi.fn();
-const mockUseInstitutionPdfBrandingQuery = vi.fn();
 const mockPreviewMutateAsync = vi.fn();
 const mockSaveDraftMutateAsync = vi.fn();
 const mockPublishMutateAsync = vi.fn();
 const mockResetMutateAsync = vi.fn();
-const mockUploadBrandingMutateAsync = vi.fn();
-const mockDeleteBrandingMutateAsync = vi.fn();
 const mockReportTemplateEditor = vi.fn();
 const mockPreviewWindow = {
     location: {
@@ -43,7 +40,6 @@ vi.mock('@/data', () => ({
     }),
     useInstitutionsQuery: (...args: any[]) => mockUseInstitutionsQuery(...args),
     usePdfTemplatesQuery: (...args: any[]) => mockUsePdfTemplatesQuery(...args),
-    useInstitutionPdfBrandingQuery: (...args: any[]) => mockUseInstitutionPdfBrandingQuery(...args),
     usePreviewPdfTemplateMutation: () => ({
         mutateAsync: mockPreviewMutateAsync,
         isPending: false,
@@ -58,14 +54,6 @@ vi.mock('@/data', () => ({
     }),
     useResetPdfTemplateOverrideMutation: () => ({
         mutateAsync: mockResetMutateAsync,
-        isPending: false,
-    }),
-    useUploadInstitutionPdfBrandingMutation: () => ({
-        mutateAsync: mockUploadBrandingMutateAsync,
-        isPending: false,
-    }),
-    useDeleteInstitutionPdfBrandingMutation: () => ({
-        mutateAsync: mockDeleteBrandingMutateAsync,
         isPending: false,
     }),
 }));
@@ -89,7 +77,6 @@ vi.mock('../_components', () => ({
                 <button onClick={() => props.onGeneratePreview()}>Trigger preview</button>
                 <button onClick={() => props.onResetOverride?.()}>Trigger reset</button>
                 <div>{props.showResetOverride ? 'reset-visible' : 'reset-hidden'}</div>
-                <div>{props.brandingGlobalMessage ?? 'branding-enabled'}</div>
             </div>
         );
     },
@@ -112,7 +99,6 @@ describe('PdfTemplateReportsPage', () => {
             error: null,
         });
         mockUsePdfTemplatesQuery.mockReturnValue({ data: [] });
-        mockUseInstitutionPdfBrandingQuery.mockReturnValue({ data: null });
         mockPreviewMutateAsync.mockResolvedValue(new Blob(['pdf'], { type: 'application/pdf' }));
         mockSaveDraftMutateAsync.mockResolvedValue(undefined);
         mockPublishMutateAsync.mockResolvedValue(undefined);
@@ -133,9 +119,6 @@ describe('PdfTemplateReportsPage', () => {
             value: '__global__',
             label: 'Global (Sentinel)',
         });
-        expect(lastProps.brandingGlobalMessage).toMatch(
-            /Branding is available only for parent-institution overrides/i,
-        );
     });
 
     it('generates the preview and opens it in a new tab', async () => {
@@ -164,7 +147,6 @@ describe('PdfTemplateReportsPage', () => {
             const lastProps = mockReportTemplateEditor.mock.calls.at(-1)?.[0];
             expect(lastProps.scopeValue).toBe('parent-1');
             expect(lastProps.showResetOverride).toBe(true);
-            expect(lastProps.brandingGlobalMessage).toBeNull();
         });
 
         fireEvent.click(screen.getByText('Trigger reset'));

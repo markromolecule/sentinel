@@ -1,5 +1,3 @@
-'use client';
-
 import * as React from 'react';
 import {
     AlertDialog,
@@ -22,8 +20,7 @@ import {
     TabsList,
     TabsTrigger,
 } from '@sentinel/ui';
-import type { FooterConfig, HeaderConfig, InstitutionPdfBranding, PdfTemplate } from '@/data';
-import { BrandingUploadCard } from './branding-upload-card';
+import type { FooterConfig, HeaderConfig, PdfTemplate } from '@/data';
 import { TemplateHeaderFooterFields } from './template-header-footer-fields';
 import { TemplatePreviewCard } from './template-preview-card';
 import { TemplateStatusCard } from './template-status-card';
@@ -47,13 +44,6 @@ type ReportTemplateEditorProps = {
     footerConfig: FooterConfig;
     onHeaderChange: (next: HeaderConfig) => void;
     onFooterChange: (next: FooterConfig) => void;
-    branding: InstitutionPdfBranding | null;
-    brandingDisabled?: boolean;
-    brandingGlobalMessage?: string | null;
-    isUploadingBranding?: boolean;
-    isRemovingBranding?: boolean;
-    onUploadBranding: (file: File) => void;
-    onRemoveBranding: () => void;
     isGeneratingPreview: boolean;
     onGeneratePreview: () => void;
     showResetOverride?: boolean;
@@ -75,20 +65,13 @@ export function ReportTemplateEditor({
     footerConfig,
     onHeaderChange,
     onFooterChange,
-    branding,
-    brandingDisabled,
-    brandingGlobalMessage,
-    isUploadingBranding,
-    isRemovingBranding,
-    onUploadBranding,
-    onRemoveBranding,
     isGeneratingPreview,
     onGeneratePreview,
     showResetOverride,
     isResettingOverride,
     onResetOverride,
 }: ReportTemplateEditorProps) {
-    const [activeTab, setActiveTab] = React.useState<'header' | 'footer' | 'branding'>('header');
+    const [activeTab, setActiveTab] = React.useState<'header' | 'footer'>('header');
     const [resetDialogOpen, setResetDialogOpen] = React.useState(false);
     const panelRef = React.useRef<HTMLDivElement | null>(null);
 
@@ -183,13 +166,12 @@ export function ReportTemplateEditor({
                 <Tabs
                     value={activeTab}
                     onValueChange={(value) =>
-                        setActiveTab(value as 'header' | 'footer' | 'branding')
+                        setActiveTab(value as 'header' | 'footer')
                     }
                 >
-                    <TabsList className="grid w-full grid-cols-3">
+                    <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="header">Header</TabsTrigger>
                         <TabsTrigger value="footer">Footer</TabsTrigger>
-                        <TabsTrigger value="branding">Branding</TabsTrigger>
                     </TabsList>
 
                     <div ref={panelRef} tabIndex={-1} className="outline-none">
@@ -214,19 +196,6 @@ export function ReportTemplateEditor({
                                 isAnalyticsTemplate
                                 section="footer"
                                 showSectionChrome={false}
-                            />
-                        </TabsContent>
-
-                        <TabsContent value="branding" className="mt-4 outline-none">
-                            <BrandingUploadCard
-                                branding={branding}
-                                disabled={brandingDisabled}
-                                onUpload={onUploadBranding}
-                                onRemove={onRemoveBranding}
-                                isUploading={isUploadingBranding}
-                                isRemoving={isRemovingBranding}
-                                variant="panel"
-                                globalMessage={brandingGlobalMessage}
                             />
                         </TabsContent>
                     </div>

@@ -44,10 +44,8 @@ export const postCreateAnswerKeyExportHandler: AppRouteHandler<
     const dbClient = c.get('dbClient');
 
     requirePdfDocumentAccess({
-        role: c.get('role'),
         activePermissionKeys: c.get('activePermissionKeys'),
         requiredPermissions: 'examinations:export_answer_key',
-        missingRoleMessage: 'Forbidden. Support role required.',
         missingPermissionMessage: 'Forbidden. Missing examinations:export_answer_key permission.',
     });
 

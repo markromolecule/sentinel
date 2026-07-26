@@ -46,14 +46,6 @@ export const generateAnalyticsReportRouteHandler: AppRouteHandler<
 > = async (c) => {
     try {
         const user = c.get('user');
-        const role = c.get('role');
-
-        if (role !== 'support') {
-            return c.json(
-                { success: false, error: 'Forbidden. Support role required.' },
-                403 as any,
-            );
-        }
 
         requireActivePermission(
             c,
@@ -62,14 +54,28 @@ export const generateAnalyticsReportRouteHandler: AppRouteHandler<
         );
 
         const payload = c.req.valid('json');
+        const role = c.get('role');
+        const authedInstitutionId = c.get('institutionId');
+
+        let targetInstitutionId = authedInstitutionId;
+        if ((role === 'support' || role === 'superadmin') && payload.institutionId) {
+            targetInstitutionId = payload.institutionId;
+        }
+
+        if (!targetInstitutionId && role !== 'support' && role !== 'superadmin') {
+            return c.json(
+                { success: false, error: 'Unauthorized. Institution ID not found.' },
+                401 as any,
+            );
+        }
 
         // Validate target institution scope consistently
-        if (payload.institutionId) {
+        if (targetInstitutionId) {
             const instExists = await c
                 .get('dbClient')
                 .selectFrom('institutions')
                 .select('id')
-                .where('id', '=', payload.institutionId)
+                .where('id', '=', targetInstitutionId)
                 .executeTakeFirst();
             if (!instExists) {
                 return c.json(
@@ -83,7 +89,7 @@ export const generateAnalyticsReportRouteHandler: AppRouteHandler<
             dbClient: c.get('dbClient'),
             userId: user.id,
             title: payload.title,
-            institutionId: payload.institutionId,
+            institutionId: targetInstitutionId,
             period: payload.period,
             startDate: payload.startDate,
             endDate: payload.endDate,

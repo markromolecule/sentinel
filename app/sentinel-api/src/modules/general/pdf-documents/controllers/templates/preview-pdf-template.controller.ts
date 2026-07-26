@@ -55,10 +55,8 @@ export const previewPdfTemplateHandler: AppRouteHandler<typeof previewPdfTemplat
     const user = c.get('user');
 
     requirePdfDocumentAccess({
-        role: c.get('role'),
         activePermissionKeys: c.get('activePermissionKeys'),
         requiredPermissions: ['pdf_templates:view', 'pdf_templates:manage'],
-        missingRoleMessage: 'Access denied: Support role required.',
         missingPermissionMessage: 'Forbidden: Insufficient privileges.',
     });
 

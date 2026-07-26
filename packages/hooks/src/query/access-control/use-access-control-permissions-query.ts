@@ -1,4 +1,4 @@
-import { useQuery, type UseQueryResult } from '@tanstack/react-query';
+import { useQuery, keepPreviousData, type UseQueryResult } from '@tanstack/react-query';
 import { getAccessControlPermissions } from '@sentinel/services';
 import { ACCESS_CONTROL_QUERY_KEYS } from '@sentinel/shared/constants';
 import type { AccessControlPermission } from '@sentinel/shared/types';
@@ -15,5 +15,6 @@ export function useAccessControlPermissionsQuery(
         queryKey: [...ACCESS_CONTROL_QUERY_KEYS.permissions(), { search }],
         queryFn: () => getAccessControlPermissions(apiClient, search),
         enabled: isAuthenticatedQueryEnabled,
+        placeholderData: keepPreviousData,
     });
 }

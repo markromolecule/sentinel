@@ -40,7 +40,6 @@ export const getPdfTemplatesRoute = createRoute({
 
 export const getPdfTemplatesHandler: AppRouteHandler<typeof getPdfTemplatesRoute> = async (c) => {
     requirePdfDocumentAccess({
-        role: c.get('role'),
         activePermissionKeys: c.get('activePermissionKeys'),
         requiredPermissions: ['pdf_templates:view', 'pdf_templates:manage'],
         missingPermissionMessage: 'Forbidden. Missing PDF template access permission.',

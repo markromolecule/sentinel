@@ -146,13 +146,17 @@ export function drawAnalyticsOverallBody(
     y = checkPageBreak(doc, y, 150);
     y = drawSectionHeader(doc, 'DEPARTMENT & SUBJECT PERFORMANCE', y);
 
+    const tableWidth =
+        PDF_LAYOUT.pageWidth - PDF_LAYOUT.marginLeft - PDF_LAYOUT.marginRight;
     const cols = [
-        { name: 'Department', width: 180, align: 'left' },
-        { name: 'Courses', width: 60, align: 'center' },
+        { name: 'Department', width: 210, align: 'left' },
+        { name: 'Courses', width: 55, align: 'center' },
         { name: 'Students', width: 60, align: 'center' },
-        { name: 'Avg Score', width: 80, align: 'right' },
-        { name: 'Integrity Rate', width: 100, align: 'right' },
+        { name: 'Avg Score', width: 75, align: 'right' },
+        { name: 'Integrity Rate', width: 87, align: 'right' },
     ] as const;
+    // Sanity: sum should equal tableWidth (487pt for A4 with 54pt margins each side)
+    void tableWidth;
 
     // Draw Table Header
     doc.save();
@@ -185,7 +189,14 @@ export function drawAnalyticsOverallBody(
     doc.font(PDF_LAYOUT.fonts.regular).fontSize(8);
 
     data.departments.forEach((dept, idx) => {
-        y = checkPageBreak(doc, y, 20);
+        // Measure the height the department name will require at this column width
+        const textPadding = 10; // top + bottom padding
+        const nameHeight = doc.heightOfString(dept.departmentName, {
+            width: cols[0].width - 16, // inner width (8pt padding each side)
+        });
+        const rowHeight = Math.max(18, nameHeight + textPadding);
+
+        y = checkPageBreak(doc, y, rowHeight);
 
         // Alternating row background
         if (idx % 2 === 1) {
@@ -193,54 +204,62 @@ export function drawAnalyticsOverallBody(
                 PDF_LAYOUT.marginLeft,
                 y,
                 PDF_LAYOUT.pageWidth - PDF_LAYOUT.marginLeft - PDF_LAYOUT.marginRight,
-                18,
+                rowHeight,
             )
                 .fillColor('#F9FAFB')
                 .fill();
         }
 
         // Draw Row Border bottom
-        doc.moveTo(PDF_LAYOUT.marginLeft, y + 18)
-            .lineTo(PDF_LAYOUT.pageWidth - PDF_LAYOUT.marginRight, y + 18)
+        doc.moveTo(PDF_LAYOUT.marginLeft, y + rowHeight)
+            .lineTo(PDF_LAYOUT.pageWidth - PDF_LAYOUT.marginRight, y + rowHeight)
             .strokeColor(PDF_LAYOUT.colors.border)
             .lineWidth(0.5)
             .stroke();
 
+        const valignOffset = Math.floor((rowHeight - 8) / 2); // vertically center single-line values
         let rowX = PDF_LAYOUT.marginLeft;
         doc.fillColor(PDF_LAYOUT.colors.textPrimary);
 
-        // Department Name
-        doc.text(dept.departmentName, rowX + 8, y + 5, { width: cols[0].width, lineBreak: false });
+        // Department Name — allow wrapping so long names don't bleed into next column
+        doc.text(dept.departmentName, rowX + 8, y + 5, {
+            width: cols[0].width - 16,
+            lineBreak: true,
+        });
         rowX += cols[0].width;
 
         // Courses Count
-        doc.text(dept.courseCount.toString(), rowX, y + 5, {
+        doc.text(dept.courseCount.toString(), rowX, y + valignOffset, {
             width: cols[1].width,
             align: 'center',
+            lineBreak: false,
         });
         rowX += cols[1].width;
 
         // Students Count
-        doc.text(dept.studentCount.toString(), rowX, y + 5, {
+        doc.text(dept.studentCount.toString(), rowX, y + valignOffset, {
             width: cols[2].width,
             align: 'center',
+            lineBreak: false,
         });
         rowX += cols[2].width;
 
         // Average Score
-        doc.text(`${dept.averageScore}%`, rowX - 8, y + 5, {
+        doc.text(`${dept.averageScore}%`, rowX - 8, y + valignOffset, {
             width: cols[3].width,
             align: 'right',
+            lineBreak: false,
         });
         rowX += cols[3].width;
 
         // Integrity Rate
-        doc.text(`${dept.integrityRate}%`, rowX - 8, y + 5, {
+        doc.text(`${dept.integrityRate}%`, rowX - 8, y + valignOffset, {
             width: cols[4].width,
             align: 'right',
+            lineBreak: false,
         });
 
-        y += 18;
+        y += rowHeight;
     });
     doc.restore();
     y += 20;

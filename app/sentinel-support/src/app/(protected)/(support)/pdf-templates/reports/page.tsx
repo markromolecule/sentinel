@@ -4,15 +4,12 @@ import * as React from 'react';
 import { Button, PermissionDeniedState } from '@sentinel/ui';
 import {
     useActivePermissions,
-    useDeleteInstitutionPdfBrandingMutation,
-    useInstitutionPdfBrandingQuery,
     useInstitutionsQuery,
     usePreviewPdfTemplateMutation,
     usePdfTemplatesQuery,
     usePublishPdfTemplateMutation,
     useResetPdfTemplateOverrideMutation,
     useSavePdfTemplateDraftMutation,
-    useUploadInstitutionPdfBrandingMutation,
     type FooterConfig,
     type HeaderConfig,
 } from '@/data';
@@ -60,7 +57,6 @@ export default function PdfTemplateReportsPage() {
     const { hasAnyPermission, hasPermission } = useActivePermissions();
     const canView = hasAnyPermission(['pdf_templates:view', 'pdf_templates:manage']);
     const canManageTemplate = hasPermission('pdf_templates:manage');
-    const canManageBranding = hasPermission('institution_branding:manage');
 
     const parentInstitutionsQuery = useInstitutionsQuery({
         institutionKind: 'PARENT',
@@ -78,19 +74,12 @@ export default function PdfTemplateReportsPage() {
         enabled: canView,
     });
 
-    const brandingQuery = useInstitutionPdfBrandingQuery(selectedInstitutionId, {
-        enabled: canView && Boolean(selectedInstitutionId),
-        retry: false,
-    });
-
     const [headerConfig, setHeaderConfig] = React.useState<HeaderConfig>(DEFAULT_HEADER_CONFIG);
     const [footerConfig, setFooterConfig] = React.useState<FooterConfig>(DEFAULT_FOOTER_CONFIG);
     const saveDraftMutation = useSavePdfTemplateDraftMutation();
     const publishMutation = usePublishPdfTemplateMutation();
     const previewMutation = usePreviewPdfTemplateMutation();
     const resetOverrideMutation = useResetPdfTemplateOverrideMutation();
-    const uploadBrandingMutation = useUploadInstitutionPdfBrandingMutation();
-    const deleteBrandingMutation = useDeleteInstitutionPdfBrandingMutation();
 
     const draftTemplate = React.useMemo(
         () => templatesQuery.data?.find((template) => template.status === 'DRAFT') ?? null,
@@ -210,41 +199,6 @@ export default function PdfTemplateReportsPage() {
                 footerConfig={footerConfig}
                 onHeaderChange={setHeaderConfig}
                 onFooterChange={setFooterConfig}
-                branding={brandingQuery.data ?? null}
-                brandingDisabled={!canManageBranding}
-                brandingGlobalMessage={
-                    selectedInstitutionId
-                        ? null
-                        : 'Branding is available only for parent-institution overrides. Global (Sentinel) uses the standard platform identity.'
-                }
-                isUploadingBranding={uploadBrandingMutation.isPending}
-                isRemovingBranding={deleteBrandingMutation.isPending}
-                onUploadBranding={async (file) => {
-                    if (!selectedInstitutionId) {
-                        toast.error('Choose a parent institution before uploading a logo.');
-                        return;
-                    }
-                    try {
-                        await uploadBrandingMutation.mutateAsync({
-                            institutionId: selectedInstitutionId,
-                            logo: file,
-                        });
-                        toast.success('Institution logo uploaded');
-                    } catch (error: any) {
-                        toast.error(error?.message || 'Failed to upload the logo.');
-                    }
-                }}
-                onRemoveBranding={async () => {
-                    if (!selectedInstitutionId) {
-                        return;
-                    }
-                    try {
-                        await deleteBrandingMutation.mutateAsync(selectedInstitutionId);
-                        toast.success('Institution logo removed');
-                    } catch (error: any) {
-                        toast.error(error?.message || 'Failed to remove the logo.');
-                    }
-                }}
                 isGeneratingPreview={previewMutation.isPending}
                 onGeneratePreview={async () => {
                     const previewWindow = window.open('about:blank', '_blank');

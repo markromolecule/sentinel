@@ -215,4 +215,17 @@ describe('useRoleMatrix hook', () => {
         // The newer draft of ['perm-1'] should be preserved, not overwritten by ['perm-1', 'perm-2']
         expect(result.current.draftPermissionIdsByRoleId[1]).toEqual(['perm-1']);
     });
+
+    it('returns isSearching as true when permissions query is fetching', () => {
+        vi.mocked(sentinelHooks.useAccessControlPermissionsQuery).mockReturnValue({
+            data: mockPermissions,
+            isLoading: false,
+            isFetching: true,
+            error: null,
+        } as any);
+
+        const { result } = renderHook(() => useRoleMatrix());
+
+        expect(result.current.isSearching).toBe(true);
+    });
 });

@@ -53,10 +53,8 @@ export const getPdfExportDownloadHandler: AppRouteHandler<
     const user = c.get('user');
 
     requirePdfDocumentAccess({
-        role: c.get('role'),
         activePermissionKeys: c.get('activePermissionKeys'),
         requiredPermissions: ['pdf_templates:view', 'reports:export'],
-        missingRoleMessage: 'Access denied: Support role required.',
         missingPermissionMessage: 'Forbidden: Insufficient privileges.',
     });
 

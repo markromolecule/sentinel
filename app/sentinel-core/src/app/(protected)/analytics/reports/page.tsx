@@ -3,11 +3,16 @@
 import * as React from 'react';
 import { AnalyticsReportsList } from '@/app/(protected)/analytics/_components';
 import { Button, Skeleton } from '@sentinel/ui';
-import { FileBarChart } from 'lucide-react';
+import { FileBarChart, Loader2 } from 'lucide-react';
 import { AnalyticsPageShell } from '../_components/layout';
 import { useAcademicScope } from '@/hooks/use-academic-scope';
-import { useAnalyticsReportsQuery, useGenerateAnalyticsReportMutation } from '@/data';
+import {
+    useAnalyticsReportsQuery,
+    useGenerateAnalyticsReportMutation,
+    useAnalyticsReportDownloadMutation,
+} from '@/data';
 import { useServerPagination } from '@sentinel/hooks';
+import { toast } from 'sonner';
 
 /**
  * ReportsAnalyticsPage displays historically generated analytical reports
@@ -29,7 +34,26 @@ export default function ReportsAnalyticsPage() {
     });
 
     // Report generation mutation
-    const { mutate: generateReport } = useGenerateAnalyticsReportMutation();
+    const { mutate: generateReport, isPending: isGenerating } = useGenerateAnalyticsReportMutation();
+
+    const downloadReportMutation = useAnalyticsReportDownloadMutation();
+    const [activeDownloadId, setActiveDownloadId] = React.useState<string | null>(null);
+
+    const handleDownload = async (reportId: string) => {
+        const loadingToastId = toast.loading('Preparing the PDF download...');
+        try {
+            setActiveDownloadId(reportId);
+            const response = await downloadReportMutation.mutateAsync(reportId);
+            toast.success('PDF download is ready.', { id: loadingToastId });
+            window.open(response.downloadUrl, '_blank', 'noopener,noreferrer');
+        } catch (error) {
+            const message =
+                error instanceof Error ? error.message : 'Failed to prepare the report download.';
+            toast.error(message, { id: loadingToastId });
+        } finally {
+            setActiveDownloadId(null);
+        }
+    };
 
     const pageCount = Math.max(
         1,
@@ -43,6 +67,7 @@ export default function ReportsAnalyticsPage() {
             actions={
                 <Button
                     className="bg-[#323d8f] hover:bg-[#323d8f]/90"
+                    disabled={isGenerating}
                     onClick={() =>
                         generateReport({
                             title: `Administrative Telemetry Report - ${new Date().toLocaleDateString()}`,
@@ -52,8 +77,12 @@ export default function ReportsAnalyticsPage() {
                         })
                     }
                 >
-                    <FileBarChart className="mr-2 h-4 w-4" />
-                    Generate New Report
+                    {isGenerating ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        <FileBarChart className="mr-2 h-4 w-4" />
+                    )}
+                    {isGenerating ? 'Generating...' : 'Generate New Report'}
                 </Button>
             }
         >
@@ -65,6 +94,8 @@ export default function ReportsAnalyticsPage() {
                     pagination={pagination}
                     onPaginationChange={setPagination}
                     pageCount={pageCount}
+                    onDownload={handleDownload}
+                    activeDownloadId={activeDownloadId}
                 />
             )}
         </AnalyticsPageShell>

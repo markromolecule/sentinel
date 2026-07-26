@@ -8,5 +8,6 @@ describe('PdfTemplateNav', () => {
 
         expect(screen.getByRole('link', { name: /report template/i })).toBeTruthy();
         expect(screen.getByRole('link', { name: /examination answer key/i })).toBeTruthy();
+        expect(screen.getByRole('link', { name: /branding/i })).toBeTruthy();
     });
 });

@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import { ColumnDef, type PaginationState } from '@tanstack/react-table';
 import { DataTable } from '@sentinel/ui';
 import { Button } from '@sentinel/ui';
@@ -13,9 +14,14 @@ export interface AnalyticsReportsListProps {
     pagination?: PaginationState;
     onPaginationChange?: (pagination: PaginationState) => void;
     pageCount?: number;
+    onDownload?: (reportId: string) => void;
+    activeDownloadId?: string | null;
 }
 
-const columns: ColumnDef<AnalyticsReport>[] = [
+const getColumns = (
+    onDownload?: (reportId: string) => void,
+    activeDownloadId?: string | null,
+): ColumnDef<AnalyticsReport>[] => [
     {
         accessorKey: 'title',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Report Title" />,
@@ -56,25 +62,22 @@ const columns: ColumnDef<AnalyticsReport>[] = [
         cell: ({ row }) => {
             const report = row.original;
             const status = report.status?.toLowerCase();
-            const hasDownloadUrl = Boolean(report.fileUrl);
+            const isDownloading = activeDownloadId === report.reportId;
             return (
                 <div className="text-right">
-                    {status === 'ready' && hasDownloadUrl ? (
-                        <Button variant="ghost" size="sm" asChild>
-                            <a
-                                href={report.fileUrl ?? undefined}
-                                download
-                                target="_blank"
-                                rel="noopener noreferrer"
-                            >
+                    {status === 'ready' ? (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={isDownloading}
+                            onClick={() => onDownload?.(report.reportId)}
+                        >
+                            {isDownloading ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
                                 <Download className="mr-2 h-4 w-4" />
-                                Download
-                            </a>
-                        </Button>
-                    ) : status === 'ready' ? (
-                        <Button variant="ghost" size="sm" disabled title="No file available">
-                            <Download className="mr-2 h-4 w-4" />
-                            No file available
+                            )}
+                            {isDownloading ? 'Downloading...' : 'Download'}
                         </Button>
                     ) : status === 'generating' ? (
                         <Button variant="ghost" size="sm" disabled>
@@ -95,7 +98,14 @@ export function AnalyticsReportsList({
     pagination,
     onPaginationChange,
     pageCount,
+    onDownload,
+    activeDownloadId,
 }: AnalyticsReportsListProps) {
+    const columns = React.useMemo(
+        () => getColumns(onDownload, activeDownloadId),
+        [onDownload, activeDownloadId],
+    );
+
     const facets = [
         {
             columnKey: 'type',
