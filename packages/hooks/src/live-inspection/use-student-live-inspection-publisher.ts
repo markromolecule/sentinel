@@ -162,6 +162,7 @@ export function useStudentLiveInspectionPublisher({
 
         if (
             directive.state === 'REQUESTED' ||
+            directive.state === 'PUBLISHER_CONNECTING' ||
             ((directive.state === 'PUBLISHER_READY' || directive.state === 'LIVE') &&
                 isRoomDisconnected)
         ) {

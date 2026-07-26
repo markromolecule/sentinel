@@ -119,7 +119,7 @@ export async function cleanupLiveInspectionProviderRoom(
 ) {
     if (!liveKit) return;
 
-    await Promise.allSettled([
+    const cleanupResults = await Promise.allSettled([
         liveKit.removeParticipant({
             roomName: lease.provider_room_name,
             participantIdentity: buildLiveKitParticipantIdentity(lease.lease_id, 'publisher'),
@@ -128,8 +128,13 @@ export async function cleanupLiveInspectionProviderRoom(
             roomName: lease.provider_room_name,
             participantIdentity: buildLiveKitParticipantIdentity(lease.lease_id, 'viewer'),
         }),
+        liveKit.deleteInspectionRoom(lease.provider_room_name),
     ]);
-    await liveKit.deleteInspectionRoom(lease.provider_room_name);
+
+    const deleteResult = cleanupResults[2];
+    if (deleteResult?.status === 'rejected') {
+        throw deleteResult.reason;
+    }
 }
 
 /**

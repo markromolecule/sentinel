@@ -190,6 +190,51 @@ describe('startLiveInspection', () => {
         );
     });
 
+    it('stops a stale lease owned by the viewer before starting another attempt', async () => {
+        const previousLease = {
+            ...mockLease,
+            lease_id: 'lease-previous',
+            exam_id: 'exam-previous',
+            attempt_id: 'attempt-previous',
+        };
+        const newLease = { ...mockLease, lease_id: 'lease-new' };
+
+        vi.mocked(repository.getActiveLiveInspectionLeaseForAttempt)
+            .mockResolvedValueOnce(null)
+            .mockResolvedValueOnce(newLease as any);
+        vi.mocked(repository.getActiveLiveInspectionLeaseForViewer).mockResolvedValueOnce(
+            previousLease as any,
+        );
+        vi.mocked(repository.countActiveLiveInspectionLeases).mockResolvedValue(0);
+        vi.mocked(repository.countActiveLiveInspectionLeasesByInstitution).mockResolvedValue(0);
+        vi.mocked(repository.acquireLiveInspectionLease).mockResolvedValue({
+            ok: true,
+            leaseId: 'lease-new',
+        });
+
+        const result = await startLiveInspection(
+            {
+                dbClient: {} as any,
+                examId: 'exam-123',
+                attemptId: 'attempt-123',
+                viewerUserId: 'viewer-123',
+                role: 'instructor',
+                activeInstitutionId: 'inst-123',
+            },
+            { config: enabledConfig, liveKit: mockLiveKit },
+        );
+
+        expect(stopService.stopLiveInspection).toHaveBeenCalledWith(
+            expect.objectContaining({
+                examId: 'exam-previous',
+                leaseId: 'lease-previous',
+                viewerUserId: 'viewer-123',
+            }),
+            expect.any(Object),
+        );
+        expect(result.leaseId).toBe('lease-new');
+    });
+
     it('throws 429 when global capacity is reached after stopping the old lease', async () => {
         vi.mocked(repository.getActiveLiveInspectionLeaseForAttempt).mockResolvedValueOnce(
             mockLease as any,
@@ -240,5 +285,56 @@ describe('startLiveInspection', () => {
 
         expect(result.leaseId).toBe('lease-raced');
         expect(mockLiveKit.createInspectionRoom).not.toHaveBeenCalled(); // The winner of the race handles room creation
+    });
+
+    it('recovers when the active-viewer unique constraint races the pre-check', async () => {
+        const previousLease = {
+            ...mockLease,
+            lease_id: 'lease-raced-previous',
+            exam_id: 'exam-previous',
+            attempt_id: 'attempt-previous',
+        };
+        const newLease = { ...mockLease, lease_id: 'lease-new' };
+
+        vi.mocked(repository.getActiveLiveInspectionLeaseForAttempt)
+            .mockResolvedValueOnce(null)
+            .mockResolvedValueOnce(null)
+            .mockResolvedValueOnce(newLease as any);
+        vi.mocked(repository.getActiveLiveInspectionLeaseForViewer)
+            .mockResolvedValueOnce(null)
+            .mockResolvedValueOnce(previousLease as any);
+        vi.mocked(repository.countActiveLiveInspectionLeases).mockResolvedValue(0);
+        vi.mocked(repository.countActiveLiveInspectionLeasesByInstitution).mockResolvedValue(0);
+        vi.mocked(repository.acquireLiveInspectionLease)
+            .mockResolvedValueOnce({
+                ok: false,
+                code: 'VIEWER_ALREADY_ACTIVE',
+            })
+            .mockResolvedValueOnce({
+                ok: true,
+                leaseId: 'lease-new',
+            });
+
+        const result = await startLiveInspection(
+            {
+                dbClient: {} as any,
+                examId: 'exam-123',
+                attemptId: 'attempt-123',
+                viewerUserId: 'viewer-123',
+                role: 'instructor',
+                activeInstitutionId: 'inst-123',
+            },
+            { config: enabledConfig, liveKit: mockLiveKit },
+        );
+
+        expect(stopService.stopLiveInspection).toHaveBeenCalledWith(
+            expect.objectContaining({
+                examId: 'exam-previous',
+                leaseId: 'lease-raced-previous',
+            }),
+            expect.any(Object),
+        );
+        expect(repository.acquireLiveInspectionLease).toHaveBeenCalledTimes(2);
+        expect(result.leaseId).toBe('lease-new');
     });
 });

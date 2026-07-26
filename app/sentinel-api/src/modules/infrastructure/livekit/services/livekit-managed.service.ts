@@ -74,13 +74,16 @@ export class LiveKitManagedService {
      */
     async createInspectionRoom(args: { roomName: string; leaseId: string }) {
         try {
-            return await this.roomClient.createRoom({
-                name: args.roomName,
-                maxParticipants: 2,
-                emptyTimeout: this.config.roomEmptyTimeoutSeconds,
-                departureTimeout: this.config.roomDepartureTimeoutSeconds,
-                metadata: JSON.stringify({ leaseId: args.leaseId }),
-            });
+            return await withProviderTimeout(
+                this.roomClient.createRoom({
+                    name: args.roomName,
+                    maxParticipants: 2,
+                    emptyTimeout: this.config.roomEmptyTimeoutSeconds,
+                    departureTimeout: this.config.roomDepartureTimeoutSeconds,
+                    metadata: JSON.stringify({ leaseId: args.leaseId }),
+                }),
+                this.config.requestTimeoutMs,
+            );
         } catch (error) {
             throw mapProviderError(error, 'PROVIDER_ROOM_ERROR');
         }
@@ -105,7 +108,10 @@ export class LiveKitManagedService {
      */
     async removeParticipant(args: { roomName: string; participantIdentity: string }) {
         try {
-            await this.roomClient.removeParticipant(args.roomName, args.participantIdentity);
+            await withProviderTimeout(
+                this.roomClient.removeParticipant(args.roomName, args.participantIdentity),
+                this.config.requestTimeoutMs,
+            );
         } catch (error) {
             if (isProviderNotFound(error)) return;
             throw mapProviderError(error, 'PROVIDER_ROOM_ERROR');
@@ -117,7 +123,10 @@ export class LiveKitManagedService {
      */
     async deleteInspectionRoom(roomName: string) {
         try {
-            await this.roomClient.deleteRoom(roomName);
+            await withProviderTimeout(
+                this.roomClient.deleteRoom(roomName),
+                this.config.requestTimeoutMs,
+            );
         } catch (error) {
             if (isProviderNotFound(error)) return;
             throw mapProviderError(error, 'PROVIDER_ROOM_ERROR');
@@ -129,7 +138,10 @@ export class LiveKitManagedService {
      */
     async listInspectionParticipants(roomName: string): Promise<ParticipantInfo[]> {
         try {
-            return await this.roomClient.listParticipants(roomName);
+            return await withProviderTimeout(
+                this.roomClient.listParticipants(roomName),
+                this.config.requestTimeoutMs,
+            );
         } catch (error) {
             if (isProviderNotFound(error)) return [];
             throw mapProviderError(error, 'PROVIDER_ROOM_ERROR');
@@ -215,6 +227,25 @@ function isProviderNotFound(error: unknown) {
     const message = String((error as { message?: string }).message ?? '').toLowerCase();
 
     return status === 404 || code === 404 || message.includes('not found');
+}
+
+function withProviderTimeout<T>(operation: Promise<T>, timeoutMs: number): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+            reject(new LiveKitProviderError('PROVIDER_ROOM_ERROR'));
+        }, timeoutMs);
+
+        operation.then(
+            (result) => {
+                clearTimeout(timeout);
+                resolve(result);
+            },
+            (error) => {
+                clearTimeout(timeout);
+                reject(error);
+            },
+        );
+    });
 }
 
 function mapProviderError(

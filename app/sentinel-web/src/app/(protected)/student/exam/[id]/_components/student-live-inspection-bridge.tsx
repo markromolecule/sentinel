@@ -35,10 +35,11 @@ export function StudentLiveInspectionBridge({
         <div
             role="status"
             aria-live="polite"
-            className="border-border bg-background/95 text-foreground fixed right-4 bottom-4 z-50 flex max-w-xs items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold shadow-lg backdrop-blur"
+            data-testid="live-inspection-status"
+            className="border-border bg-background/95 text-foreground pointer-events-none fixed bottom-[calc(env(safe-area-inset-bottom)+10rem)] left-1/2 z-40 flex w-[calc(100vw-1.5rem)] max-w-80 -translate-x-1/2 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-center text-[11px] leading-tight font-semibold shadow-lg backdrop-blur sm:right-4 sm:bottom-[calc(env(safe-area-inset-bottom)+7rem)] sm:left-auto sm:w-auto sm:max-w-xs sm:translate-x-0 sm:justify-start sm:rounded-full sm:px-4 sm:text-left sm:text-xs lg:bottom-[calc(env(safe-area-inset-bottom)+6rem)]"
         >
-            <Eye className="text-primary h-4 w-4" aria-hidden="true" />
-            <span>Camera being viewed live by an authorized proctor</span>
+            <Eye className="text-primary h-4 w-4 shrink-0" aria-hidden="true" />
+            <span className="min-w-0">Camera being viewed live by an authorized proctor</span>
         </div>
     );
 }

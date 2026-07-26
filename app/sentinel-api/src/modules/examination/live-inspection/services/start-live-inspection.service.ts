@@ -8,6 +8,7 @@ import {
     countActiveLiveInspectionLeases,
     countActiveLiveInspectionLeasesByInstitution,
     getActiveLiveInspectionLeaseForAttempt,
+    getActiveLiveInspectionLeaseForViewer,
     terminalizeLiveInspectionLease,
 } from '../live-inspection.repository';
 import { assertLiveInspectionViewerAccess } from '../live-inspection-access.service';
@@ -88,6 +89,29 @@ export async function startLiveInspection(
         );
     }
 
+    // Browser navigation and tab closure can prevent the previous monitor's
+    // best-effort stop request from reaching the API. Converge by stopping a
+    // different lease still owned by this viewer before acquiring the new one.
+    const previousViewerLease = await getActiveLiveInspectionLeaseForViewer(
+        args.dbClient,
+        args.viewerUserId,
+    );
+
+    if (previousViewerLease && previousViewerLease.attempt_id !== args.attemptId) {
+        await stopLiveInspection(
+            {
+                dbClient: args.dbClient,
+                examId: previousViewerLease.exam_id,
+                leaseId: previousViewerLease.lease_id,
+                viewerUserId: args.viewerUserId,
+                role: args.role,
+                activeInstitutionId: args.activeInstitutionId,
+                activePermissionKeys: args.activePermissionKeys,
+            },
+            deps,
+        );
+    }
+
     // Capacity checks occur AFTER the old lease is stopped (releasing its slot)
     const activeGlobalCount = await countActiveLiveInspectionLeases(args.dbClient);
 
@@ -106,7 +130,7 @@ export async function startLiveInspection(
 
     const providerRoomName = createLiveInspectionRoomName();
     const expiresAt = new Date(Date.now() + config.maxInspectionDurationSeconds * 1000);
-    const acquired = await acquireLiveInspectionLease(args.dbClient, {
+    let acquired = await acquireLiveInspectionLease(args.dbClient, {
         examId: args.examId,
         attemptId: args.attemptId,
         studentUserId: attempt.studentUserId,
@@ -127,12 +151,63 @@ export async function startLiveInspection(
             return mapLiveInspectionLeaseStatus(racedLease);
         }
 
-        throw new HTTPException(409, {
-            message:
-                acquired.code === 'VIEWER_ALREADY_ACTIVE'
-                    ? 'Viewer already has an active live inspection.'
-                    : 'Live inspection is already active.',
-        });
+        if (acquired.code === 'VIEWER_ALREADY_ACTIVE') {
+            // The active-viewer pre-check can race with another request or a
+            // delayed browser cleanup. Resolve the lease identified by the
+            // database constraint, stop it, and retry the insert once.
+            const conflictingViewerLease = await getActiveLiveInspectionLeaseForViewer(
+                args.dbClient,
+                args.viewerUserId,
+            );
+
+            if (conflictingViewerLease && conflictingViewerLease.attempt_id !== args.attemptId) {
+                await stopLiveInspection(
+                    {
+                        dbClient: args.dbClient,
+                        examId: conflictingViewerLease.exam_id,
+                        leaseId: conflictingViewerLease.lease_id,
+                        viewerUserId: args.viewerUserId,
+                        role: args.role,
+                        activeInstitutionId: args.activeInstitutionId,
+                        activePermissionKeys: args.activePermissionKeys,
+                    },
+                    deps,
+                );
+
+                acquired = await acquireLiveInspectionLease(args.dbClient, {
+                    examId: args.examId,
+                    attemptId: args.attemptId,
+                    studentUserId: attempt.studentUserId,
+                    viewerUserId: args.viewerUserId,
+                    institutionId: attempt.institutionId,
+                    providerRoomName,
+                    expiresAt,
+                });
+
+                if (!acquired.ok) {
+                    const retriedLease = await getActiveLiveInspectionLeaseForAttempt(
+                        args.dbClient,
+                        {
+                            examId: args.examId,
+                            attemptId: args.attemptId,
+                        },
+                    );
+
+                    if (retriedLease?.viewer_user_id === args.viewerUserId) {
+                        return mapLiveInspectionLeaseStatus(retriedLease);
+                    }
+                }
+            }
+        }
+
+        if (!acquired.ok) {
+            throw new HTTPException(409, {
+                message:
+                    acquired.code === 'VIEWER_ALREADY_ACTIVE'
+                        ? 'Viewer already has an active live inspection.'
+                        : 'Live inspection is already active.',
+            });
+        }
     }
 
     await LiveKitService.logLiveInspectionLifecycleEvent(args.dbClient, {

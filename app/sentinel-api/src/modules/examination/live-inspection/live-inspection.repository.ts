@@ -106,6 +106,22 @@ export async function getActiveLiveInspectionLeaseForAttempt(
 }
 
 /**
+ * Reads the current active lease owned by a viewer, if any.
+ */
+export async function getActiveLiveInspectionLeaseForViewer(
+    dbClient: DbClient,
+    viewerUserId: string,
+) {
+    return dbClient
+        .selectFrom('live_inspection_leases')
+        .selectAll()
+        .where('viewer_user_id', '=', viewerUserId)
+        .where('state', 'in', ACTIVE_STATES)
+        .orderBy('requested_at', 'desc')
+        .executeTakeFirst();
+}
+
+/**
  * Resolves a lease from the opaque provider room name carried by webhooks.
  */
 export async function getLiveInspectionLeaseByRoomName(

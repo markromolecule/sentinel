@@ -220,6 +220,45 @@ describe('useStudentLiveInspectionPublisher', () => {
         );
     });
 
+    it('resumes publication from a server-side PUBLISHER_CONNECTING directive', async () => {
+        const { supabase } = createSupabase();
+        const { original } = createLiveTrack();
+        mockDirective.mockResolvedValue(createDirective(2, 'PUBLISHER_CONNECTING'));
+        mockPublisherConnection.mockResolvedValueOnce({
+            leaseId,
+            revision: 2,
+            roomName: 'room-1',
+            token: 'replacement-token',
+            liveKitUrl: 'wss://sentinel-test.livekit.cloud',
+            participantIdentity: 'publisher-1',
+            expiresAt: '2026-07-20T00:00:00.000Z',
+        });
+
+        const { result } = renderHook(() =>
+            useStudentLiveInspectionPublisher({
+                supabase,
+                apiClient: vi.fn() as never,
+                sessionId: 'session-1',
+                attemptId,
+                enabled: true,
+                getLiveVideoTrack: () => original,
+            }),
+        );
+
+        await waitFor(() => expect(result.current.isLive).toBe(true));
+
+        expect(mockPublisherConnection).toHaveBeenCalledWith(expect.anything(), {
+            sessionId: 'session-1',
+            leaseId,
+            revision: 2,
+        });
+        expect(mockConnect).toHaveBeenCalledWith(
+            'wss://sentinel-test.livekit.cloud',
+            'replacement-token',
+            { autoSubscribe: false },
+        );
+    });
+
     it('registers missed-event recovery while the attempt page is mounted using setTimeout', async () => {
         vi.useFakeTimers();
         const { supabase } = createSupabase();

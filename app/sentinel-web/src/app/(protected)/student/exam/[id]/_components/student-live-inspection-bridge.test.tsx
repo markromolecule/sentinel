@@ -38,6 +38,15 @@ describe('StudentLiveInspectionBridge', () => {
         );
 
         expect(screen.getByText('Camera being viewed live by an authorized proctor')).toBeTruthy();
+        expect(screen.getByTestId('live-inspection-status').className).toContain(
+            'pointer-events-none',
+        );
+        expect(screen.getByTestId('live-inspection-status').className).toContain(
+            'bottom-[calc(env(safe-area-inset-bottom)+10rem)]',
+        );
+        expect(screen.getByTestId('live-inspection-status').className).toContain(
+            'sm:bottom-[calc(env(safe-area-inset-bottom)+7rem)]',
+        );
     });
 
     it('stays silent during request/connect states and forwards eligibility inputs', () => {
