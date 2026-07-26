@@ -47,17 +47,26 @@ export async function createPublisherConnection(
         throw new HTTPException(404, { message: 'Live inspection is not available.' });
     }
 
-    if (lease.state !== 'REQUESTED' || lease.version !== args.revision) {
+    if (
+        (lease.state !== 'REQUESTED' && lease.state !== 'PUBLISHER_CONNECTING') ||
+        lease.version !== args.revision
+    ) {
         throw new HTTPException(409, { message: 'Live inspection lease changed.' });
     }
 
-    const connecting = await transitionLiveInspectionLeaseState({
-        dbClient: args.dbClient,
-        leaseId: lease.lease_id,
-        fromState: 'REQUESTED',
-        toState: 'PUBLISHER_CONNECTING',
-        expectedVersion: args.revision,
-    });
+    // Reissuing credentials while already connecting is safe and makes the
+    // handshake recoverable when the first token response is lost after the
+    // REQUESTED -> PUBLISHER_CONNECTING transition commits.
+    const connecting =
+        lease.state === 'REQUESTED'
+            ? await transitionLiveInspectionLeaseState({
+                  dbClient: args.dbClient,
+                  leaseId: lease.lease_id,
+                  fromState: 'REQUESTED',
+                  toState: 'PUBLISHER_CONNECTING',
+                  expectedVersion: args.revision,
+              })
+            : lease;
 
     const liveKit = deps.liveKit ?? new LiveKitManagedService({ config: deps.config ?? config });
 
@@ -75,7 +84,7 @@ export async function createPublisherConnection(
             institutionId: lease.institution_id,
             role: 'publisher',
             state: 'PUBLISHER_CONNECTING',
-            previousState: 'REQUESTED',
+            previousState: lease.state,
             durationMs: Date.now() - lease.requested_at.getTime(),
         });
         await LiveKitService.logLiveKitTokenGranted(args.dbClient, {

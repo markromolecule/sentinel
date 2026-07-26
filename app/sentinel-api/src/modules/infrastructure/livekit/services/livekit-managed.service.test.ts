@@ -154,6 +154,27 @@ describe('LiveKitManagedService', () => {
         });
     });
 
+    it('bounds provider operations with the configured request timeout', async () => {
+        vi.useFakeTimers();
+        const timeoutConfig = { ...config, requestTimeoutMs: 25 };
+        roomClient.deleteRoom.mockReturnValueOnce(new Promise(() => undefined));
+        const assertion = expect(
+            new LiveKitManagedService({
+                config: timeoutConfig,
+                roomClient,
+                tokenFactory: MockAccessToken as any,
+                webhookReceiver,
+            }).deleteInspectionRoom('room-stuck'),
+        ).rejects.toMatchObject({
+            code: 'PROVIDER_ROOM_ERROR',
+            message: 'LiveKit provider operation failed.',
+        });
+
+        await vi.advanceTimersByTimeAsync(25);
+        await assertion;
+        vi.useRealTimers();
+    });
+
     it('verifies webhooks with the receiver and rejects invalid signatures', async () => {
         webhookReceiver.receive.mockResolvedValueOnce({ event: 'participant_joined' });
 
