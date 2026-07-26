@@ -29,7 +29,7 @@ export const createRedisConnection = (role: RedisConnectionRole = 'producer'): I
         connectTimeout: DEFAULT_CONNECT_TIMEOUT_MS,
         enableOfflineQueue: true, // Allow queuing commands while connecting
         lazyConnect: false, // Connect immediately at startup
-        maxRetriesPerRequest: role === 'worker' ? null : 1,
+        maxRetriesPerRequest: null,
     });
 };
 
