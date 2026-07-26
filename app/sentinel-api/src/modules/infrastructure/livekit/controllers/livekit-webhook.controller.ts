@@ -45,6 +45,7 @@ export const liveKitWebhookRouteHandler: AppRouteHandler<typeof liveKitWebhookRo
     const result = await processLiveKitWebhook({
         dbClient: c.get('dbClient'),
         event,
+        liveKit,
     });
 
     return c.json({ message: 'LiveKit webhook accepted.', data: result });

@@ -92,6 +92,7 @@ export function useLiveInspectionViewer({
     const roomRef = useRef<Room | null>(null);
     const leaseRef = useRef<LiveInspectionStaffStatus | null>(null);
     const attachedTrackRef = useRef<any>(null);
+    const isVideoPlayableRef = useRef(false);
     const pollTimerRef = useRef<number | null>(null);
     const pollStartTimeRef = useRef<number | null>(null);
     const stopRequestedRef = useRef(false);
@@ -111,6 +112,7 @@ export function useLiveInspectionViewer({
         const track = attachedTrackRef.current;
         const videoElement = videoElementRef.current;
         attachedTrackRef.current = null;
+        isVideoPlayableRef.current = false;
 
         if (!track || !videoElement) {
             return;
@@ -132,11 +134,17 @@ export function useLiveInspectionViewer({
     }, [clearPollTimer, detachLocalVideo]);
 
     const markVideoPlayable = useCallback(() => {
+        isVideoPlayableRef.current = true;
+        clearPollTimer();
         setState((current) =>
-            current === 'connecting' || current === 'reconnecting' ? 'live' : current,
+            current === 'waiting_for_student' ||
+            current === 'connecting' ||
+            current === 'reconnecting'
+                ? 'live'
+                : current,
         );
         setReason(null);
-    }, []);
+    }, [clearPollTimer]);
 
     const markRemoteVideoLost = useCallback(() => {
         if (stopRequestedRef.current) {
@@ -200,6 +208,9 @@ export function useLiveInspectionViewer({
 
                     attachedTrackRef.current = track;
                     track.attach(videoElement);
+                    setState((current) =>
+                        current === 'waiting_for_student' ? 'connecting' : current,
+                    );
 
                     track.mediaStreamTrack?.addEventListener?.('ended', markRemoteVideoLost, {
                         once: true,
@@ -233,10 +244,12 @@ export function useLiveInspectionViewer({
                 await room.connect(credentials.liveKitUrl, credentials.token, {
                     autoSubscribe: true,
                 });
+                return true;
             } catch (error) {
                 cleanupRoom();
                 setState('failed');
                 setReason(mapErrorReason(error) ?? 'CONNECT_FAILED');
+                return false;
             }
         },
         [apiClient, cleanupRoom, examId, markRemoteVideoLost],
@@ -274,8 +287,7 @@ export function useLiveInspectionViewer({
 
                 leaseRef.current = status;
 
-                if (status.state === 'PUBLISHER_READY' || status.state === 'LIVE') {
-                    await connectViewer(status);
+                if (isVideoPlayableRef.current) {
                     return;
                 }
 
@@ -302,7 +314,15 @@ export function useLiveInspectionViewer({
                     return;
                 }
 
-                setState('waiting_for_student');
+                setState((current) => {
+                    if (current === 'live' || current === 'reconnecting') {
+                        return current;
+                    }
+
+                    return status.state === 'PUBLISHER_READY' || status.state === 'LIVE'
+                        ? 'connecting'
+                        : 'waiting_for_student';
+                });
                 pollTimerRef.current = window.setTimeout(
                     () => void pollUntilPublisherReady(leaseId),
                     VIEWER_STATUS_POLL_MS,
@@ -334,15 +354,27 @@ export function useLiveInspectionViewer({
                     restart: options?.restart ?? false,
                 });
                 leaseRef.current = lease;
-                setState('waiting_for_student');
                 pollStartTimeRef.current = Date.now();
+                const viewerConnected = await connectViewer(lease);
+                if (!viewerConnected || leaseRef.current?.leaseId !== lease.leaseId) {
+                    return;
+                }
+                setState((current) => (current === 'live' ? current : 'waiting_for_student'));
                 await pollUntilPublisherReady(lease.leaseId);
             } catch (error) {
                 setState('failed');
                 setReason(mapErrorReason(error));
             }
         },
-        [apiClient, attemptId, cleanupRoom, enabled, examId, pollUntilPublisherReady],
+        [
+            apiClient,
+            attemptId,
+            cleanupRoom,
+            connectViewer,
+            enabled,
+            examId,
+            pollUntilPublisherReady,
+        ],
     );
 
     const stop = useCallback(async () => {

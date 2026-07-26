@@ -22,8 +22,19 @@ export type CreateViewerConnectionArgs = {
     activePermissionKeys?: string[] | Set<string>;
 };
 
+const VIEWER_CONNECTABLE_STATES = new Set([
+    'REQUESTED',
+    'PUBLISHER_CONNECTING',
+    'PUBLISHER_READY',
+    'LIVE',
+]);
+
 /**
- * Issues a subscribe-only viewer token after the publisher is ready.
+ * Issues a subscribe-only viewer token as soon as an inspection lease is active.
+ *
+ * Connecting the viewer before the publisher is ready lets LiveKit deliver the
+ * camera track immediately when it is published instead of adding a second
+ * connection handshake after publisher readiness.
  */
 export async function createViewerConnection(
     args: CreateViewerConnectionArgs,
@@ -53,8 +64,8 @@ export async function createViewerConnection(
         throw new HTTPException(409, { message: 'Live inspection lease expired.' });
     }
 
-    if (lease.state !== 'PUBLISHER_READY') {
-        throw new HTTPException(409, { message: 'Publisher is not ready.' });
+    if (!VIEWER_CONNECTABLE_STATES.has(lease.state)) {
+        throw new HTTPException(409, { message: 'Live inspection is not connectable.' });
     }
 
     const liveKit =

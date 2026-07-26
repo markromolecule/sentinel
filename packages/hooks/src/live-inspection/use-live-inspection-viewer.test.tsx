@@ -102,7 +102,7 @@ describe('useLiveInspectionViewer', () => {
         cleanup();
     });
 
-    it('starts explicitly, waits for publisher readiness, and connects without exposing tokens', async () => {
+    it('connects the viewer immediately and waits for media without exposing tokens', async () => {
         const { result } = renderHook(
             () =>
                 useLiveInspectionViewer({
@@ -124,6 +124,9 @@ describe('useLiveInspectionViewer', () => {
             attemptId: lease.attemptId,
             restart: false,
         });
+        expect(mockCredentials.mock.invocationCallOrder[0]).toBeLessThan(
+            mockStatus.mock.invocationCallOrder[0],
+        );
         expect(mockConnect).toHaveBeenCalledWith(
             'wss://sentinel-test.livekit.cloud',
             'viewer-token',
@@ -345,6 +348,28 @@ describe('useLiveInspectionViewer', () => {
         expect(JSON.stringify(result.current).toLowerCase()).not.toContain('token');
     });
 
+    it('keeps an immediate viewer connection failure terminal and does not start polling', async () => {
+        mockCredentials.mockRejectedValueOnce(new Error('network unavailable'));
+        const { result } = renderHook(
+            () =>
+                useLiveInspectionViewer({
+                    examId: 'exam-1',
+                    studentId: 'student-1',
+                    attemptId: lease.attemptId,
+                    enabled: true,
+                }),
+            { wrapper },
+        );
+
+        await act(async () => {
+            await result.current.start();
+        });
+
+        expect(result.current.state).toBe('failed');
+        expect(result.current.reason).toBe('OFFLINE');
+        expect(mockStatus).not.toHaveBeenCalled();
+    });
+
     it('times out and transitions to failed state when student camera response is delayed', async () => {
         vi.useFakeTimers();
         mockStatus.mockResolvedValue({ ...lease, state: 'REQUESTED' });
@@ -420,13 +445,14 @@ describe('useLiveInspectionViewer', () => {
 
         expect(result.current.state).toBe('waiting_for_student');
 
-        // Advance once more; the next poll receives PUBLISHER_READY and connects.
+        // Advance once more; the next poll receives PUBLISHER_READY while the
+        // already-connected viewer waits for the first playable frame.
         await act(async () => {
             await vi.advanceTimersByTimeAsync(1000);
         });
 
         expect(result.current.state).toBe('connecting');
-        expect(mockCredentials).toHaveBeenCalled();
+        expect(mockCredentials).toHaveBeenCalledTimes(1);
 
         vi.useRealTimers();
     });

@@ -433,7 +433,7 @@ describe('useStudentLiveInspectionPublisher', () => {
         expect(mockPublisherFailure).not.toHaveBeenCalled();
     });
 
-    it('logs bounded diagnostics for 403 (suspended) and does not log for 404', async () => {
+    it('logs bounded diagnostics for 403 and does not log for 404', async () => {
         const { supabase } = createSupabase();
         const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -461,7 +461,7 @@ describe('useStudentLiveInspectionPublisher', () => {
         await waitFor(() =>
             expect(consoleWarnSpy).toHaveBeenCalledWith(
                 expect.stringContaining(
-                    '[LiveInspection Diagnostic] Phase: fetch_directive_suspended, Status: 403, Code: UNAUTHORIZED',
+                    '[LiveInspection Diagnostic] Phase: fetch_directive_authorization, Status: 403, Code: UNAUTHORIZED',
                 ),
             ),
         );
@@ -488,9 +488,10 @@ describe('useStudentLiveInspectionPublisher', () => {
         consoleWarnSpy.mockRestore();
     });
 
-    it('suspends polling on 401/403 and resumes on event trigger (visibility/online)', async () => {
+    it('automatically retries polling after a transient 401/403', async () => {
         vi.useFakeTimers();
         const { supabase } = createSupabase();
+        const { original } = createLiveTrack();
         const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
         // Mock 403 error using ApiError
@@ -499,7 +500,7 @@ describe('useStudentLiveInspectionPublisher', () => {
             status: 403,
             statusText: 'Forbidden',
         });
-        mockDirective.mockRejectedValue(forbiddenError);
+        mockDirective.mockRejectedValueOnce(forbiddenError).mockResolvedValue(createDirective(1));
 
         const { result } = renderHook(() =>
             useStudentLiveInspectionPublisher({
@@ -508,39 +509,22 @@ describe('useStudentLiveInspectionPublisher', () => {
                 sessionId: 'session-1',
                 attemptId,
                 enabled: true,
-                getLiveVideoTrack: () => null,
+                getLiveVideoTrack: () => original,
             }),
         );
 
-        // First call fails with 403 and suspends
+        // First call fails with 403 and applies a bounded retry delay.
         await act(async () => {
             await Promise.resolve();
         });
         expect(mockDirective).toHaveBeenCalledTimes(1);
 
-        // Try to trigger background reconciliation loop (timer fires)
-        mockDirective.mockClear();
         await act(async () => {
-            await vi.advanceTimersByTimeAsync(3000);
+            await vi.advanceTimersByTimeAsync(4000);
         });
 
-        // Should NOT call getStudentLiveInspectionDirective since it's suspended
-        expect(mockDirective).not.toHaveBeenCalled();
-
-        // Simulate visibilitychange event which should wake it up and un-suspend
-        mockDirective.mockResolvedValue(createDirective(1));
-
-        // Dispatch event
-        act(() => {
-            document.dispatchEvent(new Event('visibilitychange'));
-        });
-
-        await act(async () => {
-            await Promise.resolve();
-        });
-
-        // Should now call the API again
-        expect(mockDirective).toHaveBeenCalledTimes(1);
+        expect(mockDirective.mock.calls.length).toBeGreaterThan(1);
+        expect(mockPublisherConnection).toHaveBeenCalled();
 
         consoleWarnSpy.mockRestore();
     });

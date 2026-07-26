@@ -20,6 +20,7 @@ export * from './use-student-live-inspection-publisher.types';
 
 const LIVE_INSPECTION_SIGNAL_EVENT = 'LIVE_INSPECTION_CHANGED';
 const LIVE_INSPECTION_RECONCILE_INTERVAL_MS = 1_000;
+const LIVE_INSPECTION_AUTH_RETRY_MS = 3_000;
 const TERMINAL_STATES = new Set<LiveInspectionState>(['ENDED', 'FAILED', 'EXPIRED']);
 
 /**
@@ -52,7 +53,7 @@ export function useStudentLiveInspectionPublisher({
     const reconcileTimerRef = useRef<any>(null);
     const isReconcilingRef = useRef(false);
     const statusRef = useRef<StudentLiveInspectionPublisherStatus>('idle');
-    const isSuspendedRef = useRef(false);
+    const authorizationRetryAtRef = useRef(0);
 
     const setPublisherStatus = useCallback((nextStatus: StudentLiveInspectionPublisherStatus) => {
         statusRef.current = nextStatus;
@@ -89,7 +90,7 @@ export function useStudentLiveInspectionPublisher({
     // 4. Directive Reconciliation
     // ------------------------------------------------------------------------
     const reconcile = useCallback(async () => {
-        if (!enabled || !sessionId || isSuspendedRef.current) {
+        if (!enabled || !sessionId || Date.now() < authorizationRetryAtRef.current) {
             return;
         }
 
@@ -100,13 +101,14 @@ export function useStudentLiveInspectionPublisher({
             directive = await getStudentLiveInspectionDirective(apiClientRef.current, {
                 sessionId,
             });
+            authorizationRetryAtRef.current = 0;
         } catch (error) {
             const isApiError = error instanceof ApiError;
             const status = isApiError ? error.status : undefined;
 
             if (status === 401 || status === 403) {
-                isSuspendedRef.current = true;
-                logLocalDiagnostic('fetch_directive_suspended', error);
+                authorizationRetryAtRef.current = Date.now() + LIVE_INSPECTION_AUTH_RETRY_MS;
+                logLocalDiagnostic('fetch_directive_authorization', error);
                 if (!activePublicationRef.current) {
                     setPublisherStatus('idle');
                 }
@@ -202,7 +204,7 @@ export function useStudentLiveInspectionPublisher({
     }, [enabled, sessionId, reconcile]);
 
     const runReconcileNow = useCallback(async () => {
-        isSuspendedRef.current = false;
+        authorizationRetryAtRef.current = 0;
         if (!isMountedRef.current || !enabled || !sessionId) return;
         if (isReconcilingRef.current) return;
         isReconcilingRef.current = true;
@@ -219,7 +221,7 @@ export function useStudentLiveInspectionPublisher({
     // ------------------------------------------------------------------------
     useEffect(() => {
         isMountedRef.current = true;
-        isSuspendedRef.current = false;
+        authorizationRetryAtRef.current = 0;
 
         return () => {
             isMountedRef.current = false;
@@ -236,7 +238,7 @@ export function useStudentLiveInspectionPublisher({
             requestSequenceRef.current += 1;
             cleanupPublication();
             setPublisherStatus('idle');
-            isSuspendedRef.current = false;
+            authorizationRetryAtRef.current = 0;
             if (reconcileTimerRef.current) {
                 window.clearTimeout(reconcileTimerRef.current);
             }
@@ -252,7 +254,19 @@ export function useStudentLiveInspectionPublisher({
             .on('broadcast', { event: LIVE_INSPECTION_SIGNAL_EVENT }, () => {
                 void runReconcileNow();
             })
-            .subscribe();
+            .subscribe((subscriptionStatus, error) => {
+                if (subscriptionStatus === 'SUBSCRIBED') {
+                    void runReconcileNow();
+                    return;
+                }
+
+                if (subscriptionStatus === 'CHANNEL_ERROR' || subscriptionStatus === 'TIMED_OUT') {
+                    logLocalDiagnostic(
+                        'realtime_subscription',
+                        error ?? new Error(subscriptionStatus),
+                    );
+                }
+            });
 
         void runReconcileNow();
 
