@@ -8,17 +8,22 @@ import {
 import { SourceMetadataValidationError } from './errors';
 
 function normalizeSourceFileNameForMatch(value: string) {
-    return stripPdfExtension(normalizeForMatch(value));
+    return normalizeForMatch(stripPdfExtension(value));
 }
 
 function resolveSourceDocumentByFileName(
     sourceDocuments: ExtractedPdfDocument[],
     sourceFileName: string,
 ) {
+    if (sourceDocuments.length === 0) {
+        return null;
+    }
+
     const trimmedFileName = sourceFileName.trim();
     const lowerCaseFileName = trimmedFileName.toLowerCase();
     const normalizedFileName = normalizeSourceFileNameForMatch(trimmedFileName);
 
+    // 1. Exact Match
     const exactMatch = sourceDocuments.find(
         (document) => document.fileName.trim().toLowerCase() === lowerCaseFileName,
     );
@@ -27,6 +32,7 @@ function resolveSourceDocumentByFileName(
         return exactMatch;
     }
 
+    // 2. Normalized Match
     const normalizedMatches = sourceDocuments.filter(
         (document) => normalizeSourceFileNameForMatch(document.fileName) === normalizedFileName,
     );
@@ -35,7 +41,33 @@ function resolveSourceDocumentByFileName(
         return normalizedMatches[0];
     }
 
-    return null;
+    // 3. Index-based match (e.g. "input_file_0", "file_1", etc.)
+    const indexMatch = trimmedFileName.match(/(?:input_file_|file_)[_-]?(\d+)/i);
+    if (indexMatch) {
+        const index = parseInt(indexMatch[1], 10);
+        if (index >= 0 && index < sourceDocuments.length) {
+            return sourceDocuments[index];
+        }
+    }
+
+    // 4. Fuzzy Token Overlap Match
+    let bestMatch: ExtractedPdfDocument | null = null;
+    let highestScore = 0;
+
+    for (const document of sourceDocuments) {
+        const score = scoreTokenOverlap(trimmedFileName, document.fileName);
+        if (score > highestScore) {
+            highestScore = score;
+            bestMatch = document;
+        }
+    }
+
+    if (bestMatch && highestScore >= 0.2) {
+        return bestMatch;
+    }
+
+    // 5. Fallback: Default to the first source document
+    return sourceDocuments[0];
 }
 
 /**

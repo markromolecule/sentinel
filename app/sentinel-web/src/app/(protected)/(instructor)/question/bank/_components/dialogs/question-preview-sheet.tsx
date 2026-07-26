@@ -54,7 +54,7 @@ export function QuestionPreviewSheet({
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent className="flex h-full w-full flex-col px-0 sm:max-w-md md:max-w-lg lg:max-w-xl">
+            <SheetContent className="flex h-full w-full flex-col overflow-y-hidden px-0 sm:max-w-md md:max-w-lg lg:max-w-xl">
                 <div className="min-h-0 flex-1 overflow-y-auto">
                     <QuestionHeader
                         typeLabel={typeLabel}
