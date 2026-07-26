@@ -42,7 +42,7 @@ export async function generateBatchesStep(args: {
         predicted_difficulty: z.string().optional(),
     });
 
-    const batchPromises = batches.map(async (batchConfig) => {
+    const batchTasks = batches.map((batchConfig) => async () => {
         const prompt = buildPrompt({
             config: batchConfig,
             sourceFiles: files.map((file) => ({
@@ -72,7 +72,7 @@ export async function generateBatchesStep(args: {
         });
     });
 
-    const batchResults = await runWithConcurrencyLimit(batchPromises, concurrencyLimit);
+    const batchResults = await runWithConcurrencyLimit(batchTasks, concurrencyLimit);
     const allRawQuestions = batchResults
         .filter(
             (res): res is PromiseFulfilledResult<RawGeneratedQuestion[]> =>

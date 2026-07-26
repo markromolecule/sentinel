@@ -366,4 +366,79 @@ describe('Gemini question generator contracts', () => {
             correctAnswer: ['Two', 'Four'],
         });
     });
+
+    it('handles multiple documents, using index-based, fuzzy-token, and first-document fallback matching', () => {
+        const multiDocs = [
+            {
+                fileName: 'physics-lecture.pdf',
+                pageCount: 3,
+                pages: [],
+            },
+            {
+                fileName: 'chemistry-notes.pdf',
+                pageCount: 5,
+                pages: [],
+            },
+        ];
+
+        // 1. Index-based match
+        const resultIndex = normalizeGeneratedQuestions(
+            [
+                {
+                    type: 'MULTIPLE_CHOICE',
+                    sourceFileName: 'input_file_1.pdf',
+                    sourcePageNumber: 2,
+                    sourceEvidence: 'Evidence content',
+                    content: {
+                        prompt: 'Question?',
+                        options: ['A', 'B'],
+                        correctAnswer: 'A',
+                    },
+                },
+            ],
+            baseConfig,
+            multiDocs,
+        );
+        expect(resultIndex[0].sourceFileName).toBe('chemistry-notes.pdf');
+
+        // 2. Fuzzy token match
+        const resultFuzzy = normalizeGeneratedQuestions(
+            [
+                {
+                    type: 'MULTIPLE_CHOICE',
+                    sourceFileName: 'chemistry-study-guide',
+                    sourcePageNumber: 2,
+                    sourceEvidence: 'Evidence content',
+                    content: {
+                        prompt: 'Question?',
+                        options: ['A', 'B'],
+                        correctAnswer: 'A',
+                    },
+                },
+            ],
+            baseConfig,
+            multiDocs,
+        );
+        expect(resultFuzzy[0].sourceFileName).toBe('chemistry-notes.pdf');
+
+        // 3. Fallback to first document
+        const resultFallback = normalizeGeneratedQuestions(
+            [
+                {
+                    type: 'MULTIPLE_CHOICE',
+                    sourceFileName: 'totally-hallucinated-name.pdf',
+                    sourcePageNumber: 2,
+                    sourceEvidence: 'Evidence content',
+                    content: {
+                        prompt: 'Question?',
+                        options: ['A', 'B'],
+                        correctAnswer: 'A',
+                    },
+                },
+            ],
+            baseConfig,
+            multiDocs,
+        );
+        expect(resultFallback[0].sourceFileName).toBe('physics-lecture.pdf');
+    });
 });

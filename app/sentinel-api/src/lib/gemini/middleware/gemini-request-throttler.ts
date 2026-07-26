@@ -77,6 +77,6 @@ export class AiRequestThrottler {
 }
 
 export const aiRequestThrottler = new AiRequestThrottler(
-    parsePositiveInteger(process.env.AI_API_THROTTLE_MAX_CONCURRENT, 2),
+    parsePositiveInteger(process.env.AI_API_THROTTLE_MAX_CONCURRENT, 5),
     parsePositiveInteger(process.env.AI_API_THROTTLE_MIN_INTERVAL_MS, 300),
 );

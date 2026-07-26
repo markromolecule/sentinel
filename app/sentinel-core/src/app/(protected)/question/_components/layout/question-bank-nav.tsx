@@ -28,7 +28,7 @@ const QUESTION_BANK_NAV_GROUPS: Array<{ title: string; items: QuestionBankNavIte
             },
             {
                 id: 'tos',
-                label: 'TOS Matrix',
+                label: 'Table of Specifications',
                 href: '/question/bank/tos',
             },
         ],
