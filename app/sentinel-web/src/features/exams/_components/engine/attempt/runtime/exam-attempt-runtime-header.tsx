@@ -48,19 +48,19 @@ export function ExamAttemptRuntimeHeader({
 
             {hasPassage ? (
                 <>
-                    {/* Compact Screen: Trigger that opens the sheet */}
+                    {/* Phones: trigger the passage sheet. */}
                     <Button
                         type="button"
                         variant="outline"
-                        className="h-10 gap-2 rounded-md px-3 xl:hidden"
+                        className="h-10 gap-2 rounded-md px-3 md:hidden"
                         onClick={onToggleCompactPassage}
                     >
                         <PanelLeftOpen className="h-4 w-4" />
                         <span>Show passage</span>
                     </Button>
 
-                    {/* Desktop Screen: Toggle that hides/shows the panel */}
-                    <div className="hidden xl:block">
+                    {/* Tablets and larger screens: toggle the resizable passage panel. */}
+                    <div className="hidden md:block">
                         <TooltipProvider delayDuration={150}>
                             <Tooltip>
                                 <TooltipTrigger asChild>

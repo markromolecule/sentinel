@@ -45,7 +45,7 @@ describe('ExamAttemptWorkspace', () => {
     });
 
     it('renders responsive workspace layout elements', () => {
-        render(
+        const { container } = render(
             <ExamAttemptWorkspace
                 questionRail={<div>Rail Items</div>}
                 passagePanel={<div data-testid="passage-panel">Passage Context</div>}
@@ -61,6 +61,8 @@ describe('ExamAttemptWorkspace', () => {
         expect(screen.getAllByTestId('question-content')[0]).toBeTruthy();
         expect(screen.getAllByTestId('passage-panel')[0]).toBeTruthy();
         expect(screen.getByTestId('footer')).toBeTruthy();
+        expect(container.querySelector('.md\\:hidden')).toBeTruthy();
+        expect(container.querySelector('.md\\:block')).toBeTruthy();
     });
 
     it('uses the full question pane when the desktop passage panel is hidden', () => {
