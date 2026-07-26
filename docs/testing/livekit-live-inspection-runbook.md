@@ -44,12 +44,13 @@ Expected evidence:
 2. Confirm MediaPipe/checkup continues before any live inspection starts.
 3. Sign in as the allowed staff viewer in a second browser/session.
 4. Start live inspection for the active attempt.
-5. Confirm the student sees the live-camera disclosure only after the publisher enters `LIVE`.
-6. Confirm the viewer portal shows `LIVE` only after the expected camera track is playing.
-7. Confirm no audio, screen-share, recording, Egress, screenshot, thumbnail, or media persistence path appears in code/logs/provider dashboard.
-8. Stop the inspection from the viewer portal.
-9. Confirm student answering, saving, submission, MediaPipe telemetry, and attempt completion still work.
-10. Confirm database lease reaches `ENDED`, provider room is gone, and LiveKit participant count is zero.
+5. Confirm LiveKit shows the subscribe-only viewer immediately while Sentinel waits for the student.
+6. Confirm the student publisher becomes the second participant and the student sees the live-camera disclosure.
+7. Confirm the viewer portal shows `LIVE` only after the expected camera track is playing.
+8. Confirm no audio, screen-share, recording, Egress, screenshot, thumbnail, or media persistence path appears in code/logs/provider dashboard.
+9. Stop the inspection from the viewer portal.
+10. Confirm student answering, saving, submission, MediaPipe telemetry, and attempt completion still work.
+11. Confirm database lease reaches `ENDED`, provider room is gone, and LiveKit participant count is zero.
 
 ## Cleanup and failure drills
 

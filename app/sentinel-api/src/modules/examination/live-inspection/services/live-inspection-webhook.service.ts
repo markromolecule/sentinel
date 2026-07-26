@@ -14,10 +14,12 @@ import {
     buildLiveKitParticipantIdentity,
 } from '../../../infrastructure/livekit/services/livekit-managed.service';
 import { LiveKitService } from '../../../infrastructure/livekit/livekit.service';
+import type { LiveKitManagedService } from '../../../infrastructure/livekit/services/livekit-managed.service';
 
 export type ProcessLiveKitWebhookArgs = {
     dbClient: DbClient;
     event: WebhookEvent;
+    liveKit?: Pick<LiveKitManagedService, 'listInspectionParticipants'>;
 };
 
 /**
@@ -50,7 +52,7 @@ export async function processLiveKitWebhook(args: ProcessLiveKitWebhookArgs) {
                 identity === buildLiveKitParticipantIdentity(lease.lease_id, 'publisher') &&
                 lease.state === 'PUBLISHER_CONNECTING'
             ) {
-                await transitionLiveInspectionLeaseState({
+                const readyLease = await transitionLiveInspectionLeaseState({
                     dbClient: args.dbClient,
                     leaseId: lease.lease_id,
                     fromState: 'PUBLISHER_CONNECTING',
@@ -70,7 +72,17 @@ export async function processLiveKitWebhook(args: ProcessLiveKitWebhookArgs) {
                     durationMs: Date.now() - lease.requested_at.getTime(),
                     boundedCode: 'PUBLISHER_READY',
                 });
-                result = 'PUBLISHER_READY';
+                result = (await promoteWaitingViewerToLive(args, readyLease))
+                    ? 'VIEWER_LIVE'
+                    : 'PUBLISHER_READY';
+            } else if (
+                args.event.event === 'track_published' &&
+                identity === buildLiveKitParticipantIdentity(lease.lease_id, 'publisher') &&
+                lease.state === 'PUBLISHER_READY'
+            ) {
+                result = (await promoteWaitingViewerToLive(args, lease))
+                    ? 'VIEWER_LIVE'
+                    : 'PUBLISHER_READY';
             } else if (
                 args.event.event === 'participant_joined' &&
                 identity === buildLiveKitParticipantIdentity(lease.lease_id, 'viewer') &&
@@ -166,6 +178,45 @@ export async function processLiveKitWebhook(args: ProcessLiveKitWebhookArgs) {
     });
 
     return { processed: true, result };
+}
+
+async function promoteWaitingViewerToLive(
+    args: ProcessLiveKitWebhookArgs,
+    lease: Awaited<ReturnType<typeof getLiveInspectionLeaseByRoomName>>,
+) {
+    if (!lease || !args.liveKit) {
+        return false;
+    }
+
+    const participants = await args.liveKit.listInspectionParticipants(lease.provider_room_name);
+    const viewerIdentity = buildLiveKitParticipantIdentity(lease.lease_id, 'viewer');
+
+    if (!participants.some((participant) => participant.identity === viewerIdentity)) {
+        return false;
+    }
+
+    await transitionLiveInspectionLeaseState({
+        dbClient: args.dbClient,
+        leaseId: lease.lease_id,
+        fromState: 'PUBLISHER_READY',
+        toState: 'LIVE',
+        expectedVersion: lease.version,
+    });
+    await LiveKitService.logLiveInspectionLifecycleEvent(args.dbClient, {
+        metric: 'live',
+        leaseId: lease.lease_id,
+        attemptId: lease.attempt_id,
+        examId: lease.exam_id,
+        actorId: lease.viewer_user_id,
+        institutionId: lease.institution_id,
+        role: 'viewer',
+        state: 'LIVE',
+        previousState: 'PUBLISHER_READY',
+        durationMs: Date.now() - lease.requested_at.getTime(),
+        boundedCode: 'VIEWER_LIVE',
+    });
+
+    return true;
 }
 
 function buildWebhookEventId(event: WebhookEvent) {

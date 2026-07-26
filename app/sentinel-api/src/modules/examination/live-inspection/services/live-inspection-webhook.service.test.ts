@@ -100,4 +100,62 @@ describe('processLiveKitWebhook', () => {
             }),
         );
     });
+
+    it('promotes an already-connected viewer to live as soon as the publisher track arrives', async () => {
+        const lease = {
+            lease_id: '11111111-1111-4111-8111-111111111111',
+            attempt_id: '22222222-2222-4222-8222-222222222222',
+            exam_id: '33333333-3333-4333-8333-333333333333',
+            student_user_id: '44444444-4444-4444-8444-444444444444',
+            viewer_user_id: '55555555-5555-4555-8555-555555555555',
+            institution_id: '66666666-6666-4666-8666-666666666666',
+            provider_room_name: 'room-1',
+            state: 'PUBLISHER_CONNECTING',
+            version: 4,
+            requested_at: new Date('2026-07-20T00:00:00.000Z'),
+        };
+        const readyLease = { ...lease, state: 'PUBLISHER_READY', version: 5 };
+        const listInspectionParticipants = vi.fn().mockResolvedValue([
+            {
+                identity: 'live-inspection:viewer:11111111-1111-4111-8111-111111111111',
+            },
+        ]);
+        vi.mocked(getLiveInspectionLeaseByRoomName).mockResolvedValueOnce(lease as any);
+        vi.mocked(recordLiveKitWebhookEventOnce).mockResolvedValueOnce(true);
+        vi.mocked(transitionLiveInspectionLeaseState)
+            .mockResolvedValueOnce(readyLease as any)
+            .mockResolvedValueOnce({ ...readyLease, state: 'LIVE', version: 6 } as any);
+
+        const result = await processLiveKitWebhook({
+            dbClient: {} as any,
+            liveKit: { listInspectionParticipants },
+            event: {
+                event: 'track_published',
+                room: { name: 'room-1' },
+                participant: {
+                    identity: 'live-inspection:publisher:11111111-1111-4111-8111-111111111111',
+                },
+                createdAt: 3,
+            } as any,
+        });
+
+        expect(result).toEqual({ processed: true, result: 'VIEWER_LIVE' });
+        expect(listInspectionParticipants).toHaveBeenCalledWith('room-1');
+        expect(transitionLiveInspectionLeaseState).toHaveBeenNthCalledWith(2, {
+            dbClient: {},
+            leaseId: lease.lease_id,
+            fromState: 'PUBLISHER_READY',
+            toState: 'LIVE',
+            expectedVersion: 5,
+        });
+        expect(LiveKitService.logLiveInspectionLifecycleEvent).toHaveBeenCalledWith(
+            {},
+            expect.objectContaining({
+                metric: 'live',
+                state: 'LIVE',
+                previousState: 'PUBLISHER_READY',
+                boundedCode: 'VIEWER_LIVE',
+            }),
+        );
+    });
 });
