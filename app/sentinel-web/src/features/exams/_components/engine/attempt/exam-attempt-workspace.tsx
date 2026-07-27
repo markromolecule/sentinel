@@ -44,15 +44,15 @@ export function ExamAttemptWorkspace({
                 <div className="min-w-0 flex-1">
                     {passagePanel ? (
                         <>
-                            {/* Below xl: Render only the question content pane */}
-                            <div className="flex h-full min-h-0 flex-col xl:hidden">
+                            {/* Phones: keep the passage out of the workspace and open it in a sheet. */}
+                            <div className="flex h-full min-h-0 flex-col md:hidden">
                                 <div className="min-h-0 flex-1">
                                     {questionContentPane('min-h-full px-4 py-4 sm:px-6 sm:py-5')}
                                 </div>
                             </div>
 
-                            {/* xl and above: Render the resizable layout */}
-                            <div className="hidden h-full min-h-0 min-w-0 xl:block">
+                            {/* Tablets and larger screens: show the resizable passage and question panes. */}
+                            <div className="hidden h-full min-h-0 min-w-0 md:block">
                                 <ResizablePanelGroup
                                     id="exam-attempt-layout"
                                     orientation="horizontal"
@@ -68,7 +68,7 @@ export function ExamAttemptWorkspace({
                                     >
                                         <div className="border-border/60 h-full min-h-0 min-w-0 overflow-hidden border-r">
                                             {passageContentPane(
-                                                'min-h-full min-w-0 px-6 py-5 xl:px-8',
+                                                'min-h-full min-w-0 px-6 py-5 lg:px-8',
                                             )}
                                         </div>
                                     </ResizablePanel>
@@ -80,14 +80,14 @@ export function ExamAttemptWorkspace({
                                         className="min-w-0 overflow-hidden"
                                     >
                                         <div className="h-full min-h-0 min-w-0 overflow-hidden">
-                                            {questionContentPane('min-h-full px-6 py-5 xl:px-8')}
+                                            {questionContentPane('min-h-full px-6 py-5 lg:px-8')}
                                         </div>
                                     </ResizablePanel>
                                 </ResizablePanelGroup>
                             </div>
                         </>
                     ) : (
-                        questionContentPane('min-h-full px-4 py-4 sm:px-6 sm:py-5 xl:px-8')
+                        questionContentPane('min-h-full px-4 py-4 sm:px-6 sm:py-5 lg:px-8')
                     )}
                 </div>
             </div>

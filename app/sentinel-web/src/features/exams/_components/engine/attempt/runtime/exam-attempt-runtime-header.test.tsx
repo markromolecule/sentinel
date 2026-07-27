@@ -41,8 +41,8 @@ describe('ExamAttemptRuntimeHeader', () => {
         const showPassageButtons = screen.getAllByRole('button', { name: 'Show passage' });
 
         expect(showPassageButtons).toHaveLength(2);
-        expect(showPassageButtons[0].className).toContain('xl:hidden');
-        expect(showPassageButtons[1].parentElement?.className).toContain('hidden xl:block');
+        expect(showPassageButtons[0].className).toContain('md:hidden');
+        expect(showPassageButtons[1].parentElement?.className).toContain('hidden md:block');
 
         fireEvent.click(showPassageButtons[0]);
         fireEvent.click(showPassageButtons[1]);
@@ -86,8 +86,8 @@ describe('ExamAttemptRuntimeHeader', () => {
         const compactControl = screen.getByRole('button', { name: 'Show passage' });
         const desktopControl = screen.getByRole('button', { name: 'Hide passage' });
 
-        expect(compactControl.className).toContain('xl:hidden');
-        expect(desktopControl.parentElement?.className).toContain('hidden xl:block');
+        expect(compactControl.className).toContain('md:hidden');
+        expect(desktopControl.parentElement?.className).toContain('hidden md:block');
 
         fireEvent.click(compactControl);
         fireEvent.click(desktopControl);
