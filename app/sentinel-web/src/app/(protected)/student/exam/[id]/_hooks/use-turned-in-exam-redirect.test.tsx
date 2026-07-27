@@ -93,4 +93,20 @@ describe('useTurnedInExamRedirect', () => {
         expect(mockClearStoredExamSession).not.toHaveBeenCalled();
         expect(mockRouterReplace).not.toHaveBeenCalled();
     });
+
+    it('does not redirect when disabled is true', () => {
+        const { result } = renderHook(() =>
+            useTurnedInExamRedirect({
+                examId: '11111111-1111-1111-1111-111111111111',
+                status: 'turned_in',
+                attemptId: '22222222-2222-2222-2222-222222222222',
+                disabled: true,
+            }),
+        );
+
+        expect(result.current).toBe(false);
+        expect(mockClearStoredExamTurnInPreview).not.toHaveBeenCalled();
+        expect(mockClearStoredExamSession).not.toHaveBeenCalled();
+        expect(mockRouterReplace).not.toHaveBeenCalled();
+    });
 });
