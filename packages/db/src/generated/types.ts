@@ -395,6 +395,26 @@ export const exam_remediation_type = {
 } as const;
 export type exam_remediation_type =
     (typeof exam_remediation_type)[keyof typeof exam_remediation_type];
+export const telemetry_incident_evidence_state = {
+    PENDING_UPLOAD: 'PENDING_UPLOAD',
+    AVAILABLE: 'AVAILABLE',
+    DELETE_PENDING: 'DELETE_PENDING',
+    DELETED: 'DELETED',
+    FAILED: 'FAILED',
+    EXPIRED: 'EXPIRED',
+} as const;
+export type telemetry_incident_evidence_state =
+    (typeof telemetry_incident_evidence_state)[keyof typeof telemetry_incident_evidence_state];
+export const telemetry_incident_evidence_deletion_reason = {
+    INSTRUCTOR_REVIEW: 'INSTRUCTOR_REVIEW',
+    RETENTION_EXPIRED: 'RETENTION_EXPIRED',
+    ATTEMPT_DELETED: 'ATTEMPT_DELETED',
+    STALE_PENDING_UPLOAD: 'STALE_PENDING_UPLOAD',
+    TELEMETRY_UNLINKED: 'TELEMETRY_UNLINKED',
+    OBJECT_MISSING: 'OBJECT_MISSING',
+} as const;
+export type telemetry_incident_evidence_deletion_reason =
+    (typeof telemetry_incident_evidence_deletion_reason)[keyof typeof telemetry_incident_evidence_deletion_reason];
 export type analytics_reports = {
     report_id: Generated<string>;
     title: string;
@@ -1413,6 +1433,32 @@ export type system_settings = {
     updated_at: Timestamp | null;
     updated_by: string | null;
 };
+export type telemetry_incident_evidence = {
+    evidence_id: Generated<string>;
+    attempt_id: string;
+    incident_id: string | null;
+    institution_id: string;
+    student_id: string;
+    event_id: string;
+    event_type: incident_type;
+    captured_at: Timestamp;
+    received_at: Generated<Timestamp>;
+    storage_bucket: string | null;
+    storage_path: string | null;
+    mime_type: string;
+    declared_size_bytes: number;
+    size_bytes: number | null;
+    sha256: string | null;
+    state: Generated<telemetry_incident_evidence_state>;
+    expires_at: Timestamp;
+    reviewed_at: Timestamp | null;
+    deleted_at: Timestamp | null;
+    deleted_by: string | null;
+    deletion_reason: telemetry_incident_evidence_deletion_reason | null;
+    failure_code: string | null;
+    created_at: Generated<Timestamp>;
+    updated_at: Generated<Timestamp>;
+};
 export type terms = {
     term_id: Generated<string>;
     academic_year: string;
@@ -1599,6 +1645,7 @@ export type DB = {
     subject_year_levels: subject_year_levels;
     subjects: subjects;
     system_settings: system_settings;
+    telemetry_incident_evidence: telemetry_incident_evidence;
     terms: terms;
     user_profiles: user_profiles;
     user_roles: user_roles;
