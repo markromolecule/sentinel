@@ -208,6 +208,7 @@ export default function StudentExamResultPage() {
         status: exam?.status,
         attemptId: exam?.attemptId,
         runtimeAccess: exam?.runtimeAccess,
+        disabled: isTurningIn,
     });
 
     useEffect(() => {

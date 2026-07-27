@@ -14,6 +14,7 @@ type UseTurnedInExamRedirectArgs = {
     status?: string | null;
     attemptId?: string | null;
     runtimeAccess?: ExamRuntimeAccess | null;
+    disabled?: boolean;
 };
 
 export function useTurnedInExamRedirect({
@@ -21,6 +22,7 @@ export function useTurnedInExamRedirect({
     status,
     attemptId,
     runtimeAccess,
+    disabled = false,
 }: UseTurnedInExamRedirectArgs) {
     const router = useRouter();
     const resolution = resolveStudentExamStage({
@@ -37,7 +39,7 @@ export function useTurnedInExamRedirect({
         },
     });
 
-    const isRedirecting = resolution.targetStage === 'result' && Boolean(attemptId);
+    const isRedirecting = !disabled && resolution.targetStage === 'result' && Boolean(attemptId);
 
     useEffect(() => {
         if (!isRedirecting || !attemptId) {
