@@ -4,6 +4,10 @@
         {
             "path": "/telemetry/internal/flush",
             "schedule": "0 0 * * *"
+        },
+        {
+            "path": "/telemetry/internal/evidence/reconcile",
+            "schedule": "15 0 * * *"
         }
     ]
 }

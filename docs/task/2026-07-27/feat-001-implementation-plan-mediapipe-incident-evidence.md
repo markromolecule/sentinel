@@ -520,32 +520,36 @@ correlation tests could not be executed on July 27, 2026 because the configured 
 **Goal:** Replace snapshot placeholders with an accessible, state-aware gallery while preserving
 legacy incident compatibility.
 
-- [ ] In the shared monitoring schema/types and service API types, add
+- [x] In the shared monitoring schema/types and service API types, add
       `evidenceCount` plus bounded evidence summary states; do not place signed URLs in the polling
       student-detail response.
-- [ ] In `get-exam-monitoring-student-detail.ts` and `map-monitoring-response.ts`, include evidence
+- [x] In `get-exam-monitoring-student-detail.ts` and `map-monitoring-response.ts`, include evidence
       counts/states for each selected-attempt incident while retaining the legacy `evidenceUrl`
       fallback until migration cleanup.
-- [ ] In `use-incident-evidence-query.ts`, fetch signed evidence only when a reviewer expands an
+- [x] In `use-incident-evidence-query.ts`, fetch signed evidence only when a reviewer expands an
       incident; use an incident-scoped query key, a stale time shorter than the signed URL TTL, and
       disable retries for authorization/not-found responses.
-- [ ] In `use-delete-incident-evidence-mutation.ts`, call the delete route and invalidate both the
+- [x] In `use-delete-incident-evidence-mutation.ts`, call the delete route and invalidate both the
       incident evidence key and selected student monitoring key after confirmed deletion.
-- [ ] In `incident-evidence-gallery.tsx`, render chronological thumbnails, capture time, event type,
+- [x] In `incident-evidence-gallery.tsx`, render chronological thumbnails, capture time, event type,
       “N of M”, and explicit pending/unavailable/expired/deleted states; describe images as review
       context rather than proof of misconduct.
-- [ ] In `incident-evidence-dialog.tsx`, render the full image in an accessible dialog with
+- [x] In `incident-evidence-dialog.tsx`, render the full image in an accessible dialog with
       keyboard-close/focus behavior, error/expired fallback text, and a reviewer-only destructive
       confirmation before deletion.
-- [ ] In `flagging-timeline.tsx`, replace both duplicated placeholder snapshot blocks with the
+- [x] In `flagging-timeline.tsx`, replace both duplicated placeholder snapshot blocks with the
       shared gallery component; keep the legacy URL as a single read-only fallback during rollout.
-- [ ] In `student-detail-header.tsx`, replace **Capture Frame** with **View Evidence** only when an
+- [x] In `student-detail-header.tsx`, replace **Capture Frame** with **View Evidence** only when an
       evidence-bearing incident can be focused; otherwise omit the control. Do not add remote/manual
       capture signaling.
-- [ ] Add mapper, query, mutation, gallery, dialog, timeline, and header tests for lazy signed URL
+- [x] Add mapper, query, mutation, gallery, dialog, timeline, and header tests for lazy signed URL
       loading, multiple evidence images, all lifecycle states, legacy fallback, permission-hidden
       deletion, confirmation/cancel, deletion refresh, expired URL refetch, image load failure,
       keyboard/focus accessibility, and non-accusatory copy.
+
+Implemented with aggregated evidence state/count summaries on monitoring incidents, lazy reviewer
+fetching for signed URLs, evidence deletion invalidation, a shared instructor evidence gallery and
+dialog, legacy `evidenceUrl` fallback, and focused API/hooks/UI tests for the new monitoring flow.
 
 **Migration required:** No — this phase consumes Phase 1 evidence records.
 
@@ -554,36 +558,36 @@ legacy incident compatibility.
 **Goal:** Automatically remove expired or unusable objects, disclose the feature accurately, and
 roll it out with measurable safety gates.
 
-- [ ] In `evidence-reconciliation.service.ts`, claim small batches of expired `AVAILABLE`, stale
+- [x] In `evidence-reconciliation.service.ts`, claim small batches of expired `AVAILABLE`, stale
       `PENDING_UPLOAD`, failed, missing-object, and unlinked rows using transaction-safe locking;
       call the shared deletion service and treat provider not-found as successful convergence.
-- [ ] Before deleting an apparently expired row, recompute the effective retention deadline from
+- [x] Before deleting an apparently expired row, recompute the effective retention deadline from
       the current exam end and attempt completion/start timestamps; extend `expires_at` instead of
       deleting when attempt completion now produces a later deadline.
-- [ ] In `delete-exam.service.ts`, enumerate and delete all evidence objects through
+- [x] In `delete-exam.service.ts`, enumerate and delete all evidence objects through
       `evidence-deletion.service.ts` before the database delete can cascade evidence rows; block
       permanent exam deletion on evidence cleanup failure so sensitive orphan objects do not lose
       their retry metadata, and record `ATTEMPT_DELETED` on converged rows.
-- [ ] In `reconcile-evidence.controller.ts`, require
+- [x] In `reconcile-evidence.controller.ts`, require
       `TELEMETRY_CRON_SECRET || CRON_SECRET`, log aggregate success/failure metrics through
       `SystemLogsService`, and never return/log paths, signed URLs, tokens, hashes, image bytes, or
       landmarks.
-- [ ] In `app/sentinel-api/vercel.json`, add a daily
+- [x] In `app/sentinel-api/vercel.json`, add a daily
       `/telemetry/internal/evidence/reconcile` schedule after confirming the deployment supports
       both telemetry maintenance calls and the cron secret.
-- [ ] In the student privacy page, disclose automatic capture of frames only when a configured
+- [x] In the student privacy page, disclose automatic capture of frames only when a configured
       camera rule produces a reviewable signal, authorized reviewer access, seven-day retention,
       immediate reviewer deletion, and the fact that this is not continuous audio/video recording.
-- [ ] In `docs/operations/mediapipe-incident-evidence-runbook.md`, document bucket creation,
+- [x] In `docs/operations/mediapipe-incident-evidence-runbook.md`, document bucket creation,
       configuration names, enable/disable sequence, quota tuning, retention calculation, cleanup
       interpretation, stuck-state recovery, orphan inspection, deletion verification, rollback,
       and incident response without exposing sensitive paths.
-- [ ] Add operational metrics for encode duration, image size, initialization/upload/completion
+- [x] Add operational metrics for encode duration, image size, initialization/upload/completion
       outcome, evidence per attempt/type, correlation latency, unlinked rows, stale pending rows,
       delete failures, expiry backlog, storage usage, and signed-view failures.
-- [ ] Define alerts for repeatedly stuck `DELETE_PENDING`, expiry backlog age, upload failure
+- [x] Define alerts for repeatedly stuck `DELETE_PENDING`, expiry backlog age, upload failure
       spikes, unlinked evidence growth, and storage limit/cost thresholds.
-- [ ] Add reconciliation/controller/privacy tests for retention-boundary calculation, shortened
+- [x] Add reconciliation/controller/privacy tests for retention-boundary calculation, shortened
       non-production expiry, bounded batching, concurrent cleanup, stale upload deletion, orphan and
       missing-object convergence, retryable provider failure, cron rejection, log redaction, and
       conditional disclosure copy; add exam-deletion coverage proving evidence objects are removed
@@ -597,6 +601,12 @@ roll it out with measurable safety gates.
       and deletion metrics meet agreed thresholds.
 
 **Migration required:** No — cleanup and rollout operate on the Phase 1 schema.
+
+Implemented with shared retention-date recomputation, automated stale/expired/delete-pending
+convergence, pre-cascade exam evidence cleanup, cron-secret enforcement plus aggregate system logs,
+a daily Vercel reconcile schedule, updated student privacy disclosure copy, and an operational
+evidence runbook. DB-backed reconciliation coverage was extended, but execution still depends on the
+external Supabase test host being reachable.
 
 ## Breaking Changes, Dependencies, and Environment
 

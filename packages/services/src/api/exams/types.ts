@@ -160,6 +160,8 @@ export interface ApiMonitoringIncident {
     severity: Flag['severity'];
     snapshotUrl?: string | null;
     evidenceUrl?: string | null;
+    evidenceCount?: number;
+    evidenceStates?: Flag['evidenceStates'];
     status?: Flag['status'];
     occurrenceCount?: number;
     severityReason?: Flag['severityReason'];

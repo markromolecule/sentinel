@@ -76,6 +76,13 @@ export default function StudentExamPrivacyPage() {
                 : 'Live camera inspection is not active because this exam does not require a camera. Microphone publishing and recording remain excluded from this feature.',
         },
         {
+            label: 'Flagged Frame Evidence',
+            icon: Camera,
+            desc: configuration.cameraRequired
+                ? 'If a configured camera rule produces a reviewable signal, the system may capture one frame for reviewer context, retain it for up to seven days, and allow immediate reviewer deletion. This is not continuous audio or video recording.'
+                : 'Automatic frame capture is inactive unless this exam enables a reviewable camera rule. Continuous audio or video recording is not used by this feature.',
+        },
+        {
             label: 'Platform Security',
             icon: Monitor,
             desc: configuration.webSecurity.full_screen_required

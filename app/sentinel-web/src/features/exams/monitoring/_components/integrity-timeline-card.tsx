@@ -6,6 +6,8 @@ import { FlaggingTimeline } from './flagging-timeline';
 
 interface IntegrityTimelineCardProps {
     flags: Flag[];
+    examId: string;
+    studentId: string;
     lifecycleEvents?: ExamAttemptLifecycleEvent[];
     onRefresh?: () => void;
     isRefreshing?: boolean;
@@ -13,6 +15,8 @@ interface IntegrityTimelineCardProps {
 
 export function IntegrityTimelineCard({
     flags,
+    examId,
+    studentId,
     lifecycleEvents,
     onRefresh,
     isRefreshing = false,
@@ -39,7 +43,12 @@ export function IntegrityTimelineCard({
                 </div>
             </div>
             <div className="p-6">
-                <FlaggingTimeline flags={flags} lifecycleEvents={lifecycleEvents} />
+                <FlaggingTimeline
+                    flags={flags}
+                    examId={examId}
+                    studentId={studentId}
+                    lifecycleEvents={lifecycleEvents}
+                />
             </div>
         </Card>
     );

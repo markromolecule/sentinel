@@ -28,6 +28,7 @@ describe('getExamMonitoringStudentDetail', () => {
             leftJoin: vi.fn().mockReturnThis(),
             select: vi.fn().mockReturnThis(),
             where: vi.fn().mockReturnThis(),
+            groupBy: vi.fn().mockReturnThis(),
             orderBy: vi.fn().mockReturnThis(),
             executeTakeFirst: vi.fn(async () => {
                 executeTakeFirstCall += 1;

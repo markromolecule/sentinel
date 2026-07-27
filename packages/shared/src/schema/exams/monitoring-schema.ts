@@ -20,6 +20,15 @@ export const monitoringStudentStatusSchema = z.enum([
 
 export const monitoringIncidentSeveritySchema = z.enum(['low', 'medium', 'high']);
 
+export const monitoringIncidentEvidenceStateSchema = z.enum([
+    'PENDING_UPLOAD',
+    'AVAILABLE',
+    'DELETE_PENDING',
+    'DELETED',
+    'FAILED',
+    'EXPIRED',
+]);
+
 export const monitoringIncidentSchema = z.object({
     id: z.string().uuid(),
     type: telemetryIncidentTypeSchema,
@@ -29,6 +38,8 @@ export const monitoringIncidentSchema = z.object({
     severity: monitoringIncidentSeveritySchema,
     snapshotUrl: z.string().nullable().optional(),
     evidenceUrl: z.string().nullable().optional(),
+    evidenceCount: z.number().int().min(0).optional(),
+    evidenceStates: z.array(monitoringIncidentEvidenceStateSchema).max(6).optional(),
     status: telemetryIncidentStatusSchema.nullable().optional(),
     occurrenceCount: z.number().int().positive().optional(),
     severityReason: telemetrySeverityReasonSchema.nullable().optional(),
@@ -112,6 +123,9 @@ export const monitoringStudentParamsSchema = z.object({
 
 export type MonitoringStudentStatusType = z.infer<typeof monitoringStudentStatusSchema>;
 export type MonitoringIncidentSeverityType = z.infer<typeof monitoringIncidentSeveritySchema>;
+export type MonitoringIncidentEvidenceStateType = z.infer<
+    typeof monitoringIncidentEvidenceStateSchema
+>;
 export type MonitoringIncidentType = z.infer<typeof monitoringIncidentSchema>;
 export type MonitoringExamType = z.infer<typeof monitoringExamSchema>;
 export type MonitoringStatsType = z.infer<typeof monitoringStatsSchema>;

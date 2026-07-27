@@ -71,6 +71,8 @@ export function mapMonitoringFlag(flag: ApiMonitoringIncident): Flag {
         severity: flag.severity,
         snapshotUrl: flag.snapshotUrl ?? undefined,
         evidenceUrl: flag.evidenceUrl ?? null,
+        evidenceCount: flag.evidenceCount ?? 0,
+        evidenceStates: flag.evidenceStates ?? [],
         status: flag.status ?? null,
         occurrenceCount: flag.occurrenceCount,
         severityReason: flag.severityReason ?? null,

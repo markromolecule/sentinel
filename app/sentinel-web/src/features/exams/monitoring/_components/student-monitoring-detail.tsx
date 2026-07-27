@@ -27,11 +27,15 @@ export function StudentMonitoringDetail({
 }: StudentMonitoringDetailProps) {
     const canStartLiveInspection =
         liveInspectionEnabled && LIVE_INSPECTION_ELIGIBLE_STATUSES.has(student.status);
+    const firstEvidenceIncidentId =
+        student.flags?.find(
+            (flag) => (flag.evidenceCount ?? 0) > 0 || Boolean(flag.evidenceUrl || flag.snapshotUrl),
+        )?.id ?? null;
 
     return (
         <div className="mx-auto flex h-[calc(100vh-10rem)] w-full max-w-7xl flex-col gap-5 overflow-hidden px-4 pb-4">
             {/* Action Bar */}
-            <StudentDetailHeader examId={examId} />
+            <StudentDetailHeader examId={examId} focusIncidentId={firstEvidenceIncidentId} />
 
             {/* Main Content Layout */}
             <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[1fr] gap-6 overflow-hidden lg:grid-cols-12">
@@ -62,6 +66,8 @@ export function StudentMonitoringDetail({
                 >
                     <IntegrityTimelineCard
                         flags={student.flags ?? []}
+                        examId={examId}
+                        studentId={student.studentRecordId ?? student.id}
                         lifecycleEvents={student.lifecycleEvents ?? []}
                         onRefresh={onRefresh}
                         isRefreshing={isRefreshing}

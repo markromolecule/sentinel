@@ -9,6 +9,10 @@ import { EvidenceStorageService } from './evidence-storage.service';
 vi.mock('./evidence-storage.service', () => ({
     EvidenceStorageService: {
         deleteObject: vi.fn().mockResolvedValue(undefined),
+        inspectObject: vi.fn().mockResolvedValue({
+            sizeBytes: 12345,
+            mimeType: 'image/webp',
+        }),
     },
 }));
 
@@ -291,6 +295,96 @@ describe('EvidenceCorrelationService', () => {
             deletion_reason: 'TELEMETRY_UNLINKED',
             storage_bucket: null,
             storage_path: null,
+        });
+    });
+
+    testWithDbClient('extends evidence expiry when attempt completion produces a later deadline', async ({ dbClient }) => {
+        const fixture = await createFixture(dbClient);
+        const eventId = randomUUID();
+
+        await dbClient
+            .updateTable('exam_attempts')
+            .set({
+                completed_at: new Date('2026-07-27T12:30:00.000Z'),
+            })
+            .where('attempt_id', '=', fixture.attemptId)
+            .execute();
+
+        const evidence = await dbClient
+            .insertInto('telemetry_incident_evidence')
+            .values({
+                attempt_id: fixture.attemptId,
+                incident_id: '11111111-1111-4111-8111-111111111111',
+                institution_id: fixture.institutionId,
+                student_id: fixture.studentId,
+                event_id: eventId,
+                event_type: 'FACE_NOT_VISIBLE',
+                captured_at: new Date('2026-07-27T10:05:00.000Z'),
+                received_at: new Date('2026-07-27T10:05:10.000Z'),
+                storage_bucket: 'sentinel-proctoring-evidence',
+                storage_path: `${fixture.attemptId}/${eventId}.webp`,
+                mime_type: 'image/webp',
+                declared_size_bytes: 12345,
+                state: 'AVAILABLE',
+                expires_at: new Date('2026-07-27T10:06:00.000Z'),
+            })
+            .returningAll()
+            .executeTakeFirstOrThrow();
+
+        const result = await EvidenceReconciliationService.reconcileEvidence(dbClient);
+
+        expect(result.processedCount).toBeGreaterThan(0);
+
+        const updated = await dbClient
+            .selectFrom('telemetry_incident_evidence')
+            .select(['state', 'expires_at'])
+            .where('evidence_id', '=', evidence.evidence_id)
+            .executeTakeFirstOrThrow();
+
+        expect(updated.state).toBe('AVAILABLE');
+        expect(new Date(updated.expires_at).getTime()).toBeGreaterThan(
+            new Date('2026-07-27T10:06:00.000Z').getTime(),
+        );
+    });
+
+    testWithDbClient('purges stale pending uploads during reconciliation', async ({ dbClient }) => {
+        const fixture = await createFixture(dbClient);
+        const eventId = randomUUID();
+
+        const evidence = await dbClient
+            .insertInto('telemetry_incident_evidence')
+            .values({
+                attempt_id: fixture.attemptId,
+                incident_id: null,
+                institution_id: fixture.institutionId,
+                student_id: fixture.studentId,
+                event_id: eventId,
+                event_type: 'FACE_NOT_VISIBLE',
+                captured_at: new Date('2026-07-27T10:05:00.000Z'),
+                received_at: new Date(Date.now() - 16 * 60 * 1000),
+                storage_bucket: 'sentinel-proctoring-evidence',
+                storage_path: `${fixture.attemptId}/${eventId}.webp`,
+                mime_type: 'image/webp',
+                declared_size_bytes: 12345,
+                state: 'PENDING_UPLOAD',
+                expires_at: new Date('2026-08-03T10:05:00.000Z'),
+            })
+            .returningAll()
+            .executeTakeFirstOrThrow();
+
+        const result = await EvidenceReconciliationService.reconcileEvidence(dbClient);
+
+        expect(result.details.staleUploadsPurged).toBe(1);
+
+        const updated = await dbClient
+            .selectFrom('telemetry_incident_evidence')
+            .select(['state', 'deletion_reason'])
+            .where('evidence_id', '=', evidence.evidence_id)
+            .executeTakeFirstOrThrow();
+
+        expect(updated).toMatchObject({
+            state: 'DELETED',
+            deletion_reason: 'STALE_PENDING_UPLOAD',
         });
     });
 });

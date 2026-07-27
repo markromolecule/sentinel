@@ -5,11 +5,14 @@ import {
     getEvidenceMaxBytes,
     getEvidenceMaxPerAttempt,
     getEvidenceMaxPerEventType,
-    getEvidenceRetentionDays,
 } from '../evidence.constants';
 import { EvidenceAuthorizationService } from './evidence-authorization.service';
 import { EvidenceStorageService } from './evidence-storage.service';
 import { executeTransaction } from '@sentinel/db';
+import {
+    computeEvidenceExpiresAt,
+    loadEvidenceRetentionContext,
+} from './evidence-retention.service';
 
 export interface InitializeUploadInput {
     attemptId: string;
@@ -84,25 +87,14 @@ export class EvidenceUploadService {
             });
         }
 
-        // 4. Calculate retention deadline: max(exam.end_date_time, attempt.started_at, captured_at) + 7 days
-        const exam = await db
-            .selectFrom('exams as e')
-            .innerJoin('exam_attempts as ea', 'ea.exam_id', 'e.exam_id')
-            .select(['e.end_date_time', 'ea.started_at'])
-            .where('ea.attempt_id', '=', attemptId)
-            .executeTakeFirst();
-
         const capturedDate = new Date(capturedAt);
-        const startedDate = exam?.started_at ? new Date(exam.started_at) : new Date();
-        const endDate = exam?.end_date_time ? new Date(exam.end_date_time) : null;
-
-        let baseDate = capturedDate;
-        if (endDate && endDate > baseDate) baseDate = endDate;
-        if (startedDate > baseDate) baseDate = startedDate;
-
-        const expiresAt = new Date(
-            baseDate.getTime() + getEvidenceRetentionDays() * 24 * 60 * 60 * 1000,
-        );
+        const retentionContext = await loadEvidenceRetentionContext(db, attemptId);
+        const expiresAt = computeEvidenceExpiresAt({
+            capturedAt: capturedDate,
+            examEndsAt: retentionContext.examEndsAt,
+            attemptStartedAt: retentionContext.attemptStartedAt,
+            attemptCompletedAt: retentionContext.attemptCompletedAt,
+        });
 
         // 5. Generate storage coordinates
         const ext = mimeType === 'image/webp' ? 'webp' : 'jpg';

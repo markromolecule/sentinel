@@ -1,7 +1,14 @@
 import { cleanup, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Flag } from '@sentinel/shared/types';
 import { FlaggingTimeline } from './flagging-timeline';
+
+vi.mock('./incident-evidence-gallery', () => ({
+    IncidentEvidenceGallery: ({ flag }: { flag: Flag }) =>
+        (flag.evidenceCount ?? 0) > 0 || flag.evidenceUrl ? (
+            <div>Evidence gallery for {flag.id}</div>
+        ) : null,
+}));
 
 describe('FlaggingTimeline', () => {
     afterEach(() => {
@@ -21,7 +28,7 @@ describe('FlaggingTimeline', () => {
             },
         ];
 
-        render(<FlaggingTimeline flags={flags} />);
+        render(<FlaggingTimeline flags={flags} examId="exam-1" studentId="student-1" />);
 
         expect(screen.getByText('Fullscreen Exit Detected')).toBeTruthy();
         expect(screen.getByText(/exited required fullscreen mode/i)).toBeTruthy();
@@ -51,7 +58,7 @@ describe('FlaggingTimeline', () => {
             },
         ];
 
-        render(<FlaggingTimeline flags={flags} />);
+        render(<FlaggingTimeline flags={flags} examId="exam-1" studentId="student-1" />);
 
         expect(screen.getByText('Right Click Attempt')).toBeTruthy();
         expect(screen.getByText(/browser context menu/i)).toBeTruthy();
@@ -76,7 +83,7 @@ describe('FlaggingTimeline', () => {
             },
         ];
 
-        render(<FlaggingTimeline flags={flags} />);
+        render(<FlaggingTimeline flags={flags} examId="exam-1" studentId="student-1" />);
 
         expect(screen.queryByText('x1')).toBeNull();
         expect(screen.getAllByText('low')).toHaveLength(1);
@@ -99,7 +106,7 @@ describe('FlaggingTimeline', () => {
             },
         ];
 
-        render(<FlaggingTimeline flags={flags} />);
+        render(<FlaggingTimeline flags={flags} examId="exam-1" studentId="student-1" />);
 
         expect(screen.getByText('x3')).toBeTruthy();
         expect(screen.getAllByText('medium')).toHaveLength(1);
@@ -139,7 +146,7 @@ describe('FlaggingTimeline', () => {
             },
         ];
 
-        render(<FlaggingTimeline flags={flags} />);
+        render(<FlaggingTimeline flags={flags} examId="exam-1" studentId="student-1" />);
 
         expect(screen.getByText('Background Noise detected')).toBeTruthy();
         expect(screen.getByText('Talking detected')).toBeTruthy();
@@ -147,5 +154,24 @@ describe('FlaggingTimeline', () => {
         expect(screen.getAllByText('Trigger AUDIO_ANOMALY')).toHaveLength(2);
         expect(screen.getByText('x2')).toBeTruthy();
         expect(screen.queryByText('x1')).toBeNull();
+    });
+
+    it('renders the shared evidence gallery when incident evidence exists', () => {
+        const flags: Flag[] = [
+            {
+                id: '123e4567-e89b-12d3-a456-426614174007',
+                type: 'FACE_NOT_VISIBLE',
+                rawEventType: 'NO_FACE_DETECTED',
+                timestamp: '2026-04-23T14:14:40.000Z',
+                description: 'Face Not Visible',
+                severity: 'medium',
+                evidenceCount: 2,
+                evidenceStates: ['AVAILABLE', 'EXPIRED'],
+            },
+        ];
+
+        render(<FlaggingTimeline flags={flags} examId="exam-1" studentId="student-1" />);
+
+        expect(screen.getByText(/evidence gallery for 123e4567/i)).toBeTruthy();
     });
 });

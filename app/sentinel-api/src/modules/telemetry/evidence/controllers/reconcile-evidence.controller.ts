@@ -39,14 +39,14 @@ export const reconcileEvidenceRouteHandler: AppRouteHandler<
         const authHeader = c.req.header('Authorization');
         const cronSecret = process.env.TELEMETRY_CRON_SECRET || process.env.CRON_SECRET;
 
-        if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-            throw new HTTPException(401, { message: 'Unauthorized cron access.' });
+        if (!cronSecret) {
+            throw new HTTPException(500, {
+                message: 'Evidence reconciliation cron secret is not configured.',
+            });
         }
 
-        if (!cronSecret) {
-            console.warn(
-                '[EvidenceReconcile] Warning: No cron secret configured (TELEMETRY_CRON_SECRET or CRON_SECRET).',
-            );
+        if (authHeader !== `Bearer ${cronSecret}`) {
+            throw new HTTPException(401, { message: 'Unauthorized cron access.' });
         }
 
         const result = await EvidenceReconciliationService.reconcileEvidence(c.get('dbClient'));
@@ -55,8 +55,11 @@ export const reconcileEvidenceRouteHandler: AppRouteHandler<
             await SystemLogsService.logSystemEvent(c.get('dbClient'), {
                 action: 'telemetry_evidence.reconcile_success',
                 details: {
-                    message: 'Evidence reconciliation completed successfully.',
-                    ...result,
+                    processedCount: result.processedCount,
+                    staleUploadsPurged: result.details.staleUploadsPurged,
+                    retentionExpiredPurged: result.details.retentionExpiredPurged,
+                    deletedConverged: result.details.deletedConverged,
+                    unlinkedPurged: result.details.unlinkedPurged,
                 },
             });
         } catch (logError) {
@@ -69,7 +72,7 @@ export const reconcileEvidenceRouteHandler: AppRouteHandler<
             await SystemLogsService.logSystemEvent(c.get('dbClient'), {
                 action: 'telemetry_evidence.reconcile_failure',
                 details: {
-                    error: error?.message || String(error),
+                    message: error?.message || 'Evidence reconciliation failed.',
                 },
             });
         } catch (logError) {

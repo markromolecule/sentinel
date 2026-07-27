@@ -9,6 +9,7 @@ import {
     mapMonitoringStudentDetail,
     type MonitoringLifecycleEventRow,
     type MonitoringStudentRow,
+    type MonitoringIncidentEvidenceSummaryRow,
 } from './map-monitoring-response';
 
 import { applyMonitoringAttemptOrdering } from './attempt-selection.helper';
@@ -128,6 +129,21 @@ export async function getExamMonitoringStudentDetail({
         institutionId,
     );
 
+    const incidentIds = incidents.map((incident) => incident.incidentId).filter(Boolean);
+    const evidenceSummaryRows =
+        incidentIds.length > 0
+            ? await dbClient
+                  .selectFrom('telemetry_incident_evidence')
+                  .select([
+                      'incident_id',
+                      sql<string>`state::text`.as('state'),
+                      sql<number>`count(*)::int`.as('count'),
+                  ])
+                  .where('incident_id', 'in', incidentIds)
+                  .groupBy(['incident_id', 'state'])
+                  .execute()
+            : [];
+
     const lifecycleEvents = await dbClient
         .selectFrom('exam_attempt_lifecycle_events')
         .select([
@@ -155,6 +171,7 @@ export async function getExamMonitoringStudentDetail({
         exam.durationMinutes,
         exam.questionCount,
         incidents,
+        evidenceSummaryRows as MonitoringIncidentEvidenceSummaryRow[],
         lifecycleEvents as MonitoringLifecycleEventRow[],
     );
 }

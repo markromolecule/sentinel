@@ -12,3 +12,5 @@ export * from './student-detail-header';
 export * from './student-identity-card';
 export * from './live-feed-monitor';
 export * from './integrity-timeline-card';
+export * from './incident-evidence-gallery';
+export * from './incident-evidence-dialog';

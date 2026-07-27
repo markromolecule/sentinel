@@ -62,6 +62,12 @@ export type MonitoringLifecycleEventRow = {
     created_at: Date | string | null;
 };
 
+export type MonitoringIncidentEvidenceSummaryRow = {
+    incident_id: string | null;
+    state: NonNullable<MonitoringIncident['evidenceStates']>[number];
+    count: number | string | null;
+};
+
 function toIsoDate(value: Date | string | null | undefined) {
     if (!value) {
         return null;
@@ -279,11 +285,22 @@ export function mapMonitoringLifecycleEvent(
 }
 
 export function mapMonitoringIncident(incident: TelemetryIncidentRecord): MonitoringIncident {
+    return mapMonitoringIncidentWithEvidenceSummary(incident, []);
+}
+
+export function mapMonitoringIncidentWithEvidenceSummary(
+    incident: TelemetryIncidentRecord,
+    evidenceSummary: MonitoringIncidentEvidenceSummaryRow[] = [],
+): MonitoringIncident {
     const details = incident.details as any;
     const rawEventType = details?.lastEvent?.eventType ?? details?.eventType ?? null;
     const lastEventMetadata = details?.lastEvent?.metadata;
     const incidentMetadata = details?.metadata;
     const metadata = lastEventMetadata ?? incidentMetadata ?? null;
+    const evidenceCount = evidenceSummary.reduce(
+        (total, item) => total + Number(item.count ?? 0),
+        0,
+    );
 
     return {
         id: incident.incidentId,
@@ -294,6 +311,8 @@ export function mapMonitoringIncident(incident: TelemetryIncidentRecord): Monito
         severity: normalizeIncidentSeverity(incident.severity),
         snapshotUrl: incident.evidenceUrl ?? null,
         evidenceUrl: incident.evidenceUrl ?? null,
+        evidenceCount,
+        evidenceStates: evidenceSummary.map((item) => item.state),
         status: incident.status ?? null,
         occurrenceCount: details?.occurrenceCount ?? 1,
         severityReason: details?.severityReason ?? null,
@@ -310,11 +329,29 @@ export function mapMonitoringStudentDetail(
     durationMinutes: number,
     questionCount: number,
     incidents: TelemetryIncidentRecord[],
+    evidenceSummaryRows: MonitoringIncidentEvidenceSummaryRow[] = [],
     lifecycleEvents: MonitoringLifecycleEventRow[] = [],
 ): MonitoringStudentDetail {
+    const evidenceSummaryByIncident = new Map<string, MonitoringIncidentEvidenceSummaryRow[]>();
+
+    for (const row of evidenceSummaryRows) {
+        if (!row.incident_id) {
+            continue;
+        }
+
+        const items = evidenceSummaryByIncident.get(row.incident_id) ?? [];
+        items.push(row);
+        evidenceSummaryByIncident.set(row.incident_id, items);
+    }
+
     return {
         ...mapMonitoringStudentSummary(row, durationMinutes, questionCount),
-        flags: incidents.map(mapMonitoringIncident),
+        flags: incidents.map((incident) =>
+            mapMonitoringIncidentWithEvidenceSummary(
+                incident,
+                evidenceSummaryByIncident.get(incident.incidentId) ?? [],
+            ),
+        ),
         lifecycleEvents: lifecycleEvents.map(mapMonitoringLifecycleEvent),
     };
 }

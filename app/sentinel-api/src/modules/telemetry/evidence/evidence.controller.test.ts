@@ -5,6 +5,7 @@ import { EvidenceUploadService } from './services/evidence-upload.service';
 import { EvidenceQueryService } from './services/evidence-query.service';
 import { EvidenceDeletionService } from './services/evidence-deletion.service';
 import { EvidenceReconciliationService } from './services/evidence-reconciliation.service';
+import { SystemLogsService } from '../../general/logs/services/system-logs.service';
 
 vi.mock('./services/evidence-upload.service', () => ({
     EvidenceUploadService: {
@@ -28,6 +29,12 @@ vi.mock('./services/evidence-deletion.service', () => ({
 vi.mock('./services/evidence-reconciliation.service', () => ({
     EvidenceReconciliationService: {
         reconcileEvidence: vi.fn(),
+    },
+}));
+
+vi.mock('../../general/logs/services/system-logs.service', () => ({
+    SystemLogsService: {
+        logSystemEvent: vi.fn(),
     },
 }));
 
@@ -208,6 +215,12 @@ describe('Telemetry Evidence Controllers', () => {
             const body = await response.json();
             expect(body.processedCount).toBe(5);
             expect(EvidenceReconciliationService.reconcileEvidence).toHaveBeenCalled();
+            expect(SystemLogsService.logSystemEvent).toHaveBeenCalledWith(
+                mockDb,
+                expect.objectContaining({
+                    action: 'telemetry_evidence.reconcile_success',
+                }),
+            );
         });
 
         it('rejects request if cron secret is incorrect', async () => {
@@ -220,6 +233,27 @@ describe('Telemetry Evidence Controllers', () => {
 
             expect(response.status).toBe(401);
             expect(EvidenceReconciliationService.reconcileEvidence).not.toHaveBeenCalled();
+        });
+
+        it('fails when no cron secret is configured', async () => {
+            delete process.env.TELEMETRY_CRON_SECRET;
+            delete process.env.CRON_SECRET;
+
+            const response = await app.request('/internal/evidence/reconcile', {
+                method: 'POST',
+            });
+
+            expect(response.status).toBe(500);
+            expect(EvidenceReconciliationService.reconcileEvidence).not.toHaveBeenCalled();
+            expect(SystemLogsService.logSystemEvent).toHaveBeenCalledWith(
+                mockDb,
+                expect.objectContaining({
+                    action: 'telemetry_evidence.reconcile_failure',
+                    details: expect.objectContaining({
+                        message: expect.stringContaining('cron secret'),
+                    }),
+                }),
+            );
         });
     });
 });
