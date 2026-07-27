@@ -291,7 +291,7 @@ export function FlaggingTimeline({
     }
 
     return (
-        <div className="before:via-border relative space-y-8 before:pointer-events-none before:absolute before:inset-0 before:ml-5 before:h-full before:w-0.5 before:-translate-x-px before:bg-gradient-to-b before:from-[#323d8f]/20 before:to-transparent">
+        <div className="before:via-border relative space-y-8 before:pointer-events-none before:absolute before:inset-0 before:ml-5 before:h-full before:w-0.5 before:-translate-x-px before:bg-gradient-to-b before:from-[#323d8f]/20 before:to-transparent before:z-0">
             {timelineItems.map((item) => {
                 if (item.kind === 'lifecycle') {
                     const icon =
@@ -326,13 +326,13 @@ export function FlaggingTimeline({
                                         <Clock className="mr-1 h-3 w-3" />
                                         {item.event.createdAt
                                             ? new Date(item.event.createdAt).toLocaleTimeString(
-                                                  [],
-                                                  {
-                                                      hour: '2-digit',
-                                                      minute: '2-digit',
-                                                      second: '2-digit',
-                                                  },
-                                              )
+                                                [],
+                                                {
+                                                    hour: '2-digit',
+                                                    minute: '2-digit',
+                                                    second: '2-digit',
+                                                },
+                                            )
                                             : 'No timestamp'}
                                     </div>
                                 </div>
@@ -372,8 +372,8 @@ export function FlaggingTimeline({
                                 flag.severity === 'high'
                                     ? 'border-red-500 text-red-500'
                                     : flag.severity === 'medium'
-                                      ? 'border-orange-500 text-orange-500'
-                                      : 'border-blue-500 text-blue-500',
+                                        ? 'border-orange-500 text-orange-500'
+                                        : 'border-blue-500 text-blue-500',
                             )}
                         >
                             {flagIcons[flag.type]}
@@ -395,8 +395,8 @@ export function FlaggingTimeline({
                                             flag.severity === 'high'
                                                 ? 'bg-red-100 text-red-600'
                                                 : flag.severity === 'medium'
-                                                  ? 'bg-orange-100 text-orange-600'
-                                                  : 'bg-blue-100 text-blue-600',
+                                                    ? 'bg-orange-100 text-orange-600'
+                                                    : 'bg-blue-100 text-blue-600',
                                         )}
                                     >
                                         {flag.severity}
@@ -438,10 +438,10 @@ export function FlaggingTimeline({
                                 ) : null}
 
                                 {anomalyLabel ||
-                                confidenceLabel ||
-                                severityReasonLabel ||
-                                triggerLabel ||
-                                windowLabel ? (
+                                    confidenceLabel ||
+                                    severityReasonLabel ||
+                                    triggerLabel ||
+                                    windowLabel ? (
                                     <div className="mt-3 flex flex-wrap gap-2">
                                         {anomalyLabel ? (
                                             <span
@@ -449,8 +449,8 @@ export function FlaggingTimeline({
                                                     'rounded-full border px-2.5 py-1 text-[10px] font-semibold tracking-wider uppercase',
                                                     flag.anomalyType
                                                         ? AUDIO_ANOMALY_BADGE_STYLES[
-                                                              flag.anomalyType as keyof typeof AUDIO_ANOMALY_BADGE_STYLES
-                                                          ]
+                                                        flag.anomalyType as keyof typeof AUDIO_ANOMALY_BADGE_STYLES
+                                                        ]
                                                         : 'border-slate-200 bg-slate-100 text-slate-700',
                                                 )}
                                             >

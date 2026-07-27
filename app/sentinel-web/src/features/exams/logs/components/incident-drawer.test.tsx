@@ -3,6 +3,16 @@ import { describe, expect, it, vi } from 'vitest';
 import type { ApiIncidentLogItem } from '@sentinel/services';
 import { IncidentDrawer } from './incident-drawer';
 
+const mockUseIncidentEvidenceQuery = vi.fn(() => ({
+    data: [],
+    isLoading: false,
+    isError: false,
+}));
+
+vi.mock('@sentinel/hooks', () => ({
+    useIncidentEvidenceQuery: (...args: any[]) => mockUseIncidentEvidenceQuery(...args),
+}));
+
 vi.mock('@sentinel/ui', () => ({
     Sheet: ({ open, children }: any) => (open ? <div>{children}</div> : null),
     SheetContent: ({ children, className }: any) => <div className={className}>{children}</div>,
@@ -74,6 +84,7 @@ describe('IncidentDrawer', () => {
         expect(screen.getByText('Repeat escalated')).toBeTruthy();
         expect(screen.getByText('Severity Ladder')).toBeTruthy();
         expect(screen.getByText('LOW -> MEDIUM -> HIGH')).toBeTruthy();
+        expect(screen.getByText('No evidence frame is available for this incident.')).toBeTruthy();
     });
 
     it('passes lifecycle follow-up details when confirm-and-close is selected', () => {
@@ -105,5 +116,40 @@ describe('IncidentDrawer', () => {
             reasonCode: 'CONFIRMED_INCIDENT_CLOSE',
             notes: 'close this attempt now',
         });
+    });
+
+    it('renders linked evidence returned by the incident evidence query', () => {
+        mockUseIncidentEvidenceQuery.mockReturnValueOnce({
+            data: [
+                {
+                    evidenceId: 'evidence-1',
+                    attemptId: 'attempt-1',
+                    incidentId: 'incident-1',
+                    eventId: 'event-1',
+                    eventType: 'GAZE',
+                    capturedAt: '2026-04-20T09:40:00.000Z',
+                    state: 'AVAILABLE',
+                    expiresAt: '2026-04-27T09:40:00.000Z',
+                    signedUrl: 'https://example.com/evidence.png',
+                },
+            ],
+            isLoading: false,
+            isError: false,
+        });
+
+        render(
+            <IncidentDrawer
+                incident={incident}
+                isOpen
+                onClose={vi.fn()}
+                onConfirm={vi.fn()}
+                onDismiss={vi.fn()}
+                isSubmitting={false}
+            />,
+        );
+
+        const image = screen.getByAltText('Incident Evidence Snapshot');
+        expect(image).toBeTruthy();
+        expect(image.getAttribute('src')).toBe('https://example.com/evidence.png');
     });
 });

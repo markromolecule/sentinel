@@ -39,7 +39,7 @@ export default function StudentMonitoringPage() {
     }
 
     return (
-        <div className="p-6">
+        <div className="px-6 py-3">
             <StudentMonitoringDetail
                 student={student}
                 examId={examId}

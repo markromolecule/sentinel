@@ -33,16 +33,16 @@ export function StudentMonitoringDetail({
         )?.id ?? null;
 
     return (
-        <div className="mx-auto flex h-[calc(100vh-10rem)] w-full max-w-7xl flex-col gap-5 overflow-hidden px-4 pb-4">
+        <div className="mx-auto flex h-[calc(100vh-6rem)] w-full max-w-7xl flex-col gap-4 overflow-hidden px-4 pb-4">
             {/* Action Bar */}
-            <StudentDetailHeader examId={examId} focusIncidentId={firstEvidenceIncidentId} />
+            <StudentDetailHeader />
 
             {/* Main Content Layout */}
             <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[1fr] gap-6 overflow-hidden lg:grid-cols-12">
                 {/* Left Column: Student Info & Feed */}
                 <div
                     data-lenis-prevent
-                    className="scrollbar-thin scrollbar-thumb-border/70 hover:scrollbar-thumb-border flex min-h-0 flex-col gap-4 overflow-y-auto pr-2 lg:col-span-4"
+                    className="scrollbar-none flex min-h-0 flex-col gap-4 overflow-y-auto pb-8 lg:col-span-4"
                 >
                     <StudentIdentityCard student={student} />
                     <LiveFeedMonitor
@@ -62,7 +62,7 @@ export function StudentMonitoringDetail({
                 {/* Right Column: Timeline */}
                 <div
                     data-lenis-prevent
-                    className="scrollbar-thin scrollbar-thumb-border/70 hover:scrollbar-thumb-border min-h-0 overflow-y-auto pr-2 lg:col-span-8"
+                    className="scrollbar-none min-h-0 overflow-y-auto pb-8 lg:col-span-8"
                 >
                     <IntegrityTimelineCard
                         flags={student.flags ?? []}
@@ -71,6 +71,7 @@ export function StudentMonitoringDetail({
                         lifecycleEvents={student.lifecycleEvents ?? []}
                         onRefresh={onRefresh}
                         isRefreshing={isRefreshing}
+                        focusIncidentId={firstEvidenceIncidentId}
                     />
                 </div>
             </div>
