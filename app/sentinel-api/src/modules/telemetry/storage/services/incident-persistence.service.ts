@@ -1,6 +1,7 @@
 import { type DbClient } from '@sentinel/db';
 import { HTTPException } from 'hono/http-exception';
 import type { PersistableProctoringEvent } from '../../ingestion/ingestion.dto';
+import { EvidenceCorrelationService } from '../../evidence/services/evidence-correlation.service';
 import { appendIncidentRecord } from './incident-writer.service';
 import { handleIncidentSideEffects } from './incident-side-effects.service';
 import {
@@ -57,14 +58,24 @@ export class IncidentPersistenceService {
                 });
             }
 
-            return appendIncidentRecord({
+            const result = await appendIncidentRecord({
                 db: trx,
                 payload,
                 session: eligibility.session,
             });
+
+            if (result && payload.metadata?.eventId) {
+                await EvidenceCorrelationService.linkEvidenceToIncident(trx, {
+                    attemptId: eligibility.session.attempt_id,
+                    eventId: payload.metadata.eventId,
+                    incidentId: result.incidentId,
+                });
+            }
+
+            return result;
         });
 
-        if (result) {
+        if (result && result.disposition !== 'duplicate-ignored') {
             await handleIncidentSideEffects(db, payload, result);
         }
 

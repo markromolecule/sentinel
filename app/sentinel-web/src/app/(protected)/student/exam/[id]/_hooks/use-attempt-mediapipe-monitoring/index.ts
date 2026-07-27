@@ -32,6 +32,7 @@ export function useAttemptMediaPipeMonitoring({
     configuration,
     mediaPipeSandbox,
     examSessionId,
+    attemptId,
     isRedirectingToTurnIn,
     runtimeAccess,
 }: UseAttemptMediaPipeMonitoringArgs): UseAttemptMediaPipeMonitoringResult {
@@ -57,6 +58,7 @@ export function useAttemptMediaPipeMonitoring({
     const { videoRef, analysis, phase, errorMessage } = useMediapipeCameraRuntime({
         examId,
         examSessionId,
+        attemptId,
         studentId,
         configuration,
         activeSandbox,

@@ -31,10 +31,10 @@ export async function processQueuedTelemetryEvent(
 ): Promise<TelemetryJobProcessingResult> {
     try {
         const result = await TelemetryStorageService.appendEvent(db, payload);
-        if (result === null) {
+        if (result === null || result.disposition === 'duplicate-ignored') {
             return 'duplicate-ignored';
         }
-        return result.isNew ? 'inserted' : 'aggregated';
+        return result.disposition;
     } catch (error) {
         if (!isTerminalTelemetryStorageError(error)) {
             throw error;

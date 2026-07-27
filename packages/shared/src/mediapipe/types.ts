@@ -87,6 +87,9 @@ export type MediaPipeTelemetryMetadata = {
     durationMs?: number;
     confidenceScore?: number;
     aggregation?: MediaPipeTelemetryAggregation;
+    eventId?: string;
+    dedupeKey?: string;
+    clientActionAt?: string;
 };
 
 export type MediaPipeTelemetrySessionContext = {

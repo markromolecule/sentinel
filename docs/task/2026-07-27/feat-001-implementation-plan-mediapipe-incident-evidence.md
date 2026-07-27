@@ -444,34 +444,39 @@ reviewers list/delete it without exposing durable storage coordinates.
 **Goal:** Attach a stable event identity and one bounded image to an accepted MediaPipe dispatch
 without slowing or weakening telemetry.
 
-- [ ] In `packages/services/src/api/telemetry.ts`, extend the exported `TelemetryMetadata` type with
+- [x] In `packages/services/src/api/telemetry.ts`, extend the exported `TelemetryMetadata` type with
       the already-supported `eventId`, `dedupeKey`, and `clientActionAt` fields so browser code does
       not cast around the shared contract.
-- [ ] In the MediaPipe telemetry `_types/index.ts` and `_utils/payloads.ts`, accept
+- [x] In the MediaPipe telemetry `_types/index.ts` and `_utils/payloads.ts`, accept
       `eventId`, `dedupeKey`, and `clientActionAt` and forward them into the shared MediaPipe
       payload metadata without changing browser/mobile event behavior.
-- [ ] In `capture-incident-evidence-frame.ts`, export a documented function that validates
+- [x] In `capture-incident-evidence-frame.ts`, export a documented function that validates
       `readyState`, `videoWidth`, and `videoHeight`, scales to the configured maximum dimension,
       draws the current `<video>` to an in-memory canvas, attempts WebP then JPEG `toBlob()`,
       rejects null/empty/oversized blobs, and releases canvas references.
-- [ ] In `use-incident-evidence-upload.ts`, export a documented fire-and-forget upload operation
+- [x] In `use-incident-evidence-upload.ts`, export a documented fire-and-forget upload operation
       that initializes, uploads the blob to the returned provider-signed target, completes the
       evidence row, bounds retries to initialization/upload-safe cases, and emits only bounded
       diagnostics; do not require the browser to construct or select a bucket/path.
-- [ ] In `use-mediapipe-camera-runtime.ts`, generate `eventId`, `dedupeKey`, and `clientActionAt`
+- [x] In `use-mediapipe-camera-runtime.ts`, generate `eventId`, `dedupeKey`, and `clientActionAt`
       inside `dispatch.shouldEmit && telemetrySignal`; immediately capture the current video frame,
       then start evidence upload and telemetry emission independently with the same identifiers.
-- [ ] In the same runtime, preserve the current toast/incident behavior, schedule the next
+- [x] In the same runtime, preserve the current toast/incident behavior, schedule the next
       animation frame without awaiting encoding/network completion, prevent duplicate in-flight
       work for the same `eventId`, and clear the in-flight registry on completion/unmount.
-- [ ] Ensure evidence initialization is skipped when capture is disabled, the attempt becomes
+- [x] Ensure evidence initialization is skipped when capture is disabled, the attempt becomes
       ineligible, the rule is disabled, quota denial is cached for the bounded server-provided
       period, or the camera has no usable current frame; telemetry must still emit.
-- [ ] Add utility/hook/runtime tests proving exact scaling and aspect ratio, WebP/JPEG fallback,
+- [x] Add utility/hook/runtime tests proving exact scaling and aspect ratio, WebP/JPEG fallback,
       null/oversized rejection, one capture per accepted dispatch, no capture before duration
       threshold, no capture during cooldown/suspension/disabled rules, all three MediaPipe signals,
       stable correlation identifiers, no second `getUserMedia()`, no animation-loop blocking, retry
       bounds, teardown safety, and telemetry success when every evidence stage fails.
+
+**Implementation note (2026-07-27):** The current client caches quota/deny-style evidence
+initialization failures for 60 seconds because the API does not yet return a server-supplied
+backoff TTL. Telemetry emission remains non-fatal and continues even when evidence capture or
+upload fails.
 
 **Migration required:** No — this phase changes client contracts and runtime behavior only.
 
@@ -480,27 +485,33 @@ without slowing or weakening telemetry.
 **Goal:** Link every accepted evidence row to the exact incident selected by telemetry persistence,
 regardless of whether upload or incident processing finishes first.
 
-- [ ] In `evidence-correlation.service.ts`, export a documented idempotent
+- [x] In `evidence-correlation.service.ts`, export a documented idempotent
       `linkEvidenceToIncident(db, { attemptId, eventId, incidentId })` that updates only the matching
       unlinked row and refuses a conflicting existing incident link.
-- [ ] In `incident-persistence.service.ts`, invoke evidence correlation inside the same database
+- [x] In `incident-persistence.service.ts`, invoke evidence correlation inside the same database
       transaction after `appendIncidentRecord()` returns an inserted or aggregated result and
       before transaction commit; use `payload.metadata.eventId` and do nothing for legacy events
       without it.
-- [ ] In `incident-writer.service.ts`, change duplicate-dedupe handling to return the existing
+- [x] In `incident-writer.service.ts`, change duplicate-dedupe handling to return the existing
       `incidentId` as a distinct duplicate result (without incrementing occurrence count) so a
       retried telemetry event can converge an already-created evidence link.
-- [ ] Update `AppendEventResult` and `processQueuedTelemetryEvent()` to preserve the existing
+- [x] Update `AppendEventResult` and `processQueuedTelemetryEvent()` to preserve the existing
       `duplicate-ignored` external disposition while still making the existing incident identity
       available for internal correlation.
-- [ ] In `evidence-reconciliation.service.ts`, claim bounded rows that are `AVAILABLE` but unlinked,
+- [x] In `evidence-reconciliation.service.ts`, claim bounded rows that are `AVAILABLE` but unlinked,
       find the incident whose structured details contain the same event ID or whose dedupe key
       matches the event, link it when unambiguous, and mark/purge rows after the configured unlink
       timeout when telemetry was rejected or lost.
-- [ ] Add persistence tests for evidence-first, telemetry-first, upload-completion-first,
+- [x] Add persistence tests for evidence-first, telemetry-first, upload-completion-first,
       aggregated incidents with multiple chronological evidence rows, duplicate telemetry delivery,
       conflicting correlation, missing event IDs, rejected telemetry, concurrent initialization,
       and retry after a transaction/provider failure.
+
+**Implementation note (2026-07-27):** The code path for phase 4 is implemented, including
+transaction-time linking, duplicate retry convergence, and bounded reconciliation of unlinked
+`AVAILABLE` evidence rows. The non-DB worker contract tests passed locally, but the new DB-backed
+correlation tests could not be executed on July 27, 2026 because the configured test database host
+`aws-1-ap-northeast-1.pooler.supabase.com` was unreachable from this environment.
 
 **Migration required:** No — required correlation keys and indexes are created in Phase 1.
 

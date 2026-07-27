@@ -1,36 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
-import type { FaceLandmarker, FaceLandmarkerResult } from '@mediapipe/tasks-vision';
-import { useApi } from '@sentinel/hooks';
 import {
-    analyzeMediaPipeFrame,
     createMediaPipeSignalTrackerState,
-    evaluateMediaPipeSignalDispatch,
     resolveMediaPipeThresholds,
 } from '@sentinel/shared';
 import type { MediaPipeFrameAnalysis } from '@sentinel/shared';
 import type { ExamConfig } from '@sentinel/shared/types';
 import { useStudentExamMediaPipeStream } from '@/app/(protected)/student/exam/[id]/_components/student-exam-mediapipe-provider';
-import {
-    emitMediaPipeTelemetryEvent,
-    isMediaPipeTelemetryEventEnabled,
-    writeMonitoringEventTrace,
-} from '@/app/(protected)/student/exam/[id]/_lib/web-telemetry-client';
-import { MEDIAPIPE_MODEL_PATH, MEDIAPIPE_WASM_PATH } from '../_constants';
 import type { MediaPipeAttemptIncident, ResolvedMediaPipeSandbox } from '../_types';
-import {
-    attachMediaPipeStreamToVideo,
-    mapNormalizedLandmarksToMediaPipeLandmarks,
-    normalizeAttemptMediaPipeAnalysis,
-} from '../_utils';
 import type { MediapipeRuntimeEligibility } from './use-mediapipe-runtime-eligibility';
-import { buildAttemptMediaPipeDevelopmentDiagnostics } from './use-mediapipe-runtime-thresholds';
+import { useCameraStream } from './use-camera-stream';
+import { useMediapipeFaceLandmarker } from './use-mediapipe-face-landmarker';
+import { useIncidentTelemetryDispatcher } from './use-incident-telemetry-dispatcher';
+import { useMediaPipeFrameProcessor } from './use-mediapipe-frame-processor';
 
 export type MediapipeSignalThresholds = ReturnType<typeof resolveMediaPipeThresholds>;
 
 export type UseMediapipeCameraRuntimeArgs = {
     examId: string;
     examSessionId?: string;
+    attemptId?: string;
     studentId?: string;
     configuration?: ExamConfig;
     activeSandbox: ResolvedMediaPipeSandbox | undefined;
@@ -58,6 +46,7 @@ export type UseMediapipeCameraRuntimeResult = {
 export function useMediapipeCameraRuntime({
     examId,
     examSessionId,
+    attemptId,
     studentId,
     configuration,
     activeSandbox,
@@ -65,14 +54,10 @@ export function useMediapipeCameraRuntime({
     eligibility,
     setActiveIncident,
 }: UseMediapipeCameraRuntimeArgs): UseMediapipeCameraRuntimeResult {
-    const apiClient = useApi();
     const { stream: sharedStream, faceLandmarker: preLoadedFaceLandmarker } =
         useStudentExamMediaPipeStream();
 
     const videoRef = useRef<HTMLVideoElement | null>(null);
-    const streamRef = useRef<MediaStream | null>(null);
-    const ownsStreamRef = useRef(false);
-    const faceLandmarkerRef = useRef<FaceLandmarker | null>(null);
     const animationFrameRef = useRef<number | null>(null);
     const lastFrameAtRef = useRef(0);
     const lastSessionIdRef = useRef<string | null>(null);
@@ -82,7 +67,42 @@ export function useMediapipeCameraRuntime({
     const [phase, setPhase] = useState<'idle' | 'starting' | 'running' | 'error'>('idle');
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+    const { startStream, stopStream } = useCameraStream();
+    const { faceLandmarkerRef, initFaceLandmarker, closeFaceLandmarker } = useMediapipeFaceLandmarker();
+    const { dispatchIncident, clearInFlightEvents } = useIncidentTelemetryDispatcher();
+
     const { baseRuntimeEnabled, activationState, isEnabled } = eligibility;
+
+    // Use refs for callbacks that might change references to avoid restarting the useEffect runtime loop.
+    const startStreamRef = useRef(startStream);
+    const initFaceLandmarkerRef = useRef(initFaceLandmarker);
+    const dispatchIncidentRef = useRef(dispatchIncident);
+
+    useEffect(() => {
+        startStreamRef.current = startStream;
+        initFaceLandmarkerRef.current = initFaceLandmarker;
+        dispatchIncidentRef.current = dispatchIncident;
+    });
+
+    const { processFrame } = useMediaPipeFrameProcessor({
+        activeSandbox,
+        calibrationProfile: activationState.storedFlow.mediaPipeCalibrationProfile,
+        configuration,
+        thresholds,
+        trackerRef,
+        setAnalysis,
+        dispatchIncidentRef,
+        eligibility,
+        attemptId,
+        examSessionId,
+        studentId,
+        setActiveIncident,
+    });
+
+    const processFrameRef = useRef(processFrame);
+    useEffect(() => {
+        processFrameRef.current = processFrame;
+    });
 
     // ---------------------------------------------------------------------------
     // Cleanup — stops the animation loop, closes the FaceLandmarker, and releases
@@ -94,27 +114,11 @@ export function useMediapipeCameraRuntime({
             animationFrameRef.current = null;
         }
 
-        if (faceLandmarkerRef.current && typeof faceLandmarkerRef.current.close === 'function') {
-            // Only close if we initialized it locally; otherwise, let the provider manage it.
-            if (faceLandmarkerRef.current !== preLoadedFaceLandmarker) {
-                faceLandmarkerRef.current.close();
-            }
-            faceLandmarkerRef.current = null;
-        }
-
-        if (streamRef.current && ownsStreamRef.current) {
-            streamRef.current.getTracks().forEach((track) => track.stop());
-        }
-
-        streamRef.current = null;
-        ownsStreamRef.current = false;
-
-        if (videoRef.current) {
-            videoRef.current.srcObject = null;
-        }
-
+        closeFaceLandmarker(preLoadedFaceLandmarker);
+        stopStream(videoRef.current);
+        clearInFlightEvents();
         setActiveIncident(null);
-    }, [setActiveIncident, preLoadedFaceLandmarker]);
+    }, [closeFaceLandmarker, stopStream, clearInFlightEvents, preLoadedFaceLandmarker, setActiveIncident]);
 
     // ---------------------------------------------------------------------------
     // Main effect — starts the runtime when eligibility is satisfied and tears it
@@ -145,10 +149,7 @@ export function useMediapipeCameraRuntime({
         }
 
         const sandbox = activeSandbox;
-        const resolvedConfiguration = configuration;
         const sessionId = examSessionId;
-        const resolvedStudentId = studentId;
-        const calibrationProfile = activationState.storedFlow.mediaPipeCalibrationProfile;
         let disposed = false;
 
         async function start() {
@@ -163,12 +164,7 @@ export function useMediapipeCameraRuntime({
             setErrorMessage(null);
 
             try {
-                const stream =
-                    sharedStream ??
-                    (await navigator.mediaDevices.getUserMedia({
-                        video: true,
-                        audio: false,
-                    }));
+                const stream = await startStreamRef.current(sharedStream, videoRef.current);
 
                 if (disposed) {
                     if (!sharedStream) {
@@ -177,42 +173,13 @@ export function useMediapipeCameraRuntime({
                     return;
                 }
 
-                streamRef.current = stream;
-                ownsStreamRef.current = !sharedStream;
+                const landmarker = await initFaceLandmarkerRef.current(
+                    preLoadedFaceLandmarker,
+                    sandbox,
+                    () => disposed
+                );
 
-                attachMediaPipeStreamToVideo(videoRef.current, stream);
-
-                // Use pre-loaded landmarker if available, otherwise initialize
-                if (preLoadedFaceLandmarker) {
-                    faceLandmarkerRef.current = preLoadedFaceLandmarker;
-                } else {
-                    const visionModule = await import('@mediapipe/tasks-vision');
-                    const resolver =
-                        await visionModule.FilesetResolver.forVisionTasks(MEDIAPIPE_WASM_PATH);
-
-                    if (disposed) return;
-
-                    faceLandmarkerRef.current = await visionModule.FaceLandmarker.createFromOptions(
-                        resolver,
-                        {
-                            baseOptions: { modelAssetPath: MEDIAPIPE_MODEL_PATH },
-                            runningMode: 'VIDEO',
-                            numFaces: 2,
-                            minFaceDetectionConfidence: Math.max(
-                                0.35,
-                                sandbox.confidenceThreshold - 0.2,
-                            ),
-                            minFacePresenceConfidence: Math.max(
-                                0.35,
-                                sandbox.confidenceThreshold - 0.2,
-                            ),
-                            minTrackingConfidence: Math.max(
-                                0.35,
-                                sandbox.confidenceThreshold - 0.2,
-                            ),
-                        },
-                    );
-                }
+                if (disposed || !landmarker) return;
 
                 setPhase('running');
 
@@ -222,7 +189,6 @@ export function useMediapipeCameraRuntime({
                 // -----------------------------------------------------------------
                 const tick = () => {
                     const currentSandbox = activeSandbox;
-                    const tolerateDownwardGaze = true;
 
                     if (
                         disposed ||
@@ -247,163 +213,7 @@ export function useMediapipeCameraRuntime({
                         return;
                     }
 
-                    const detectionResult: FaceLandmarkerResult =
-                        faceLandmarkerRef.current.detectForVideo(videoRef.current, now);
-
-                    const landmarksByFace = mapNormalizedLandmarksToMediaPipeLandmarks(
-                        detectionResult.faceLandmarks ?? [],
-                    );
-
-                    const frameAnalysis = analyzeMediaPipeFrame({
-                        landmarksByFace,
-                        confidenceThreshold: currentSandbox.confidenceThreshold,
-                        calibrationProfile,
-                        tolerateDownwardGaze,
-                    });
-
-                    const normalizedAnalysis = normalizeAttemptMediaPipeAnalysis({
-                        analysis: frameAnalysis,
-                        configuration: resolvedConfiguration,
-                    });
-
-                    // Only dispatch telemetry for signals that are enabled for this exam.
-                    const telemetrySignal =
-                        normalizedAnalysis.signal &&
-                        isMediaPipeTelemetryEventEnabled(
-                            resolvedConfiguration,
-                            normalizedAnalysis.signal,
-                        )
-                            ? normalizedAnalysis.signal
-                            : null;
-
-                    setAnalysis(normalizedAnalysis);
-
-                    const detectionTime = new Date(Date.now()).toISOString();
-                    const developmentDiagnostics = buildAttemptMediaPipeDevelopmentDiagnostics({
-                        activeSandbox: currentSandbox,
-                        thresholds,
-                        hasCalibrationProfile: Boolean(calibrationProfile),
-                        tolerateDownwardGaze,
-                    });
-
-                    const dispatch = evaluateMediaPipeSignalDispatch({
-                        currentSignal: telemetrySignal,
-                        tracker: trackerRef.current,
-                        nowMs: Date.now(),
-                        thresholds,
-                        signalGapGraceMs: currentSandbox.frameIntervalMs,
-                    });
-
-                    trackerRef.current = dispatch.tracker;
-
-                    if (telemetrySignal && !dispatch.shouldEmit) {
-                        writeMonitoringEventTrace({
-                            detectorSource: 'mediapipe',
-                            eventType: telemetrySignal,
-                            eventSubtype: normalizedAnalysis.status,
-                            detectionTime,
-                            disposition: 'suppressed',
-                            reason:
-                                dispatch.tracker.lastEmittedAtMs !== null
-                                    ? 'dispatch-cooldown-active'
-                                    : 'awaiting-duration-threshold',
-                            developmentContext: {
-                                ...developmentDiagnostics,
-                                analysisStatus: normalizedAnalysis.status,
-                                confidenceScore: normalizedAnalysis.confidenceScore ?? undefined,
-                                trackedSignal: dispatch.tracker.activeSignal ?? undefined,
-                                activeSinceMs: dispatch.tracker.activeSinceMs ?? undefined,
-                            },
-                        });
-                    }
-
-                    if (dispatch.shouldEmit && telemetrySignal) {
-                        const emissionTime = new Date().toISOString();
-
-                        writeMonitoringEventTrace({
-                            detectorSource: 'mediapipe',
-                            eventType: telemetrySignal,
-                            eventSubtype: normalizedAnalysis.status,
-                            detectionTime,
-                            emissionTime,
-                            disposition: 'emitting',
-                            developmentContext: {
-                                ...developmentDiagnostics,
-                                analysisStatus: normalizedAnalysis.status,
-                                confidenceScore: normalizedAnalysis.confidenceScore ?? undefined,
-                                durationMs: dispatch.durationMs ?? undefined,
-                            },
-                        });
-
-                        // Show a contextual toast for each incident type.
-                        if (telemetrySignal === 'GAZE_OFF_SCREEN') {
-                            toast.warning('Please keep your eyes on the exam screen.', {
-                                description:
-                                    'Ensure your face is centered and you are looking at the content.',
-                            });
-                        } else if (telemetrySignal === 'NO_FACE_DETECTED') {
-                            toast.warning('Face not detected.', {
-                                description: 'Please make sure you are visible to the camera.',
-                            });
-                        } else if (telemetrySignal === 'MULTIPLE_FACES') {
-                            toast.warning('Multiple faces detected.', {
-                                description: 'Please ensure you are alone during the exam.',
-                            });
-                        }
-
-                        setActiveIncident({
-                            eventType: telemetrySignal,
-                            detectedAt: detectionTime,
-                            analysis: normalizedAnalysis,
-                        });
-
-                        void emitMediaPipeTelemetryEvent(apiClient, {
-                            configuration: resolvedConfiguration,
-                            mediaPipeSandbox: sandbox,
-                            examSessionId: sessionId,
-                            studentId: resolvedStudentId,
-                            eventType: telemetrySignal,
-                            metadata: {
-                                durationMs: dispatch.durationMs,
-                                confidenceScore: normalizedAnalysis.confidenceScore ?? undefined,
-                                aggregation: dispatch.aggregation,
-                            },
-                        })
-                            .then((emitted) => {
-                                writeMonitoringEventTrace({
-                                    detectorSource: 'mediapipe',
-                                    eventType: telemetrySignal,
-                                    eventSubtype: normalizedAnalysis.status,
-                                    detectionTime,
-                                    emissionTime,
-                                    disposition: emitted ? 'accepted' : 'suppressed',
-                                    reason: emitted ? undefined : 'rule-disabled',
-                                    developmentContext: {
-                                        ...developmentDiagnostics,
-                                        analysisStatus: normalizedAnalysis.status,
-                                        confidenceScore:
-                                            normalizedAnalysis.confidenceScore ?? undefined,
-                                        durationMs: dispatch.durationMs ?? undefined,
-                                    },
-                                });
-                            })
-                            .catch((error) => {
-                                writeMonitoringEventTrace({
-                                    detectorSource: 'mediapipe',
-                                    eventType: telemetrySignal,
-                                    eventSubtype: normalizedAnalysis.status,
-                                    detectionTime,
-                                    emissionTime,
-                                    disposition: 'failed',
-                                    reason:
-                                        error instanceof Error ? error.message : 'unknown-error',
-                                    developmentContext: developmentDiagnostics,
-                                });
-                                console.error('Failed to emit MediaPipe telemetry event.', {
-                                    error,
-                                });
-                            });
-                    }
+                    processFrameRef.current(now, videoRef.current, faceLandmarkerRef.current);
 
                     animationFrameRef.current = window.requestAnimationFrame(tick);
                 };
@@ -424,8 +234,8 @@ export function useMediapipeCameraRuntime({
             stopRuntime();
         };
     }, [
-        apiClient,
         examSessionId,
+        attemptId,
         studentId,
         activationState.isValid,
         activationState.status,

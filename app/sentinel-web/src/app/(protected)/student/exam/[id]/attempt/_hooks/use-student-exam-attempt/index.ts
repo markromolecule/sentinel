@@ -161,6 +161,7 @@ export function useStudentExamAttempt() {
 
     const monitoringHook = useAttemptMonitoring({
         examId,
+        attemptId: canonicalAttemptId ?? undefined,
         audioSettings: effectiveAudioSettings,
         configuration: effectiveConfiguration,
         examSessionId: examSession?.sessionId,

@@ -261,6 +261,10 @@ describe('web-telemetry-client', () => {
             studentId: '123e4567-e89b-12d3-a456-426614174001',
             eventType: 'MULTIPLE_FACES',
             timestamp: '2026-04-22T00:00:00.000Z',
+            eventId: '2cf84368-aad2-4f9b-8932-7cab4d4df82c',
+            dedupeKey:
+                '123e4567-e89b-12d3-a456-426614174000:MULTIPLE_FACES:2cf84368-aad2-4f9b-8932-7cab4d4df82c',
+            clientActionAt: '2026-04-22T00:00:00.100Z',
             metadata: {
                 confidenceScore: 0.91,
                 aggregation: {
@@ -283,6 +287,10 @@ describe('web-telemetry-client', () => {
                     trigger: 'confidence-threshold',
                     threshold: 0.8,
                 },
+                eventId: '2cf84368-aad2-4f9b-8932-7cab4d4df82c',
+                dedupeKey:
+                    '123e4567-e89b-12d3-a456-426614174000:MULTIPLE_FACES:2cf84368-aad2-4f9b-8932-7cab4d4df82c',
+                clientActionAt: '2026-04-22T00:00:00.100Z',
             },
         });
     });

@@ -31,19 +31,22 @@ describe('processQueuedTelemetryEvent', () => {
     });
 
     it('marks successfully stored new jobs as inserted', async () => {
-        appendEventMock.mockResolvedValueOnce({ isNew: true } as any);
+        appendEventMock.mockResolvedValueOnce({ isNew: true, disposition: 'inserted' } as any);
 
         await expect(processQueuedTelemetryEvent({} as never, payload)).resolves.toBe('inserted');
     });
 
     it('marks successfully stored existing jobs as aggregated', async () => {
-        appendEventMock.mockResolvedValueOnce({ isNew: false } as any);
+        appendEventMock.mockResolvedValueOnce({ isNew: false, disposition: 'aggregated' } as any);
 
         await expect(processQueuedTelemetryEvent({} as never, payload)).resolves.toBe('aggregated');
     });
 
     it('marks duplicate enqueued jobs as duplicate-ignored', async () => {
-        appendEventMock.mockResolvedValueOnce(null);
+        appendEventMock.mockResolvedValueOnce({
+            isNew: false,
+            disposition: 'duplicate-ignored',
+        } as any);
 
         await expect(processQueuedTelemetryEvent({} as never, payload)).resolves.toBe('duplicate-ignored');
     });

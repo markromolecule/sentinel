@@ -12,6 +12,7 @@ export type AppendEventResult = {
     incidentId: string;
     finalSeverity: incident_severity;
     isNew: boolean;
+    disposition: 'inserted' | 'aggregated' | 'duplicate-ignored';
     previousSeverity: incident_severity | null;
     institutionId: string | null;
     studentUserId: string;

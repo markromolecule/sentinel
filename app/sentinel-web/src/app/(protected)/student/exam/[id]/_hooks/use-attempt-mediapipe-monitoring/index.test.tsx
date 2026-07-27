@@ -14,6 +14,8 @@ const {
     mockApiClient,
     mockEmitMediaPipeTelemetryEvent,
     mockWriteMonitoringEventTrace,
+    mockStartIncidentEvidenceUpload,
+    mockCaptureIncidentEvidenceFrame,
     mockTrackStop,
     mockFaceLandmarkerClose,
     mockDetectForVideo,
@@ -23,6 +25,13 @@ const {
     mockApiClient: vi.fn(),
     mockEmitMediaPipeTelemetryEvent: vi.fn().mockResolvedValue(true),
     mockWriteMonitoringEventTrace: vi.fn(),
+    mockStartIncidentEvidenceUpload: vi.fn().mockResolvedValue(undefined),
+    mockCaptureIncidentEvidenceFrame: vi.fn().mockResolvedValue({
+        blob: new Blob(['frame'], { type: 'image/webp' }),
+        mimeType: 'image/webp',
+        width: 1280,
+        height: 720,
+    }),
     mockTrackStop: vi.fn(),
     mockFaceLandmarkerClose: vi.fn(),
     mockDetectForVideo: vi.fn(),
@@ -60,6 +69,16 @@ vi.mock('../../_lib/web-telemetry-client', () => ({
 
         return configuration.aiRules.multiple_faces_detection;
     },
+}));
+
+vi.mock('./_hooks/use-incident-evidence-upload', () => ({
+    useIncidentEvidenceUpload: () => ({
+        startIncidentEvidenceUpload: mockStartIncidentEvidenceUpload,
+    }),
+}));
+
+vi.mock('./_utils/capture-incident-evidence-frame', () => ({
+    captureIncidentEvidenceFrame: mockCaptureIncidentEvidenceFrame,
 }));
 
 vi.mock('@mediapipe/tasks-vision', () => ({
@@ -341,6 +360,7 @@ describe('use-attempt-mediapipe-monitoring', () => {
         const { result } = renderHook(() =>
             useAttemptMediaPipeMonitoring({
                 examId: EXAM_ID,
+                attemptId: 'attempt-123',
                 configuration,
                 mediaPipeSandbox,
                 examSessionId: '123e4567-e89b-12d3-a456-426614174000',
@@ -533,6 +553,23 @@ describe('use-attempt-mediapipe-monitoring', () => {
         mockDetectForVideo.mockReturnValue({
             faceLandmarks: [buildOffscreenFace()],
         });
+        const originalCreateElement = document.createElement.bind(document);
+        vi.spyOn(document, 'createElement').mockImplementation(((tagName: string) => {
+            if (tagName !== 'canvas') {
+                return originalCreateElement(tagName);
+            }
+
+            return {
+                width: 0,
+                height: 0,
+                getContext: () => ({
+                    drawImage: vi.fn(),
+                    clearRect: vi.fn(),
+                }),
+                toBlob: (callback: BlobCallback) =>
+                    callback(new Blob(['frame'], { type: 'image/webp' })),
+            } as unknown as HTMLCanvasElement;
+        }) as typeof document.createElement);
         const configuration = createExamConfiguration();
         const mediaPipeSandbox = createSandbox({
             offScreenDurationMs: 1000,
@@ -580,6 +617,9 @@ describe('use-attempt-mediapipe-monitoring', () => {
                 examSessionId: '123e4567-e89b-12d3-a456-426614174000',
                 studentId: '123e4567-e89b-12d3-a456-426614174001',
                 eventType: 'GAZE_OFF_SCREEN',
+                eventId: expect.any(String),
+                dedupeKey: expect.stringContaining('GAZE_OFF_SCREEN'),
+                clientActionAt: expect.any(String),
                 metadata: expect.objectContaining({
                     durationMs: 1000,
                     aggregation: expect.objectContaining({
@@ -590,7 +630,6 @@ describe('use-attempt-mediapipe-monitoring', () => {
                 }),
             }),
         );
-
         act(() => {
             result.current.dismissIncident();
         });
@@ -1007,4 +1046,5 @@ describe('use-attempt-mediapipe-monitoring', () => {
 
         expect(mockTrackStop).toHaveBeenCalled();
     });
+
 });

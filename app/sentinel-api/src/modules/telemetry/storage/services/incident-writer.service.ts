@@ -30,6 +30,25 @@ function isUniqueConstraintViolation(error: unknown): boolean {
     return code === '23505' || message.includes('23505') || message.includes('unique constraint');
 }
 
+function buildAppendEventResult(args: {
+    incidentId: string;
+    finalSeverity: incident_severity;
+    isNew: boolean;
+    disposition: AppendEventResult['disposition'];
+    previousSeverity: incident_severity | null;
+    session: IngestSessionType;
+}): AppendEventResult {
+    return {
+        incidentId: args.incidentId,
+        finalSeverity: args.finalSeverity,
+        isNew: args.isNew,
+        disposition: args.disposition,
+        previousSeverity: args.previousSeverity,
+        institutionId: args.session.institution_id,
+        studentUserId: args.session.user_id,
+    };
+}
+
 async function lockExamAttempt(db: DbClient, attemptId: string): Promise<void> {
     await db
         .selectFrom('exam_attempts')
@@ -42,14 +61,14 @@ async function lockExamAttempt(db: DbClient, attemptId: string): Promise<void> {
 async function findDuplicateDedupeKeyIncident(
     db: DbClient,
     payload: PersistableProctoringEvent,
-): Promise<{ incident_id: string } | undefined> {
+): Promise<{ incident_id: string; severity: incident_severity | null } | undefined> {
     if (!payload.metadata?.dedupeKey) {
         return undefined;
     }
 
     return db
         .selectFrom('flagged_incidents')
-        .select(['incident_id'])
+        .select(['incident_id', 'severity'])
         .where('attempt_id', '=', payload.examSessionId)
         .where('rule_key', '=', payload.ruleKey)
         .where('platform', '=', payload.platform)
@@ -133,12 +152,14 @@ async function updateExistingIncident(args: {
     });
 
     return {
-        incidentId: args.incident.incident_id,
-        finalSeverity: args.finalSeverity,
-        isNew: false,
-        previousSeverity: args.incident.severity,
-        institutionId: args.session.institution_id,
-        studentUserId: args.session.user_id,
+        ...buildAppendEventResult({
+            incidentId: args.incident.incident_id,
+            finalSeverity: args.finalSeverity,
+            isNew: false,
+            disposition: 'aggregated',
+            previousSeverity: args.incident.severity,
+            session: args.session,
+        }),
     };
 }
 
@@ -208,7 +229,14 @@ export async function appendIncidentRecord(args: {
             eventId: args.payload.metadata?.eventId,
             occurrenceCount: 1,
         });
-        return null;
+        return buildAppendEventResult({
+            incidentId: duplicateDedupeKey.incident_id,
+            finalSeverity: duplicateDedupeKey.severity ?? incident.severity,
+            isNew: false,
+            disposition: 'duplicate-ignored',
+            previousSeverity: duplicateDedupeKey.severity ?? null,
+            session: args.session,
+        });
     }
 
     const dedupeWindowSeconds =
@@ -320,12 +348,14 @@ export async function appendIncidentRecord(args: {
         });
 
         return {
-            incidentId: insertedIncident.incident_id,
-            finalSeverity: severityResolution.finalSeverity,
-            isNew: true,
-            previousSeverity: null,
-            institutionId: args.session.institution_id,
-            studentUserId: args.session.user_id,
+            ...buildAppendEventResult({
+                incidentId: insertedIncident.incident_id,
+                finalSeverity: severityResolution.finalSeverity,
+                isNew: true,
+                disposition: 'inserted',
+                previousSeverity: null,
+                session: args.session,
+            }),
         };
     } catch (error) {
         if (!isUniqueConstraintViolation(error)) {
@@ -357,7 +387,14 @@ export async function appendIncidentRecord(args: {
                 eventId: args.payload.metadata?.eventId,
                 occurrenceCount: 1,
             });
-            return null;
+            return buildAppendEventResult({
+                incidentId: duplicateDedupeIncident.incident_id,
+                finalSeverity: severityResolution.finalSeverity,
+                isNew: false,
+                disposition: 'duplicate-ignored',
+                previousSeverity: null,
+                session: args.session,
+            });
         }
 
         const freshExistingIncident = args.payload.metadata?.dedupeKey
