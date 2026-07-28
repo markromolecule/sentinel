@@ -13,7 +13,11 @@ export const TELEMETRY_MEDIAPIPE_SANDBOX_V1_EVENT_TYPES = [
     'NO_FACE_DETECTED',
     'MULTIPLE_FACES',
 ] as const;
-export const TELEMETRY_MEDIAPIPE_SANDBOX_V1_INERT_FIELDS = [] as const;
+
+export const TELEMETRY_MEDIAPIPE_SANDBOX_V1_INERT_FIELDS = [
+
+] as const;
+
 export const TELEMETRY_MEDIAPIPE_SANDBOX_V1_PREREQUISITES = [
     'Checkup calibration validation',
     'Attempt emission dry-run verification',

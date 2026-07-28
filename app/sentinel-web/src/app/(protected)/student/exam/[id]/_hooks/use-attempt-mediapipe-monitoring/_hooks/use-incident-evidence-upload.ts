@@ -2,28 +2,15 @@ import { useCallback, useEffect, useRef } from 'react';
 import type { ApiClientType } from '@sentinel/services';
 import {
     completeEvidenceUpload,
-    initializeEvidenceUpload,
-    type InitializeEvidenceUploadPayload,
+    type IngestMediaPipeEvidenceCandidateResponse,
 } from '@sentinel/services';
 import { createSupabaseClient } from '@/data/supabase/client';
 
 const SAFE_RETRY_ATTEMPTS = 2;
-const QUOTA_DENIAL_BACKOFF_MS = 60_000;
-
-const MEDIA_PIPE_EVENT_TO_EVIDENCE_EVENT = {
-    GAZE_OFF_SCREEN: 'GAZE',
-    NO_FACE_DETECTED: 'FACE_NOT_VISIBLE',
-    MULTIPLE_FACES: 'MULTIPLE_FACES',
-} as const;
-
-type MediaPipeEvidenceEventType = keyof typeof MEDIA_PIPE_EVENT_TO_EVIDENCE_EVENT;
 
 export type StartIncidentEvidenceUploadArgs = {
     apiClient: ApiClientType;
-    attemptId: string;
-    eventId: string;
-    eventType: MediaPipeEvidenceEventType;
-    capturedAt: string;
+    upload: NonNullable<IngestMediaPipeEvidenceCandidateResponse['upload']>;
     blob: Blob;
 };
 
@@ -66,12 +53,11 @@ async function retry<T>(
 }
 
 /**
- * Coordinates evidence initialization, direct storage upload, and completion
- * without blocking the MediaPipe animation loop.
+ * Uploads a browser-captured frame to the server-authorized signed target and
+ * completes the evidence lifecycle without re-initializing evidence on the client.
  */
 export function useIncidentEvidenceUpload() {
     const supabaseRef = useRef(createSupabaseClient());
-    const quotaDeniedUntilRef = useRef<number | null>(null);
     const isMountedRef = useRef(true);
 
     useEffect(() => {
@@ -83,57 +69,12 @@ export function useIncidentEvidenceUpload() {
     const startIncidentEvidenceUpload = useCallback(
         async ({
             apiClient,
-            attemptId,
-            eventId,
-            eventType,
-            capturedAt,
+            upload,
             blob,
         }: StartIncidentEvidenceUploadArgs) => {
-            const now = Date.now();
-
-            if (
-                quotaDeniedUntilRef.current !== null &&
-                quotaDeniedUntilRef.current > now
-            ) {
-                return;
-            }
-
-            const payload: InitializeEvidenceUploadPayload = {
-                attemptId,
-                eventId,
-                eventType: MEDIA_PIPE_EVENT_TO_EVIDENCE_EVENT[eventType],
-                capturedAt,
-                mimeType:
-                    blob.type === 'image/jpeg' ? 'image/jpeg' : 'image/webp',
-                sizeBytes: blob.size,
-            };
-
-            const initialized = await retry(
-                async () => initializeEvidenceUpload(apiClient, payload),
-                (error) => {
-                    if (
-                        typeof error === 'object' &&
-                        error !== null &&
-                        'status' in error &&
-                        typeof (error as { status?: unknown }).status === 'number'
-                    ) {
-                        const status = (error as { status: number }).status;
-
-                        if (status === 400 || status === 403) {
-                            quotaDeniedUntilRef.current = now + QUOTA_DENIAL_BACKOFF_MS;
-                            return false;
-                        }
-
-                        return isRetryableHttpStatus(status);
-                    }
-
-                    return isRetryableError(error);
-                },
-            );
-
             await retry(
                 async () => {
-                    const path = new URL(initialized.uploadUrl).pathname
+                    const path = new URL(upload.uploadUrl).pathname
                         .replace(/^\/storage\/v1\/object\/upload\/sign\//, '')
                         .replace(/^\/object\/upload\/sign\//, '');
                     const [bucket, ...pathParts] = path.split('/');
@@ -145,8 +86,8 @@ export function useIncidentEvidenceUpload() {
 
                     const { error } = await supabaseRef.current.storage
                         .from(bucket)
-                        .uploadToSignedUrl(filePath, initialized.uploadToken, blob, {
-                            contentType: payload.mimeType,
+                        .uploadToSignedUrl(filePath, upload.uploadToken, blob, {
+                            contentType: blob.type === 'image/jpeg' ? 'image/jpeg' : 'image/webp',
                         });
 
                     if (error) {
@@ -171,7 +112,7 @@ export function useIncidentEvidenceUpload() {
                 return;
             }
 
-            await completeEvidenceUpload(apiClient, initialized.evidenceId);
+            await completeEvidenceUpload(apiClient, upload.evidenceId);
         },
         [],
     );
