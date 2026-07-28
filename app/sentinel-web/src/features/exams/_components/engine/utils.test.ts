@@ -32,4 +32,15 @@ describe('getRuntimePassageDetails', () => {
         expect(result.title).toBe('Passage');
         expect(result.body).toBe('');
     });
+
+    it('falls back to sourceEvidence when passageContent is absent', () => {
+        const result = getRuntimePassageDetails({
+            questionPassageContent: null,
+            questionPassageType: null,
+            questionSourceEvidence: 'Legacy evidence text',
+        });
+
+        expect(result.title).toBe('Passage');
+        expect(result.body).toContain('Legacy evidence text');
+    });
 });

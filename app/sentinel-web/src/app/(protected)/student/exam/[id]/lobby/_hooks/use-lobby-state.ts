@@ -37,15 +37,17 @@ export function useLobbyState(args: {
         currentTime,
     });
 
-    // 3. Readiness Tracking
+    // 3. Derived Access State
+    const runtimeAccess = exam?.runtimeAccess;
+
+    // 4. Readiness Tracking
     const { hasCompletedFlow } = useLobbyReadiness({
         examId,
         isMediaPipeValid: mediaPipeActivation.isValid,
         configuration,
+        runtimeAccess,
     });
 
-    // 4. Derived Access State
-    const runtimeAccess = exam?.runtimeAccess;
     const reopenedUntil = runtimeAccess?.reopenedUntil
         ? new Date(runtimeAccess.reopenedUntil)
         : null;

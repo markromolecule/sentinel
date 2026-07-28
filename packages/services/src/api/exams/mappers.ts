@@ -112,6 +112,7 @@ export function mapMonitoringStudent(
         studentNo: student.studentNo,
         firstName: student.firstName,
         lastName: student.lastName,
+        avatarUrl: student.avatarUrl ?? null,
         status: student.status,
         progress: student.progress,
         flags: 'flags' in student ? student.flags.map(mapMonitoringFlag) : [],

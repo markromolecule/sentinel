@@ -132,6 +132,7 @@ export interface ApiMonitoringStudentSummary {
     studentNo: string;
     firstName: string;
     lastName: string;
+    avatarUrl?: string | null;
     status: StudentSession['status'];
     progress: number;
     incidentCount: number;

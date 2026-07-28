@@ -97,6 +97,7 @@ export async function getExamMonitoringOverview({
             'st.student_number',
             'up.first_name',
             'up.last_name',
+            'up.avatar_url',
             'up.last_seen_at',
             'latest_attempts.attempt_id',
             'latest_attempts.attempt_status',

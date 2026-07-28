@@ -154,7 +154,7 @@ describe('startLiveInspection', () => {
         );
     });
 
-    it('calls stopLiveInspection, checks capacity, acquires a new lease, and creates a room when restart is true', async () => {
+    it('calls stopLiveInspection, checks capacity, and acquires a new lease when restart is true', async () => {
         vi.mocked(repository.getActiveLiveInspectionLeaseForAttempt)
             .mockResolvedValueOnce(mockLease as any) // first call returns active lease
             .mockResolvedValueOnce({ ...mockLease, lease_id: 'lease-new', version: 1 } as any); // second call returns the newly acquired lease
@@ -185,9 +185,7 @@ describe('startLiveInspection', () => {
             expect.any(Object),
         );
         expect(repository.acquireLiveInspectionLease).toHaveBeenCalled();
-        expect(mockLiveKit.createInspectionRoom).toHaveBeenCalledWith(
-            expect.objectContaining({ leaseId: 'lease-new' }),
-        );
+        expect(mockLiveKit.createInspectionRoom).not.toHaveBeenCalled();
     });
 
     it('stops a stale lease owned by the viewer before starting another attempt', async () => {

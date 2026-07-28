@@ -5,6 +5,7 @@ import { type DbClient } from '@sentinel/db';
 import { EvidenceCorrelationService } from './evidence-correlation.service';
 import { EvidenceReconciliationService } from './evidence-reconciliation.service';
 import { EvidenceStorageService } from './evidence-storage.service';
+import { EvidenceUploadService } from './evidence-upload.service';
 
 vi.mock('./evidence-storage.service', () => ({
     EvidenceStorageService: {
@@ -246,6 +247,70 @@ describe('EvidenceCorrelationService', () => {
             .select(['incident_id'])
             .where('attempt_id', '=', fixture.attemptId)
             .where('event_id', '=', eventId)
+            .executeTakeFirstOrThrow();
+
+        expect(linked.incident_id).toBe(incident.incident_id);
+    });
+
+    testWithDbClient('links evidence during upload completion when the incident already exists', async ({ dbClient }) => {
+        const fixture = await createFixture(dbClient);
+        const eventId = randomUUID();
+
+        const initialized = await EvidenceUploadService.initializeUpload(dbClient, {
+            attemptId: fixture.attemptId,
+            eventId,
+            eventType: 'FACE_NOT_VISIBLE',
+            capturedAt: '2026-07-27T10:05:00.000Z',
+            mimeType: 'image/webp',
+            sizeBytes: 12345,
+            studentUserId: (
+                await dbClient
+                    .selectFrom('students')
+                    .innerJoin('users', 'users.id', 'students.user_id')
+                    .select('users.id as user_id')
+                    .where('students.student_id', '=', fixture.studentId)
+                    .executeTakeFirstOrThrow()
+            ).user_id,
+        });
+
+        const incident = await dbClient
+            .insertInto('flagged_incidents')
+            .values({
+                attempt_id: fixture.attemptId,
+                incident_type: 'FACE_NOT_VISIBLE',
+                status: 'PENDING',
+                dedupe_key: `attempt:NO_FACE_DETECTED:${eventId}`,
+                details: JSON.stringify({
+                    lastEvent: {
+                        eventType: 'NO_FACE_DETECTED',
+                        timestamp: '2026-07-27T10:05:11.000Z',
+                        metadata: {
+                            eventId,
+                            dedupeKey: `attempt:NO_FACE_DETECTED:${eventId}`,
+                        },
+                    },
+                }),
+            })
+            .returningAll()
+            .executeTakeFirstOrThrow();
+
+        await EvidenceUploadService.completeUpload(
+            dbClient,
+            initialized.evidenceId,
+            (
+                await dbClient
+                    .selectFrom('students')
+                    .innerJoin('users', 'users.id', 'students.user_id')
+                    .select('users.id as user_id')
+                    .where('students.student_id', '=', fixture.studentId)
+                    .executeTakeFirstOrThrow()
+            ).user_id,
+        );
+
+        const linked = await dbClient
+            .selectFrom('telemetry_incident_evidence')
+            .select(['incident_id'])
+            .where('evidence_id', '=', initialized.evidenceId)
             .executeTakeFirstOrThrow();
 
         expect(linked.incident_id).toBe(incident.incident_id);

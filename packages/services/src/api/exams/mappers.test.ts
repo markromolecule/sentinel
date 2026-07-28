@@ -202,6 +202,7 @@ describe('mapExam', () => {
             studentNo: '2026-001',
             firstName: 'Pat',
             lastName: 'Student',
+            avatarUrl: 'https://example.com/pat-student.png',
             status: 'active',
             progress: 45,
             incidentCount: 1,
@@ -242,6 +243,7 @@ describe('mapExam', () => {
 
         expect(student.lifecycleState).toBe('LOCKED');
         expect(student.attemptId).toBe('attempt-1');
+        expect(student.avatarUrl).toBe('https://example.com/pat-student.png');
         expect(student.incidentCount).toBe(1);
         expect(student.openIncidentCount).toBe(1);
         expect(student.latestIncidentType).toBe('TAB_SWITCH');

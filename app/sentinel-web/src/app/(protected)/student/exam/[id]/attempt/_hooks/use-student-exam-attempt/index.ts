@@ -215,6 +215,7 @@ export function useStudentExamAttempt() {
     const currentContext = getRuntimePassageDetails({
         questionPassageContent: currentQuestion?.passageContent,
         questionPassageType: currentQuestion?.passageType,
+        questionSourceEvidence: currentQuestion?.sourceEvidence,
     });
 
     return {

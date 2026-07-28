@@ -45,6 +45,7 @@ export type StudentSession = {
     studentNo: string;
     firstName: string;
     lastName: string;
+    avatarUrl?: string | null;
     status: 'active' | 'submitted' | 'flagged' | 'disconnected';
     progress: number;
     flags?: Flag[];

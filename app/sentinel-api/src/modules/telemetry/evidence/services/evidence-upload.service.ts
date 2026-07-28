@@ -13,6 +13,7 @@ import {
     computeEvidenceExpiresAt,
     loadEvidenceRetentionContext,
 } from './evidence-retention.service';
+import { EvidenceCorrelationService } from './evidence-correlation.service';
 
 export interface InitializeUploadInput {
     attemptId: string;
@@ -206,6 +207,7 @@ export class EvidenceUploadService {
                 'tie.declared_size_bytes',
                 'tie.state',
                 'tie.expires_at',
+                'tie.event_id',
                 's.user_id as student_user_id',
             ])
             .where('tie.evidence_id', '=', evidenceId)
@@ -286,6 +288,22 @@ export class EvidenceUploadService {
                     .where('evidence_id', '=', evidenceId)
                     .execute();
             });
+
+            const candidateIncidentIds = await EvidenceCorrelationService.findCandidateIncidentIds(
+                db,
+                {
+                    attemptId: evidence.attempt_id,
+                    eventId: evidence.event_id,
+                },
+            );
+
+            if (candidateIncidentIds.length === 1) {
+                await EvidenceCorrelationService.linkEvidenceToIncident(db, {
+                    attemptId: evidence.attempt_id,
+                    eventId: evidence.event_id,
+                    incidentId: candidateIncidentIds[0]!,
+                });
+            }
 
             return {
                 evidenceId: evidence.evidence_id,

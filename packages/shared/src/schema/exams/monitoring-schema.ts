@@ -91,6 +91,7 @@ export const monitoringStudentSummarySchema = z.object({
     studentNo: z.string(),
     firstName: z.string(),
     lastName: z.string(),
+    avatarUrl: z.string().nullable().optional(),
     status: monitoringStudentStatusSchema,
     progress: z.number().int().min(0).max(100),
     incidentCount: z.number().int().min(0),

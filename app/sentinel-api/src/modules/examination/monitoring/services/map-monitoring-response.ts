@@ -23,6 +23,7 @@ export type MonitoringStudentRow = {
     student_number: string;
     first_name: string | null;
     last_name: string | null;
+    avatar_url: string | null;
     last_seen_at: Date | string | null;
     attempt_id: string;
     attempt_status: string | null;
@@ -238,6 +239,7 @@ export function mapMonitoringStudentSummary(
         studentNo: row.student_number,
         firstName,
         lastName,
+        avatarUrl: row.avatar_url ?? null,
         status,
         progress: resolveProgress(row, durationMinutes, questionCount),
         incidentCount,
