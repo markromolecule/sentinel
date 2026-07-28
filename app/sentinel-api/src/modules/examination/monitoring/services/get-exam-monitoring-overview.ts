@@ -142,7 +142,7 @@ export async function getExamMonitoringOverview({
                 where ela.status = 'APPROVED' and ea.attempt_id is null
             )::int`.as('approved'),
             sql<number>`count(distinct ea.attempt_id) filter (
-                where ea.attempt_id is not null
+                where ea.attempt_id is not null and ela.status = 'APPROVED'
             )::int`.as('in_attempt'),
         ])
         .where('ela.exam_id', '=', examId)

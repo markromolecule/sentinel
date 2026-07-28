@@ -19,8 +19,10 @@ export default function InstructorLobbyPage() {
         statusFilter,
         setStatusFilter,
         isUpdatingLobbyAdmissions,
+        overridingStudentId,
         refreshLobbyAdmissions,
         handleUpdateLobbyAdmissions,
+        handleOverrideReconnect,
     } = useInstructorLobby(examId);
 
     return (
@@ -56,6 +58,8 @@ export default function InstructorLobbyPage() {
                 onStatusFilterChange={setStatusFilter}
                 isUpdatingLobbyAdmissions={isUpdatingLobbyAdmissions}
                 onUpdateLobbyAdmissions={handleUpdateLobbyAdmissions}
+                overridingStudentId={overridingStudentId}
+                onOverrideReconnect={handleOverrideReconnect}
             />
         </div>
     );

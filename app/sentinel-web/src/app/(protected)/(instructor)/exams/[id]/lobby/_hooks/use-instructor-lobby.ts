@@ -1,7 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useApi, useDebounce } from '@sentinel/hooks';
+import {
+    useApi,
+    useDebounce,
+    useOverrideReconnectLimitMutation,
+} from '@sentinel/hooks';
 import {
     getExamLobbyWaitingList,
     updateExamLobbyAdmissions,
@@ -22,6 +26,7 @@ import {
 export function useInstructorLobby(examId: string) {
     const apiClient = useApi();
     const [isUpdatingLobbyAdmissions, setIsUpdatingLobbyAdmissions] = useState(false);
+    const [overridingStudentId, setOverridingStudentId] = useState<string | null>(null);
     const [lobbyAdmissions, setLobbyAdmissions] = useState<ExamLobbyWaitingStudent[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<LobbyAdmissionStatusFilter>('all');
@@ -50,6 +55,13 @@ export function useInstructorLobby(examId: string) {
             toast.error(message);
         }
     }, [apiClient, examId]);
+    const overrideReconnectLimitMutation = useOverrideReconnectLimitMutation({
+        onSuccess: async () => {
+            toast.success('Reconnect override granted successfully.');
+            await refreshLobbyAdmissions();
+        },
+        onError: (error: Error) => toast.error(error.message),
+    });
 
     useEffect(() => {
         void refreshLobbyAdmissions();
@@ -106,6 +118,20 @@ export function useInstructorLobby(examId: string) {
         }
     };
 
+    const handleOverrideReconnect = async (studentId: string) => {
+        setOverridingStudentId(studentId);
+
+        try {
+            await overrideReconnectLimitMutation.mutateAsync({
+                id: examId,
+                studentId,
+                reason: 'Instructor granted a one-time reconnect override from the exam lobby.',
+            });
+        } finally {
+            setOverridingStudentId(null);
+        }
+    };
+
     return {
         lobbyAdmissions,
         filteredLobbyAdmissions,
@@ -116,7 +142,9 @@ export function useInstructorLobby(examId: string) {
         statusFilter,
         setStatusFilter,
         isUpdatingLobbyAdmissions,
+        overridingStudentId,
         refreshLobbyAdmissions,
         handleUpdateLobbyAdmissions,
+        handleOverrideReconnect,
     };
 }

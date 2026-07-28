@@ -1,6 +1,15 @@
 import { type DbClient } from '@sentinel/db';
 
+/**
+ * Returns the lobby waiting list with each student's latest attempt state and
+ * the configured reconnect limit for instructor decisions.
+ */
 export const getWaitingList = async (dbClient: DbClient, examId: string) => {
+    const examConfiguration = await dbClient
+        .selectFrom('exam_configurations')
+        .select('max_reconnect_attempts')
+        .where('exam_id', '=', examId)
+        .executeTakeFirst();
     const admissions = await dbClient
         .selectFrom('exam_lobby_admissions as ela')
         .leftJoin('students as s', 'ela.student_id', 's.student_id')
@@ -55,6 +64,7 @@ export const getWaitingList = async (dbClient: DbClient, examId: string) => {
             hasActiveAttempt: attemptStatus === 'IN_PROGRESS',
             attemptStatus: attemptStatus,
             reconnectCount: attempt?.reconnectCount ?? 0,
+            maxReconnectAttempts: Number(examConfiguration?.max_reconnect_attempts ?? 0),
         };
     });
 };

@@ -105,8 +105,7 @@ export function resolveStudentOverrideAccess(
     if (
         accessOverride &&
         persistedRuntimeAccess?.state !== 'closed' &&
-        !scheduledRuntimeAccess.canStart &&
-        !scheduledRuntimeAccess.canResume
+        (!scheduledRuntimeAccess.canStart || !scheduledRuntimeAccess.canResume)
     ) {
         return {
             isEligible: true,

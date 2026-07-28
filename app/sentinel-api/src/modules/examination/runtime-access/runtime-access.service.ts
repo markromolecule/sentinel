@@ -91,6 +91,7 @@ export function resolveExamRuntimeAccess(
         0,
         totalReconnectAttempts - (args.reconnectAttemptCount ?? 0),
     );
+    const canResumeActiveAttempt = hasActiveAttempt && reconnectAttemptsRemaining > 0;
 
     const baseProps = {
         hasActiveAttempt,
@@ -122,7 +123,7 @@ export function resolveExamRuntimeAccess(
             reasonCode: 'REOPENED',
             message: `This exam was reopened until ${reopenedUntil.toLocaleString()}.`,
             canStart: true,
-            canResume: true,
+            canResume: canResumeActiveAttempt,
             reopenedUntil,
         });
     }
@@ -136,7 +137,7 @@ export function resolveExamRuntimeAccess(
                 ? 'This exam is locked to new joins, but your active attempt can still resume.'
                 : 'This exam is locked by the instructor.',
             canStart: false,
-            canResume: hasActiveAttempt,
+            canResume: canResumeActiveAttempt,
         });
     }
 
@@ -160,7 +161,7 @@ export function resolveExamRuntimeAccess(
                 ? 'The scheduled exam window has closed, but your active attempt can still resume.'
                 : 'This exam window has already closed.',
             canStart: false,
-            canResume: hasActiveAttempt,
+            canResume: canResumeActiveAttempt,
         });
     }
 
@@ -170,11 +171,14 @@ export function resolveExamRuntimeAccess(
         reasonCode: 'OPEN',
         message: 'This exam is open for students.',
         canStart: true,
-        canResume: hasActiveAttempt,
+        canResume: canResumeActiveAttempt,
     });
 }
 
 export class RuntimeAccessService {
+    /**
+     * Reads the persisted instructor runtime-access override, if any.
+     */
     static async getPersistedExamRuntimeAccess(dbClient: DbClient, examId: string) {
         const record = await dbClient
             .selectFrom('system_settings')
@@ -211,6 +215,10 @@ export class RuntimeAccessService {
         return parsed.data as PersistedExamRuntimeAccess;
     }
 
+    /**
+     * Resolves the current student-facing runtime access state, including
+     * reconnect-limit resume eligibility for active attempts.
+     */
     static async resolveExamRuntimeAccess(args: {
         dbClient: DbClient;
         examId: string;
@@ -239,6 +247,10 @@ export class RuntimeAccessService {
         });
     }
 
+    /**
+     * Persists an instructor runtime-access override and returns the resolved
+     * student-facing access state after the update.
+     */
     static async updateExamRuntimeAccess(args: {
         dbClient: DbClient;
         examId: string;

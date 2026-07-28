@@ -28,6 +28,8 @@ type InstructorLobbyAdmissionPanelProps = {
         studentIds: string[],
         status: 'APPROVED' | 'REJECTED',
     ) => Promise<void>;
+    overridingStudentId: string | null;
+    onOverrideReconnect: (studentId: string) => Promise<void>;
 };
 
 type QueueSectionProps = {
@@ -89,7 +91,9 @@ function StudentLobbyRow({
                         <span aria-hidden="true">/</span>
                         <span>{formatCheckedInAt(student.checkedInAt)}</span>
                         <span aria-hidden="true">/</span>
-                        <span>{student.reconnectCount} reconnects</span>
+                        <span>
+                            {student.reconnectCount} / {student.maxReconnectAttempts} reconnects
+                        </span>
                     </div>
                 </div>
             </div>
@@ -154,6 +158,8 @@ export function InstructorLobbyAdmissionPanel({
     onStatusFilterChange,
     isUpdatingLobbyAdmissions,
     onUpdateLobbyAdmissions,
+    overridingStudentId,
+    onOverrideReconnect,
 }: InstructorLobbyAdmissionPanelProps) {
     const { waitingStudents, approvedStudents, rejectedStudents, inAttemptStudents } =
         lobbyAdmissionGroups;
@@ -206,7 +212,7 @@ export function InstructorLobbyAdmissionPanel({
                     }
                 >
                     {(student) => (
-                        <>
+                        <div className="flex shrink-0 flex-wrap gap-2">
                             <Button
                                 size="sm"
                                 disabled={isUpdatingLobbyAdmissions}
@@ -226,7 +232,18 @@ export function InstructorLobbyAdmissionPanel({
                             >
                                 Reject
                             </Button>
-                        </>
+                            {student.hasActiveAttempt &&
+                            student.reconnectCount >= student.maxReconnectAttempts ? (
+                                <Button
+                                    size="sm"
+                                    variant="secondary"
+                                    disabled={overridingStudentId === student.studentId}
+                                    onClick={() => void onOverrideReconnect(student.studentId)}
+                                >
+                                    Override Limit
+                                </Button>
+                            ) : null}
+                        </div>
                     )}
                 </QueueSection>
 

@@ -132,9 +132,9 @@ export function resolveStudentExamStage(
     if (isAttemptActive) {
         if (reconnectCount >= maxReconnect && !runtimeAccess?.canResume) {
             return {
-                targetStage: 'instruction',
+                targetStage: 'lobby',
                 reasonCode: 'MAX_RECONNECT_EXCEEDED',
-                shouldRedirect: requestedStage !== 'instruction',
+                shouldRedirect: requestedStage !== 'lobby',
             };
         }
 

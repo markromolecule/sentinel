@@ -23,16 +23,16 @@ export function getLobbyAdmissionGroups(
     admissions: ExamLobbyWaitingStudent[],
 ): LobbyAdmissionGroups {
     return {
-        waitingStudents: admissions.filter(
-            (student) => student.status === 'WAITING' && !student.hasActiveAttempt,
-        ),
+        waitingStudents: admissions.filter((student) => student.status === 'WAITING'),
         approvedStudents: admissions.filter(
             (student) => student.status === 'APPROVED' && !student.hasActiveAttempt,
         ),
         rejectedStudents: admissions.filter(
             (student) => student.status === 'REJECTED' && !student.hasActiveAttempt,
         ),
-        inAttemptStudents: admissions.filter((student) => student.hasActiveAttempt),
+        inAttemptStudents: admissions.filter(
+            (student) => student.hasActiveAttempt && student.status === 'APPROVED',
+        ),
     };
 }
 
@@ -60,13 +60,13 @@ export function filterLobbyAdmissions(
 
         switch (args.statusFilter) {
             case 'waiting':
-                return student.status === 'WAITING' && !student.hasActiveAttempt;
+                return student.status === 'WAITING';
             case 'approved':
                 return student.status === 'APPROVED' && !student.hasActiveAttempt;
             case 'rejected':
                 return student.status === 'REJECTED' && !student.hasActiveAttempt;
             case 'inAttempt':
-                return student.hasActiveAttempt;
+                return student.hasActiveAttempt && student.status === 'APPROVED';
             case 'all':
             default:
                 return true;

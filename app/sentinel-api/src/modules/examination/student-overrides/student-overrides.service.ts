@@ -149,6 +149,9 @@ export function buildStudentOverrideRuntimeAccess(args: {
 }
 
 export class StudentOverridesService {
+    /**
+     * Lists all exam-level student access overrides for an exam.
+     */
     static async listExamOverrides(dbClient: DbClient, examId: string) {
         const records = await dbClient
             .selectFrom('system_settings')
@@ -162,6 +165,9 @@ export class StudentOverridesService {
             .filter((record): record is StoredStudentExamAccessOverride => Boolean(record));
     }
 
+    /**
+     * Lists overrides for a specific student and exam, newest first.
+     */
     static async listStudentExamOverrides(args: {
         dbClient: DbClient;
         examId: string;
@@ -184,6 +190,9 @@ export class StudentOverridesService {
             .sort(compareOverrideFreshness);
     }
 
+    /**
+     * Returns the student's currently active override, if one is available now.
+     */
     static async getActiveStudentExamOverride(args: {
         dbClient: DbClient;
         examId: string;
@@ -196,6 +205,9 @@ export class StudentOverridesService {
         return overrides.find((override) => isActiveOverride(override, now)) ?? null;
     }
 
+    /**
+     * Returns the student's pending or active override, if one has not yet expired.
+     */
     static async getPendingOrActiveStudentExamOverride(args: {
         dbClient: DbClient;
         examId: string;
@@ -208,6 +220,9 @@ export class StudentOverridesService {
         return overrides.find((override) => isPendingOrActiveOverride(override, now)) ?? null;
     }
 
+    /**
+     * Creates and persists a student-specific exam access override.
+     */
     static async createStudentExamAccessOverride(args: {
         dbClient: DbClient;
         examId: string;
@@ -303,6 +318,10 @@ export class StudentOverridesService {
         return payload;
     }
 
+    /**
+     * Grants a one-time reconnect-limit override for the student's latest
+     * active attempt when the configured limit has been exhausted.
+     */
     static async createReconnectLimitOverride(args: {
         dbClient: DbClient;
         examId: string;
@@ -353,13 +372,16 @@ export class StudentOverridesService {
                 availableFrom: now.toISOString(),
                 availableUntil: availableUntil.toISOString(),
                 allowedAttempts: 1,
-                sourceAttemptId: null,
+                sourceAttemptId: latestAttempt.attempt_id,
                 notes: args.reason?.trim() || 'Reconnect limit override granted by instructor.',
             },
             grantedBy: args.grantedBy ?? null,
         });
     }
 
+    /**
+     * Marks an override as used by the supplied attempt.
+     */
     static async markOverrideUsed(args: {
         dbClient: DbClient;
         accessOverride: StudentExamAccessOverride;

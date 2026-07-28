@@ -2,6 +2,12 @@ import { type DbClient } from '@sentinel/db';
 import { HTTPException } from 'hono/http-exception';
 import { ActivityNotificationService } from '../../../general/notification/services/activity-notification.service';
 
+/**
+ * Creates or refreshes a student's lobby admission state for the given exam.
+ *
+ * Instructor-gated reconnects must re-enter the waiting queue for fresh approval,
+ * while automatic-admit reconnects stay approved.
+ */
 export const checkInLobby = async (dbClient: DbClient, examId: string, studentId: string) => {
     const exam = await dbClient
         .selectFrom('exams as e')
@@ -28,8 +34,59 @@ export const checkInLobby = async (dbClient: DbClient, examId: string, studentId
         .where('exam_id', '=', examId)
         .where('student_id', '=', studentId)
         .executeTakeFirst();
+    const latestAttempt = await dbClient
+        .selectFrom('exam_attempts')
+        .select(['attempt_id', 'status'])
+        .where('exam_id', '=', examId)
+        .where('student_id', '=', studentId)
+        .orderBy('created_at', 'desc')
+        .executeTakeFirst();
+    const hasActiveAttempt = latestAttempt?.status === 'IN_PROGRESS';
 
     if (existingAdmission) {
+        if (mode === 'INSTRUCTOR_GATED' && hasActiveAttempt) {
+            const updatedAdmission = await dbClient
+                .updateTable('exam_lobby_admissions')
+                .set({
+                    status: 'WAITING',
+                    checked_in_at: new Date(),
+                    decided_at: null,
+                    decided_by: null,
+                })
+                .where('admission_id', '=', existingAdmission.admission_id)
+                .returningAll()
+                .executeTakeFirstOrThrow();
+
+            if (exam.institution_id && actorUserId) {
+                try {
+                    await ActivityNotificationService.notifyInstitutionActivityCreated({
+                        dbClient,
+                        actorUserId,
+                        institutionId: exam.institution_id,
+                        targetType: 'EXAM_LOBBY',
+                        targetId: examId,
+                        targetLabel: exam.title || 'Exam',
+                        title: 'Student checked into lobby',
+                        message: `A student has checked into the waiting lobby for exam "${exam.title || 'Exam'}".`,
+                        sourceModule: 'exams',
+                        sourceAction: 'lobby-check-in',
+                        metadata: {
+                            examId,
+                            studentId,
+                        },
+                    });
+                } catch (notifErr) {
+                    console.error('Failed to notify lobby check-in:', notifErr);
+                }
+            }
+
+            return {
+                status: updatedAdmission.status ?? 'WAITING',
+                checkedInAt:
+                    updatedAdmission.checked_in_at?.toISOString() ?? new Date().toISOString(),
+            };
+        }
+
         if (mode === 'AUTOMATIC' && existingAdmission.status !== 'APPROVED') {
             const updatedAdmission = await dbClient
                 .updateTable('exam_lobby_admissions')
@@ -98,6 +155,13 @@ export const checkInLobby = async (dbClient: DbClient, examId: string, studentId
                       }
                     : {
                           checked_in_at: now,
+                          ...(hasActiveAttempt
+                              ? {
+                                    status: 'WAITING' as const,
+                                    decided_at: null,
+                                    decided_by: null,
+                                }
+                              : {}),
                       },
             ),
         )

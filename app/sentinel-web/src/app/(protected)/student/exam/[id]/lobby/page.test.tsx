@@ -343,6 +343,45 @@ describe('StudentExamLobbyPage', () => {
         expect(screen.queryByRole('button', { name: /continue to attempt/i })).toBeNull();
     });
 
+    it('keeps the primary action disabled for exhausted reconnects waiting in the lobby', () => {
+        mockLobbyCountQuery.mockReturnValue({
+            data: { count: 2 },
+            isError: false,
+            refetch: vi.fn(),
+        });
+        mockLobbyPresence.mockReturnValue({
+            presenceCount: 2,
+        });
+        mockLobbyState.mockReturnValue({
+            countdownLabel: '00:10:00',
+            hasCompletedFlow: true,
+            runtimeAccess: {
+                state: 'open',
+                reasonCode: 'OPEN',
+                message: 'Reconnect limit reached.',
+                canStart: true,
+                canResume: false,
+                hasActiveAttempt: true,
+                reconnectAttemptsRemaining: 0,
+                totalReconnectAttempts: 3,
+            },
+            canEnterExam: false,
+            reopenedUntil: null,
+            storedSession: null,
+            mediaPipeLobbyMessage: null,
+            admissionStatus: 'WAITING',
+            isStartingSession: false,
+            isAdmissionPendingRefresh: false,
+            handleEnterExam: vi.fn(),
+        });
+
+        render(<StudentExamLobbyPage />);
+
+        expect(
+            screen.getByRole('button', { name: /waiting for approval/i }).hasAttribute('disabled'),
+        ).toBe(true);
+    });
+
     it('shows the lifecycle block message when a locked attempt reaches the lobby shell', () => {
         mockLobbyCountQuery.mockReturnValue({
             data: { count: 1 },

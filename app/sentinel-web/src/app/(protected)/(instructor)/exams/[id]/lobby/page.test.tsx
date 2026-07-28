@@ -2,10 +2,16 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import InstructorLobbyPage from './page';
 
-const { mockUseParams, mockUseInstructorLobby, mockRefreshLobbyAdmissions } = vi.hoisted(() => ({
+const {
+    mockUseParams,
+    mockUseInstructorLobby,
+    mockRefreshLobbyAdmissions,
+    mockInstructorLobbyPanel,
+} = vi.hoisted(() => ({
     mockUseParams: vi.fn(),
     mockUseInstructorLobby: vi.fn(),
     mockRefreshLobbyAdmissions: vi.fn(),
+    mockInstructorLobbyPanel: vi.fn(),
 }));
 
 vi.mock('next/navigation', () => ({
@@ -17,7 +23,10 @@ vi.mock('./_hooks/use-instructor-lobby', () => ({
 }));
 
 vi.mock('./_components/instructor-lobby-admission-panel', () => ({
-    InstructorLobbyAdmissionPanel: () => <div data-testid="lobby-admission-panel" />,
+    InstructorLobbyAdmissionPanel: (props: unknown) => {
+        mockInstructorLobbyPanel(props);
+        return <div data-testid="lobby-admission-panel" />;
+    },
 }));
 
 function createLobbyHookValue() {
@@ -34,8 +43,10 @@ function createLobbyHookValue() {
         statusFilter: 'all',
         setStatusFilter: vi.fn(),
         isUpdatingLobbyAdmissions: false,
+        overridingStudentId: null,
         refreshLobbyAdmissions: mockRefreshLobbyAdmissions,
         handleUpdateLobbyAdmissions: vi.fn(),
+        handleOverrideReconnect: vi.fn(),
     };
 }
 
@@ -69,5 +80,21 @@ describe('InstructorLobbyPage', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Refresh Lobby' }));
 
         expect(mockRefreshLobbyAdmissions).toHaveBeenCalledTimes(1);
+    });
+
+    it('forwards override props to the admission panel', () => {
+        mockUseParams.mockReturnValue({ id: 'exam-1' });
+        const hookValue = createLobbyHookValue();
+        hookValue.overridingStudentId = 'student-1';
+        mockUseInstructorLobby.mockReturnValue(hookValue);
+
+        render(<InstructorLobbyPage />);
+
+        expect(mockInstructorLobbyPanel).toHaveBeenCalledWith(
+            expect.objectContaining({
+                overridingStudentId: 'student-1',
+                onOverrideReconnect: hookValue.handleOverrideReconnect,
+            }),
+        );
     });
 });

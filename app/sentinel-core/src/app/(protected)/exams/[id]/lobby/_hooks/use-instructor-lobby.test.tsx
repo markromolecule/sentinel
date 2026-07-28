@@ -52,6 +52,7 @@ describe('useInstructorLobby', () => {
                 hasActiveAttempt: false,
                 attemptStatus: null,
                 reconnectCount: 1,
+                maxReconnectAttempts: 3,
             },
             {
                 admissionId: 'admission-2',
@@ -64,6 +65,7 @@ describe('useInstructorLobby', () => {
                 hasActiveAttempt: false,
                 attemptStatus: null,
                 reconnectCount: 0,
+                maxReconnectAttempts: 3,
             },
         ]);
     });

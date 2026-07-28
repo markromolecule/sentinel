@@ -27,6 +27,8 @@ describe('resolveExamRuntimeAccess', () => {
             durationMinutes: 60,
             now: new Date('2026-04-20T10:15:00.000Z'),
             hasActiveAttempt: true,
+            reconnectAttemptCount: 1,
+            maxReconnectAttempts: 3,
             persistedAccess: {
                 state: 'locked',
                 reopenedUntil: null,
@@ -48,7 +50,9 @@ describe('resolveExamRuntimeAccess', () => {
             endDateTime: '2026-04-20T11:00:00.000Z',
             durationMinutes: 60,
             now: new Date('2026-04-20T11:10:00.000Z'),
-            hasActiveAttempt: false,
+            hasActiveAttempt: true,
+            reconnectAttemptCount: 1,
+            maxReconnectAttempts: 3,
             persistedAccess: {
                 state: 'reopened',
                 reopenedUntil: '2026-04-20T11:30:00.000Z',
@@ -71,6 +75,8 @@ describe('resolveExamRuntimeAccess', () => {
             durationMinutes: 60,
             now: new Date('2026-04-20T11:10:00.000Z'),
             hasActiveAttempt: true,
+            reconnectAttemptCount: 1,
+            maxReconnectAttempts: 3,
         });
 
         expect(access).toMatchObject({

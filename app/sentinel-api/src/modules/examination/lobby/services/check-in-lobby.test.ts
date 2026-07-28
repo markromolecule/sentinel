@@ -8,6 +8,7 @@ function createSelectBuilder(result: unknown) {
         select: vi.fn().mockReturnThis(),
         selectAll: vi.fn().mockReturnThis(),
         where: vi.fn().mockReturnThis(),
+        orderBy: vi.fn().mockReturnThis(),
         executeTakeFirst: vi.fn().mockResolvedValue(result),
     };
 }
@@ -26,6 +27,7 @@ describe('checkInLobby', () => {
             user_id: 'user-1',
         });
         const admissionSelect = createSelectBuilder(undefined);
+        const latestAttemptSelect = createSelectBuilder(undefined);
         const insertBuilder = {
             values: vi.fn().mockReturnThis(),
             onConflict: vi.fn().mockReturnThis(),
@@ -43,7 +45,8 @@ describe('checkInLobby', () => {
                 .fn()
                 .mockReturnValueOnce(examSelect)
                 .mockReturnValueOnce(studentSelect)
-                .mockReturnValueOnce(admissionSelect),
+                .mockReturnValueOnce(admissionSelect)
+                .mockReturnValueOnce(latestAttemptSelect),
             insertInto: vi.fn().mockReturnValue(insertBuilder),
         } as unknown as DbClient;
 
@@ -78,6 +81,7 @@ describe('checkInLobby', () => {
             user_id: 'user-1',
         });
         const admissionSelect = createSelectBuilder(undefined);
+        const latestAttemptSelect = createSelectBuilder(undefined);
         const insertBuilder = {
             values: vi.fn().mockReturnThis(),
             onConflict: vi.fn().mockReturnThis(),
@@ -96,7 +100,8 @@ describe('checkInLobby', () => {
                 .fn()
                 .mockReturnValueOnce(examSelect)
                 .mockReturnValueOnce(studentSelect)
-                .mockReturnValueOnce(admissionSelect),
+                .mockReturnValueOnce(admissionSelect)
+                .mockReturnValueOnce(latestAttemptSelect),
             insertInto: vi.fn().mockReturnValue(insertBuilder),
         } as unknown as DbClient;
 
@@ -134,12 +139,14 @@ describe('checkInLobby', () => {
             checked_in_at: now,
             decided_at: null,
         });
+        const latestAttemptSelect = createSelectBuilder(undefined);
         const dbClient = {
             selectFrom: vi
                 .fn()
                 .mockReturnValueOnce(examSelect)
                 .mockReturnValueOnce(studentSelect)
-                .mockReturnValueOnce(admissionSelect),
+                .mockReturnValueOnce(admissionSelect)
+                .mockReturnValueOnce(latestAttemptSelect),
             insertInto: vi.fn(),
             updateTable: vi.fn(),
         } as unknown as DbClient;
@@ -171,6 +178,7 @@ describe('checkInLobby', () => {
             checked_in_at: now,
             decided_at: null,
         });
+        const latestAttemptSelect = createSelectBuilder(undefined);
         const updateBuilder = {
             set: vi.fn().mockReturnThis(),
             where: vi.fn().mockReturnThis(),
@@ -189,7 +197,8 @@ describe('checkInLobby', () => {
                 .fn()
                 .mockReturnValueOnce(examSelect)
                 .mockReturnValueOnce(studentSelect)
-                .mockReturnValueOnce(admissionSelect),
+                .mockReturnValueOnce(admissionSelect)
+                .mockReturnValueOnce(latestAttemptSelect),
             insertInto: vi.fn(),
             updateTable: vi.fn().mockReturnValue(updateBuilder),
         } as unknown as DbClient;
@@ -202,5 +211,65 @@ describe('checkInLobby', () => {
         });
         expect(dbClient.insertInto).not.toHaveBeenCalled();
         expect(dbClient.updateTable).toHaveBeenCalledWith('exam_lobby_admissions');
+    });
+
+    it('resets an existing instructor-gated approved admission back to waiting for active reconnects', async () => {
+        const now = new Date('2026-04-13T05:01:00.000Z');
+        const examSelect = createSelectBuilder({
+            exam_id: 'exam-1',
+            lobby_admission_mode: 'INSTRUCTOR_GATED',
+        });
+        const studentSelect = createSelectBuilder({
+            user_id: 'user-1',
+        });
+        const admissionSelect = createSelectBuilder({
+            admission_id: 'admission-1',
+            exam_id: 'exam-1',
+            student_id: 'student-1',
+            status: 'APPROVED',
+            checked_in_at: new Date('2026-04-13T04:50:00.000Z'),
+            decided_at: new Date('2026-04-13T04:51:00.000Z'),
+        });
+        const latestAttemptSelect = createSelectBuilder({
+            attempt_id: 'attempt-1',
+            status: 'IN_PROGRESS',
+        });
+        const updateBuilder = {
+            set: vi.fn().mockReturnThis(),
+            where: vi.fn().mockReturnThis(),
+            returningAll: vi.fn().mockReturnThis(),
+            executeTakeFirstOrThrow: vi.fn().mockResolvedValue({
+                admission_id: 'admission-1',
+                exam_id: 'exam-1',
+                student_id: 'student-1',
+                status: 'WAITING',
+                checked_in_at: now,
+                decided_at: null,
+                decided_by: null,
+            }),
+        };
+        const dbClient = {
+            selectFrom: vi
+                .fn()
+                .mockReturnValueOnce(examSelect)
+                .mockReturnValueOnce(studentSelect)
+                .mockReturnValueOnce(admissionSelect)
+                .mockReturnValueOnce(latestAttemptSelect),
+            insertInto: vi.fn(),
+            updateTable: vi.fn().mockReturnValue(updateBuilder),
+        } as unknown as DbClient;
+
+        const result = await checkInLobby(dbClient, 'exam-1', 'student-1');
+
+        expect(result).toEqual({
+            status: 'WAITING',
+            checkedInAt: now.toISOString(),
+        });
+        expect(updateBuilder.set).toHaveBeenCalledWith({
+            status: 'WAITING',
+            checked_in_at: expect.any(Date),
+            decided_at: null,
+            decided_by: null,
+        });
     });
 });
