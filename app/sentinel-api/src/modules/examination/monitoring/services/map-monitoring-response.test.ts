@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
     mapMonitoringExam,
     mapMonitoringIncident,
+    mapMonitoringIncidentWithEvidenceSummary,
     mapMonitoringStudentDetail,
     mapMonitoringStudentSummary,
 } from './map-monitoring-response';
@@ -120,51 +121,67 @@ describe('map monitoring response', () => {
     });
 
     it('maps telemetry incidents into the frontend flag shape', () => {
-        const incident = mapMonitoringIncident({
-            incidentId: '11111111-1111-4111-8111-111111111111',
-            attemptId: '22222222-2222-4222-8222-222222222222',
-            examId: '33333333-3333-4333-8333-333333333333',
-            examTitle: 'Algorithms Final',
-            institutionId: '44444444-4444-4444-8444-444444444444',
-            studentId: '55555555-5555-4555-8555-555555555555',
-            studentRecordId: '66666666-6666-4666-8666-666666666666',
-            studentName: 'Ana Santos',
-            platform: 'WEB',
-            source: 'CLIENT',
-            ruleKey: 'webSecurity.tab_switching_monitor',
-            incidentType: 'TAB_SWITCH',
-            severity: 'HIGH',
-            status: 'PENDING',
-            timestamp: '2026-04-20T09:40:00.000Z',
-            evidenceUrl: 'https://example.com/frame.png',
-            reviewedBy: null,
-            reviewedAt: null,
-            reviewNotes: null,
-            configurationSnapshot: null,
-            sessionContext: null,
-            details: {
-                occurrenceCount: 3,
-                severityReason: 'repeat-escalated',
-                severityInputs: {
-                    baseSeverity: 'MEDIUM',
-                    ladder: ['MEDIUM', 'HIGH'],
-                    matchingCount: 3,
-                    matchingWindowSeconds: 300,
-                    repeatThreshold: 2,
-                    overrideSeverity: null,
-                },
-                metadata: {
-                    aggregation: {
-                        trigger: 'repeat-threshold',
+        const incident = mapMonitoringIncidentWithEvidenceSummary(
+            {
+                incidentId: '11111111-1111-4111-8111-111111111111',
+                attemptId: '22222222-2222-4222-8222-222222222222',
+                examId: '33333333-3333-4333-8333-333333333333',
+                examTitle: 'Algorithms Final',
+                institutionId: '44444444-4444-4444-8444-444444444444',
+                studentId: '55555555-5555-4555-8555-555555555555',
+                studentRecordId: '66666666-6666-4666-8666-666666666666',
+                studentName: 'Ana Santos',
+                platform: 'WEB',
+                source: 'CLIENT',
+                ruleKey: 'webSecurity.tab_switching_monitor',
+                incidentType: 'TAB_SWITCH',
+                severity: 'HIGH',
+                status: 'PENDING',
+                timestamp: '2026-04-20T09:40:00.000Z',
+                evidenceUrl: 'https://example.com/frame.png',
+                reviewedBy: null,
+                reviewedAt: null,
+                reviewNotes: null,
+                configurationSnapshot: null,
+                sessionContext: null,
+                details: {
+                    occurrenceCount: 3,
+                    severityReason: 'repeat-escalated',
+                    severityInputs: {
+                        baseSeverity: 'MEDIUM',
+                        ladder: ['MEDIUM', 'HIGH'],
+                        matchingCount: 3,
+                        matchingWindowSeconds: 300,
+                        repeatThreshold: 2,
+                        overrideSeverity: null,
                     },
+                    metadata: {
+                        aggregation: {
+                            trigger: 'repeat-threshold',
+                        },
+                    },
+                } as any,
+            },
+            [
+                {
+                    incident_id: '11111111-1111-4111-8111-111111111111',
+                    state: 'AVAILABLE',
+                    count: 2,
                 },
-            } as any,
-        });
+                {
+                    incident_id: '11111111-1111-4111-8111-111111111111',
+                    state: 'EXPIRED',
+                    count: 1,
+                },
+            ],
+        );
 
         expect(incident.description).toBe('Tab Switch Detected');
         expect(incident.severity).toBe('high');
         expect(incident.rawEventType).toBeNull();
         expect(incident.snapshotUrl).toBe('https://example.com/frame.png');
+        expect(incident.evidenceCount).toBe(3);
+        expect(incident.evidenceStates).toEqual(['AVAILABLE', 'EXPIRED']);
         expect(incident.occurrenceCount).toBe(3);
         expect(incident.severityReason).toBe('repeat-escalated');
         expect(incident.persistenceTrigger).toBe('repeat-threshold');
@@ -288,6 +305,18 @@ describe('map monitoring response', () => {
             ],
             [
                 {
+                    incident_id: '77777777-7777-4777-8777-777777777777',
+                    state: 'AVAILABLE',
+                    count: 1,
+                },
+                {
+                    incident_id: '77777777-7777-4777-8777-777777777777',
+                    state: 'PENDING_UPLOAD',
+                    count: 1,
+                },
+            ],
+            [
+                {
                     event_id: '77777777-7777-4777-8777-777777777778',
                     attempt_id: '33333333-3333-4333-8333-333333333333',
                     exam_id: '88888888-8888-4888-8888-888888888888',
@@ -312,6 +341,8 @@ describe('map monitoring response', () => {
             severity: 'medium',
             severityReason: 'repeat-escalated',
             matchingWindowSeconds: 300,
+            evidenceCount: 2,
+            evidenceStates: ['AVAILABLE', 'PENDING_UPLOAD'],
         });
         expect(detail.lifecycleState).toBe('LOCKED');
         expect(detail.scoreState).toBe('FINALIZED');

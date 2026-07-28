@@ -329,7 +329,7 @@ describe('resolveStudentExamStage', () => {
         };
 
         expect(resolveStudentExamStage(maxReconnectInput)).toEqual({
-            targetStage: 'instruction',
+            targetStage: 'lobby',
             reasonCode: 'MAX_RECONNECT_EXCEEDED',
             shouldRedirect: true,
         });

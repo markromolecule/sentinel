@@ -14,6 +14,7 @@ function createAdmission(overrides: Partial<ExamLobbyWaitingStudent>): ExamLobby
         hasActiveAttempt: overrides.hasActiveAttempt ?? false,
         attemptStatus: overrides.attemptStatus ?? null,
         reconnectCount: overrides.reconnectCount ?? 0,
+        maxReconnectAttempts: overrides.maxReconnectAttempts ?? 3,
     };
 }
 

@@ -14,6 +14,7 @@ export type UseAttemptMediaPipeMonitoringArgs = {
     configuration?: ExamConfig;
     mediaPipeSandbox?: TelemetrySettings['mediaPipeSandbox'];
     examSessionId?: string;
+    attemptId?: string;
     isRedirectingToTurnIn?: boolean;
     runtimeAccess?: ExamRuntimeAccess | null;
 };

@@ -10,6 +10,10 @@ import type { ExamConfig, ExamData } from '@sentinel/shared/types';
 import type { StudentExamMediaPipeSandboxLike } from '../../_lib/student-exam-flow';
 import type { ExamLobbyAdmissionStatus } from '@sentinel/services';
 
+/**
+ * Coordinates lobby admission state, reconnect re-check-in, and entry gating
+ * so instructor-gated reconnects remain in the lobby until fresh approval.
+ */
 export function useLobbyState(args: {
     examId: string;
     exam?: ExamData | null;
@@ -33,24 +37,26 @@ export function useLobbyState(args: {
         currentTime,
     });
 
-    // 3. Readiness Tracking
+    // 3. Derived Access State
+    const runtimeAccess = exam?.runtimeAccess;
+
+    // 4. Readiness Tracking
     const { hasCompletedFlow } = useLobbyReadiness({
         examId,
         isMediaPipeValid: mediaPipeActivation.isValid,
         configuration,
+        runtimeAccess,
     });
 
-    // 4. Derived Access State
-    const runtimeAccess = exam?.runtimeAccess;
     const reopenedUntil = runtimeAccess?.reopenedUntil
         ? new Date(runtimeAccess.reopenedUntil)
         : null;
     const storedSession = readStoredExamSession(examId);
-    const requiresInstructorAdmission =
-        configuration.lobbyAdmissionMode === 'INSTRUCTOR_GATED' && !runtimeAccess?.canResume;
+    const requiresInstructorAdmission = configuration.lobbyAdmissionMode === 'INSTRUCTOR_GATED';
     const hasResumableAttempt = Boolean(
         runtimeAccess?.canResume && runtimeAccess?.hasActiveAttempt,
     );
+    const shouldSkipLobbySync = hasResumableAttempt && !requiresInstructorAdmission;
     const isApprovedRuntimeAccess = runtimeAccess?.state === 'lobby_approved';
     const isHardRuntimeBlock =
         runtimeAccess?.state === 'closed' ||
@@ -60,12 +66,10 @@ export function useLobbyState(args: {
         admissionStatus === 'APPROVED' &&
         (isApprovedRuntimeAccess || Boolean(runtimeAccess?.canStart));
     const hasFreshInstructorAdmission =
-        !requiresInstructorAdmission ||
-        hasResumableAttempt ||
-        (hasApprovedInstructorAdmission && !isHardRuntimeBlock);
+        !requiresInstructorAdmission || (hasApprovedInstructorAdmission && !isHardRuntimeBlock);
     const canEnterExam = Boolean(
         !isAdmissionPendingRefresh &&
-        (hasResumableAttempt ||
+        ((hasResumableAttempt && !requiresInstructorAdmission) ||
             (hasFreshInstructorAdmission && (runtimeAccess?.canStart || isApprovedRuntimeAccess))),
     );
 
@@ -100,7 +104,7 @@ export function useLobbyState(args: {
             }
         };
 
-        if (hasResumableAttempt) {
+        if (shouldSkipLobbySync) {
             return () => {
                 isMounted = false;
             };
@@ -137,7 +141,7 @@ export function useLobbyState(args: {
                 window.clearInterval(intervalId);
             }
         };
-    }, [apiClient, examId, hasResumableAttempt, refetchExam, requiresInstructorAdmission]);
+    }, [apiClient, examId, refetchExam, requiresInstructorAdmission, shouldSkipLobbySync]);
 
     // 5. Actions Orchestration
     const { isStartingSession, handleEnterExam } = useLobbyActions({

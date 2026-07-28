@@ -59,17 +59,23 @@ export function formatTimer(totalSeconds: number) {
 /**
  * Builds the passage content shown in the live student attempt. This intentionally
  * suppresses source metadata so the runtime panel only shows the passage body.
+ * Falls back to `questionSourceEvidence` when `questionPassageContent` is absent,
+ * ensuring legacy questions that store passage text in the evidence field are
+ * still displayed correctly during the attempt.
  */
 export function getRuntimePassageDetails({
     questionPassageContent,
     questionPassageType,
+    questionSourceEvidence,
 }: {
     questionPassageContent?: string | null;
     questionPassageType?: 'plain' | 'html' | null;
+    questionSourceEvidence?: string | null;
 }) {
     const renderedPassage = renderPassage({
         passageContent: questionPassageContent,
         passageType: questionPassageType,
+        sourceEvidence: questionSourceEvidence,
     });
 
     if (renderedPassage) {

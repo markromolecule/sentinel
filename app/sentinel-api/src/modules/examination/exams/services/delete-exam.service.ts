@@ -6,6 +6,34 @@ import { recalculateRoomStatus } from '../../../core/rooms/services/recalculate-
 import { assertExamOwnership } from './assert-exam-ownership.service';
 import { type DeleteExamDataResponse, deleteExamData } from '../data/delete-exam';
 import { PdfStorageService } from '../../../general/pdf-documents/storage/pdf-storage.service';
+import { EvidenceDeletionService } from '../../../telemetry/evidence/services/evidence-deletion.service';
+
+async function cleanupExamEvidence(dbClient: DbClient, examId: string) {
+    const attempts = await dbClient
+        .selectFrom('exam_attempts')
+        .select(['attempt_id'])
+        .where('exam_id', '=', examId)
+        .execute();
+
+    if (attempts.length === 0) {
+        return;
+    }
+
+    const attemptIds = attempts.map((attempt) => attempt.attempt_id);
+    const evidenceRows = await dbClient
+        .selectFrom('telemetry_incident_evidence')
+        .select(['evidence_id'])
+        .where('attempt_id', 'in', attemptIds)
+        .where('state', 'not in', ['DELETED', 'EXPIRED'])
+        .execute();
+
+    for (const evidence of evidenceRows) {
+        await EvidenceDeletionService.deleteEvidenceForSystemCleanup(dbClient, {
+            evidenceId: evidence.evidence_id,
+            deletionReason: 'ATTEMPT_DELETED',
+        });
+    }
+}
 
 async function finalizeDeletedExam(
     dbClient: DbClient,
@@ -64,6 +92,7 @@ async function finalizeDeletedExam(
  * authorized at the parent resource level.
  */
 export async function deleteExamForCleanup(dbClient: DbClient, id: string, institutionId?: string) {
+    await cleanupExamEvidence(dbClient, id);
     const deletedRecord = await deleteExamData({
         dbClient,
         id,
@@ -93,6 +122,7 @@ export async function deleteExam(
         }),
     );
     assertExamOwnership(current.created_by, userId, canManageExam, role);
+    await cleanupExamEvidence(dbClient, id);
 
     const deletedRecord = await deleteExamData({
         dbClient,

@@ -478,6 +478,7 @@ model users {
   exam_answer_key_exports_exam_answer_key_exports_created_byTousers   exam_answer_key_exports[]          @relation("exam_answer_key_exports_created_byTousers")
   live_inspection_leases_student_user                                 live_inspection_leases[]           @relation("live_inspection_leases_student_user")
   live_inspection_leases_viewer_user                                  live_inspection_leases[]           @relation("live_inspection_leases_viewer_user")
+  telemetry_incident_evidence_deleted                                 telemetry_incident_evidence[]      @relation("evidence_deleted_byTousers")
 
   @@index([instance_id])
   @@index([is_anonymous])
@@ -829,12 +830,13 @@ model students {
   course_id        String?                 @db.Uuid
   created_at       DateTime?               @default(now()) @db.Timestamptz(6)
   updated_at       DateTime?               @db.Timestamptz(6)
-  enrollments      enrollments[]
-  examAttempts     exam_attempts[]
-  lifecycle_events exam_attempt_lifecycle_events[]
-  exam_feedbacks   exam_feedbacks[]
-  lobby_admissions exam_lobby_admissions[]
-  courses          courses?                @relation(fields: [course_id], references: [course_id], onDelete: NoAction, onUpdate: NoAction)
+  enrollments                 enrollments[]
+  examAttempts                exam_attempts[]
+  lifecycle_events            exam_attempt_lifecycle_events[]
+  exam_feedbacks              exam_feedbacks[]
+  lobby_admissions            exam_lobby_admissions[]
+  telemetry_incident_evidence telemetry_incident_evidence[]
+  courses                     courses?                @relation(fields: [course_id], references: [course_id], onDelete: NoAction, onUpdate: NoAction)
   departments      departments?            @relation(fields: [department_id], references: [department_id], onDelete: NoAction, onUpdate: NoAction)
   institutions     institutions?           @relation(fields: [institution_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users            users?                  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -912,6 +914,7 @@ model institutions {
   departments                          departments[]
   exam_feedbacks                       exam_feedbacks[]
   exams                                exams[]
+  telemetry_incident_evidence          telemetry_incident_evidence[]
   institution_naming_conventions       institution_naming_conventions?
   users_institutions_created_byTousers users?                          @relation("institutions_created_byTousers", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
   institutions                         institutions?                   @relation("institutionsToinstitutions", fields: [parent_institution_id], references: [id], onUpdate: NoAction)
@@ -1560,12 +1563,13 @@ model exam_attempts {
   score_state             exam_attempt_score_state? @default(DRAFT)
   exams                   exams?              @relation(fields: [exam_id], references: [exam_id], onDelete: Cascade, onUpdate: NoAction)
   students                students?           @relation(fields: [student_id], references: [student_id], onDelete: Cascade, onUpdate: NoAction)
-  exam_feedback           exam_feedbacks?
-  flagged_incidents       flagged_incidents[]
-  lifecycle_events        exam_attempt_lifecycle_events[]
-  superseded_by_attempt   exam_attempts?      @relation("exam_attempt_supersession", fields: [superseded_by_attempt_id], references: [attempt_id], onDelete: SetNull, onUpdate: NoAction)
-  superseded_attempts     exam_attempts[]     @relation("exam_attempt_supersession")
-  attempt_remediations    exam_remediation_schedules[] @relation("attempt_remediations")
+  exam_feedback               exam_feedbacks?
+  flagged_incidents           flagged_incidents[]
+  lifecycle_events            exam_attempt_lifecycle_events[]
+  telemetry_incident_evidence telemetry_incident_evidence[]
+  superseded_by_attempt       exam_attempts?      @relation("exam_attempt_supersession", fields: [superseded_by_attempt_id], references: [attempt_id], onDelete: SetNull, onUpdate: NoAction)
+  superseded_attempts         exam_attempts[]     @relation("exam_attempt_supersession")
+  attempt_remediations        exam_remediation_schedules[] @relation("attempt_remediations")
   live_inspection_leases   live_inspection_leases[]
 
   @@index([student_id, exam_id, created_at(sort: Desc)], map: "exam_attempts_student_exam_created_idx")
@@ -1702,7 +1706,8 @@ model flagged_incidents {
   configuration_snapshot Json?              @db.Json
   session_context        Json?              @db.Json
   dedupe_key             String?            @db.VarChar(255)
-  exam_attempts          exam_attempts?     @relation(fields: [attempt_id], references: [attempt_id], onDelete: Cascade, onUpdate: NoAction)
+  exam_attempts               exam_attempts?                @relation(fields: [attempt_id], references: [attempt_id], onDelete: Cascade, onUpdate: NoAction)
+  telemetry_incident_evidence telemetry_incident_evidence[]
 
   @@unique([attempt_id, rule_key, platform, dedupe_key], map: "flagged_incidents_dedupe_key_unique", where: raw("(dedupe_key IS NOT NULL)"))
   @@schema("public")
@@ -2527,5 +2532,68 @@ model exam_answer_key_exports {
   @@index([exam_id])
   @@index([institution_id])
   @@index([template_id])
+  @@schema("public")
+}
+
+enum telemetry_incident_evidence_state {
+  PENDING_UPLOAD
+  AVAILABLE
+  DELETE_PENDING
+  DELETED
+  FAILED
+  EXPIRED
+
+  @@schema("public")
+}
+
+enum telemetry_incident_evidence_deletion_reason {
+  INSTRUCTOR_REVIEW
+  RETENTION_EXPIRED
+  ATTEMPT_DELETED
+  STALE_PENDING_UPLOAD
+  TELEMETRY_UNLINKED
+  OBJECT_MISSING
+
+  @@schema("public")
+}
+
+model telemetry_incident_evidence {
+  evidence_id         String                                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  attempt_id          String                                       @db.Uuid
+  incident_id         String?                                      @db.Uuid
+  institution_id      String                                       @db.Uuid
+  student_id          String                                       @db.Uuid
+  event_id            String                                       @db.Uuid
+  event_type          incident_type
+  captured_at         DateTime                                     @db.Timestamptz(6)
+  received_at         DateTime                                     @default(now()) @db.Timestamptz(6)
+  storage_bucket      String?                                      @db.VarChar(100)
+  storage_path        String?                                      @db.VarChar(255)
+  mime_type           String                                       @db.VarChar(50)
+  declared_size_bytes Int
+  size_bytes          Int?
+  sha256              String?                                      @db.VarChar(64)
+  state               telemetry_incident_evidence_state            @default(PENDING_UPLOAD)
+  expires_at          DateTime                                     @db.Timestamptz(6)
+  reviewed_at         DateTime?                                    @db.Timestamptz(6)
+  deleted_at          DateTime?                                    @db.Timestamptz(6)
+  deleted_by          String?                                      @db.Uuid
+  deletion_reason     telemetry_incident_evidence_deletion_reason?
+  failure_code        String?                                      @db.VarChar(100)
+  created_at          DateTime                                     @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime                                     @default(now()) @db.Timestamptz(6)
+
+  // Relations
+  exam_attempts       exam_attempts                                @relation(fields: [attempt_id], references: [attempt_id], onDelete: Cascade, onUpdate: NoAction)
+  flagged_incidents   flagged_incidents?                           @relation(fields: [incident_id], references: [incident_id], onDelete: SetNull, onUpdate: NoAction)
+  institutions        institutions                                 @relation(fields: [institution_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  students            students                                     @relation(fields: [student_id], references: [student_id], onDelete: Cascade, onUpdate: NoAction)
+  deleted_by_user     users?                                       @relation("evidence_deleted_byTousers", fields: [deleted_by], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@unique([attempt_id, event_id])
+  @@index([incident_id, state, captured_at])
+  @@index([state, expires_at])
+  @@index([institution_id, created_at])
+  @@index([attempt_id, event_type, created_at])
   @@schema("public")
 }

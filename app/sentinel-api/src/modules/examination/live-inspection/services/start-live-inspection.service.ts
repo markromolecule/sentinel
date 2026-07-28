@@ -1,8 +1,6 @@
 import { HTTPException } from 'hono/http-exception';
 import type { DbClient } from '@sentinel/db';
-import { getLiveKitConfig } from '../../../infrastructure/livekit/livekit.config';
 import { LiveKitService } from '../../../infrastructure/livekit/livekit.service';
-import { LiveKitManagedService } from '../../../infrastructure/livekit/services/livekit-managed.service';
 import {
     acquireLiveInspectionLease,
     countActiveLiveInspectionLeases,
@@ -18,7 +16,6 @@ import {
     createLiveInspectionRoomName,
     getLiveInspectionAttemptForStaff,
     mapLiveInspectionLeaseStatus,
-    toLiveInspectionProviderFailureCode,
     type LiveInspectionServiceDeps,
 } from './live-inspection-service-helpers';
 
@@ -34,7 +31,9 @@ export type StartLiveInspectionArgs = {
 };
 
 /**
- * Starts one durable inspection lease and creates its managed LiveKit room.
+ * Starts one durable inspection lease and returns immediately so the viewer and
+ * student can begin their LiveKit handshakes without waiting on a separate
+ * provider room-creation round trip.
  */
 export async function startLiveInspection(
     args: StartLiveInspectionArgs,
@@ -222,38 +221,6 @@ export async function startLiveInspection(
         activeGlobalCount: activeGlobalCount + 1,
         activeInstitutionCount: activeInstitutionCount + 1,
     });
-
-    const liveKit =
-        deps.liveKit ?? new LiveKitManagedService({ config: deps.config ?? getLiveKitConfig() });
-
-    try {
-        await liveKit.createInspectionRoom({
-            roomName: providerRoomName,
-            leaseId: acquired.leaseId,
-        });
-    } catch (error) {
-        const lastErrorCode = toLiveInspectionProviderFailureCode(error);
-        await terminalizeLiveInspectionLease(args.dbClient, {
-            leaseId: acquired.leaseId,
-            state: 'FAILED',
-            endReason: 'PROVIDER_ERROR',
-            lastErrorCode,
-        });
-        await LiveKitService.logLiveInspectionLifecycleEvent(args.dbClient, {
-            metric: 'failed',
-            leaseId: acquired.leaseId,
-            attemptId: args.attemptId,
-            examId: args.examId,
-            actorId: args.viewerUserId,
-            institutionId: attempt.institutionId,
-            role: 'viewer',
-            state: 'FAILED',
-            previousState: 'REQUESTED',
-            reason: 'PROVIDER_ERROR',
-            boundedCode: lastErrorCode,
-        });
-        throw error;
-    }
 
     const lease = await getActiveLiveInspectionLeaseForAttempt(args.dbClient, {
         examId: args.examId,

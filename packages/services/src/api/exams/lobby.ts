@@ -24,6 +24,7 @@ export type ExamLobbyWaitingStudent = {
     hasActiveAttempt: boolean;
     attemptStatus: string | null;
     reconnectCount: number;
+    maxReconnectAttempts: number;
 };
 
 export async function checkIntoExamLobby(apiClient: ApiClientType, examId: string) {

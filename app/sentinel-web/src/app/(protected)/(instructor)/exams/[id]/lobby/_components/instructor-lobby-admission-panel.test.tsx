@@ -16,6 +16,7 @@ function createAdmission(overrides: Partial<ExamLobbyWaitingStudent>): ExamLobby
         hasActiveAttempt: overrides.hasActiveAttempt ?? false,
         attemptStatus: overrides.attemptStatus ?? null,
         reconnectCount: overrides.reconnectCount ?? 0,
+        maxReconnectAttempts: overrides.maxReconnectAttempts ?? 3,
     };
 }
 
@@ -66,6 +67,8 @@ function renderPanel(overrides?: {
         studentIds: string[],
         status: 'APPROVED' | 'REJECTED',
     ) => Promise<void>;
+    overridingStudentId?: string | null;
+    onOverrideReconnect?: (studentId: string) => Promise<void>;
 }) {
     const sourceAdmissions = overrides?.admissions ?? admissions;
     const groups = getLobbyAdmissionGroups(sourceAdmissions);
@@ -79,6 +82,8 @@ function renderPanel(overrides?: {
             onStatusFilterChange={overrides?.onStatusFilterChange ?? vi.fn()}
             isUpdatingLobbyAdmissions={false}
             onUpdateLobbyAdmissions={overrides?.onUpdateLobbyAdmissions ?? vi.fn()}
+            overridingStudentId={overrides?.overridingStudentId ?? null}
+            onOverrideReconnect={overrides?.onOverrideReconnect ?? vi.fn()}
         />,
     );
 }
@@ -146,6 +151,39 @@ describe('InstructorLobbyAdmissionPanel', () => {
 
         expect(onUpdateLobbyAdmissions).toHaveBeenNthCalledWith(1, ['student-1'], 'APPROVED');
         expect(onUpdateLobbyAdmissions).toHaveBeenNthCalledWith(2, ['student-1'], 'REJECTED');
+    });
+
+    it('shows Override Limit only for waiting students with an active attempt at the limit', () => {
+        const onOverrideReconnect = vi.fn().mockResolvedValue(undefined);
+        renderPanel({
+            admissions: [
+                createAdmission({
+                    admissionId: 'waiting-active-1',
+                    studentId: 'student-8',
+                    status: 'WAITING',
+                    hasActiveAttempt: true,
+                    attemptStatus: 'IN_PROGRESS',
+                    reconnectCount: 3,
+                    maxReconnectAttempts: 3,
+                }),
+                createAdmission({
+                    admissionId: 'waiting-below-limit-1',
+                    studentId: 'student-9',
+                    status: 'WAITING',
+                    hasActiveAttempt: true,
+                    attemptStatus: 'IN_PROGRESS',
+                    reconnectCount: 2,
+                    maxReconnectAttempts: 3,
+                }),
+            ],
+            onOverrideReconnect,
+        });
+
+        fireEvent.click(screen.getByRole('button', { name: 'Override Limit' }));
+
+        expect(onOverrideReconnect).toHaveBeenCalledWith('student-8');
+        expect(screen.getAllByRole('button', { name: 'Admit' })).toHaveLength(2);
+        expect(screen.queryAllByRole('button', { name: 'Override Limit' })).toHaveLength(1);
     });
 
     it('renders empty queues without fixed desktop height assumptions', () => {

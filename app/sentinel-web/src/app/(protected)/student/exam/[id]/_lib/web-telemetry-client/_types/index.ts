@@ -41,6 +41,9 @@ export type BuildMediaPipeTelemetryPayloadArgs = {
     timestamp?: string;
     metadata?: TelemetryMetadata;
     sessionContext?: TelemetrySessionContext;
+    eventId?: string;
+    dedupeKey?: string;
+    clientActionAt?: string;
 };
 
 export type EmitMediaPipeTelemetryEventArgs = BuildMediaPipeTelemetryPayloadArgs & {

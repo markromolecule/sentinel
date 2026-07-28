@@ -1,5 +1,3 @@
-'use client';
-
 import type { ChangeEvent, ReactNode } from 'react';
 import { Activity, CheckCircle, Clock, Search, XCircle } from 'lucide-react';
 import {
@@ -28,15 +26,18 @@ type InstructorLobbyAdmissionPanelProps = {
         studentIds: string[],
         status: 'APPROVED' | 'REJECTED',
     ) => Promise<void>;
+    overridingStudentId: string | null;
+    onOverrideReconnect: (studentId: string) => Promise<void>;
 };
 
 type QueueSectionProps = {
     title: string;
-    description: string;
     count: number;
     icon: ReactNode;
+    accentColor: string;
     students: ExamLobbyWaitingStudent[];
     emptyLabel: string;
+    headerAction?: ReactNode;
     children?: (student: ExamLobbyWaitingStudent) => ReactNode;
 };
 
@@ -73,8 +74,8 @@ function StudentLobbyRow({
     children?: ReactNode;
 }) {
     return (
-        <div className="bg-background hover:border-primary/30 flex flex-col gap-3 rounded-md border p-3 transition-colors sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex min-w-0 items-center gap-3">
+        <div className="bg-background hover:border-primary/30 flex flex-col gap-2 rounded-md border p-3 transition-colors">
+            <div className="flex items-center gap-3">
                 <Avatar size="sm" className="size-8">
                     <AvatarFallback className="bg-primary/5 text-primary text-[10px] font-bold">
                         {getInitials(student.studentName)}
@@ -84,49 +85,47 @@ function StudentLobbyRow({
                     <p className="text-foreground truncate text-sm font-semibold">
                         {student.studentName}
                     </p>
-                    <div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-1.5 text-xs">
-                        <span>{student.studentNumber ?? 'N/A'}</span>
-                        <span aria-hidden="true">/</span>
-                        <span>{formatCheckedInAt(student.checkedInAt)}</span>
-                        <span aria-hidden="true">/</span>
-                        <span>{student.reconnectCount} reconnects</span>
-                    </div>
+                    <p className="text-muted-foreground text-xs">{student.studentNumber ?? 'N/A'}</p>
                 </div>
             </div>
-            {children ? <div className="flex shrink-0 gap-2">{children}</div> : null}
+            <div className="text-muted-foreground flex flex-wrap items-center gap-1.5 text-[11px]">
+                <span>{formatCheckedInAt(student.checkedInAt)}</span>
+                <span aria-hidden="true">•</span>
+                <span>{student.reconnectCount} / {student.maxReconnectAttempts} reconnects</span>
+            </div>
+            {children ? <div className="mt-1 flex flex-col gap-1">{children}</div> : null}
         </div>
     );
 }
 
 function QueueSection({
     title,
-    description,
     count,
     icon,
+    accentColor,
     students,
     emptyLabel,
+    headerAction,
     children,
 }: QueueSectionProps) {
     return (
-        <section className="flex min-w-0 flex-col gap-3">
-            <div className="flex items-start justify-between gap-3">
-                <div className="flex items-start gap-2">
-                    <div className="text-muted-foreground mt-0.5">{icon}</div>
-                    <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                            <h2 className="text-sm font-semibold">{title}</h2>
-                            <Badge variant="secondary" className="font-mono text-xs">
-                                {count}
-                            </Badge>
-                        </div>
-                        <p className="text-muted-foreground text-xs">{description}</p>
+        <section className={`flex flex-col rounded-lg border-t-4 ${accentColor} bg-slate-50/50 h-full`}>
+            <div className="sticky top-0 z-10 flex flex-col gap-2 border-b bg-slate-50/95 p-3 backdrop-blur">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        {icon}
+                        <h2 className="text-sm font-semibold">{title}</h2>
+                        <Badge variant="secondary" className="font-mono text-[10px]">
+                            {count}
+                        </Badge>
                     </div>
                 </div>
+                {headerAction}
             </div>
 
-            <div className="space-y-2">
+            <div className="flex flex-col gap-2 p-2 overflow-y-auto">
                 {students.length === 0 ? (
-                    <div className="text-muted-foreground rounded-md border border-dashed px-4 py-8 text-center text-sm">
+                    <div className="text-muted-foreground border-border rounded-md border border-dashed px-2 py-8 text-center text-xs">
                         {emptyLabel}
                     </div>
                 ) : (
@@ -142,7 +141,8 @@ function QueueSection({
 }
 
 /**
- * InstructorLobbyAdmissionPanel renders searchable lobby queues and admission actions.
+ * InstructorLobbyAdmissionPanel renders searchable lobby queues and admission actions
+ * in a 4-column kanban layout: Waiting, Approved, In Attempt, and Rejected.
  *
  * @param props - InstructorLobbyAdmissionPanelProps containing grouped admissions and controls.
  */
@@ -154,6 +154,8 @@ export function InstructorLobbyAdmissionPanel({
     onStatusFilterChange,
     isUpdatingLobbyAdmissions,
     onUpdateLobbyAdmissions,
+    overridingStudentId,
+    onOverrideReconnect,
 }: InstructorLobbyAdmissionPanelProps) {
     const { waitingStudents, approvedStudents, rejectedStudents, inAttemptStudents } =
         lobbyAdmissionGroups;
@@ -165,7 +167,7 @@ export function InstructorLobbyAdmissionPanel({
     };
 
     return (
-        <div className="flex min-w-0 flex-col gap-5">
+        <div className="flex min-h-[600px] flex-col gap-5">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div className="relative min-w-0 flex-1 md:max-w-md">
                     <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
@@ -192,103 +194,97 @@ export function InstructorLobbyAdmissionPanel({
                 </NativeSelect>
             </div>
 
-            <div className="flex flex-col gap-6">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4 h-full">
                 <QueueSection
                     title="Waiting"
-                    description="Students ready for admission review."
                     count={waitingStudents.length}
-                    icon={<Clock className="h-4 w-4" />}
+                    icon={<Clock className="h-4 w-4 text-amber-500" />}
+                    accentColor="border-t-amber-500"
                     students={waitingStudents}
-                    emptyLabel={
-                        hasActiveFilter
-                            ? 'No waiting students match this filter.'
-                            : 'No students waiting.'
+                    emptyLabel="No students waiting."
+                    headerAction={
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full text-xs"
+                            disabled={isUpdatingLobbyAdmissions || waitingStudentIds.length === 0}
+                            onClick={() => void onUpdateLobbyAdmissions(waitingStudentIds, 'APPROVED')}
+                        >
+                            Admit All
+                        </Button>
                     }
                 >
                     {(student) => (
-                        <>
-                            <Button
-                                size="sm"
-                                disabled={isUpdatingLobbyAdmissions}
-                                onClick={() =>
-                                    void onUpdateLobbyAdmissions([student.studentId], 'APPROVED')
-                                }
-                            >
-                                Admit
-                            </Button>
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                disabled={isUpdatingLobbyAdmissions}
-                                onClick={() =>
-                                    void onUpdateLobbyAdmissions([student.studentId], 'REJECTED')
-                                }
-                            >
-                                Reject
-                            </Button>
-                        </>
+                        <div className="flex flex-col gap-1">
+                            <div className="flex gap-1">
+                                <Button
+                                    size="sm"
+                                    className="flex-1 text-xs"
+                                    disabled={isUpdatingLobbyAdmissions}
+                                    onClick={() => void onUpdateLobbyAdmissions([student.studentId], 'APPROVED')}
+                                >
+                                    Admit
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="flex-1 text-xs"
+                                    disabled={isUpdatingLobbyAdmissions}
+                                    onClick={() => void onUpdateLobbyAdmissions([student.studentId], 'REJECTED')}
+                                >
+                                    Reject
+                                </Button>
+                            </div>
+                            {student.hasActiveAttempt &&
+                                student.reconnectCount >= student.maxReconnectAttempts ? (
+                                <Button
+                                    size="sm"
+                                    variant="secondary"
+                                    className="w-full text-xs"
+                                    disabled={overridingStudentId === student.studentId}
+                                    onClick={() => void onOverrideReconnect(student.studentId)}
+                                >
+                                    Override Limit
+                                </Button>
+                            ) : null}
+                        </div>
                     )}
                 </QueueSection>
 
-                <div className="flex justify-end">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={isUpdatingLobbyAdmissions || waitingStudentIds.length === 0}
-                        onClick={() => void onUpdateLobbyAdmissions(waitingStudentIds, 'APPROVED')}
-                    >
-                        Admit All
-                    </Button>
-                </div>
+                <QueueSection
+                    title="Approved"
+                    count={approvedStudents.length}
+                    icon={<CheckCircle className="h-4 w-4 text-emerald-600" />}
+                    accentColor="border-t-emerald-600"
+                    students={approvedStudents}
+                    emptyLabel="No approved students."
+                />
 
-                <div className="grid gap-6 xl:grid-cols-3">
-                    <QueueSection
-                        title="Approved"
-                        description="Students admitted but not yet in an active attempt."
-                        count={approvedStudents.length}
-                        icon={<CheckCircle className="h-4 w-4 text-emerald-600" />}
-                        students={approvedStudents}
-                        emptyLabel={
-                            hasActiveFilter
-                                ? 'No approved students match this filter.'
-                                : 'No approved students waiting.'
-                        }
-                    />
+                <QueueSection
+                    title="In Attempt"
+                    count={inAttemptStudents.length}
+                    icon={<Activity className="h-4 w-4 text-cyan-600" />}
+                    accentColor="border-t-cyan-600"
+                    students={inAttemptStudents}
+                    emptyLabel="No active attempts."
+                >
+                    {(student) => (
+                        <Badge variant="outline" className="justify-center text-[10px]">
+                            {student.attemptStatus === 'IN_PROGRESS'
+                                ? 'Writing'
+                                : (student.attemptStatus ?? 'In Progress')}
+                        </Badge>
+                    )}
+                </QueueSection>
 
-                    <QueueSection
-                        title="In Attempt"
-                        description="Students currently working in the exam."
-                        count={inAttemptStudents.length}
-                        icon={<Activity className="h-4 w-4 text-cyan-600" />}
-                        students={inAttemptStudents}
-                        emptyLabel={
-                            hasActiveFilter
-                                ? 'No active attempts match this filter.'
-                                : 'No active attempts yet.'
-                        }
-                    >
-                        {(student) => (
-                            <Badge variant="outline">
-                                {student.attemptStatus === 'IN_PROGRESS'
-                                    ? 'Writing'
-                                    : (student.attemptStatus ?? 'In Progress')}
-                            </Badge>
-                        )}
-                    </QueueSection>
-
-                    <QueueSection
-                        title="Rejected"
-                        description="Students returned to the lobby queue."
-                        count={rejectedStudents.length}
-                        icon={<XCircle className="h-4 w-4 text-rose-600" />}
-                        students={rejectedStudents}
-                        emptyLabel={
-                            hasActiveFilter
-                                ? 'No rejected students match this filter.'
-                                : 'No rejected admissions.'
-                        }
-                    />
-                </div>
+                <QueueSection
+                    title="Rejected"
+                    count={rejectedStudents.length}
+                    icon={<XCircle className="h-4 w-4 text-rose-600" />}
+                    accentColor="border-t-rose-600"
+                    students={rejectedStudents}
+                    emptyLabel="No rejected admissions."
+                />
             </div>
         </div>
     );

@@ -140,8 +140,12 @@ describe('StudentExamPrivacyPage', () => {
         expect(screen.getByText('Step 2 of 4')).toBeTruthy();
         expect(screen.getByText('Monitored signals')).toBeTruthy();
         expect(screen.getByText('Authorized Live Camera Inspection')).toBeTruthy();
+        expect(screen.getByText('Flagged Frame Evidence')).toBeTruthy();
         expect(
             screen.getByText(/does not enable microphone publishing or recording/i),
+        ).toBeTruthy();
+        expect(
+            screen.getByText(/capture one frame for reviewer context, retain it for up to seven days/i),
         ).toBeTruthy();
         expect(screen.queryByText('What this means')).toBeNull();
         expect(screen.getByText('Policies & terms')).toBeTruthy();
@@ -187,6 +191,41 @@ describe('StudentExamPrivacyPage', () => {
         });
         const continueButton = screen.getByRole('button', { name: /continue to checkup/i });
         expect((continueButton as HTMLButtonElement).disabled).toBe(false);
+    });
+
+    it('explains that frame evidence is disabled when camera monitoring is not required', () => {
+        mockReadStoredStudentExamFlow.mockReturnValue({
+            privacyAccepted: false,
+        });
+        mockStudentExamData.mockReturnValue({
+            examId: 'exam-1',
+            blockedState: {
+                isBlocked: false,
+            },
+            exam: {
+                status: 'published',
+                attemptId: null,
+                runtimeAccess: null,
+            },
+            configuration: {
+                cameraRequired: false,
+                aiRules: {
+                    gaze_tracking: false,
+                    face_detection: false,
+                },
+                micRequired: false,
+                webSecurity: {
+                    full_screen_required: false,
+                },
+            },
+            isLoading: false,
+        });
+
+        render(<StudentExamPrivacyPage />);
+
+        expect(
+            screen.getByText(/automatic frame capture is inactive unless this exam enables a reviewable camera rule/i),
+        ).toBeTruthy();
     });
 
     it('shows the lifecycle block message and removes the checkup CTA when the exam is closed', () => {

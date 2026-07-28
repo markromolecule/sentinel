@@ -19,6 +19,9 @@ export type TelemetryMetadata = {
         windowSeconds?: number;
         threshold?: number;
     };
+    eventId?: string;
+    dedupeKey?: string;
+    clientActionAt?: string;
 };
 
 export type TelemetrySessionContext = {
@@ -87,6 +90,18 @@ export async function ingestTelemetryEvent(
 interface ApiResponse<T> {
     message: string;
     data: T;
+}
+
+function unwrapApiResponse<T>(response: ApiResponse<T> | T): T {
+    if (
+        typeof response === 'object' &&
+        response !== null &&
+        'data' in (response as Record<string, unknown>)
+    ) {
+        return (response as ApiResponse<T>).data;
+    }
+
+    return response as T;
 }
 
 export async function getTelemetrySettings(
@@ -161,4 +176,118 @@ export async function updateTelemetryIncident(
     );
 
     return response.data;
+}
+
+export type InitializeEvidenceUploadPayload = {
+    attemptId: string;
+    eventId: string;
+    eventType: string;
+    capturedAt: string;
+    mimeType: 'image/webp' | 'image/jpeg';
+    sizeBytes: number;
+};
+
+export type InitializeEvidenceUploadResponse = {
+    evidenceId: string;
+    uploadUrl: string;
+    uploadToken: string;
+    expiresAt: string;
+};
+
+export type CompleteEvidenceUploadResponse = {
+    evidenceId: string;
+    state: string;
+    expiresAt: string;
+};
+
+export type IncidentEvidenceRecord = {
+    evidenceId: string;
+    attemptId: string;
+    incidentId: string | null;
+    eventId: string;
+    eventType: string;
+    capturedAt: string;
+    state: string;
+    expiresAt: string;
+    signedUrl?: string;
+};
+
+export type DeleteEvidenceResponse = {
+    success: boolean;
+    message: string;
+};
+
+export type ReconcileEvidenceResponse = {
+    processedCount: number;
+    details: {
+        staleUploadsPurged: number;
+        retentionExpiredPurged: number;
+        deletedConverged: number;
+        unlinkedPurged: number;
+    };
+};
+
+export async function initializeEvidenceUpload(
+    apiClient: ApiClientType,
+    payload: InitializeEvidenceUploadPayload,
+): Promise<InitializeEvidenceUploadResponse> {
+    const response = await apiClient(
+        '/telemetry/evidence/uploads',
+        {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        },
+    );
+    return unwrapApiResponse<InitializeEvidenceUploadResponse>(response);
+}
+
+export async function completeEvidenceUpload(
+    apiClient: ApiClientType,
+    evidenceId: string,
+): Promise<CompleteEvidenceUploadResponse> {
+    const response = await apiClient(
+        `/telemetry/evidence/${evidenceId}/complete`,
+        {
+            method: 'POST',
+        },
+    );
+    return unwrapApiResponse<CompleteEvidenceUploadResponse>(response);
+}
+
+export async function getIncidentEvidence(
+    apiClient: ApiClientType,
+    incidentId: string,
+): Promise<IncidentEvidenceRecord[]> {
+    const response = await apiClient(
+        `/telemetry/incidents/${incidentId}/evidence`,
+    );
+    return unwrapApiResponse<IncidentEvidenceRecord[]>(response);
+}
+
+export async function deleteEvidence(
+    apiClient: ApiClientType,
+    evidenceId: string,
+): Promise<DeleteEvidenceResponse> {
+    const response = await apiClient(
+        `/telemetry/evidence/${evidenceId}`,
+        {
+            method: 'DELETE',
+        },
+    );
+    return unwrapApiResponse<DeleteEvidenceResponse>(response);
+}
+
+export async function reconcileEvidence(
+    apiClient: ApiClientType,
+): Promise<ReconcileEvidenceResponse> {
+    const response = await apiClient(
+        '/telemetry/internal/evidence/reconcile',
+        {
+            method: 'POST',
+        },
+    );
+    return unwrapApiResponse<ReconcileEvidenceResponse>(response);
 }

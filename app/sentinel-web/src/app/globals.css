@@ -329,3 +329,11 @@
         background: rgba(255, 255, 255, 0.2);
     }
 }
+
+@utility scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}

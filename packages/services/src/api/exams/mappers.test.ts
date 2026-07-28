@@ -202,6 +202,7 @@ describe('mapExam', () => {
             studentNo: '2026-001',
             firstName: 'Pat',
             lastName: 'Student',
+            avatarUrl: 'https://example.com/pat-student.png',
             status: 'active',
             progress: 45,
             incidentCount: 1,
@@ -242,11 +243,48 @@ describe('mapExam', () => {
 
         expect(student.lifecycleState).toBe('LOCKED');
         expect(student.attemptId).toBe('attempt-1');
+        expect(student.avatarUrl).toBe('https://example.com/pat-student.png');
         expect(student.incidentCount).toBe(1);
         expect(student.openIncidentCount).toBe(1);
         expect(student.latestIncidentType).toBe('TAB_SWITCH');
         expect(student.lastActivityAt).toBe('2026-07-04T00:00:00.000Z');
         expect(student.reopenedUntil).toBe('2026-07-04T01:00:00.000Z');
         expect(student.lifecycleEvents?.[0]?.eventType).toBe('LOCKED');
+    });
+
+    it('preserves incident evidence summaries on mapped monitoring flags', () => {
+        const student = mapMonitoringStudent({
+            id: 'student-2',
+            studentRecordId: 'student-record-2',
+            attemptId: 'attempt-2',
+            studentNo: '2026-002',
+            firstName: 'Ari',
+            lastName: 'Reviewer',
+            status: 'flagged',
+            progress: 70,
+            incidentCount: 1,
+            openIncidentCount: 1,
+            latestIncidentType: 'FACE_NOT_VISIBLE',
+            lastActivityAt: '2026-07-04T00:00:00.000Z',
+            startedAt: '2026-07-04T00:00:00.000Z',
+            completedAt: null,
+            timeSpentMinutes: 35,
+            reconnectCount: 0,
+            flags: [
+                {
+                    id: 'incident-1',
+                    type: 'FACE_NOT_VISIBLE',
+                    timestamp: '2026-07-04T00:20:00.000Z',
+                    description: 'Face Not Visible',
+                    severity: 'medium',
+                    evidenceUrl: null,
+                    evidenceCount: 2,
+                    evidenceStates: ['AVAILABLE', 'EXPIRED'],
+                },
+            ],
+        } as any);
+
+        expect(student.flags?.[0]?.evidenceCount).toBe(2);
+        expect(student.flags?.[0]?.evidenceStates).toEqual(['AVAILABLE', 'EXPIRED']);
     });
 });

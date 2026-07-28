@@ -4,6 +4,8 @@ export const TELEMETRY_QUERY_KEYS = {
     health: () => [...TELEMETRY_QUERY_KEYS.all, 'health'] as const,
     incidents: (filters?: Record<string, unknown>) =>
         [...TELEMETRY_QUERY_KEYS.all, 'incidents', filters ?? {}] as const,
+    incidentEvidence: (incidentId?: string) =>
+        [...TELEMETRY_QUERY_KEYS.all, 'incident-evidence', incidentId ?? 'unknown'] as const,
 } as const;
 
 export const TELEMETRY_MEDIAPIPE_SANDBOX_V1_EVENT_TYPES = [

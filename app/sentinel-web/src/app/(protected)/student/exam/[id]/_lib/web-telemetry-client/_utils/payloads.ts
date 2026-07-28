@@ -86,13 +86,21 @@ export function buildAttemptMediaPipeTelemetryPayload({
     timestamp = new Date().toISOString(),
     metadata,
     sessionContext = buildMediaPipeTelemetrySessionContext(),
+    eventId,
+    dedupeKey,
+    clientActionAt,
 }: BuildMediaPipeTelemetryPayloadArgs): IngestTelemetryEventPayload {
     return buildSharedMediaPipePayload({
         examSessionId,
         studentId,
         eventType,
         timestamp,
-        metadata,
+        metadata: {
+            ...metadata,
+            ...(eventId ? { eventId } : {}),
+            ...(dedupeKey ? { dedupeKey } : {}),
+            clientActionAt: clientActionAt || timestamp,
+        },
         sessionContext,
     });
 }

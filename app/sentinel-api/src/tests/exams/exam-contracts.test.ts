@@ -321,6 +321,7 @@ describe('exam contracts', () => {
                     hasActiveAttempt: false,
                     attemptStatus: null,
                     reconnectCount: 0,
+                    maxReconnectAttempts: 3,
                 },
                 {
                     admissionId: '33333333-3333-4333-8333-333333333333',
@@ -333,11 +334,34 @@ describe('exam contracts', () => {
                     hasActiveAttempt: true,
                     attemptStatus: 'IN_PROGRESS',
                     reconnectCount: 0,
+                    maxReconnectAttempts: 3,
                 },
             ],
         });
 
         expect(result.success).toBe(true);
+    });
+
+    it('rejects a waiting-list item that omits maxReconnectAttempts', () => {
+        const result = getWaitingListSchema.response.safeParse({
+            message: 'Waiting list retrieved.',
+            data: [
+                {
+                    admissionId: '11111111-1111-4111-8111-111111111111',
+                    studentId: '22222222-2222-4222-8222-222222222222',
+                    studentName: 'Maria Santos',
+                    studentNumber: '2021-00001',
+                    status: 'WAITING',
+                    checkedInAt: '2026-04-20T10:00:00.000Z',
+                    decidedAt: null,
+                    hasActiveAttempt: false,
+                    attemptStatus: null,
+                    reconnectCount: 0,
+                },
+            ],
+        });
+
+        expect(result.success).toBe(false);
     });
 
     it('validates a bulk-admit update body with a valid student id list and APPROVED status', () => {

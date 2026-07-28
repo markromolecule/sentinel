@@ -18,6 +18,7 @@ import { useCheckupAudio } from '@/app/(protected)/student/exam/[id]/_components
 
 export type UseAttemptMonitoringArgs = {
     examId: string;
+    attemptId?: string;
     audioSettings?: AudioAnomalySettings | null;
     configuration?: ExamConfig;
     examSessionId?: string;
@@ -36,6 +37,7 @@ export type UseAttemptMonitoringArgs = {
  */
 export function useAttemptMonitoring({
     examId,
+    attemptId,
     audioSettings,
     configuration,
     examSessionId,
@@ -72,6 +74,7 @@ export function useAttemptMonitoring({
         configuration,
         mediaPipeSandbox,
         examSessionId,
+        attemptId,
         isRedirectingToTurnIn,
         runtimeAccess,
     });

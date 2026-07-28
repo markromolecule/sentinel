@@ -231,6 +231,157 @@ describe('IncidentPersistenceService', () => {
         },
     );
 
+    testWithDbClient(
+        'links evidence-first uploads to the inserted incident when telemetry arrives later',
+        async ({ dbClient }) => {
+            const fixture = await createTelemetryAttemptFixture(dbClient);
+            const eventId = randomUUID();
+
+            await dbClient
+                .insertInto('telemetry_incident_evidence')
+                .values({
+                    attempt_id: fixture.attemptId,
+                    institution_id: fixture.institutionId,
+                    student_id: fixture.studentId,
+                    event_id: eventId,
+                    event_type: 'FACE_NOT_VISIBLE',
+                    captured_at: new Date('2026-04-22T08:00:00.000Z'),
+                    received_at: new Date('2026-04-22T08:00:05.000Z'),
+                    storage_bucket: 'sentinel-proctoring-evidence',
+                    storage_path: `${fixture.attemptId}/${eventId}.webp`,
+                    mime_type: 'image/webp',
+                    declared_size_bytes: 12000,
+                    state: 'AVAILABLE',
+                    expires_at: new Date('2026-04-29T08:00:00.000Z'),
+                })
+                .executeTakeFirst();
+
+            const result = await IncidentPersistenceService.appendEvent(
+                dbClient,
+                buildPayload({
+                    ...fixture,
+                    ruleKey: 'aiRules.face_detection',
+                    eventType: 'NO_FACE_DETECTED',
+                    source: 'AI',
+                    metadata: {
+                        eventId,
+                        dedupeKey: `attempt:NO_FACE_DETECTED:${eventId}`,
+                        clientActionAt: '2026-04-22T08:00:00.000Z',
+                    },
+                }),
+            );
+
+            const evidence = await dbClient
+                .selectFrom('telemetry_incident_evidence')
+                .select(['incident_id'])
+                .where('attempt_id', '=', fixture.attemptId)
+                .where('event_id', '=', eventId)
+                .executeTakeFirstOrThrow();
+
+            expect(result?.incidentId).toBeTruthy();
+            expect(evidence.incident_id).toBe(result?.incidentId);
+        },
+    );
+
+    testWithDbClient(
+        'returns duplicate-ignored with the existing incident id so evidence correlation can converge on retries',
+        async ({ dbClient }) => {
+            const fixture = await createTelemetryAttemptFixture(dbClient);
+            const eventId = randomUUID();
+
+            const payload = buildPayload({
+                ...fixture,
+                metadata: {
+                    eventId,
+                    dedupeKey: `attempt:RIGHT_CLICK_ATTEMPT:${eventId}`,
+                    clientActionAt: '2026-04-22T08:00:00.000Z',
+                },
+            });
+
+            const first = await IncidentPersistenceService.appendEvent(dbClient, payload);
+            const second = await IncidentPersistenceService.appendEvent(dbClient, payload);
+
+            expect(first).toMatchObject({
+                disposition: 'inserted',
+            });
+            expect(second).toMatchObject({
+                disposition: 'duplicate-ignored',
+                incidentId: first?.incidentId,
+            });
+        },
+    );
+
+    testWithDbClient(
+        'links later aggregated evidence rows to the already-selected incident',
+        async ({ dbClient }) => {
+            const fixture = await createTelemetryAttemptFixture(dbClient);
+            const firstEventId = randomUUID();
+            const secondEventId = randomUUID();
+
+            await IncidentPersistenceService.appendEvent(
+                dbClient,
+                buildPayload({
+                    ...fixture,
+                    ruleKey: 'aiRules.gaze_tracking',
+                    eventType: 'GAZE_OFF_SCREEN',
+                    source: 'AI',
+                    metadata: {
+                        eventId: firstEventId,
+                        dedupeKey: `attempt:GAZE_OFF_SCREEN:${firstEventId}`,
+                        clientActionAt: '2026-04-22T08:00:00.000Z',
+                    },
+                }),
+            );
+
+            await dbClient
+                .insertInto('telemetry_incident_evidence')
+                .values({
+                    attempt_id: fixture.attemptId,
+                    institution_id: fixture.institutionId,
+                    student_id: fixture.studentId,
+                    event_id: secondEventId,
+                    event_type: 'GAZE',
+                    captured_at: new Date('2026-04-22T08:02:00.000Z'),
+                    received_at: new Date('2026-04-22T08:02:05.000Z'),
+                    storage_bucket: 'sentinel-proctoring-evidence',
+                    storage_path: `${fixture.attemptId}/${secondEventId}.webp`,
+                    mime_type: 'image/webp',
+                    declared_size_bytes: 12000,
+                    state: 'AVAILABLE',
+                    expires_at: new Date('2026-04-29T08:02:00.000Z'),
+                })
+                .executeTakeFirst();
+
+            const aggregated = await IncidentPersistenceService.appendEvent(
+                dbClient,
+                buildPayload({
+                    ...fixture,
+                    ruleKey: 'aiRules.gaze_tracking',
+                    eventType: 'GAZE_OFF_SCREEN',
+                    source: 'AI',
+                    timestamp: '2026-04-22T08:02:10.000Z',
+                    metadata: {
+                        eventId: secondEventId,
+                        dedupeKey: `attempt:GAZE_OFF_SCREEN:${secondEventId}`,
+                        clientActionAt: '2026-04-22T08:02:00.000Z',
+                    },
+                }),
+            );
+
+            const evidence = await dbClient
+                .selectFrom('telemetry_incident_evidence')
+                .select(['incident_id'])
+                .where('attempt_id', '=', fixture.attemptId)
+                .where('event_id', '=', secondEventId)
+                .executeTakeFirstOrThrow();
+
+            expect(aggregated).toMatchObject({
+                disposition: 'aggregated',
+            });
+            expect(evidence.incident_id).toBe(aggregated?.incidentId);
+        },
+    );
+
     test('emits structured persistence diagnostics for insert, duplicate retry, aggregation, and concurrent first writes', async () => {
         vi.stubEnv('NODE_ENV', 'development');
         const diagnosticSpy = vi.spyOn(console, 'info').mockImplementation(() => undefined);

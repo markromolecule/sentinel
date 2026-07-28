@@ -322,7 +322,7 @@ describe('useLobbyState', () => {
 
     it('skips lobby sync entirely when the student already has a resumable active attempt', () => {
         const args = createArgs({
-            lobbyAdmissionMode: 'INSTRUCTOR_GATED',
+            lobbyAdmissionMode: 'AUTOMATIC',
             runtimeAccess: {
                 state: 'open',
                 reasonCode: 'OPEN',
@@ -345,5 +345,52 @@ describe('useLobbyState', () => {
         expect(mockCheckIntoExamLobby).not.toHaveBeenCalled();
         expect(mockGetExamLobbyAdmissionStatus).not.toHaveBeenCalled();
         expect(result.current.storedSession?.sessionId).toBe('session-1');
+    });
+
+    it('re-checks in and keeps entry disabled for instructor-gated active attempts until approval refreshes access', async () => {
+        vi.useFakeTimers();
+        const refetchExam = vi.fn().mockResolvedValue(undefined);
+
+        mockCheckIntoExamLobby.mockResolvedValueOnce({
+            status: 'WAITING',
+            checkedInAt: '2026-05-11T00:00:00.000Z',
+        });
+        mockGetExamLobbyAdmissionStatus.mockResolvedValueOnce({
+            status: 'APPROVED',
+            checkedInAt: '2026-05-11T00:00:00.000Z',
+            decidedAt: '2026-05-11T00:00:05.000Z',
+        });
+
+        const args = createArgs({
+            lobbyAdmissionMode: 'INSTRUCTOR_GATED',
+            runtimeAccess: {
+                state: 'open',
+                reasonCode: 'OPEN',
+                message: 'Resume your exam.',
+                canStart: true,
+                canResume: true,
+                hasActiveAttempt: true,
+            },
+        });
+        args.refetchExam = refetchExam;
+
+        const { result } = renderHook(() => useLobbyState(args));
+
+        await act(async () => {
+            await Promise.resolve();
+        });
+
+        expect(mockCheckIntoExamLobby).toHaveBeenCalledTimes(1);
+        expect(result.current.admissionStatus).toBe('WAITING');
+        expect(result.current.canEnterExam).toBe(false);
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(5000);
+            await Promise.resolve();
+        });
+
+        expect(mockGetExamLobbyAdmissionStatus).toHaveBeenCalledWith({ api: true }, 'exam-1');
+        expect(refetchExam).toHaveBeenCalled();
+        expect(result.current.admissionStatus).toBe('APPROVED');
     });
 });

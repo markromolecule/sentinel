@@ -161,6 +161,7 @@ export function useStudentExamAttempt() {
 
     const monitoringHook = useAttemptMonitoring({
         examId,
+        attemptId: canonicalAttemptId ?? undefined,
         audioSettings: effectiveAudioSettings,
         configuration: effectiveConfiguration,
         examSessionId: examSession?.sessionId,
@@ -214,6 +215,7 @@ export function useStudentExamAttempt() {
     const currentContext = getRuntimePassageDetails({
         questionPassageContent: currentQuestion?.passageContent,
         questionPassageType: currentQuestion?.passageType,
+        questionSourceEvidence: currentQuestion?.sourceEvidence,
     });
 
     return {

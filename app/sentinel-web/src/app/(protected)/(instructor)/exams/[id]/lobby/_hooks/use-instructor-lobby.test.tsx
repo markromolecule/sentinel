@@ -7,6 +7,8 @@ const {
     mockUseDebounce,
     mockGetExamLobbyWaitingList,
     mockUpdateExamLobbyAdmissions,
+    mockUseOverrideReconnectLimitMutation,
+    mockOverrideReconnectMutateAsync,
     mockToastSuccess,
     mockToastError,
 } = vi.hoisted(() => ({
@@ -14,6 +16,8 @@ const {
     mockUseDebounce: vi.fn((value: string) => value),
     mockGetExamLobbyWaitingList: vi.fn(),
     mockUpdateExamLobbyAdmissions: vi.fn(),
+    mockUseOverrideReconnectLimitMutation: vi.fn(),
+    mockOverrideReconnectMutateAsync: vi.fn(),
     mockToastSuccess: vi.fn(),
     mockToastError: vi.fn(),
 }));
@@ -21,6 +25,8 @@ const {
 vi.mock('@sentinel/hooks', () => ({
     useApi: () => mockUseApi(),
     useDebounce: (value: string, delay: number) => mockUseDebounce(value, delay),
+    useOverrideReconnectLimitMutation: (options: unknown) =>
+        mockUseOverrideReconnectLimitMutation(options),
 }));
 
 vi.mock('@sentinel/services', () => ({
@@ -52,6 +58,7 @@ describe('useInstructorLobby', () => {
                 hasActiveAttempt: false,
                 attemptStatus: null,
                 reconnectCount: 1,
+                maxReconnectAttempts: 3,
             },
             {
                 admissionId: 'admission-2',
@@ -64,8 +71,16 @@ describe('useInstructorLobby', () => {
                 hasActiveAttempt: false,
                 attemptStatus: null,
                 reconnectCount: 0,
+                maxReconnectAttempts: 3,
             },
         ]);
+        mockUseOverrideReconnectLimitMutation.mockImplementation((options) => ({
+            mutateAsync: async (payload: unknown) => {
+                await mockOverrideReconnectMutateAsync(payload);
+                await (options as { onSuccess?: () => Promise<void> | void })?.onSuccess?.();
+            },
+        }));
+        mockOverrideReconnectMutateAsync.mockResolvedValue(undefined);
     });
 
     it('debounces the raw lobby search term', async () => {
@@ -133,5 +148,44 @@ describe('useInstructorLobby', () => {
 
         expect(mockToastSuccess).toHaveBeenCalled();
         expect(mockGetExamLobbyWaitingList).toHaveBeenCalledTimes(2);
+    });
+
+    it('submits reconnect overrides with the lobby-specific reason and tracks pending state', async () => {
+        let resolveMutation: (() => void) | undefined;
+        mockOverrideReconnectMutateAsync.mockImplementation(
+            () =>
+                new Promise<void>((resolve) => {
+                    resolveMutation = resolve;
+                }),
+        );
+
+        const { result } = renderHook(() => useInstructorLobby('exam-1'));
+
+        await waitFor(() => {
+            expect(result.current.lobbyAdmissions).toHaveLength(2);
+        });
+
+        let pendingPromise: Promise<void> | undefined;
+        act(() => {
+            pendingPromise = result.current.handleOverrideReconnect('student-1');
+        });
+
+        expect(result.current.overridingStudentId).toBe('student-1');
+        expect(mockOverrideReconnectMutateAsync).toHaveBeenCalledWith({
+            id: 'exam-1',
+            studentId: 'student-1',
+            reason: 'Instructor granted a one-time reconnect override from the exam lobby.',
+        });
+
+        resolveMutation?.();
+        await act(async () => {
+            await pendingPromise;
+        });
+
+        expect(result.current.overridingStudentId).toBeNull();
+        expect(mockGetExamLobbyWaitingList).toHaveBeenCalledTimes(2);
+        expect(mockToastSuccess).toHaveBeenCalledWith(
+            'Reconnect override granted successfully.',
+        );
     });
 });

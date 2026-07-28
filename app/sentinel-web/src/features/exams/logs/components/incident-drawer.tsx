@@ -23,6 +23,7 @@ import {
     Textarea,
     cn,
 } from '@sentinel/ui';
+import { useIncidentEvidenceQuery } from '@sentinel/hooks';
 import { type ApiIncidentLogItem } from '@sentinel/services';
 import { flagLabels } from '@sentinel/shared/constants';
 import type { ConfirmIncidentOptions, IncidentLifecycleAction } from '../hooks/use-incident-logs';
@@ -93,6 +94,11 @@ export function IncidentDrawer({
         }
     }, [incident]);
 
+    const evidenceQuery = useIncidentEvidenceQuery(
+        incident?.incidentId,
+        Boolean(isOpen && incident && !incident.details?._isGrouped),
+    );
+
     if (!incident) return null;
 
     const formattedType =
@@ -101,6 +107,10 @@ export function IncidentDrawer({
     const occurrenceCount = getOccurrenceCount(incident);
     const severityReasonLabel = formatSeverityReason(incident.details?.severityReason);
     const severityLadderLabel = formatSeverityLadder(incident);
+    const resolvedEvidenceUrl =
+        incident.evidenceUrl ??
+        evidenceQuery.data?.find((item) => item.state === 'AVAILABLE' && item.signedUrl)?.signedUrl ??
+        null;
 
     const handleConfirm = () => {
         const lifecycleReasonCode =
@@ -394,33 +404,52 @@ export function IncidentDrawer({
                             </div>
 
                             {/* Snapshot Evidence */}
-                            {incident.evidenceUrl && (
+                            {(resolvedEvidenceUrl || evidenceQuery.isLoading) && (
                                 <div className="space-y-2">
                                     <h4 className="text-foreground text-xs font-bold tracking-wider uppercase">
                                         Evidence Snapshot
                                     </h4>
-                                    <div className="border-border bg-muted group relative flex aspect-video items-center justify-center overflow-hidden rounded-md border">
-                                        <img
-                                            src={incident.evidenceUrl}
-                                            alt="Incident Evidence Snapshot"
-                                            className="h-full max-h-[200px] w-full object-cover"
-                                            onError={(e) => {
-                                                // If image fails to load, render placeholder
-                                                e.currentTarget.style.display = 'none';
-                                                const sibling = e.currentTarget
-                                                    .nextElementSibling as HTMLElement;
-                                                if (sibling) sibling.style.display = 'flex';
-                                            }}
-                                        />
-                                        <div className="text-muted-foreground bg-muted/60 absolute inset-0 hidden flex-col items-center justify-center p-4 text-center select-none">
-                                            <AlertTriangle className="text-muted-foreground mb-1.5 h-6 w-6" />
-                                            <span className="text-xs font-semibold">
-                                                Evidence frame unavailable
-                                            </span>
+                                    {resolvedEvidenceUrl ? (
+                                        <div className="border-border bg-muted group relative flex aspect-video items-center justify-center overflow-hidden rounded-md border">
+                                            <img
+                                                src={resolvedEvidenceUrl}
+                                                alt="Incident Evidence Snapshot"
+                                                className="h-full max-h-[200px] w-full object-cover"
+                                                onError={(e) => {
+                                                    // If image fails to load, render placeholder
+                                                    e.currentTarget.style.display = 'none';
+                                                    const sibling = e.currentTarget
+                                                        .nextElementSibling as HTMLElement;
+                                                    if (sibling) sibling.style.display = 'flex';
+                                                }}
+                                            />
+                                            <div className="text-muted-foreground bg-muted/60 absolute inset-0 hidden flex-col items-center justify-center p-4 text-center select-none">
+                                                <AlertTriangle className="text-muted-foreground mb-1.5 h-6 w-6" />
+                                                <span className="text-xs font-semibold">
+                                                    Evidence frame unavailable
+                                                </span>
+                                            </div>
                                         </div>
-                                    </div>
+                                    ) : (
+                                        <div className="border-border bg-muted/20 text-muted-foreground flex min-h-28 items-center justify-center rounded-md border border-dashed px-4 py-6 text-center text-sm">
+                                            Loading linked evidence...
+                                        </div>
+                                    )}
                                 </div>
                             )}
+
+                            {!resolvedEvidenceUrl &&
+                            !evidenceQuery.isLoading &&
+                            !evidenceQuery.isError ? (
+                                <div className="space-y-2">
+                                    <h4 className="text-foreground text-xs font-bold tracking-wider uppercase">
+                                        Evidence Snapshot
+                                    </h4>
+                                    <div className="border-border bg-muted/20 text-muted-foreground flex min-h-28 items-center justify-center rounded-md border border-dashed px-4 py-6 text-center text-sm">
+                                        No evidence frame is available for this incident.
+                                    </div>
+                                </div>
+                            ) : null}
 
                             {/* Raw details display */}
                             {incident.details &&

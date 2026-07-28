@@ -24,6 +24,10 @@ export type Flag = {
     severity: 'low' | 'medium' | 'high';
     snapshotUrl?: string;
     evidenceUrl?: string | null;
+    evidenceCount?: number;
+    evidenceStates?: Array<
+        'PENDING_UPLOAD' | 'AVAILABLE' | 'DELETE_PENDING' | 'DELETED' | 'FAILED' | 'EXPIRED'
+    >;
     status?: TelemetryIncidentStatus | null;
     occurrenceCount?: number;
     severityReason?: TelemetrySeverityReason | null;
@@ -41,6 +45,7 @@ export type StudentSession = {
     studentNo: string;
     firstName: string;
     lastName: string;
+    avatarUrl?: string | null;
     status: 'active' | 'submitted' | 'flagged' | 'disconnected';
     progress: number;
     flags?: Flag[];
