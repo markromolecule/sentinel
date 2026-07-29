@@ -6,7 +6,12 @@ import {
 import type {
     BuildExamAttemptQuestionReportsArgs,
     ExamAttemptQuestionReport,
+    ExamAttemptQuestionReportAnswerValue,
 } from './score-exam-attempt.types';
+
+function toQuestionReportAnswerValue(value: unknown): ExamAttemptQuestionReportAnswerValue {
+    return value === undefined ? null : (value as ExamAttemptQuestionReportAnswerValue);
+}
 
 /**
  * Builds item-level report data for an exam attempt so instructor and student
@@ -22,8 +27,10 @@ export function buildExamAttemptQuestionReports(
     const { questions, answers, evaluations = {}, itemOverrides = {}, scoringVersion = 'legacy' } = args;
 
     return questions.map((question) => {
-        const submittedAnswer = answers[question.id];
-        const displayAnswer = resolveQuestionAnswerForDisplay(question, submittedAnswer);
+        const submittedAnswer = toQuestionReportAnswerValue(answers[question.id]);
+        const displayAnswer = toQuestionReportAnswerValue(
+            resolveQuestionAnswerForDisplay(question, submittedAnswer),
+        );
         const isCorrect = isCorrectAnswer(question, submittedAnswer);
         const evaluation = evaluations[question.id] ?? null;
         const itemOverride = itemOverrides[question.id] ?? null;

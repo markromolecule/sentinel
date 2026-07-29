@@ -1,5 +1,11 @@
 import { type DbClient } from '@sentinel/db';
-import { buildExamAttemptQuestionReports, Schema, type ExamQuestion } from '@sentinel/shared';
+import {
+    buildExamAttemptQuestionReports,
+    Schema,
+    type ExamAttemptQuestionReportAnswerValue,
+    type ExamAttemptQuestionReport,
+    type ExamQuestion,
+} from '@sentinel/shared';
 import type { PassageType } from '@sentinel/shared/types';
 import { HTTPException } from 'hono/http-exception';
 import { sql } from 'kysely';
@@ -13,6 +19,36 @@ export type GetGradingAttemptDetailArgs = {
     attemptId: string;
     institutionId?: string;
 };
+
+function normalizeQuestionReports(args: {
+    questionReports: Array<
+        Omit<
+            ExamAttemptQuestionReport,
+            'prompt' | 'submittedAnswer' | 'displayAnswer' | 'answer'
+        > & {
+            prompt?: string;
+            submittedAnswer?: ExamAttemptQuestionReportAnswerValue;
+            displayAnswer?: ExamAttemptQuestionReportAnswerValue;
+            answer?: ExamAttemptQuestionReportAnswerValue;
+        }
+    >;
+    questions: ExamQuestion[];
+}): ExamAttemptQuestionReport[] {
+    const promptByQuestionId = new Map(
+        args.questions.map((question) => [question.id, question.content.prompt] as const),
+    );
+    const toAnswerValue = (
+        value: ExamAttemptQuestionReportAnswerValue | undefined,
+    ): ExamAttemptQuestionReportAnswerValue => value ?? null;
+
+    return args.questionReports.map((report) => ({
+        ...report,
+        prompt: report.prompt ?? promptByQuestionId.get(report.questionId) ?? '',
+        submittedAnswer: toAnswerValue(report.submittedAnswer),
+        displayAnswer: toAnswerValue(report.displayAnswer),
+        answer: toAnswerValue(report.answer ?? report.displayAnswer ?? report.submittedAnswer),
+    }));
+}
 
 /**
  * Retrieves the detailed content of a student exam attempt, including questions,
@@ -136,7 +172,10 @@ export async function getGradingAttemptDetail({
     }
 
     const questionReports = persistedScoreSnapshot.success
-        ? persistedScoreSnapshot.data.questionReports
+        ? normalizeQuestionReports({
+              questionReports: persistedScoreSnapshot.data.questionReports,
+              questions: finalQuestions,
+          })
         : buildExamAttemptQuestionReports({
               questions: finalQuestions,
               answers,
@@ -173,7 +212,10 @@ export async function getGradingAttemptDetail({
             attemptId: attemptRow.attemptId,
             examId: attemptRow.examId,
             scoringVersion: persistedScoreSnapshot.data.scoringVersion,
-            persistedQuestionReports: persistedScoreSnapshot.data.questionReports,
+            persistedQuestionReports: normalizeQuestionReports({
+                questionReports: persistedScoreSnapshot.data.questionReports,
+                questions: finalQuestions,
+            }),
             legacyQuestionReports,
         });
     }
