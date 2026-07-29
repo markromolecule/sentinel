@@ -3,6 +3,7 @@ import { HTTPException } from 'hono/http-exception';
 import { getGradingAttemptDetail } from '../../grading/services/get-grading-attempt-detail.service';
 import type { AssessmentAllowedRole } from '../../assessment/assessment-access';
 import type { AttemptReport } from '../reporting.dto';
+import { logScoreIntegrityCheck } from '../../shared/services/score-integrity-observability.service';
 
 type GetAttemptReportArgs = {
     dbClient: DbClient;
@@ -53,6 +54,15 @@ export async function getAttemptReport({
         dbClient,
         attemptId,
         institutionId,
+    });
+
+    logScoreIntegrityCheck({
+        boundary: 'report',
+        attemptId: detail.attempt.attemptId,
+        examId: detail.attempt.examId,
+        aggregateScore: detail.attempt.score,
+        aggregateTotalScore: detail.attempt.totalScore,
+        questionReports: detail.attempt.questionReports,
     });
 
     if (viewerRole === 'student') {

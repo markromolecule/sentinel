@@ -1,12 +1,14 @@
 import { type DbClient } from '@sentinel/db';
-import {
-    buildExamAttemptQuestionReports,
-    calculateEssayWeightedScore,
-    scoreExamAttempt,
-} from '@sentinel/shared';
+import { calculateEssayWeightedScore } from '@sentinel/shared';
 import { HTTPException } from 'hono/http-exception';
 import { getGradingAttemptDetail } from './get-grading-attempt-detail.service';
 import { appendExamAttemptLifecycleEvent } from '../../lifecycle/services/lifecycle-event.service';
+import {
+    ATTEMPT_SCORING_VERSION,
+    buildAnswerPayloadChecksum,
+    buildScoreSnapshot,
+} from '../../flow/services/attempt-snapshot.service';
+import { logScoreIntegrityCheck } from '../../shared/services/score-integrity-observability.service';
 
 export type UpdateGradingAttemptArgs = {
     dbClient: DbClient;
@@ -69,21 +71,20 @@ export async function updateGradingAttempt({
         });
     }
 
-    // 2. Score the auto-gradable (objective) questions
     const mappedQuestions = questions.map((q) => ({
         id: q.id,
         examId: q.examId,
         type: q.type as any,
+        sourceFileName: q.sourceFileName ?? null,
+        sourcePageNumber: q.sourcePageNumber ?? null,
+        sourceEvidence: q.sourceEvidence ?? null,
+        passageContent: q.passageContent ?? null,
+        passageType: q.passageType ?? null,
         points: q.points,
         orderIndex: q.orderIndex,
         content: q.content,
         tags: [],
     }));
-
-    scoreExamAttempt({
-        questions: mappedQuestions,
-        answers: attempt.answers,
-    });
 
     const questionPointsMap = new Map(questions.map((question) => [question.id, question.points]));
 
@@ -148,20 +149,29 @@ export async function updateGradingAttempt({
         {},
     );
 
-    const questionReports = buildExamAttemptQuestionReports({
+    const scoreSnapshot = buildScoreSnapshot({
         questions: mappedQuestions,
         answers: attempt.answers,
+        answerChecksum: buildAnswerPayloadChecksum({
+            attemptId,
+            answers: attempt.answers,
+            elapsedSeconds: 0,
+        }),
         evaluations: updatedEvaluations,
         itemOverrides: persistedOverrides,
     });
 
-    const calculatedScore = questionReports.reduce(
-        (sum, report) => sum + (report.awardedScore ?? 0),
-        0,
-    );
+    logScoreIntegrityCheck({
+        boundary: 'grading',
+        attemptId,
+        examId: attempt.examId,
+        scoringVersion: scoreSnapshot.scoringVersion,
+        aggregateScore: scoreSnapshot.score,
+        aggregateTotalScore: scoreSnapshot.totalScore,
+        questionReports: scoreSnapshot.questionReports,
+    });
 
-    // 4. Round the final score to nearest integer for DB compatibility (Int)
-    const roundedScore = Math.round(calculatedScore);
+    const roundedScore = scoreSnapshot.score;
 
     const existingGradingMetadata =
         typeof attempt.grading === 'object' && attempt.grading !== null ? attempt.grading : {};
@@ -188,6 +198,8 @@ export async function updateGradingAttempt({
     const updatePayload: Record<string, any> = {
         score: roundedScore,
         answer_snapshot: updatedSnapshot as any,
+        score_snapshot: scoreSnapshot as any,
+        scoring_version: ATTEMPT_SCORING_VERSION,
         last_synced_at: new Date(),
     };
 

@@ -13,6 +13,7 @@ import { buildStudentOverrideRuntimeAccess } from '../../student-overrides/stude
 import type { ExamRuntimeAccess } from '../../runtime-access/runtime-access.dto';
 import { TelemetrySettingsService } from '../../../telemetry/settings/telemetry-settings.service';
 import {
+    Schema,
     randomizeQuestionChoices,
     shuffleExamQuestions,
     type ExamQuestion,
@@ -117,6 +118,14 @@ export async function getExamDetail(
 
             if (!studentUserId) {
                 return mappedQuestions;
+            }
+
+            const persistedSnapshot = Schema.attemptAssessmentSnapshotSchema.safeParse(
+                resolvedExam.attempt_assessment_snapshot,
+            );
+
+            if (persistedSnapshot.success) {
+                return persistedSnapshot.data.questions.map(sanitizeQuestionForStudentAttempt);
             }
 
             const seed = resolvedExam.attempt_id || `${studentUserId}-${id}`;

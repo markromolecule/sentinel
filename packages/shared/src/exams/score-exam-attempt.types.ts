@@ -25,11 +25,16 @@ export type ExamAttemptQuestionReport = {
     questionId: string;
     questionType: ExamQuestion['type'];
     prompt: string;
+    submittedAnswer: ExamAttemptAnswerValue;
+    displayAnswer: ExamAttemptAnswerValue;
     answer: ExamAttemptAnswerValue;
     correctAnswer: ExamQuestionReportCorrectAnswer;
     isCorrect: boolean | null;
+    objectiveAwardedScore: number | null;
     awardedScore: number | null;
     maxScore: number;
+    manualReviewState: 'NOT_REQUIRED' | 'PENDING_REVIEW' | 'REVIEWED';
+    scoringVersion: string;
     evaluation: EssayQuestionEvaluation | null;
     override: ExamAttemptItemOverride | null;
 };
@@ -44,6 +49,7 @@ export type BuildExamAttemptQuestionReportsArgs = {
     answers: ExamAttemptAnswers;
     evaluations?: Record<string, EssayQuestionEvaluation>;
     itemOverrides?: Record<string, ExamAttemptItemOverride>;
+    scoringVersion?: string;
 };
 
 export type ScoreExamAttemptResult = ExamAttemptScoreSummary;

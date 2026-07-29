@@ -182,7 +182,14 @@ export type MatchingPair = {
 };
 
 export type ExamAttemptAnswerValue =
-    string | number | boolean | (string | number)[] | Record<string, string> | null | undefined;
+    | string
+    | number
+    | boolean
+    | string[]
+    | number[]
+    | Record<string, string>
+    | null
+    | undefined;
 
 export type ExamAttemptAnswers = Record<string, ExamAttemptAnswerValue>;
 
@@ -199,6 +206,7 @@ export type ExamAttemptScoreSummary = {
 export type ExamQuestionContent = {
     prompt: string;
     options?: string[];
+    optionTokens?: string[];
     correctAnswer?: string | number | boolean | string[] | number[];
     acceptedAnswers?: string[];
     rubric?: string;

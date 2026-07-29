@@ -4,6 +4,8 @@ import { AccessGatekeeperService } from '../../access/access.service';
 import { getExamConfigurationState } from '../../configuration/configuration.service';
 import type { ExamConfigurationState } from '../../configuration/configuration.dto';
 import { SessionRepository } from '../data/session.repository';
+import { getExamQuestionsData } from '../../exams/data/get-exam-questions';
+import { buildAssessmentSnapshot } from './attempt-snapshot.service';
 import { LogsService } from '../../../general/logs/logs.service';
 import { ActivityNotificationService } from '../../../general/notification/services/activity-notification.service';
 
@@ -83,6 +85,21 @@ export async function startSessionService({
             error: session.error,
             errorCode: session.errorCode,
         };
+    }
+
+    if (!session.isResumed) {
+        const questions = await getExamQuestionsData({ dbClient, examId });
+        const snapshot = buildAssessmentSnapshot({
+            attemptId: session.sessionId,
+            examId,
+            configurationState: configSnapshot,
+            questions: questions ?? [],
+        });
+
+        await SessionRepository.persistAssessmentSnapshot(dbClient, {
+            attemptId: session.sessionId,
+            snapshot,
+        });
     }
 
     void (async () => {

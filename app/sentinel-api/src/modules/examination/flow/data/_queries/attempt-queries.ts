@@ -20,6 +20,7 @@ export async function findExistingAttempt(
             'ea.status',
             'ea.created_at',
             'ea.answer_snapshot',
+            'ea.assessment_snapshot',
             'ea.time_spent_minutes',
             'ea.reconnect_attempt_count',
             'ea.last_reconnect_request_id',
@@ -84,6 +85,10 @@ export async function findOwnedAttempt(db: DbClient, sessionId: string, studentU
             'ea.status',
             'ea.started_at',
             'ea.lifecycle_state',
+            'ea.initial_score',
+            'ea.assessment_snapshot',
+            'ea.score_snapshot',
+            'ea.scoring_version',
             'st.institution_id',
         ])
         .where('ea.attempt_id', '=', sessionId)

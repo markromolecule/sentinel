@@ -8,6 +8,12 @@ import { getExamConfigurationState } from '../configuration/configuration.servic
 import { getExamQuestionsData } from '../exams/data/get-exam-questions';
 import { LogsService } from '../../general/logs/logs.service';
 import { ActivityNotificationService } from '../../general/notification/services/activity-notification.service';
+import { appendExamAttemptLifecycleEvent } from '../lifecycle/services/lifecycle-event.service';
+import {
+    buildAnswerPayloadChecksum,
+    ATTEMPT_SCORING_VERSION,
+} from './services/attempt-snapshot.service';
+import { buildPreparationToken } from './services/prepare-session.service';
 
 // Mock dependencies
 vi.mock('../access/access.service');
@@ -27,6 +33,9 @@ vi.mock('../../general/notification/services/activity-notification.service', () 
     ActivityNotificationService: {
         notifyInstitutionActivityCreated: vi.fn(),
     },
+}));
+vi.mock('../lifecycle/services/lifecycle-event.service', () => ({
+    appendExamAttemptLifecycleEvent: vi.fn().mockResolvedValue({}),
 }));
 
 describe('Examination Flow Integration', () => {
@@ -90,6 +99,7 @@ describe('Examination Flow Integration', () => {
         vi.mocked(ActivityNotificationService.notifyInstitutionActivityCreated).mockResolvedValue(
             undefined,
         );
+        vi.mocked(appendExamAttemptLifecycleEvent).mockResolvedValue({} as never);
     });
 
     it('denies session start if access gatekeeper determines student is ineligible', async () => {
@@ -415,12 +425,20 @@ describe('Examination Flow Integration', () => {
         expect(SessionRepository.completeSession).toHaveBeenCalledWith(mockDb, {
             sessionId: '8e08d10d-a25f-4d6d-9b5f-8ca176fb8bc6',
             score: 5,
+            initialScore: 5,
             totalScore: 5,
             timeSpentMinutes: 3,
             answeredCount: 1,
             answers: {
                 'question-1': true,
             },
+            scoreSnapshot: expect.objectContaining({
+                version: 'attempt-score.v1',
+                scoringVersion: 'fix-001-student-score-integrity-v1',
+                score: 5,
+                totalScore: 5,
+            }),
+            scoringVersion: 'fix-001-student-score-integrity-v1',
         });
     });
 
@@ -501,6 +519,7 @@ describe('Examination Flow Integration', () => {
         expect(SessionRepository.completeSession).toHaveBeenCalledWith(mockDb, {
             sessionId: '8e08d10d-a25f-4d6d-9b5f-8ca176fb8bc6',
             score: 0,
+            initialScore: 0,
             totalScore: 15,
             timeSpentMinutes: 3,
             answeredCount: 2,
@@ -508,7 +527,154 @@ describe('Examination Flow Integration', () => {
                 'question-1': false,
                 'question-2': 'Because arithmetic.',
             },
+            scoreSnapshot: expect.objectContaining({
+                version: 'attempt-score.v1',
+                scoringVersion: 'fix-001-student-score-integrity-v1',
+                score: 0,
+                totalScore: 15,
+                requiresManualReview: true,
+            }),
+            scoringVersion: 'fix-001-student-score-integrity-v1',
         });
+    });
+
+    it('rejects completion when the preparation token no longer matches the latest answer payload', async () => {
+        vi.mocked(SessionRepository.getOwnedSessionAttempt).mockResolvedValue({
+            attempt_id: '8e08d10d-a25f-4d6d-9b5f-8ca176fb8bc6',
+            exam_id: examId,
+            student_id: 'student-profile-1',
+            completed_at: null,
+            status: 'IN_PROGRESS',
+            lifecycle_state: 'IN_PROGRESS',
+            started_at: new Date('2026-04-18T10:00:00.000Z'),
+        } as never);
+        vi.mocked(getExamQuestionsData).mockResolvedValue([
+            {
+                question_id: 'question-1',
+                exam_id: examId,
+                exam_section_id: null,
+                source_question_bank_question_id: null,
+                source_collection_id: null,
+                question_type: 'TRUE_FALSE',
+                content: {
+                    prompt: 'Sentinel supports browser-based proctoring.',
+                    correctAnswer: true,
+                },
+                points: 5,
+                order_index: 0,
+                created_at: null,
+                updated_at: null,
+                source_origin: null,
+                source_file_name: null,
+                source_page_number: null,
+                source_evidence: null,
+            },
+        ] as never);
+
+        const stalePreparationToken = buildPreparationToken({
+            attemptId: '8e08d10d-a25f-4d6d-9b5f-8ca176fb8bc6',
+            answerChecksum: buildAnswerPayloadChecksum({
+                attemptId: '8e08d10d-a25f-4d6d-9b5f-8ca176fb8bc6',
+                answers: { 'question-1': false },
+                elapsedSeconds: 120,
+            }),
+            elapsedSeconds: 120,
+            lifecycleState: 'IN_PROGRESS',
+        });
+
+        await expect(
+            SessionManagerService.completeSession(mockDb, studentId, {
+                sessionId: '8e08d10d-a25f-4d6d-9b5f-8ca176fb8bc6',
+                answers: {
+                    'question-1': true,
+                },
+                elapsedSeconds: 121,
+                preparationToken: stalePreparationToken,
+            }),
+        ).rejects.toThrowError(HTTPException);
+
+        expect(SessionRepository.completeSession).not.toHaveBeenCalled();
+    });
+
+    it('treats a repeated completion with the same checksum as idempotent', async () => {
+        vi.mocked(SessionRepository.getOwnedSessionAttempt)
+            .mockResolvedValueOnce({
+                attempt_id: '8e08d10d-a25f-4d6d-9b5f-8ca176fb8bc6',
+                exam_id: examId,
+                student_id: 'student-profile-1',
+                completed_at: null,
+                status: 'IN_PROGRESS',
+                lifecycle_state: 'IN_PROGRESS',
+                started_at: new Date('2026-04-18T10:00:00.000Z'),
+            } as never)
+            .mockResolvedValueOnce({
+                attempt_id: '8e08d10d-a25f-4d6d-9b5f-8ca176fb8bc6',
+                exam_id: examId,
+                student_id: 'student-profile-1',
+                completed_at: new Date('2026-04-18T10:42:00.000Z'),
+                status: 'COMPLETED',
+                lifecycle_state: 'SUBMITTED',
+                score_snapshot: {
+                    version: 'attempt-score.v1',
+                    scoringVersion: ATTEMPT_SCORING_VERSION,
+                    generatedAt: '2026-04-18T10:42:00.000Z',
+                    answerChecksum: buildAnswerPayloadChecksum({
+                        attemptId: '8e08d10d-a25f-4d6d-9b5f-8ca176fb8bc6',
+                        answers: { 'question-1': true },
+                        elapsedSeconds: 121,
+                    }),
+                    score: 5,
+                    totalScore: 5,
+                    percentage: 100,
+                    answeredCount: 1,
+                    autoGradableQuestionCount: 1,
+                    manualReviewQuestionCount: 0,
+                    requiresManualReview: false,
+                    questionReports: [],
+                },
+                scoring_version: ATTEMPT_SCORING_VERSION,
+                started_at: new Date('2026-04-18T10:00:00.000Z'),
+            } as never);
+        vi.mocked(getExamQuestionsData).mockResolvedValue([
+            {
+                question_id: 'question-1',
+                exam_id: examId,
+                exam_section_id: null,
+                source_question_bank_question_id: null,
+                source_collection_id: null,
+                question_type: 'TRUE_FALSE',
+                content: {
+                    prompt: 'Sentinel supports browser-based proctoring.',
+                    correctAnswer: true,
+                },
+                points: 5,
+                order_index: 0,
+                created_at: null,
+                updated_at: null,
+                source_origin: null,
+                source_file_name: null,
+                source_page_number: null,
+                source_evidence: null,
+            },
+        ] as never);
+        vi.mocked(SessionRepository.completeSession).mockResolvedValue(undefined as never);
+
+        const result = await SessionManagerService.completeSession(mockDb, studentId, {
+            sessionId: '8e08d10d-a25f-4d6d-9b5f-8ca176fb8bc6',
+            answers: {
+                'question-1': true,
+            },
+            elapsedSeconds: 121,
+        });
+
+        expect(result).toMatchObject({
+            attemptId: '8e08d10d-a25f-4d6d-9b5f-8ca176fb8bc6',
+            score: 5,
+            totalScore: 5,
+            percentage: 100,
+            answeredCount: 1,
+        });
+        expect(appendExamAttemptLifecycleEvent).not.toHaveBeenCalled();
     });
 
     it('rejects completion when the session already belongs to a submitted attempt', async () => {

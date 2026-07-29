@@ -71,6 +71,7 @@ export async function loadExamReportSourceData(args: {
                 'latest_attempts.time_spent_minutes',
                 'latest_attempts.score',
                 'latest_attempts.total_score',
+                'latest_attempts.percentage',
                 'latest_attempts.lifecycle_state',
                 'latest_attempts.score_state',
                 'latest_attempts.closed_reason',

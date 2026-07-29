@@ -1,4 +1,5 @@
 import {
+    Badge,
     FormControl,
     FormDescription,
     FormField,
@@ -16,6 +17,8 @@ interface ConfigToggleRowProps {
     label: string;
     description: string;
     className?: string;
+    statusBadge?: string;
+    statusDescription?: string;
     getChecked?: (value: unknown) => boolean;
     getValue?: (checked: boolean) => unknown;
 }
@@ -25,6 +28,8 @@ export function ConfigToggleRow({
     label,
     description,
     className,
+    statusBadge,
+    statusDescription,
     getChecked,
     getValue,
 }: ConfigToggleRowProps) {
@@ -42,10 +47,27 @@ export function ConfigToggleRow({
                     )}
                 >
                     <div className="min-w-0 space-y-1">
-                        <FormLabel className="text-sm leading-none font-medium">{label}</FormLabel>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <FormLabel className="text-sm leading-none font-medium">
+                                {label}
+                            </FormLabel>
+                            {statusBadge ? (
+                                <Badge
+                                    variant="outline"
+                                    className="rounded-md px-2 py-0 text-[10px] uppercase"
+                                >
+                                    {statusBadge}
+                                </Badge>
+                            ) : null}
+                        </div>
                         <FormDescription className="text-sm leading-relaxed">
                             {description}
                         </FormDescription>
+                        {statusDescription ? (
+                            <p className="text-muted-foreground text-xs leading-relaxed">
+                                {statusDescription}
+                            </p>
+                        ) : null}
                     </div>
                     <FormControl>
                         <Switch

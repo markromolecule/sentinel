@@ -8,7 +8,9 @@ export function FillBlankQuestion({
     showCorrectAnswer,
 }: ExamQuestionRendererProps) {
     const blanks = question.content.blanks ?? [];
-    const values = Array.isArray(value) ? value : blanks.map(() => '');
+    const values: string[] = Array.isArray(value)
+        ? value.map((item) => String(item ?? ''))
+        : blanks.map(() => '');
 
     const updateBlank = (index: number, nextValue: string) => {
         const nextValues = [...values];
@@ -25,7 +27,7 @@ export function FillBlankQuestion({
                             Blank {index + 1}
                         </span>
                         <Input
-                            value={(values[index] as string) ?? ''}
+                            value={values[index] ?? ''}
                             onChange={(event) => updateBlank(index, event.target.value)}
                             placeholder={
                                 showCorrectAnswer
@@ -44,7 +46,7 @@ export function FillBlankQuestion({
             ) : (
                 <div className="space-y-2">
                     <Input
-                        value={(values[0] as string) ?? ''}
+                        value={values[0] ?? ''}
                         onChange={(event) => updateBlank(0, event.target.value)}
                         placeholder={
                             showCorrectAnswer

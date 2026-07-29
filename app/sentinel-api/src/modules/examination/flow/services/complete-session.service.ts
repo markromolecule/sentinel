@@ -1,25 +1,47 @@
 import { type DbClient } from '@sentinel/db';
 import { HTTPException } from 'hono/http-exception';
-import {
-    scoreExamAttempt,
-    shuffleExamQuestions,
-    randomizeQuestionChoices,
-    type ExamAttemptAnswers,
-} from '@sentinel/shared';
-import type { ExamQuestion } from '@sentinel/shared/types';
-import { getExamConfigurationState } from '../../configuration/configuration.service';
+import { type ExamAttemptAnswers } from '@sentinel/shared';
 import { SessionRepository } from '../data/session.repository';
-import { getExamQuestionsData } from '../../exams/data/get-exam-questions';
 import type { CompleteSessionBody } from '../flow.dto';
 import { calibrateQuestionDifficulty } from '../../../content/question-bank/services/calibrate-question-difficulty.service';
 import { LogsService } from '../../../general/logs/logs.service';
 import { ActivityNotificationService } from '../../../general/notification/services/activity-notification.service';
+import { getExamConfigurationState } from '../../configuration/configuration.service';
+import { getExamQuestionsData } from '../../exams/data/get-exam-questions';
+import {
+    ATTEMPT_SCORING_VERSION,
+    buildAnswerPayloadChecksum,
+    buildAssessmentSnapshot,
+    buildScoreSnapshot,
+    parseAssessmentSnapshot,
+    parseScoreSnapshot,
+} from './attempt-snapshot.service';
+import { buildPreparationToken } from './prepare-session.service';
+import { appendExamAttemptLifecycleEvent } from '../../lifecycle/services/lifecycle-event.service';
+import { logScoreIntegrityCheck } from '../../shared/services/score-integrity-observability.service';
 
 export type CompleteSessionServiceArgs = {
     dbClient: DbClient;
     studentUserId: string;
     body: CompleteSessionBody;
 };
+
+async function executeInTransactionIfAvailable<T>(
+    dbClient: DbClient,
+    callback: (trx: DbClient) => Promise<T>,
+) {
+    const maybeTransactional = dbClient as DbClient & {
+        transaction?: () => {
+            execute: <R>(cb: (trx: DbClient) => Promise<R>) => Promise<R>;
+        };
+    };
+
+    if (typeof maybeTransactional.transaction === 'function') {
+        return maybeTransactional.transaction().execute(callback);
+    }
+
+    return callback(dbClient);
+}
 
 function resolveSubmissionLifecycleConflictMessage(lifecycleState?: string | null) {
     if (lifecycleState === 'LOCKED') {
@@ -31,6 +53,22 @@ function resolveSubmissionLifecycleConflictMessage(lifecycleState?: string | nul
     }
 
     return 'This exam attempt has been closed and can no longer be submitted.';
+}
+
+function buildSummaryFromScoreSnapshot(scoreSnapshot: ReturnType<typeof parseScoreSnapshot>) {
+    if (!scoreSnapshot) {
+        return null;
+    }
+
+    return {
+        score: scoreSnapshot.score,
+        totalScore: scoreSnapshot.totalScore,
+        percentage: scoreSnapshot.percentage,
+        answeredCount: scoreSnapshot.answeredCount,
+        autoGradableQuestionCount: scoreSnapshot.autoGradableQuestionCount,
+        manualReviewQuestionCount: scoreSnapshot.manualReviewQuestionCount,
+        requiresManualReview: scoreSnapshot.requiresManualReview,
+    };
 }
 
 /**
@@ -77,61 +115,130 @@ export async function completeSessionService({
         });
     }
 
-    const [questions, configSnapshot] = await Promise.all([
-        getExamQuestionsData({
-            dbClient,
+    const assessmentSnapshot =
+        parseAssessmentSnapshot(attempt.assessment_snapshot) ??
+        buildAssessmentSnapshot({
+            attemptId: body.sessionId,
             examId: attempt.exam_id,
-        }),
-        getExamConfigurationState(dbClient, attempt.exam_id),
-    ]);
+            configurationState: await getExamConfigurationState(dbClient, attempt.exam_id),
+            questions: await getExamQuestionsData({
+                dbClient,
+                examId: attempt.exam_id,
+            }),
+        });
 
-    const mappedQuestions: ExamQuestion[] = questions.map((question) => ({
-        id: question.question_id,
-        examId: question.exam_id,
-        sectionId: question.exam_section_id ?? undefined,
-        sourceQuestionBankQuestionId: question.source_question_bank_question_id ?? undefined,
-        sourceCollectionId: question.source_collection_id ?? undefined,
-        sourceOrigin: question.source_origin === 'AI_PDF' ? 'AI_PDF' : undefined,
-        sourceFileName: question.source_file_name ?? null,
-        sourcePageNumber: question.source_page_number ?? null,
-        sourceEvidence: question.source_evidence ?? null,
-        passageContent: question.passage_content ?? null,
-        passageType: question.passage_type === 'html' ? 'html' : 'plain',
-        type: question.question_type as ExamQuestion['type'],
-        points: question.points,
-        orderIndex: question.order_index,
-        content: question.content as ExamQuestion['content'],
-        tags: [],
-    }));
-
-    let finalQuestions = mappedQuestions;
-    const seed = attempt.attempt_id || `${studentUserId}-${attempt.exam_id}`;
-
-    if (configSnapshot.settings.shuffleQuestions) {
-        finalQuestions = shuffleExamQuestions(finalQuestions, seed);
+    if (!assessmentSnapshot) {
+        throw new HTTPException(409, {
+            message: 'This exam attempt is missing its assessment snapshot and cannot be scored.',
+        });
     }
 
-    if (configSnapshot.settings.randomizeChoices) {
-        finalQuestions = finalQuestions.map((q) => randomizeQuestionChoices(q, `${seed}-${q.id}`));
-    }
-
-    const summary = scoreExamAttempt({
-        questions: finalQuestions,
+    const answerChecksum = buildAnswerPayloadChecksum({
+        attemptId: body.sessionId,
         answers: body.answers as ExamAttemptAnswers,
+        elapsedSeconds: body.elapsedSeconds,
     });
 
-    const completedAttempt = await SessionRepository.completeSession(dbClient, {
-        sessionId: body.sessionId,
-        score: summary.score,
-        totalScore: summary.totalScore,
-        timeSpentMinutes: body.elapsedSeconds > 0 ? Math.ceil(body.elapsedSeconds / 60) : 0,
-        answeredCount: summary.answeredCount,
+    if (body.preparationToken) {
+        const expectedPreparationToken = buildPreparationToken({
+            attemptId: body.sessionId,
+            answerChecksum,
+            elapsedSeconds: body.elapsedSeconds,
+            lifecycleState: attempt.lifecycle_state,
+        });
+
+        if (body.preparationToken !== expectedPreparationToken) {
+            throw new HTTPException(409, {
+                message:
+                    'Your turn-in preview is no longer valid. Please review the latest prepared result before submitting.',
+            });
+        }
+    }
+
+    const scoreSnapshot = buildScoreSnapshot({
+        questions: assessmentSnapshot.questions,
         answers: body.answers as ExamAttemptAnswers,
+        answerChecksum,
     });
 
-    if (!completedAttempt?.completed_at) {
-        throw new Error('Failed to finalize the exam session.');
-    }
+    logScoreIntegrityCheck({
+        boundary: 'commit',
+        attemptId: body.sessionId,
+        examId: attempt.exam_id,
+        scoringVersion: scoreSnapshot.scoringVersion,
+        aggregateScore: scoreSnapshot.score,
+        aggregateTotalScore: scoreSnapshot.totalScore,
+        questionReports: scoreSnapshot.questionReports,
+    });
+
+    const summary = {
+        score: scoreSnapshot.score,
+        totalScore: scoreSnapshot.totalScore,
+        percentage: scoreSnapshot.percentage,
+        answeredCount: scoreSnapshot.answeredCount,
+        autoGradableQuestionCount: scoreSnapshot.autoGradableQuestionCount,
+        manualReviewQuestionCount: scoreSnapshot.manualReviewQuestionCount,
+        requiresManualReview: scoreSnapshot.requiresManualReview,
+    };
+
+    const completedAttempt = await executeInTransactionIfAvailable(dbClient, async (trx) => {
+        const updatedAttempt = await SessionRepository.completeSession(trx, {
+            sessionId: body.sessionId,
+            score: summary.score,
+            initialScore: summary.score,
+            totalScore: summary.totalScore,
+            timeSpentMinutes: body.elapsedSeconds > 0 ? Math.ceil(body.elapsedSeconds / 60) : 0,
+            answeredCount: summary.answeredCount,
+            answers: body.answers as ExamAttemptAnswers,
+            scoreSnapshot,
+            scoringVersion: ATTEMPT_SCORING_VERSION,
+        });
+
+        if (!updatedAttempt?.completed_at) {
+            const latestAttempt = await SessionRepository.getOwnedSessionAttempt(trx, {
+                sessionId: body.sessionId,
+                studentUserId,
+            });
+            const latestScoreSnapshot = parseScoreSnapshot(latestAttempt?.score_snapshot);
+
+            if (latestAttempt?.completed_at && latestAttempt.status === 'COMPLETED' && latestScoreSnapshot) {
+                if (latestScoreSnapshot.answerChecksum === answerChecksum) {
+                    return {
+                        attempt_id: latestAttempt.attempt_id,
+                        completed_at: latestAttempt.completed_at,
+                        reusedExistingResult: true as const,
+                    };
+                }
+
+                throw new HTTPException(409, {
+                    message:
+                        'This exam session was already submitted with a different prepared result. Please refresh the history view.',
+                });
+            }
+
+            throw new HTTPException(409, {
+                message: 'This exam session could not be submitted because its lifecycle changed.',
+            });
+        }
+
+        await appendExamAttemptLifecycleEvent({
+            dbClient: trx,
+            attemptId: updatedAttempt.attempt_id,
+            examId: attempt.exam_id,
+            studentId: attempt.student_id,
+            eventType: 'SUBMITTED',
+            previousState: (attempt.lifecycle_state as any) ?? 'IN_PROGRESS',
+            nextState: 'SUBMITTED',
+            actorUserId: studentUserId,
+            notes: 'Submitted from complete session flow',
+            metadata: {
+                scoringVersion: ATTEMPT_SCORING_VERSION,
+                answerChecksum,
+            },
+        });
+
+        return updatedAttempt;
+    });
 
     // Telemetry logging and notifications
     if (attempt.institution_id) {
@@ -184,7 +291,7 @@ export async function completeSessionService({
     // Post-completion IRT calibration (non-critical, fire-and-forget)
     // Identify all question bank question IDs in this exam and calibrate.
     try {
-        const questionBankIds = mappedQuestions
+        const questionBankIds = assessmentSnapshot.questions
             .map((q) => q.sourceQuestionBankQuestionId)
             .filter((id): id is string => Boolean(id));
 

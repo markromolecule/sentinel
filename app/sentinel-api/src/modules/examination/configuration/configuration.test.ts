@@ -108,7 +108,7 @@ describe('Examination configuration guards', () => {
             shuffleQuestions: true,
             showCorrectAnswers: false,
             allowReview: true,
-            randomizeChoices: false,
+            randomizeChoices: true,
         });
     });
 

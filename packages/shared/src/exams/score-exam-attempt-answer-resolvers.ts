@@ -50,6 +50,88 @@ function resolveOptionToText(value: unknown, options: string[]): string | null {
     return null;
 }
 
+function resolveOptionToDisplayText(value: unknown, options: string[]): string | number | null {
+    if (typeof value === 'number') {
+        return options[value] ?? value;
+    }
+
+    if (typeof value === 'string') {
+        const labelMatch = value.match(CHOICE_LABEL_PREFIX_REGEX);
+        if (labelMatch?.[1]) {
+            const optionIndex = labelMatch[1].toUpperCase().charCodeAt(0) - 65;
+            const option = options[optionIndex];
+            if (option) {
+                return option;
+            }
+        }
+
+        const normalizedValue = normalizeText(value);
+        const normalizedOptions = options.map((option) => ({
+            raw: option,
+            normalized: normalizeText(option),
+            stripped: normalizeText(option.replace(CHOICE_LABEL_PREFIX_REGEX, '').trim()),
+        }));
+
+        const directMatch = normalizedOptions.find(
+            (option) =>
+                option.normalized === normalizedValue || option.stripped === normalizedValue,
+        );
+
+        if (directMatch) {
+            return directMatch.raw;
+        }
+    }
+
+    return null;
+}
+
+function resolveTokenizedOptionToText(value: unknown, question: ExamQuestion): string | null {
+    if (typeof value !== 'string') {
+        return null;
+    }
+
+    const options = question.content.options ?? [];
+    const optionTokens = question.content.optionTokens ?? [];
+
+    const tokenIndex = optionTokens.indexOf(value);
+
+    if (tokenIndex < 0) {
+        return null;
+    }
+
+    return normalizeText(options[tokenIndex] ?? '');
+}
+
+function resolveTokenizedOptionIndex(value: unknown, question: ExamQuestion): number | null {
+    if (typeof value !== 'string') {
+        return null;
+    }
+
+    const optionTokens = question.content.optionTokens ?? [];
+    const tokenIndex = optionTokens.indexOf(value);
+
+    return tokenIndex >= 0 ? tokenIndex : null;
+}
+
+function resolveTokenizedOptionToDisplayText(
+    value: unknown,
+    question: ExamQuestion,
+): string | number | null {
+    if (typeof value !== 'string') {
+        return null;
+    }
+
+    const options = question.content.options ?? [];
+    const optionTokens = question.content.optionTokens ?? [];
+    const tokenIndex = optionTokens.indexOf(value);
+
+    if (tokenIndex < 0) {
+        return null;
+    }
+
+    return options[tokenIndex] ?? value;
+}
+
 /**
  * Resolves the TRUE_FALSE expected answer with consistent priority:
  * correctBoolean > correctAnswer — used by both scoring and display.
@@ -62,8 +144,17 @@ function resolveTrueFalseExpected(question: ExamQuestion): boolean | null {
 
 function resolveSingleChoiceAnswer(question: ExamQuestion, value: ExamAttemptAnswerValue): boolean {
     const options = question.content.options ?? [];
+    const expectedIndex =
+        typeof question.content.correctAnswer === 'number' ? question.content.correctAnswer : null;
+    const receivedTokenIndex = resolveTokenizedOptionIndex(value, question);
+
+    if (expectedIndex !== null && receivedTokenIndex !== null) {
+        return expectedIndex === receivedTokenIndex;
+    }
+
     const expected = resolveOptionToText(question.content.correctAnswer, options);
-    const received = resolveOptionToText(value, options);
+    const received =
+        resolveTokenizedOptionToText(value, question) ?? resolveOptionToText(value, options);
     return expected !== null && received !== null && expected === received;
 }
 
@@ -78,12 +169,32 @@ function resolveMultiChoiceAnswers(question: ExamQuestion, value: ExamAttemptAns
     // Guard: empty answer key should never be treated as correct
     if (answerKey.length === 0) return false;
 
+    const hasTokenizedSubmission = value.some((item) => resolveTokenizedOptionIndex(item, question) !== null);
+    const hasNumericAnswerKey = answerKey.every((item) => typeof item === 'number');
+
+    if (hasTokenizedSubmission && hasNumericAnswerKey) {
+        const expectedIndexes = new Set(answerKey.filter((item): item is number => typeof item === 'number'));
+        const receivedIndexes = new Set(
+            value
+                .map((item) => resolveTokenizedOptionIndex(item, question))
+                .filter((item): item is number => item !== null),
+        );
+
+        if (expectedIndexes.size === receivedIndexes.size) {
+            return Array.from(expectedIndexes).every((item) => receivedIndexes.has(item));
+        }
+    }
+
     // Always normalize to text for consistent cross-type comparison.
     // This fixes the bug where index-keyed answers silently dropped string submissions.
     const toTextSet = (items: unknown[]): Set<string> =>
         new Set(
             items
-                .map((item) => resolveOptionToText(item, options))
+                .map(
+                    (item) =>
+                        resolveTokenizedOptionToText(item, question) ??
+                        resolveOptionToText(item, options),
+                )
                 .filter((item): item is string => item !== null && item.length > 0),
         );
 
@@ -104,8 +215,8 @@ function resolveIdentificationAnswer(
     const acceptedAnswers = question.content.acceptedAnswers?.length
         ? question.content.acceptedAnswers
         : typeof question.content.correctAnswer === 'string'
-          ? [question.content.correctAnswer]
-          : [];
+            ? [question.content.correctAnswer]
+            : [];
 
     const normalizedValue = normalizeText(value, caseSensitive);
     return acceptedAnswers.some(
@@ -146,7 +257,7 @@ function resolveMatchingAnswer(question: ExamQuestion, value: ExamAttemptAnswerV
         return (
             typeof submittedValue === 'string' &&
             normalizeText(submittedValue, caseSensitive) ===
-                normalizeText(pair.right, caseSensitive)
+            normalizeText(pair.right, caseSensitive)
         );
     });
 }
@@ -200,6 +311,36 @@ export function isCorrectAnswer(
     }
 }
 
+export function resolveQuestionAnswerForDisplay(
+    question: ExamQuestion,
+    value: ExamAttemptAnswerValue,
+): ExamAttemptAnswerValue {
+    if (question.type === 'MULTIPLE_CHOICE') {
+        return (
+            resolveTokenizedOptionToDisplayText(value, question) ??
+            resolveOptionToDisplayText(value, question.content.options ?? []) ??
+            value
+        );
+    }
+
+    if (question.type === 'MULTIPLE_RESPONSE' && Array.isArray(value)) {
+        const options = question.content.options ?? [];
+
+        return value.map((item) => {
+            const resolvedDisplayValue =
+                resolveTokenizedOptionToDisplayText(item, question) ??
+                resolveOptionToDisplayText(item, options) ??
+                item;
+
+            return typeof resolvedDisplayValue === 'string'
+                ? resolvedDisplayValue
+                : String(resolvedDisplayValue);
+        });
+    }
+
+    return value;
+}
+
 export function resolveQuestionCorrectAnswer(
     question: ExamQuestion,
 ): ExamQuestionReportCorrectAnswer {
@@ -225,8 +366,8 @@ export function resolveQuestionCorrectAnswer(
             return question.content.acceptedAnswers?.length
                 ? question.content.acceptedAnswers
                 : typeof question.content.correctAnswer === 'string'
-                  ? [question.content.correctAnswer]
-                  : null;
+                    ? [question.content.correctAnswer]
+                    : null;
         case 'FILL_BLANK':
             return question.content.blanks ?? null;
         case 'MATCHING':

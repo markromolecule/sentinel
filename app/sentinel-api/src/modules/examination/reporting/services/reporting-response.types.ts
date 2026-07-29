@@ -27,6 +27,7 @@ export type ReportStudentRow = {
     time_spent_minutes: number | null;
     score: number | null;
     total_score: number | null;
+    percentage?: number | null;
     attempt_count: number | string | null;
     incident_count: number | string | null;
     open_incident_count: number | string | null;

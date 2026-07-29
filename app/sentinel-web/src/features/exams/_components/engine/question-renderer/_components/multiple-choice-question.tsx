@@ -12,12 +12,14 @@ export function MultipleChoiceQuestion({
     onToggleOptionCrossOut,
 }: ExamQuestionRendererProps) {
     const options = question.content.options ?? [];
+    const optionTokens = question.content.optionTokens ?? [];
 
     return (
         <fieldset className="m-0 grid gap-3 border-0 p-0">
             <legend className="sr-only">{question.content.prompt}</legend>
             {options.map((option, index) => {
-                const isSelected = value === index;
+                const optionValue = optionTokens[index] ?? index;
+                const isSelected = value === optionValue || value === index;
                 const isCorrect =
                     showCorrectAnswer &&
                     (question.content.correctAnswer === index ||
@@ -41,7 +43,7 @@ export function MultipleChoiceQuestion({
                                 name={question.id}
                                 checked={isSelected}
                                 disabled={isCrossedOut}
-                                onChange={() => onChange(index)}
+                                onChange={() => onChange(optionValue)}
                                 className="sr-only"
                             />
                             <label

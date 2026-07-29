@@ -20,6 +20,7 @@ export type StoredExamTurnInPreview = {
     sessionId: string;
     answers: ExamAttemptAnswers;
     elapsedSeconds: number;
+    preparationToken?: string;
     releaseScoreMode: NonNullable<ExamConfiguration['releaseScoreMode']>;
     scoreVisible: boolean;
     summary: StoredExamTurnInPreviewSummary;
@@ -83,6 +84,8 @@ export function readStoredExamTurnInPreview(examId: string): StoredExamTurnInPre
             sessionId: record.sessionId,
             answers: (record.answers as ExamAttemptAnswers) ?? {},
             elapsedSeconds: record.elapsedSeconds,
+            preparationToken:
+                typeof record.preparationToken === 'string' ? record.preparationToken : undefined,
             releaseScoreMode:
                 record.releaseScoreMode === 'MANUAL_RELEASE' ? 'MANUAL_RELEASE' : 'AUTO_RELEASE',
             scoreVisible:

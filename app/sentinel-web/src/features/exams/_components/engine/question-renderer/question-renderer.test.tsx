@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { FillBlankQuestion } from './_components/fill-blank-question';
 import { MatchingQuestion } from './_components/matching-question';
@@ -209,6 +209,64 @@ describe('Question Renderers', () => {
             const radioB = screen.getByRole('radio', { name: /Option B/i }) as HTMLInputElement;
             expect(radioB.checked).toBe(true);
         });
+
+        it('submits the attempt-specific option token when available', () => {
+            const onChange = vi.fn();
+
+            render(
+                <MultipleChoiceQuestion
+                    question={{
+                        ...question,
+                        content: {
+                            ...question.content,
+                            optionTokens: ['tok-a', 'tok-b', 'tok-c'],
+                        },
+                    }}
+                    value={'tok-b'}
+                    onChange={onChange}
+                    showCorrectAnswer={false}
+                />,
+            );
+
+            fireEvent.click(screen.getByRole('radio', { name: /Option C/i }));
+
+            expect(onChange).toHaveBeenCalledWith('tok-c');
+        });
+
+        it('keeps the token-backed selection checked after rerender', () => {
+            const { rerender } = render(
+                <MultipleChoiceQuestion
+                    question={{
+                        ...question,
+                        content: {
+                            ...question.content,
+                            optionTokens: ['tok-a', 'tok-b', 'tok-c'],
+                        },
+                    }}
+                    value={'tok-b'}
+                    onChange={vi.fn()}
+                    showCorrectAnswer={false}
+                />,
+            );
+
+            rerender(
+                <MultipleChoiceQuestion
+                    question={{
+                        ...question,
+                        content: {
+                            ...question.content,
+                            optionTokens: ['tok-a', 'tok-b', 'tok-c'],
+                        },
+                    }}
+                    value={'tok-b'}
+                    onChange={vi.fn()}
+                    showCorrectAnswer={false}
+                />,
+            );
+
+            const radioB = screen.getByRole('radio', { name: /Option B/i }) as HTMLInputElement;
+            expect(radioB.checked).toBe(true);
+        });
     });
 
     describe('MultipleResponseQuestion Baseline A11y', () => {
@@ -245,6 +303,67 @@ describe('Question Renderers', () => {
 
             expect(checkX.checked).toBe(true);
             expect(checkY.checked).toBe(false);
+            expect(checkZ.checked).toBe(true);
+        });
+
+        it('submits and retains attempt-specific option tokens when toggling selections', () => {
+            const onChange = vi.fn();
+
+            render(
+                <MultipleResponseQuestion
+                    question={{
+                        ...question,
+                        content: {
+                            ...question.content,
+                            optionTokens: ['mr-a', 'mr-b', 'mr-c'],
+                        },
+                    }}
+                    value={['mr-a', 'mr-c']}
+                    onChange={onChange}
+                    showCorrectAnswer={false}
+                />,
+            );
+
+            fireEvent.click(screen.getByRole('checkbox', { name: /Choice Y/i }));
+
+            expect(onChange).toHaveBeenCalledWith(['mr-a', 'mr-c', 'mr-b']);
+        });
+
+        it('keeps token-backed checkbox selections checked after rerender', () => {
+            const { rerender } = render(
+                <MultipleResponseQuestion
+                    question={{
+                        ...question,
+                        content: {
+                            ...question.content,
+                            optionTokens: ['mr-a', 'mr-b', 'mr-c'],
+                        },
+                    }}
+                    value={['mr-a', 'mr-c']}
+                    onChange={vi.fn()}
+                    showCorrectAnswer={false}
+                />,
+            );
+
+            rerender(
+                <MultipleResponseQuestion
+                    question={{
+                        ...question,
+                        content: {
+                            ...question.content,
+                            optionTokens: ['mr-a', 'mr-b', 'mr-c'],
+                        },
+                    }}
+                    value={['mr-a', 'mr-c']}
+                    onChange={vi.fn()}
+                    showCorrectAnswer={false}
+                />,
+            );
+
+            const checkX = screen.getByRole('checkbox', { name: /Choice X/i }) as HTMLInputElement;
+            const checkZ = screen.getByRole('checkbox', { name: /Choice Z/i }) as HTMLInputElement;
+
+            expect(checkX.checked).toBe(true);
             expect(checkZ.checked).toBe(true);
         });
     });

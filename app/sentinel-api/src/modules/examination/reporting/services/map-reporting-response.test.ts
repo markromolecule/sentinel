@@ -252,6 +252,39 @@ describe('map reporting response', () => {
         expect(student.finalizedAt).toBe('2026-04-20T10:00:00.000Z');
     });
 
+    it('prefers persisted percentage when legacy aggregate columns drift', () => {
+        const student = mapReportStudentSummary(
+            {
+                student_user_id: '11111111-1111-4111-8111-111111111111',
+                student_record_id: '22222222-2222-4222-8222-222222222222',
+                student_number: '2024-0007',
+                first_name: 'Ella',
+                last_name: 'Cruz',
+                attempt_id: '33333333-3333-4333-8333-333333333333',
+                attempt_status: 'COMPLETED',
+                started_at: '2026-04-20T09:00:00.000Z',
+                completed_at: '2026-04-20T09:45:00.000Z',
+                time_spent_minutes: 45,
+                score: 0,
+                total_score: 5,
+                percentage: 60,
+                attempt_count: 1,
+                incident_count: 0,
+                open_incident_count: 0,
+                pending_incident_count: 0,
+                reviewed_incident_count: 0,
+                confirmed_incident_count: 0,
+                dismissed_incident_count: 0,
+                highest_incident_type: null,
+                highest_incident_severity: null,
+            },
+            75,
+        );
+
+        expect(student.percentage).toBe(60);
+        expect(student.needsRetake).toBe(true);
+    });
+
     it('supports new attempt lifecycle states (LOCKED, CLOSED, SUPERSEDED) and finalized score states', () => {
         // Locked attempt
         const lockedStudent = mapReportStudentSummary(

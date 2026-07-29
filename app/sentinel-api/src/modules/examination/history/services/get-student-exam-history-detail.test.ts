@@ -146,6 +146,40 @@ describe('getStudentExamHistoryDetail', () => {
         );
     });
 
+    it('passes persisted score snapshots through to the history mapper', async () => {
+        const rawRecord = {
+            exam_id: 'exam-1',
+            attempt_id: 'attempt-1',
+            attempt_score: 0,
+            attempt_total_score: 10,
+            attempt_score_snapshot: {
+                version: 'attempt-score.v1',
+                scoringVersion: 'objective-baseline.v1',
+                generatedAt: '2026-07-29T05:00:00.000Z',
+                score: 3,
+                totalScore: 5,
+                percentage: 60,
+                answeredCount: 5,
+                autoGradableQuestionCount: 5,
+                manualReviewQuestionCount: 0,
+                requiresManualReview: false,
+                questionReports: [],
+            },
+        };
+        const builder = createQueryBuilder(rawRecord);
+        const dbClient = {
+            selectFrom: vi.fn(() => builder),
+        } as any;
+
+        await getStudentExamHistoryDetail(dbClient, 'attempt-1', 'student-user-1');
+
+        expect(mapExamHistoryDetailResponse).toHaveBeenCalledWith(
+            expect.objectContaining({
+                attempt_score_snapshot: rawRecord.attempt_score_snapshot,
+            }),
+        );
+    });
+
     it('resolves inherited passing_score through global defaults before mapping history detail', async () => {
         const rawRecord = {
             exam_id: 'exam-1',

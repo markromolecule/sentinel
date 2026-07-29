@@ -1,4 +1,5 @@
 import { type DbClient } from '@sentinel/db';
+import type { AttemptAssessmentSnapshot, AttemptScoreSnapshot } from '@sentinel/shared';
 import type { ExamAttemptAnswers } from '@sentinel/shared/types';
 
 // ---------------------------------------------------------------------------
@@ -64,20 +65,26 @@ export async function completeAttempt(
     args: {
         sessionId: string;
         score: number;
+        initialScore: number;
         totalScore: number;
         timeSpentMinutes: number;
         answeredCount: number;
         answers: ExamAttemptAnswers;
+        scoreSnapshot: AttemptScoreSnapshot;
+        scoringVersion: string;
     },
 ) {
     return await db
         .updateTable('exam_attempts')
         .set({
             score: args.score,
+            initial_score: args.initialScore,
             total_score: args.totalScore,
             time_spent_minutes: args.timeSpentMinutes,
             answered_question_count: args.answeredCount,
             answer_snapshot: args.answers as unknown,
+            score_snapshot: args.scoreSnapshot as unknown,
+            scoring_version: args.scoringVersion,
             last_synced_at: new Date(),
             completed_at: new Date(),
             status: 'COMPLETED',
@@ -85,8 +92,28 @@ export async function completeAttempt(
             score_state: 'DRAFT',
         })
         .where('attempt_id', '=', args.sessionId)
+        .where('status', '=', 'IN_PROGRESS')
+        .where('completed_at', 'is', null)
+        .where('score_snapshot', 'is', null)
         .returning(['attempt_id', 'completed_at'])
         .executeTakeFirst();
+}
+
+export async function persistAttemptAssessmentSnapshot(
+    db: DbClient,
+    args: {
+        attemptId: string;
+        snapshot: AttemptAssessmentSnapshot;
+    },
+) {
+    return await db
+        .updateTable('exam_attempts')
+        .set({
+            assessment_snapshot: args.snapshot as unknown,
+        })
+        .where('attempt_id', '=', args.attemptId)
+        .where('assessment_snapshot', 'is', null)
+        .execute();
 }
 
 // ---------------------------------------------------------------------------

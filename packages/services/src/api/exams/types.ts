@@ -542,11 +542,22 @@ export type CompleteExamSessionPayload = {
     sessionId: string;
     answers: ExamAttemptAnswers;
     elapsedSeconds: number;
+    preparationToken?: string;
 };
 
 export type CompleteExamSessionResult = import('@sentinel/shared/types').ExamAttemptScoreSummary & {
     attemptId: string;
     completedAt: string;
+};
+
+export type PrepareExamSessionPayload = {
+    sessionId: string;
+    answers: ExamAttemptAnswers;
+    elapsedSeconds: number;
+};
+
+export type PrepareExamSessionResult = import('@sentinel/shared/types').ExamAttemptScoreSummary & {
+    preparationToken: string;
 };
 
 export type SyncExamProgressPayload = {

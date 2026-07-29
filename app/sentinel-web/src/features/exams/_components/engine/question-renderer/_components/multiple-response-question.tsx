@@ -12,8 +12,35 @@ export function MultipleResponseQuestion({
     onToggleOptionCrossOut,
 }: ExamQuestionRendererProps) {
     const options = question.content.options ?? [];
-    const selectedValues = Array.isArray(value)
-        ? value.filter((item): item is number => typeof item === 'number')
+    const optionTokens = question.content.optionTokens ?? [];
+    const hasOptionTokens = optionTokens.length > 0;
+    const selectedTokenValues: string[] = Array.isArray(value)
+        ? value.flatMap((item) => {
+            if (typeof item === 'string') {
+                return optionTokens.includes(item) ? [item] : [];
+            }
+
+            if (typeof item === 'number') {
+                const token = optionTokens[item];
+                return token ? [token] : [];
+            }
+
+            return [];
+        })
+        : [];
+    const selectedIndexValues: number[] = Array.isArray(value)
+        ? value.flatMap((item) => {
+            if (typeof item === 'number') {
+                return [item];
+            }
+
+            if (typeof item === 'string') {
+                const optionIndex = options.indexOf(item);
+                return optionIndex >= 0 ? [optionIndex] : [];
+            }
+
+            return [];
+        })
         : [];
     const correctValues = Array.isArray(question.content.correctAnswer)
         ? question.content.correctAnswer
@@ -29,19 +56,40 @@ export function MultipleResponseQuestion({
     };
 
     const toggleOption = (optionIndex: number) => {
-        if (selectedValues.includes(optionIndex)) {
-            onChange(selectedValues.filter((item) => item !== optionIndex));
+        if (hasOptionTokens) {
+            const optionValue = optionTokens[optionIndex];
+            if (!optionValue) {
+                return;
+            }
+
+            const isSelected = selectedTokenValues.includes(optionValue);
+
+            if (isSelected) {
+                onChange(selectedTokenValues.filter((item) => item !== optionValue));
+                return;
+            }
+
+            onChange([...selectedTokenValues, optionValue]);
             return;
         }
 
-        onChange([...selectedValues, optionIndex]);
+        const isSelected = selectedIndexValues.includes(optionIndex);
+
+        if (isSelected) {
+            onChange(selectedIndexValues.filter((item) => item !== optionIndex));
+            return;
+        }
+
+        onChange([...selectedIndexValues, optionIndex]);
     };
 
     return (
         <fieldset className="m-0 grid gap-3 border-0 p-0">
             <legend className="sr-only">{question.content.prompt}</legend>
             {options.map((option, index) => {
-                const isSelected = selectedValues.includes(index);
+                const isSelected = hasOptionTokens
+                    ? selectedTokenValues.includes(optionTokens[index] ?? '')
+                    : selectedIndexValues.includes(index);
                 const isCorrect = isOptionCorrect(index);
                 const isCrossedOut = crossedOutOptions.includes(index);
                 const optionId = `option-${question.id}-${index}`;

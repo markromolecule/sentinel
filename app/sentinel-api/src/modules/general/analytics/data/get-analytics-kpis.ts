@@ -34,6 +34,25 @@ export async function getAnalyticsKPIsData(
     const institutionIds = institutionId
         ? await resolveRelatedInstitutions(dbClient, institutionId)
         : [];
+    const effectiveTotalScore = sql<number | null>`coalesce(
+        (ea.score_snapshot->>'totalScore')::numeric,
+        ea.total_score::numeric
+    )`;
+    const effectivePercentage = sql<number | null>`coalesce(
+        (ea.score_snapshot->>'percentage')::numeric,
+        case
+            when ${effectiveTotalScore} is not null and ${effectiveTotalScore} > 0
+            then (
+                coalesce(
+                    (ea.score_snapshot->>'score')::numeric,
+                    ea.score::numeric,
+                    ea.initial_score::numeric,
+                    0::numeric
+                ) / nullif(${effectiveTotalScore}, 0::numeric)
+            ) * 100
+            else null
+        end
+    )`;
 
     // 1. Total Exams (non-draft) scheduled within the period
     let examsQuery = dbClient.selectFrom('exams').select((eb) => eb.fn.countAll().as('count'));
@@ -136,9 +155,9 @@ export async function getAnalyticsKPIsData(
                 avg(
                     case
                         when ea.status = 'COMPLETED'
-                            and ea.total_score is not null
-                            and ea.total_score > 0
-                        then (coalesce(ea.score, ea.initial_score, 0)::numeric / nullif(ea.total_score, 0)::numeric) * 100
+                            and ${effectiveTotalScore} is not null
+                            and ${effectiveTotalScore} > 0
+                        then ${effectivePercentage}
                     end
                 ),
                 0
@@ -146,18 +165,17 @@ export async function getAnalyticsKPIsData(
             sql<number>`count(
                 case
                     when ea.status = 'COMPLETED'
-                        and ea.total_score is not null
-                        and ea.total_score > 0
+                        and ${effectiveTotalScore} is not null
+                        and ${effectiveTotalScore} > 0
                     then 1
                 end
             )`.as('graded_completed_count'),
             sql<number>`count(
                 case
                     when ea.status = 'COMPLETED'
-                        and ea.total_score is not null
-                        and ea.total_score > 0
-                        and ((coalesce(ea.score, ea.initial_score, 0)::numeric / nullif(ea.total_score, 0)::numeric) * 100)
-                            >= coalesce(e.passing_score, ${defaultPassingScore})
+                        and ${effectiveTotalScore} is not null
+                        and ${effectiveTotalScore} > 0
+                        and ${effectivePercentage} >= coalesce(e.passing_score, ${defaultPassingScore})
                     then 1
                 end
             )`.as('passed_count'),

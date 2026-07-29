@@ -189,4 +189,130 @@ describe('getExamDetail service', () => {
 
         expect(result.questions[0].content.correctAnswer).toBeUndefined();
     });
+
+    it('reuses the persisted attempt assessment snapshot for student view even if current settings differ', async () => {
+        vi.mocked(getExamByIdData).mockResolvedValue({
+            ...mockExamRecord,
+            attempt_id: 'attempt-1',
+            attempt_assessment_snapshot: {
+                version: 'attempt-assessment.v1',
+                attemptId: 'attempt-1',
+                examId: 'exam-1',
+                seed: 'attempt-1',
+                settings: {
+                    shuffleQuestions: false,
+                    randomizeChoices: false,
+                    showCorrectAnswers: false,
+                    allowReview: true,
+                },
+                configuration: {
+                    lobbyAdmissionMode: 'AUTOMATIC',
+                    releaseScoreMode: 'AUTO_RELEASE',
+                    maxReconnectAttempts: 3,
+                    strictMode: true,
+                    screenLock: true,
+                    cameraRequired: true,
+                    micRequired: true,
+                    autoSubmitTimeoutMinutes: 5,
+                    aiRules: {
+                        gaze_tracking: true,
+                        face_detection: true,
+                        audio_anomaly_detection: true,
+                        multiple_faces_detection: true,
+                    },
+                    webSecurity: {
+                        tab_switching_monitor: true,
+                        full_screen_required: true,
+                        clipboard_control: true,
+                        right_click_disable: true,
+                        print_screen_disable: true,
+                    },
+                    mobileSecurity: {
+                        app_pinning_required: true,
+                        prevent_backgrounding: true,
+                        notification_block: true,
+                        screenshot_block: true,
+                        root_jailbreak_detection: true,
+                    },
+                    automaticClosePolicy: {
+                        enabled: true,
+                        highIncidentThreshold: 3,
+                        windowMinutes: 15,
+                        useOccurrenceCount: false,
+                        immediateCloseEventTypes: [],
+                    },
+                },
+                questions: [
+                    {
+                        id: 'q-1',
+                        examId: 'exam-1',
+                        subjectId: null,
+                        institutionId: null,
+                        sourceOrigin: 'MANUAL',
+                        sourceFileName: null,
+                        sourcePageNumber: null,
+                        sourceEvidence: null,
+                        passageContent: null,
+                        passageType: null,
+                        type: 'MULTIPLE_CHOICE',
+                        difficulty: 'MODERATE',
+                        points: 5,
+                        tags: [],
+                        orderIndex: 0,
+                        content: {
+                            prompt: 'Question 1',
+                            options: ['Persisted B', 'Persisted A'],
+                            correctAnswer: 'Persisted A',
+                        },
+                        prompt: null,
+                        createdAt: null,
+                        updatedAt: null,
+                        createdBy: null,
+                        updatedBy: null,
+                        status: 'ACTIVE',
+                    },
+                ],
+                totalScore: 5,
+            },
+        } as any);
+        vi.mocked(getExamSectionsData).mockResolvedValue([]);
+        vi.mocked(getExamQuestionsData).mockResolvedValue([
+            {
+                ...mockQuestion,
+                content: {
+                    prompt: 'Question 1',
+                    options: ['Current A', 'Current B'],
+                    correctAnswer: 'Current A',
+                },
+            },
+        ] as any);
+        vi.mocked(getExamConfigurationState).mockResolvedValue({
+            ...mockConfigState,
+            settings: {
+                ...mockConfigState.settings,
+                randomizeChoices: true,
+                shuffleQuestions: true,
+            },
+        } as any);
+        vi.mocked(resolveExaminationGlobalSettings).mockResolvedValue({} as any);
+        vi.mocked(TelemetrySettingsService.getTelemetrySettings).mockResolvedValue(
+            mockTelemetrySettings as any,
+        );
+        vi.mocked(AccessGatekeeperService.verifyStudentExamEligibility).mockResolvedValue({
+            runtimeAccess: {
+                state: 'open',
+                canStart: true,
+                canResume: false,
+                hasActiveAttempt: true,
+            },
+        } as any);
+
+        const result = await getExamDetail(mockDb, 'exam-1', undefined, 'student-1');
+
+        expect((result.questions[0].content as any).options).toEqual([
+            'Persisted B',
+            'Persisted A',
+        ]);
+        expect((result.questions[0].content as any).correctAnswer).toBeUndefined();
+    });
 });

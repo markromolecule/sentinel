@@ -1,4 +1,4 @@
-import type { GradingQuestionType } from '@sentinel/shared';
+import type { ExamAttemptAnswers, GradingQuestionType } from '@sentinel/shared';
 import type { ScoreSummary, CriteriaScores, QuestionEvaluationState } from '../_types';
 
 type GradingErrorProps = {
@@ -28,7 +28,7 @@ type GradingQuestionPaneProps = {
     activeQuestion: GradingQuestionType | undefined;
     activeEval: QuestionEvaluationState | null;
     onFeedbackChange: (qId: string, text: string) => void;
-    answers: Record<string, string>;
+    answers: ExamAttemptAnswers;
 };
 
 type GradingRubricPaneProps = {

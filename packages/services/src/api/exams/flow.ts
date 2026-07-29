@@ -1,10 +1,12 @@
 import type { ApiClientType } from '../../api-client';
 import type {
     ApiExamResponse,
-    StartExamSessionPayload,
-    StartExamSessionResult,
     CompleteExamSessionPayload,
     CompleteExamSessionResult,
+    PrepareExamSessionPayload,
+    PrepareExamSessionResult,
+    StartExamSessionPayload,
+    StartExamSessionResult,
     SyncExamProgressPayload,
     SyncExamProgressResult,
 } from './types';
@@ -15,6 +17,24 @@ export async function startExamSession(
 ): Promise<StartExamSessionResult> {
     const response: ApiExamResponse<StartExamSessionResult> = await apiClient(
         '/examination/flow/start',
+        {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        },
+    );
+
+    return response.data;
+}
+
+export async function prepareExamSession(
+    apiClient: ApiClientType,
+    payload: PrepareExamSessionPayload,
+): Promise<PrepareExamSessionResult> {
+    const response: ApiExamResponse<PrepareExamSessionResult> = await apiClient(
+        '/examination/flow/prepare',
         {
             method: 'POST',
             headers: {
