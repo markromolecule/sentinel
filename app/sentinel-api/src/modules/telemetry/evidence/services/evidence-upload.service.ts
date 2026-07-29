@@ -17,6 +17,7 @@ import { EvidenceCorrelationService } from './evidence-correlation.service';
 
 export interface InitializeUploadInput {
     attemptId: string;
+    incidentId: string;
     eventId: string;
     eventType: any;
     capturedAt: string;
@@ -31,14 +32,26 @@ export interface InitializeUploadInput {
 export class EvidenceUploadService {
     /**
      * Initializes the upload process for a new evidence frame.
-     * Enforces size limits, quotas, rate limits, and calculates the retention expiration.
-     * Idempotent on (attemptId, eventId).
+     * Enforces size limits, quotas, authorization, and retention expiration.
+     *
+     * This method trusts only the server-resolved `incidentId` supplied by the
+     * candidate decision path, performs idempotency lookup before quota checks,
+     * and refreshes upload targets only for compatible `PENDING_UPLOAD` rows.
      */
     static async initializeUpload(
         db: DbClient,
         input: InitializeUploadInput,
     ): Promise<{ evidenceId: string; uploadUrl: string; uploadToken: string; expiresAt: Date }> {
-        const { attemptId, eventId, eventType, capturedAt, mimeType, sizeBytes, studentUserId } = input;
+        const {
+            attemptId,
+            incidentId,
+            eventId,
+            eventType,
+            capturedAt,
+            mimeType,
+            sizeBytes,
+            studentUserId,
+        } = input;
 
         // 1. Authorize attempt/student/AI rule/allowlist
         const auth = await EvidenceAuthorizationService.authorizeStudentUpload(
@@ -53,38 +66,6 @@ export class EvidenceUploadService {
         if (sizeBytes > maxBytes) {
             throw new HTTPException(400, {
                 message: `Declared size ${sizeBytes} bytes exceeds the maximum allowed of ${maxBytes} bytes.`,
-            });
-        }
-
-        // 3. Check existing quotas
-        // Count total evidence in this attempt
-        const totalCountRes = await db
-            .selectFrom('telemetry_incident_evidence')
-            .select((eb) => eb.fn.count<number>('evidence_id').as('count'))
-            .where('attempt_id', '=', attemptId)
-            .executeTakeFirst();
-        const totalCount = totalCountRes?.count ?? 0;
-
-        const maxPerAttempt = getEvidenceMaxPerAttempt();
-        if (totalCount >= maxPerAttempt) {
-            throw new HTTPException(400, {
-                message: `Attempt has reached the maximum allowed evidence quota of ${maxPerAttempt}.`,
-            });
-        }
-
-        // Count evidence for this event type in this attempt
-        const typeCountRes = await db
-            .selectFrom('telemetry_incident_evidence')
-            .select((eb) => eb.fn.count<number>('evidence_id').as('count'))
-            .where('attempt_id', '=', attemptId)
-            .where('event_type', '=', eventType)
-            .executeTakeFirst();
-        const typeCount = typeCountRes?.count ?? 0;
-
-        const maxPerType = getEvidenceMaxPerEventType();
-        if (typeCount >= maxPerType) {
-            throw new HTTPException(400, {
-                message: `Attempt has reached the maximum allowed evidence quota of ${maxPerType} for event type ${eventType}.`,
             });
         }
 
@@ -125,23 +106,11 @@ export class EvidenceUploadService {
                 }
 
                 if (existing.state !== 'PENDING_UPLOAD') {
-                    // Already uploaded or in a terminal state, return existing identity
-                    // But generating new upload target is only valid if not complete.
-                    // If it is already AVAILABLE, we just return its metadata or throw.
-                    // Let's return the existing details.
-                    const target = await EvidenceStorageService.createSignedUploadTarget(
-                        bucket,
-                        storagePath,
-                    );
-                    return {
-                        evidenceId: existing.evidence_id,
-                        uploadUrl: target.signedUrl,
-                        uploadToken: target.token,
-                        expiresAt: existing.expires_at,
-                    };
+                    throw new HTTPException(409, {
+                        message: `Evidence upload cannot be reinitialized from state ${existing.state}.`,
+                    });
                 }
 
-                // Refresh upload URL
                 const target = await EvidenceStorageService.createSignedUploadTarget(
                     bucket,
                     storagePath,
@@ -154,8 +123,41 @@ export class EvidenceUploadService {
                 };
             }
 
+            // 3. Check existing quotas after idempotency lookup
+            const totalCountRes = await trx
+                .selectFrom('telemetry_incident_evidence')
+                .select((eb) => eb.fn.count<number>('evidence_id').as('count'))
+                .where('attempt_id', '=', attemptId)
+                .executeTakeFirst();
+            const totalCount = totalCountRes?.count ?? 0;
+
+            const maxPerAttempt = getEvidenceMaxPerAttempt();
+            if (totalCount >= maxPerAttempt) {
+                throw new HTTPException(400, {
+                    message: `Attempt has reached the maximum allowed evidence quota of ${maxPerAttempt}.`,
+                });
+            }
+
+            const typeCountRes = await trx
+                .selectFrom('telemetry_incident_evidence')
+                .select((eb) => eb.fn.count<number>('evidence_id').as('count'))
+                .where('attempt_id', '=', attemptId)
+                .where('event_type', '=', eventType)
+                .executeTakeFirst();
+            const typeCount = typeCountRes?.count ?? 0;
+
+            const maxPerType = getEvidenceMaxPerEventType();
+            if (typeCount >= maxPerType) {
+                throw new HTTPException(400, {
+                    message: `Attempt has reached the maximum allowed evidence quota of ${maxPerType} for event type ${eventType}.`,
+                });
+            }
+
             // Generate new upload target
-            const target = await EvidenceStorageService.createSignedUploadTarget(bucket, storagePath);
+            const target = await EvidenceStorageService.createSignedUploadTarget(
+                bucket,
+                storagePath,
+            );
 
             // Insert new record
             const newRecord = await trx
@@ -164,6 +166,7 @@ export class EvidenceUploadService {
                     attempt_id: attemptId,
                     institution_id: auth.institutionId,
                     student_id: auth.studentId,
+                    incident_id: incidentId,
                     event_id: eventId,
                     event_type: eventType,
                     captured_at: capturedDate,
@@ -188,7 +191,8 @@ export class EvidenceUploadService {
 
     /**
      * Completes an evidence upload, validating the uploaded file's metadata.
-     * Transitions state to AVAILABLE or FAILED.
+     * Transitions state to AVAILABLE or FAILED and links a uniquely matched
+     * incident when legacy correlation is still needed.
      */
     static async completeUpload(
         db: DbClient,

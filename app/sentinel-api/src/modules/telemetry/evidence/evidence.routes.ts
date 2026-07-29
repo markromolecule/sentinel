@@ -3,10 +3,6 @@ import { type HonoEnv } from '../../../types/hono';
 import { authMiddleware } from '../../../middleware/auth';
 
 import {
-    initializeEvidenceUploadRoute,
-    initializeEvidenceUploadRouteHandler,
-} from './controllers/initialize-evidence-upload.controller';
-import {
     completeEvidenceUploadRoute,
     completeEvidenceUploadRouteHandler,
 } from './controllers/complete-evidence-upload.controller';
@@ -22,6 +18,10 @@ import {
     reconcileEvidenceRoute,
     reconcileEvidenceRouteHandler,
 } from './controllers/reconcile-evidence.controller';
+import {
+    ingestEvidenceCandidateRoute,
+    ingestEvidenceCandidateRouteHandler,
+} from './controllers/ingest-evidence-candidate.controller';
 
 const telemetryEvidenceRoutes = new OpenAPIHono<HonoEnv>();
 
@@ -32,7 +32,7 @@ telemetryEvidenceRoutes.openapi(reconcileEvidenceRoute, reconcileEvidenceRouteHa
 const authenticatedRoutes = new OpenAPIHono<HonoEnv>();
 authenticatedRoutes.use('*', authMiddleware);
 
-authenticatedRoutes.openapi(initializeEvidenceUploadRoute, initializeEvidenceUploadRouteHandler);
+authenticatedRoutes.openapi(ingestEvidenceCandidateRoute, ingestEvidenceCandidateRouteHandler);
 authenticatedRoutes.openapi(completeEvidenceUploadRoute, completeEvidenceUploadRouteHandler);
 authenticatedRoutes.openapi(getIncidentEvidenceRoute, getIncidentEvidenceRouteHandler);
 authenticatedRoutes.openapi(deleteEvidenceRoute, deleteEvidenceRouteHandler);

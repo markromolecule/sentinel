@@ -178,20 +178,36 @@ export async function updateTelemetryIncident(
     return response.data;
 }
 
-export type InitializeEvidenceUploadPayload = {
-    attemptId: string;
-    eventId: string;
-    eventType: string;
-    capturedAt: string;
-    mimeType: 'image/webp' | 'image/jpeg';
-    sizeBytes: number;
+export type IngestMediaPipeEvidenceCandidatePayload = {
+    examSessionId: string;
+    studentId: string;
+    timestamp: string;
+    platform: 'WEB';
+    source: 'AI';
+    ruleKey: string;
+    eventType: 'GAZE_OFF_SCREEN' | 'NO_FACE_DETECTED' | 'MULTIPLE_FACES';
+    metadata: TelemetryMetadata & {
+        eventId: string;
+        dedupeKey: string;
+        clientActionAt: string;
+    };
+    sessionContext?: TelemetrySessionContext;
+    capture: {
+        capturedAt: string;
+        mimeType: 'image/webp' | 'image/jpeg';
+        sizeBytes: number;
+    };
 };
 
-export type InitializeEvidenceUploadResponse = {
-    evidenceId: string;
-    uploadUrl: string;
-    uploadToken: string;
-    expiresAt: string;
+export type IngestMediaPipeEvidenceCandidateResponse = {
+    telemetryDisposition: 'inserted' | 'aggregated' | 'duplicate-ignored' | 'ignored';
+    evidenceDecision: 'UPLOAD' | 'NOT_ELIGIBLE' | 'ALREADY_AVAILABLE' | 'UNAVAILABLE';
+    upload?: {
+        evidenceId: string;
+        uploadUrl: string;
+        uploadToken: string;
+        expiresAt: string;
+    };
 };
 
 export type CompleteEvidenceUploadResponse = {
@@ -227,21 +243,23 @@ export type ReconcileEvidenceResponse = {
     };
 };
 
-export async function initializeEvidenceUpload(
+export async function ingestMediaPipeEvidenceCandidate(
     apiClient: ApiClientType,
-    payload: InitializeEvidenceUploadPayload,
-): Promise<InitializeEvidenceUploadResponse> {
+    payload: IngestMediaPipeEvidenceCandidatePayload,
+    signal?: AbortSignal,
+): Promise<IngestMediaPipeEvidenceCandidateResponse> {
     const response = await apiClient(
-        '/telemetry/evidence/uploads',
+        '/telemetry/evidence/candidates',
         {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(payload),
+            signal,
         },
     );
-    return unwrapApiResponse<InitializeEvidenceUploadResponse>(response);
+    return unwrapApiResponse<IngestMediaPipeEvidenceCandidateResponse>(response);
 }
 
 export async function completeEvidenceUpload(

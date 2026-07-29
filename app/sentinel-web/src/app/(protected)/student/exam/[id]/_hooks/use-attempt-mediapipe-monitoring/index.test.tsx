@@ -12,6 +12,7 @@ const EXAM_ID = '123e4567-e89b-12d3-a456-426614174999';
 
 const {
     mockApiClient,
+    mockEmitMediaPipeEvidenceCandidate,
     mockEmitMediaPipeTelemetryEvent,
     mockWriteMonitoringEventTrace,
     mockStartIncidentEvidenceUpload,
@@ -23,6 +24,7 @@ const {
     mockForVisionTasks,
 } = vi.hoisted(() => ({
     mockApiClient: vi.fn(),
+    mockEmitMediaPipeEvidenceCandidate: vi.fn().mockResolvedValue(false),
     mockEmitMediaPipeTelemetryEvent: vi.fn().mockResolvedValue(true),
     mockWriteMonitoringEventTrace: vi.fn(),
     mockStartIncidentEvidenceUpload: vi.fn().mockResolvedValue(undefined),
@@ -49,6 +51,7 @@ vi.mock('@sentinel/hooks', () => ({
 }));
 
 vi.mock('../../_lib/web-telemetry-client', () => ({
+    emitMediaPipeEvidenceCandidate: mockEmitMediaPipeEvidenceCandidate,
     emitMediaPipeTelemetryEvent: mockEmitMediaPipeTelemetryEvent,
     writeMonitoringEventTrace: mockWriteMonitoringEventTrace,
     isMediaPipeTelemetryEventEnabled: (
@@ -360,6 +363,47 @@ describe('use-attempt-mediapipe-monitoring', () => {
         const { result } = renderHook(() =>
             useAttemptMediaPipeMonitoring({
                 examId: EXAM_ID,
+                configuration,
+                mediaPipeSandbox,
+                examSessionId: '123e4567-e89b-12d3-a456-426614174000',
+                runtimeAccess,
+            }),
+        );
+
+        act(() => {
+            result.current.videoRef.current = createVideoElement();
+        });
+
+        await waitFor(() => {
+            expect(result.current.phase).toBe('running');
+        });
+    });
+
+    it('captures and uploads incident evidence even when the attempt id is unavailable', async () => {
+        mockDetectForVideo.mockReturnValue({
+            faceLandmarks: [buildOffscreenFace()],
+        });
+        mockEmitMediaPipeEvidenceCandidate.mockResolvedValue({
+            telemetryDisposition: 'aggregated',
+            evidenceDecision: 'UPLOAD',
+            upload: {
+                evidenceId: 'evidence-1',
+                uploadUrl:
+                    'https://project.supabase.co/storage/v1/object/upload/sign/sentinel-proctoring-evidence/a/b/c.webp',
+                uploadToken: 'upload-token',
+                expiresAt: '2026-07-29T04:00:00.000Z',
+            },
+        });
+
+        const configuration = createExamConfiguration();
+        const mediaPipeSandbox = createSandbox({
+            offScreenDurationMs: 1000,
+        });
+        const runtimeAccess = createRuntimeAccess();
+
+        const { result } = renderHook(() =>
+            useAttemptMediaPipeMonitoring({
+                examId: EXAM_ID,
                 attemptId: 'attempt-123',
                 configuration,
                 mediaPipeSandbox,
@@ -375,6 +419,28 @@ describe('use-attempt-mediapipe-monitoring', () => {
         await waitFor(() => {
             expect(result.current.phase).toBe('running');
         });
+
+        [500, 1000, 1500, 2000].forEach((frameTime) => {
+            advanceAnimationFrame(frameTime);
+        });
+
+        await waitFor(() => {
+            expect(mockEmitMediaPipeEvidenceCandidate).toHaveBeenCalledTimes(1);
+        });
+
+        expect(mockCaptureIncidentEvidenceFrame).toHaveBeenCalledTimes(1);
+        expect(mockStartIncidentEvidenceUpload).toHaveBeenCalledWith({
+            apiClient: mockApiClient,
+            upload: {
+                evidenceId: 'evidence-1',
+                uploadUrl:
+                    'https://project.supabase.co/storage/v1/object/upload/sign/sentinel-proctoring-evidence/a/b/c.webp',
+                uploadToken: 'upload-token',
+                expiresAt: '2026-07-29T04:00:00.000Z',
+            },
+            blob: expect.any(Blob),
+        });
+        expect(mockEmitMediaPipeTelemetryEvent).not.toHaveBeenCalled();
     });
 
     it('stays idle and avoids camera startup when attempt emission is disabled', async () => {
@@ -599,7 +665,7 @@ describe('use-attempt-mediapipe-monitoring', () => {
         });
 
         await waitFor(() => {
-            expect(mockEmitMediaPipeTelemetryEvent).toHaveBeenCalledTimes(1);
+            expect(mockEmitMediaPipeEvidenceCandidate).toHaveBeenCalledTimes(1);
         });
 
         expect(result.current.activeIncident).toMatchObject({
@@ -610,7 +676,7 @@ describe('use-attempt-mediapipe-monitoring', () => {
             }),
         });
 
-        expect(mockEmitMediaPipeTelemetryEvent).toHaveBeenNthCalledWith(
+        expect(mockEmitMediaPipeEvidenceCandidate).toHaveBeenNthCalledWith(
             1,
             mockApiClient,
             expect.objectContaining({
@@ -697,6 +763,7 @@ describe('use-attempt-mediapipe-monitoring', () => {
         const { result } = renderHook(() =>
             useAttemptMediaPipeMonitoring({
                 examId: EXAM_ID,
+                attemptId: 'attempt-123',
                 configuration,
                 mediaPipeSandbox,
                 examSessionId: '123e4567-e89b-12d3-a456-426614174000',
@@ -719,7 +786,7 @@ describe('use-attempt-mediapipe-monitoring', () => {
         );
 
         await waitFor(() => {
-            expect(mockEmitMediaPipeTelemetryEvent).toHaveBeenCalledTimes(1);
+            expect(mockEmitMediaPipeEvidenceCandidate).toHaveBeenCalledTimes(1);
         });
 
         expect(result.current.analysis).toMatchObject({
@@ -733,7 +800,7 @@ describe('use-attempt-mediapipe-monitoring', () => {
                 signal: 'NO_FACE_DETECTED',
             }),
         });
-        expect(mockEmitMediaPipeTelemetryEvent).toHaveBeenNthCalledWith(
+        expect(mockEmitMediaPipeEvidenceCandidate).toHaveBeenNthCalledWith(
             1,
             mockApiClient,
             expect.objectContaining({
@@ -758,6 +825,7 @@ describe('use-attempt-mediapipe-monitoring', () => {
         const { result } = renderHook(() =>
             useAttemptMediaPipeMonitoring({
                 examId: EXAM_ID,
+                attemptId: 'attempt-123',
                 configuration,
                 mediaPipeSandbox,
                 examSessionId: '123e4567-e89b-12d3-a456-426614174000',
@@ -778,7 +846,7 @@ describe('use-attempt-mediapipe-monitoring', () => {
         });
 
         await waitFor(() => {
-            expect(mockEmitMediaPipeTelemetryEvent).toHaveBeenCalledTimes(1);
+            expect(mockEmitMediaPipeEvidenceCandidate).toHaveBeenCalledTimes(1);
         });
 
         expect(result.current.analysis).toMatchObject({
@@ -851,6 +919,7 @@ describe('use-attempt-mediapipe-monitoring', () => {
             ({ mediaPipeSandbox }: { mediaPipeSandbox: ReturnType<typeof createSandbox> }) =>
                 useAttemptMediaPipeMonitoring({
                     examId: EXAM_ID,
+                    attemptId: 'attempt-123',
                     configuration,
                     mediaPipeSandbox,
                     examSessionId: '123e4567-e89b-12d3-a456-426614174000',
@@ -882,7 +951,7 @@ describe('use-attempt-mediapipe-monitoring', () => {
         });
 
         await waitFor(() => {
-            expect(mockEmitMediaPipeTelemetryEvent).toHaveBeenCalledTimes(1);
+            expect(mockEmitMediaPipeEvidenceCandidate).toHaveBeenCalledTimes(1);
         });
 
         expect(result.current.activeIncident).toMatchObject({
@@ -921,6 +990,7 @@ describe('use-attempt-mediapipe-monitoring', () => {
         const { result } = renderHook(() =>
             useAttemptMediaPipeMonitoring({
                 examId: EXAM_ID,
+                attemptId: 'attempt-123',
                 configuration,
                 mediaPipeSandbox,
                 examSessionId: '123e4567-e89b-12d3-a456-426614174000',
@@ -937,26 +1007,26 @@ describe('use-attempt-mediapipe-monitoring', () => {
         });
 
         advanceAnimationFrame(500);
-        expect(mockEmitMediaPipeTelemetryEvent).not.toHaveBeenCalled();
+        expect(mockEmitMediaPipeEvidenceCandidate).not.toHaveBeenCalled();
 
         advanceAnimationFrame(1000);
         expect(result.current.analysis).toMatchObject({
             status: 'low-confidence',
             signal: null,
         });
-        expect(mockEmitMediaPipeTelemetryEvent).not.toHaveBeenCalled();
+        expect(mockEmitMediaPipeEvidenceCandidate).not.toHaveBeenCalled();
 
         advanceAnimationFrame(1500);
 
         await waitFor(() => {
-            expect(mockEmitMediaPipeTelemetryEvent).toHaveBeenCalledTimes(1);
+            expect(mockEmitMediaPipeEvidenceCandidate).toHaveBeenCalledTimes(1);
         });
 
         expect(result.current.activeIncident).toMatchObject({
             eventType: 'GAZE_OFF_SCREEN',
             detectedAt: new Date(1500).toISOString(),
         });
-        expect(mockEmitMediaPipeTelemetryEvent).toHaveBeenNthCalledWith(
+        expect(mockEmitMediaPipeEvidenceCandidate).toHaveBeenNthCalledWith(
             1,
             mockApiClient,
             expect.objectContaining({
@@ -979,6 +1049,7 @@ describe('use-attempt-mediapipe-monitoring', () => {
         const { result } = renderHook(() =>
             useAttemptMediaPipeMonitoring({
                 examId: EXAM_ID,
+                attemptId: 'attempt-123',
                 configuration,
                 mediaPipeSandbox,
                 examSessionId: '123e4567-e89b-12d3-a456-426614174000',
@@ -998,17 +1069,17 @@ describe('use-attempt-mediapipe-monitoring', () => {
             advanceAnimationFrame(frameTime);
         });
 
-        expect(mockEmitMediaPipeTelemetryEvent).not.toHaveBeenCalled();
+        expect(mockEmitMediaPipeEvidenceCandidate).not.toHaveBeenCalled();
 
         [4000, 4500].forEach((frameTime) => {
             advanceAnimationFrame(frameTime);
         });
 
         await waitFor(() => {
-            expect(mockEmitMediaPipeTelemetryEvent).toHaveBeenCalledTimes(1);
+            expect(mockEmitMediaPipeEvidenceCandidate).toHaveBeenCalledTimes(1);
         });
 
-        expect(mockEmitMediaPipeTelemetryEvent).toHaveBeenNthCalledWith(
+        expect(mockEmitMediaPipeEvidenceCandidate).toHaveBeenNthCalledWith(
             1,
             mockApiClient,
             expect.objectContaining({

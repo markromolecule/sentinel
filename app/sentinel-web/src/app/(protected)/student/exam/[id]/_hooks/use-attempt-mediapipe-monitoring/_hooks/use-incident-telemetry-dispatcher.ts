@@ -4,9 +4,14 @@ import { useApi } from '@sentinel/hooks';
 import type { MediaPipeFrameAnalysis, evaluateMediaPipeSignalDispatch } from '@sentinel/shared';
 import type { ExamConfig } from '@sentinel/shared/types';
 import {
+    emitMediaPipeEvidenceCandidate,
     emitMediaPipeTelemetryEvent,
     writeMonitoringEventTrace,
 } from '@/app/(protected)/student/exam/[id]/_lib/web-telemetry-client';
+import {
+    EVIDENCE_DECISION_TIMEOUT_MS,
+    MAX_PENDING_EVIDENCE_DECISIONS,
+} from '../_constants';
 import type { MediaPipeAttemptIncident, ResolvedMediaPipeSandbox } from '../_types';
 import { captureIncidentEvidenceFrame } from '../_utils/capture-incident-evidence-frame';
 import { useIncidentEvidenceUpload } from './use-incident-evidence-upload';
@@ -30,7 +35,7 @@ export type DispatchIncidentArgs = {
 };
 
 export type UseIncidentTelemetryDispatcherResult = {
-    inFlightEvidenceEventIdsRef: React.MutableRefObject<Set<string>>;
+    inFlightEvidenceDecisionsRef: React.MutableRefObject<Map<string, AbortController>>;
     dispatchIncident: (args: DispatchIncidentArgs) => Promise<void>;
     clearInFlightEvents: () => void;
 };
@@ -43,7 +48,7 @@ export type UseIncidentTelemetryDispatcherResult = {
 export function useIncidentTelemetryDispatcher(): UseIncidentTelemetryDispatcherResult {
     const apiClient = useApi();
     const { startIncidentEvidenceUpload } = useIncidentEvidenceUpload();
-    const inFlightEvidenceEventIdsRef = useRef<Set<string>>(new Set());
+    const inFlightEvidenceDecisionsRef = useRef<Map<string, AbortController>>(new Map());
 
     const dispatchIncident = useCallback(async ({
         telemetrySignal,
@@ -64,6 +69,12 @@ export function useIncidentTelemetryDispatcher(): UseIncidentTelemetryDispatcher
         const clientActionAt = emissionTime;
         const eventId = crypto.randomUUID();
         const dedupeKey = `${sessionId}:${telemetrySignal}:${eventId}`;
+        const developmentContext = {
+            ...developmentDiagnostics,
+            analysisStatus: normalizedAnalysis.status,
+            confidenceScore: normalizedAnalysis.confidenceScore ?? undefined,
+            durationMs: dispatch.durationMs ?? undefined,
+        };
 
         writeMonitoringEventTrace({
             detectorSource: 'mediapipe',
@@ -72,12 +83,7 @@ export function useIncidentTelemetryDispatcher(): UseIncidentTelemetryDispatcher
             detectionTime,
             emissionTime,
             disposition: 'emitting',
-            developmentContext: {
-                ...developmentDiagnostics,
-                analysisStatus: normalizedAnalysis.status,
-                confidenceScore: normalizedAnalysis.confidenceScore ?? undefined,
-                durationMs: dispatch.durationMs ?? undefined,
-            },
+            developmentContext,
         });
 
         // Show a contextual toast for each incident type.
@@ -101,109 +107,216 @@ export function useIncidentTelemetryDispatcher(): UseIncidentTelemetryDispatcher
             analysis: normalizedAnalysis,
         });
 
-        const canAttemptEvidenceCapture =
-            eligibility.isEnabled &&
-            Boolean(attemptId) &&
-            videoElement !== null &&
-            !inFlightEvidenceEventIdsRef.current.has(eventId);
-
-        if (canAttemptEvidenceCapture && attemptId && videoElement) {
-            const resolvedAttemptId = attemptId;
-
-            void (async () => {
-                try {
-                    const capturedFrame = await captureIncidentEvidenceFrame(videoElement);
-
-                    inFlightEvidenceEventIdsRef.current.add(eventId);
-
-                    await startIncidentEvidenceUpload({
-                        apiClient,
-                        attemptId: resolvedAttemptId,
-                        eventId,
-                        eventType: telemetrySignal,
-                        capturedAt: clientActionAt,
-                        blob: capturedFrame.blob,
-                    });
-                } catch (error) {
+        const emitFallbackTelemetry = (reason: string) => {
+            void emitMediaPipeTelemetryEvent(apiClient, {
+                configuration: resolvedConfiguration,
+                mediaPipeSandbox: sandbox,
+                examSessionId: sessionId,
+                studentId: resolvedStudentId,
+                eventType: telemetrySignal,
+                eventId,
+                dedupeKey,
+                clientActionAt,
+                metadata: {
+                    durationMs: dispatch.durationMs,
+                    confidenceScore: normalizedAnalysis.confidenceScore ?? undefined,
+                    aggregation: dispatch.aggregation,
+                },
+            })
+                .then((emitted) => {
                     writeMonitoringEventTrace({
                         detectorSource: 'mediapipe',
                         eventType: telemetrySignal,
                         eventSubtype: normalizedAnalysis.status,
                         detectionTime,
                         emissionTime,
-                        disposition: inFlightEvidenceEventIdsRef.current.has(eventId)
-                            ? 'failed'
-                            : 'suppressed',
-                        reason: error instanceof Error
-                            ? inFlightEvidenceEventIdsRef.current.has(eventId)
-                                ? `evidence-upload:${error.message}`
-                                : `evidence-capture:${error.message}`
-                            : inFlightEvidenceEventIdsRef.current.has(eventId)
-                                ? 'evidence-upload:unknown-error'
-                                : 'evidence-capture:unknown-error',
-                        developmentContext: developmentDiagnostics,
+                        disposition: emitted ? 'accepted' : 'suppressed',
+                        reason,
+                        developmentContext,
                     });
-                } finally {
-                    inFlightEvidenceEventIdsRef.current.delete(eventId);
-                }
-            })();
+                })
+                .catch((error) => {
+                    writeMonitoringEventTrace({
+                        detectorSource: 'mediapipe',
+                        eventType: telemetrySignal,
+                        eventSubtype: normalizedAnalysis.status,
+                        detectionTime,
+                        emissionTime,
+                        disposition: 'failed',
+                        reason: error instanceof Error ? error.message : 'unknown-error',
+                        developmentContext,
+                    });
+                    console.error('Failed to emit MediaPipe telemetry event.', {
+                        error,
+                    });
+                });
+        };
+
+        const canAttemptEvidenceCapture = eligibility.isEnabled && videoElement !== null;
+
+        if (!canAttemptEvidenceCapture || !videoElement) {
+            emitFallbackTelemetry('telemetry-only');
+            return;
         }
 
-        void emitMediaPipeTelemetryEvent(apiClient, {
-            configuration: resolvedConfiguration,
-            mediaPipeSandbox: sandbox,
-            examSessionId: sessionId,
-            studentId: resolvedStudentId,
-            eventType: telemetrySignal,
-            eventId,
-            dedupeKey,
-            clientActionAt,
-            metadata: {
-                durationMs: dispatch.durationMs,
-                confidenceScore: normalizedAnalysis.confidenceScore ?? undefined,
-                aggregation: dispatch.aggregation,
-            },
-        })
-            .then((emitted) => {
-                writeMonitoringEventTrace({
-                    detectorSource: 'mediapipe',
+        if (inFlightEvidenceDecisionsRef.current.size >= MAX_PENDING_EVIDENCE_DECISIONS) {
+            emitFallbackTelemetry('evidence-pending-limit');
+            return;
+        }
+
+        const decisionController = new AbortController();
+        const timeoutId = window.setTimeout(() => {
+            decisionController.abort(new DOMException('Evidence decision timed out.', 'AbortError'));
+        }, EVIDENCE_DECISION_TIMEOUT_MS);
+        inFlightEvidenceDecisionsRef.current.set(eventId, decisionController);
+
+        void (async () => {
+            let candidateTelemetryPersisted = false;
+
+            try {
+                const capturedFrame = await captureIncidentEvidenceFrame(videoElement);
+                const decision = await emitMediaPipeEvidenceCandidate(apiClient, {
+                    configuration: resolvedConfiguration,
+                    mediaPipeSandbox: sandbox,
+                    examSessionId: sessionId,
+                    studentId: resolvedStudentId,
                     eventType: telemetrySignal,
-                    eventSubtype: normalizedAnalysis.status,
-                    detectionTime,
-                    emissionTime,
-                    disposition: emitted ? 'accepted' : 'suppressed',
-                    reason: emitted ? undefined : 'rule-disabled',
-                    developmentContext: {
-                        ...developmentDiagnostics,
-                        analysisStatus: normalizedAnalysis.status,
+                    eventId,
+                    dedupeKey,
+                    clientActionAt,
+                    metadata: {
+                        durationMs: dispatch.durationMs,
                         confidenceScore: normalizedAnalysis.confidenceScore ?? undefined,
-                        durationMs: dispatch.durationMs ?? undefined,
+                        aggregation: dispatch.aggregation,
                     },
+                    capture: {
+                        capturedAt: clientActionAt,
+                        mimeType: capturedFrame.mimeType,
+                        sizeBytes: capturedFrame.blob.size,
+                    },
+                    signal: decisionController.signal,
                 });
-            })
-            .catch((error) => {
+
+                if (decision === false) {
+                    emitFallbackTelemetry('candidate-suppressed');
+                    return;
+                }
+
+                candidateTelemetryPersisted = true;
+
+                if (decision.evidenceDecision === 'UPLOAD' && decision.upload) {
+                    if (decisionController.signal.aborted) {
+                        return;
+                    }
+
+                    await startIncidentEvidenceUpload({
+                        apiClient,
+                        upload: decision.upload,
+                        blob: capturedFrame.blob,
+                    });
+
+                    writeMonitoringEventTrace({
+                        detectorSource: 'mediapipe',
+                        eventType: telemetrySignal,
+                        eventSubtype: normalizedAnalysis.status,
+                        detectionTime,
+                        emissionTime,
+                        disposition: 'accepted',
+                        reason: `evidence:${decision.telemetryDisposition}:upload`,
+                        developmentContext,
+                    });
+                    return;
+                }
+
+                if (decision.evidenceDecision === 'UPLOAD') {
+                    writeMonitoringEventTrace({
+                        detectorSource: 'mediapipe',
+                        eventType: telemetrySignal,
+                        eventSubtype: normalizedAnalysis.status,
+                        detectionTime,
+                        emissionTime,
+                        disposition: 'failed',
+                        reason: 'candidate-missing-upload-target',
+                        developmentContext,
+                    });
+                    return;
+                }
+
                 writeMonitoringEventTrace({
                     detectorSource: 'mediapipe',
                     eventType: telemetrySignal,
                     eventSubtype: normalizedAnalysis.status,
                     detectionTime,
                     emissionTime,
-                    disposition: 'failed',
-                    reason: error instanceof Error ? error.message : 'unknown-error',
-                    developmentContext: developmentDiagnostics,
+                    disposition: 'accepted',
+                    reason: `evidence:${decision.telemetryDisposition}:${decision.evidenceDecision.toLowerCase()}`,
+                    developmentContext,
                 });
-                console.error('Failed to emit MediaPipe telemetry event.', {
-                    error,
-                });
-            });
+            } catch (error) {
+                if (decisionController.signal.aborted) {
+                    if (
+                        decisionController.signal.reason instanceof DOMException &&
+                        decisionController.signal.reason.message === 'Evidence decision timed out.'
+                    ) {
+                        emitFallbackTelemetry('candidate-timeout');
+                        return;
+                    }
+
+                    writeMonitoringEventTrace({
+                        detectorSource: 'mediapipe',
+                        eventType: telemetrySignal,
+                        eventSubtype: normalizedAnalysis.status,
+                        detectionTime,
+                        emissionTime,
+                        disposition: 'suppressed',
+                        reason: 'candidate-aborted',
+                        developmentContext,
+                    });
+                    return;
+                }
+
+                const reasonPrefix =
+                    error instanceof Error && error.message.includes('capture')
+                        ? 'evidence-capture'
+                        : 'candidate-failure';
+
+                if (candidateTelemetryPersisted) {
+                    writeMonitoringEventTrace({
+                        detectorSource: 'mediapipe',
+                        eventType: telemetrySignal,
+                        eventSubtype: normalizedAnalysis.status,
+                        detectionTime,
+                        emissionTime,
+                        disposition: 'failed',
+                        reason: error instanceof Error
+                            ? `${reasonPrefix}:${error.message}`
+                            : `${reasonPrefix}:unknown-error`,
+                        developmentContext,
+                    });
+                    return;
+                }
+
+                emitFallbackTelemetry(
+                    error instanceof Error
+                        ? `${reasonPrefix}:${error.message}`
+                        : `${reasonPrefix}:unknown-error`,
+                );
+            } finally {
+                window.clearTimeout(timeoutId);
+                inFlightEvidenceDecisionsRef.current.delete(eventId);
+            }
+        })();
     }, [apiClient, startIncidentEvidenceUpload]);
 
     const clearInFlightEvents = useCallback(() => {
-        inFlightEvidenceEventIdsRef.current.clear();
+        for (const controller of inFlightEvidenceDecisionsRef.current.values()) {
+            controller.abort(new DOMException('Evidence decision aborted during cleanup.', 'AbortError'));
+        }
+        inFlightEvidenceDecisionsRef.current.clear();
     }, []);
 
     return {
-        inFlightEvidenceEventIdsRef,
+        inFlightEvidenceDecisionsRef,
         dispatchIncident,
         clearInFlightEvents,
     };
