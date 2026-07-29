@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useRef } from 'react';
 import type { ApiClientType } from '@sentinel/services';
 import {
     completeEvidenceUpload,
@@ -58,13 +58,6 @@ async function retry<T>(
  */
 export function useIncidentEvidenceUpload() {
     const supabaseRef = useRef(createSupabaseClient());
-    const isMountedRef = useRef(true);
-
-    useEffect(() => {
-        return () => {
-            isMountedRef.current = false;
-        };
-    }, []);
 
     const startIncidentEvidenceUpload = useCallback(
         async ({
@@ -107,10 +100,6 @@ export function useIncidentEvidenceUpload() {
                     return isRetryableError(error);
                 },
             );
-
-            if (!isMountedRef.current) {
-                return;
-            }
 
             await completeEvidenceUpload(apiClient, upload.evidenceId);
         },

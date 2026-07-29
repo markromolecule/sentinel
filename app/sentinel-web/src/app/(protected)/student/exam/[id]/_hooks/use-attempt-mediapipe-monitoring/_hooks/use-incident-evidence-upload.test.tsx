@@ -122,13 +122,20 @@ describe('useIncidentEvidenceUpload', () => {
         ).rejects.toThrow('complete failed');
     });
 
-    it('skips completion after unmount even when storage upload succeeds late', async () => {
-        let resolveUpload: ((value: { error: null }) => void) | null = null;
+    it('completes a background upload after the hook unmounts', async () => {
+        let resolveUpload: (value: { error: null }) => void = () => {
+            throw new Error('Upload resolver was not initialized.');
+        };
         mockUploadToSignedUrl.mockImplementation(
             () => new Promise((resolve) => {
                 resolveUpload = resolve;
             }),
         );
+        mockCompleteEvidenceUpload.mockResolvedValue({
+            evidenceId: 'evidence-1',
+            state: 'AVAILABLE',
+            expiresAt: '2026-08-03T12:00:00.000Z',
+        });
 
         const { result, unmount } = renderHook(() => useIncidentEvidenceUpload());
 
@@ -145,9 +152,12 @@ describe('useIncidentEvidenceUpload', () => {
         });
 
         unmount();
-        resolveUpload?.({ error: null });
+        resolveUpload({ error: null });
 
         await expect(pending).resolves.toBeUndefined();
-        expect(mockCompleteEvidenceUpload).not.toHaveBeenCalled();
+        expect(mockCompleteEvidenceUpload).toHaveBeenCalledWith(
+            expect.any(Function),
+            'evidence-1',
+        );
     });
 });

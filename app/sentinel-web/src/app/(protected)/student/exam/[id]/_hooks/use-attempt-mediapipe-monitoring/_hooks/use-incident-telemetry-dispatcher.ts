@@ -152,10 +152,9 @@ export function useIncidentTelemetryDispatcher(): UseIncidentTelemetryDispatcher
                 });
         };
 
-        const canAttemptEvidenceCapture =
-            eligibility.isEnabled && Boolean(attemptId) && videoElement !== null;
+        const canAttemptEvidenceCapture = eligibility.isEnabled && videoElement !== null;
 
-        if (!canAttemptEvidenceCapture || !attemptId || !videoElement) {
+        if (!canAttemptEvidenceCapture || !videoElement) {
             emitFallbackTelemetry('telemetry-only');
             return;
         }
