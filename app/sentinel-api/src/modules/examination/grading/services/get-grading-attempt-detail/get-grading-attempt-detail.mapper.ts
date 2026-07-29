@@ -1,7 +1,12 @@
 import type { ExamQuestion } from '@sentinel/shared';
-import type { BuildGradingAttemptDetailArgs } from './get-grading-attempt-detail.types';
+import type {
+    BuildGradingAttemptDetailArgs,
+    GradingAttemptDetailResponse,
+} from './get-grading-attempt-detail.types';
 
-function mapQuestionsForResponse(questions: ExamQuestion[]) {
+function mapQuestionsForResponse(
+    questions: ExamQuestion[],
+): GradingAttemptDetailResponse['questions'] {
     return questions.map((question) => ({
         id: question.id,
         examId: question.examId,
@@ -17,7 +22,9 @@ function mapQuestionsForResponse(questions: ExamQuestion[]) {
     }));
 }
 
-export function buildGradingAttemptDetailResponse(args: BuildGradingAttemptDetailArgs) {
+export function buildGradingAttemptDetailResponse(
+    args: BuildGradingAttemptDetailArgs,
+): GradingAttemptDetailResponse {
     const { attemptRow, questions, questionReports, snapshotMetadata } = args;
 
     return {

@@ -1,7 +1,10 @@
 import type {
     AttemptAssessmentSnapshot,
+    AttemptGradingDetailType,
     AttemptScoreSnapshot,
+    ExamAttemptQuestionReport,
     ExamQuestion,
+    GradingQuestionType,
 } from '@sentinel/shared';
 
 export type GradingAttemptSnapshotMetadata = {
@@ -56,6 +59,11 @@ export type ParsedAttemptSnapshots = {
 export type BuildGradingAttemptDetailArgs = {
     attemptRow: GradingAttemptDetailRow;
     questions: ExamQuestion[];
-    questionReports: AttemptScoreSnapshot['questionReports'];
+    questionReports: ExamAttemptQuestionReport[];
     snapshotMetadata: GradingAttemptSnapshotMetadata;
+};
+
+export type GradingAttemptDetailResponse = {
+    attempt: AttemptGradingDetailType;
+    questions: GradingQuestionType[];
 };
