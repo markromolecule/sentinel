@@ -1,12 +1,18 @@
 import { type DbClient } from '@sentinel/db';
 import {
-    buildExamAttemptQuestionReports,
     calculateEssayWeightedScore,
-    scoreExamAttempt,
+    type ExamAttemptItemOverride,
+    type ExamQuestion,
 } from '@sentinel/shared';
 import { HTTPException } from 'hono/http-exception';
 import { getGradingAttemptDetail } from './get-grading-attempt-detail.service';
 import { appendExamAttemptLifecycleEvent } from '../../lifecycle/services/lifecycle-event.service';
+import {
+    ATTEMPT_SCORING_VERSION,
+    buildAnswerPayloadChecksum,
+    buildScoreSnapshot,
+} from '../../flow/services/attempt-snapshot.service';
+import { logScoreIntegrityCheck } from '../../shared/services/score-integrity-observability.service';
 
 export type UpdateGradingAttemptArgs = {
     dbClient: DbClient;
@@ -36,6 +42,41 @@ export type UpdateGradingAttemptArgs = {
     feedback?: string | null;
     finalize?: boolean;
 };
+
+type PersistedGradingOverride = ExamAttemptItemOverride;
+
+function toExamQuestionContent(content: Record<string, any>): ExamQuestion['content'] {
+    return content as ExamQuestion['content'];
+}
+
+function mapGradingQuestionToExamQuestion(question: {
+    id: string;
+    examId: string;
+    type: string;
+    sourceFileName?: string | null;
+    sourcePageNumber?: number | null;
+    sourceEvidence?: string | null;
+    passageContent?: string | null;
+    passageType?: 'plain' | 'html' | null;
+    content: Record<string, any>;
+    points: number;
+    orderIndex: number;
+}): ExamQuestion {
+    return {
+        id: question.id,
+        examId: question.examId,
+        type: question.type as ExamQuestion['type'],
+        sourceFileName: question.sourceFileName ?? null,
+        sourcePageNumber: question.sourcePageNumber ?? null,
+        sourceEvidence: question.sourceEvidence ?? null,
+        passageContent: question.passageContent ?? null,
+        passageType: question.passageType ?? null,
+        points: question.points,
+        orderIndex: question.orderIndex,
+        content: toExamQuestionContent(question.content),
+        tags: [],
+    };
+}
 
 /**
  * Updates a student's exam attempt with manually scored essay questions,
@@ -69,25 +110,11 @@ export async function updateGradingAttempt({
         });
     }
 
-    // 2. Score the auto-gradable (objective) questions
-    const mappedQuestions = questions.map((q) => ({
-        id: q.id,
-        examId: q.examId,
-        type: q.type as any,
-        points: q.points,
-        orderIndex: q.orderIndex,
-        content: q.content,
-        tags: [],
-    }));
-
-    scoreExamAttempt({
-        questions: mappedQuestions,
-        answers: attempt.answers,
-    });
+    const mappedQuestions = questions.map(mapGradingQuestionToExamQuestion);
 
     const questionPointsMap = new Map(questions.map((question) => [question.id, question.points]));
 
-    const mergedOverrides = {
+    const mergedOverrides: Record<string, PersistedGradingOverride> = {
         ...attempt.itemOverrides,
         ...itemOverrides,
     };
@@ -148,20 +175,29 @@ export async function updateGradingAttempt({
         {},
     );
 
-    const questionReports = buildExamAttemptQuestionReports({
+    const scoreSnapshot = buildScoreSnapshot({
         questions: mappedQuestions,
         answers: attempt.answers,
+        answerChecksum: buildAnswerPayloadChecksum({
+            attemptId,
+            answers: attempt.answers,
+            elapsedSeconds: 0,
+        }),
         evaluations: updatedEvaluations,
         itemOverrides: persistedOverrides,
     });
 
-    const calculatedScore = questionReports.reduce(
-        (sum, report) => sum + (report.awardedScore ?? 0),
-        0,
-    );
+    logScoreIntegrityCheck({
+        boundary: 'grading',
+        attemptId,
+        examId: attempt.examId,
+        scoringVersion: scoreSnapshot.scoringVersion,
+        aggregateScore: scoreSnapshot.score,
+        aggregateTotalScore: scoreSnapshot.totalScore,
+        questionReports: scoreSnapshot.questionReports,
+    });
 
-    // 4. Round the final score to nearest integer for DB compatibility (Int)
-    const roundedScore = Math.round(calculatedScore);
+    const roundedScore = scoreSnapshot.score;
 
     const existingGradingMetadata =
         typeof attempt.grading === 'object' && attempt.grading !== null ? attempt.grading : {};
@@ -188,6 +224,8 @@ export async function updateGradingAttempt({
     const updatePayload: Record<string, any> = {
         score: roundedScore,
         answer_snapshot: updatedSnapshot as any,
+        score_snapshot: scoreSnapshot as any,
+        scoring_version: ATTEMPT_SCORING_VERSION,
         last_synced_at: new Date(),
     };
 

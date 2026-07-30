@@ -6,6 +6,8 @@ import type {
 } from '../types';
 import type { EssayQuestionEvaluation } from '../schema/exams/assessment-schema';
 
+export type ExamAttemptQuestionReportAnswerValue = Exclude<ExamAttemptAnswerValue, undefined>;
+
 export type ExamAttemptItemOverride = {
     awardedScore: number;
     reason?: string | null;
@@ -25,11 +27,16 @@ export type ExamAttemptQuestionReport = {
     questionId: string;
     questionType: ExamQuestion['type'];
     prompt: string;
-    answer: ExamAttemptAnswerValue;
+    submittedAnswer: ExamAttemptQuestionReportAnswerValue;
+    displayAnswer: ExamAttemptQuestionReportAnswerValue;
+    answer: ExamAttemptQuestionReportAnswerValue;
     correctAnswer: ExamQuestionReportCorrectAnswer;
     isCorrect: boolean | null;
+    objectiveAwardedScore: number | null;
     awardedScore: number | null;
     maxScore: number;
+    manualReviewState: 'NOT_REQUIRED' | 'PENDING_REVIEW' | 'REVIEWED';
+    scoringVersion: string;
     evaluation: EssayQuestionEvaluation | null;
     override: ExamAttemptItemOverride | null;
 };
@@ -44,6 +51,7 @@ export type BuildExamAttemptQuestionReportsArgs = {
     answers: ExamAttemptAnswers;
     evaluations?: Record<string, EssayQuestionEvaluation>;
     itemOverrides?: Record<string, ExamAttemptItemOverride>;
+    scoringVersion?: string;
 };
 
 export type ScoreExamAttemptResult = ExamAttemptScoreSummary;

@@ -15,6 +15,16 @@ export function normalizeExamStructureInput(args: NormalizeExamStructureInputArg
     const questionSections = args.questionSections ?? [];
     const questions = args.questions ?? [];
 
+    if (questions.length > 0) {
+        const totalPoints = questions.reduce((sum, question) => sum + question.points, 0);
+
+        if (totalPoints <= 0) {
+            throw new HTTPException(400, {
+                message: 'Exam questions must produce a positive total score.',
+            });
+        }
+    }
+
     const normalizedSections = questionSections.map((section, index) => ({
         exam_section_id: section.id ?? crypto.randomUUID(),
         exam_id: args.examId,

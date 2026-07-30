@@ -37,6 +37,25 @@ export async function getAnalyticsDepartmentIntegrityData(
 
     const fiStartFilter = startAt ? sql`and fi.timestamp >= ${startAt}` : sql``;
     const fiEndFilter = endAtExclusive ? sql`and fi.timestamp < ${endAtExclusive}` : sql``;
+    const effectiveTotalScore = sql<number | null>`coalesce(
+        (ea.score_snapshot->>'totalScore')::numeric,
+        ea.total_score::numeric
+    )`;
+    const effectivePercentage = sql<number | null>`coalesce(
+        (ea.score_snapshot->>'percentage')::numeric,
+        case
+            when ${effectiveTotalScore} is not null and ${effectiveTotalScore} > 0
+            then (
+                coalesce(
+                    (ea.score_snapshot->>'score')::numeric,
+                    ea.score::numeric,
+                    ea.initial_score::numeric,
+                    0::numeric
+                ) / nullif(${effectiveTotalScore}, 0::numeric)
+            ) * 100
+            else null
+        end
+    )`;
 
     let query = dbClient
         .selectFrom('departments as d')
@@ -61,7 +80,7 @@ export async function getAnalyticsDepartmentIntegrityData(
             sql<number>`coalesce(count(distinct case when ea.attempt_id is not null ${startFilter} ${endFilter} then st.student_id end), 0)`.as(
                 'studentCount',
             ),
-            sql<number>`coalesce(avg(case when ea.status = 'COMPLETED' and ea.total_score is not null and ea.total_score > 0 ${startFilter} ${endFilter} then (coalesce(ea.score, ea.initial_score, 0)::numeric / nullif(ea.total_score, 0)::numeric) * 100 end), 0)`.as(
+            sql<number>`coalesce(avg(case when ea.status = 'COMPLETED' and ${effectiveTotalScore} is not null and ${effectiveTotalScore} > 0 ${startFilter} ${endFilter} then ${effectivePercentage} end), 0)`.as(
                 'averageScore',
             ),
         ]);

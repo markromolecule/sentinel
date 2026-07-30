@@ -1,5 +1,6 @@
 'use client';
 
+import type { ExaminationGlobalSettings } from '@sentinel/shared/types';
 import type { ExamConfigurationState } from '@sentinel/services';
 import { Badge, Form, Separator, Tabs, TabsContent, TabsList, TabsTrigger } from '@sentinel/ui';
 import { useExamConfigForm } from '@/features/exams/config/_hooks/use-exam-config-form';
@@ -10,6 +11,7 @@ import { SecuritySettingsSection } from '@/features/exams/config/_components/sec
 
 interface ExamConfigFormProps {
     defaultValues: ExamConfigurationState;
+    examinationDefaults?: ExaminationGlobalSettings;
     onSubmit: (values: ExamConfigurationState) => Promise<void> | void;
     formId?: string;
 }
@@ -53,6 +55,7 @@ function TabHeader({
 
 export function ExamConfigForm({
     defaultValues,
+    examinationDefaults,
     onSubmit,
     formId = 'proctor-config-form',
 }: ExamConfigFormProps) {
@@ -118,7 +121,7 @@ export function ExamConfigForm({
                                 description="Control the student-facing exam behavior, including ordering, review, and post-submission feedback."
                                 badge={`${enabledExamRules}/5 enabled`}
                             />
-                            <ExamRulesSection />
+                            <ExamRulesSection examinationDefaults={examinationDefaults} />
                         </div>
                     </TabsContent>
 

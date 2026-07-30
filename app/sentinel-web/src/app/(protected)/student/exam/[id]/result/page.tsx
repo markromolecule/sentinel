@@ -250,6 +250,7 @@ export default function StudentExamResultPage() {
                 sessionId: preview.sessionId,
                 answers: preview.answers,
                 elapsedSeconds: preview.elapsedSeconds,
+                preparationToken: preview.preparationToken,
             });
             const resolvedSummary: StoredExamTurnInPreviewSummary = {
                 score: scoreVisible ? result.score : null,

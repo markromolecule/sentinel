@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { examAttemptAnswersSchema, examAttemptAnswerValueSchema } from './attempt-answer-schema';
 
 export const gradingStatusSchema = z.enum(['PENDING', 'IN_PROGRESS', 'COMPLETED']);
 export const submissionStatusSchema = z.enum(['NOT_SUBMITTED', 'SUBMITTED', 'GRADED']);
@@ -62,7 +63,7 @@ export const attemptGradingDetailSchema = z.object({
     totalScore: z.number().nullable(),
     initialScore: z.number().nullable(),
     status: z.string().nullable(),
-    answers: z.record(z.string(), z.any()),
+    answers: examAttemptAnswersSchema,
     evaluations: z.record(z.string(), z.any()),
     feedback: z.string().nullable(),
     itemOverrides: z.record(
@@ -85,8 +86,8 @@ export const attemptGradingDetailSchema = z.object({
             questionId: z.string().uuid(),
             questionType: z.string(),
             prompt: z.string(),
-            answer: z.any(),
-            correctAnswer: z.any().nullable(),
+            answer: examAttemptAnswerValueSchema,
+            correctAnswer: examAttemptAnswerValueSchema.nullable(),
             isCorrect: z.boolean().nullable(),
             awardedScore: z.number().nullable(),
             maxScore: z.number(),

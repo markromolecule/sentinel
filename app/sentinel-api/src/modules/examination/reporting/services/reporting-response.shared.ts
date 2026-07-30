@@ -45,6 +45,10 @@ export function isSubmitted(row: ReportStudentRow) {
 }
 
 export function getPercentage(row: ReportStudentRow) {
+    if (typeof row.percentage === 'number') {
+        return roundPercentage(row.percentage);
+    }
+
     const score = row.score ?? null;
     const totalScore = row.total_score ?? null;
 

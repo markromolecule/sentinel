@@ -666,6 +666,18 @@ export type exam_attempts = {
      * Auto-graded score at time of submission, before any instructor overrides. Write-once.
      */
     initial_score: number | null;
+    /**
+     * Frozen attempt-time assessment payload used as the source of truth for scoring and reports.
+     */
+    assessment_snapshot: unknown | null;
+    /**
+     * Persisted item-level scoring payload derived from assessment_snapshot.
+     */
+    score_snapshot: unknown | null;
+    /**
+     * Version label for the scoring pipeline that generated score_snapshot.
+     */
+    scoring_version: string | null;
     status: Generated<exam_status | null>;
     time_spent_minutes: Generated<number | null>;
     is_verified: Generated<boolean | null>;

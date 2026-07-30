@@ -8,7 +8,7 @@ export function EnumerationQuestion({
     showCorrectAnswer,
 }: ExamQuestionRendererProps) {
     const blanks = question.content.acceptedAnswers ?? question.content.blanks ?? ['', '', ''];
-    const values = Array.isArray(value) ? value : blanks.map(() => '');
+    const values: string[] = Array.isArray(value) ? value.map((item) => String(item ?? '')) : blanks.map(() => '');
 
     const updateItem = (index: number, nextValue: string) => {
         const nextValues = [...values];
@@ -32,7 +32,7 @@ export function EnumerationQuestion({
                             </label>
                             <Input
                                 id={inputId}
-                                value={(values[index] as string) ?? ''}
+                                value={values[index] ?? ''}
                                 onChange={(event) => updateItem(index, event.target.value)}
                                 placeholder={`Item ${index + 1}`}
                                 className="h-12 rounded-md"

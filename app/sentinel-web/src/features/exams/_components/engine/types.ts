@@ -1,10 +1,15 @@
 import type { ReactNode } from 'react';
-import type { Exam, ExamConfiguration, ExamQuestion, ExamSettings } from '@sentinel/shared/types';
+import type {
+    Exam,
+    ExamAttemptAnswerValue,
+    ExamConfiguration,
+    ExamQuestion,
+    ExamSettings,
+} from '@sentinel/shared/types';
 
 export type ExamEngineMode = 'preview' | 'runtime';
 
-export type ExamAnswerValue =
-    string | number | boolean | (string | number)[] | Record<string, string> | null | undefined;
+export type ExamAnswerValue = ExamAttemptAnswerValue;
 
 type HardwareStatus = 'success' | 'pending' | 'optional';
 

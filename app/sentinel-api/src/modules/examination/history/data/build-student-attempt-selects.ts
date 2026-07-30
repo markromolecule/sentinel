@@ -29,6 +29,8 @@ export function buildStudentAttemptSelects(studentUserId?: string) {
             sql<string | null>`null`.as('attempt_primary_incident_type'),
             sql<number | null>`null`.as('attempt_answered_count'),
             sql<string | null>`null`.as('attempt_finalized_at'),
+            sql<unknown | null>`null`.as('attempt_assessment_snapshot'),
+            sql<unknown | null>`null`.as('attempt_score_snapshot'),
         ];
     }
 
@@ -139,5 +141,31 @@ export function buildStudentAttemptSelects(studentUserId?: string) {
             order by ea.created_at desc nulls last
             limit 1
         )`.as('attempt_finalized_at'),
+        sql<unknown | null>`(
+            select ea.assessment_snapshot
+            from exam_attempts as ea
+            inner join students as st_attempt on st_attempt.student_id = ea.student_id
+            where st_attempt.user_id = ${studentUserId}
+              and ea.exam_id = e.exam_id
+              and (
+                  e.published_at is null
+                  or coalesce(ea.started_at, ea.created_at) >= e.published_at
+              )
+            order by ea.created_at desc nulls last
+            limit 1
+        )`.as('attempt_assessment_snapshot'),
+        sql<unknown | null>`(
+            select ea.score_snapshot
+            from exam_attempts as ea
+            inner join students as st_attempt on st_attempt.student_id = ea.student_id
+            where st_attempt.user_id = ${studentUserId}
+              and ea.exam_id = e.exam_id
+              and (
+                  e.published_at is null
+                  or coalesce(ea.started_at, ea.created_at) >= e.published_at
+              )
+            order by ea.created_at desc nulls last
+            limit 1
+        )`.as('attempt_score_snapshot'),
     ];
 }

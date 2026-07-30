@@ -1,8 +1,10 @@
+import { Schema } from '@sentinel/shared';
 import type { ExamDetail, ExamSummary } from '../exam.dto';
 import type { ExamHistoryDetail, ExamHistorySummary } from '../../history/history.dto';
 import { resolveExamStatus, resolveStudentExamStatus } from './resolve-exam-status.service';
 import type { ExamRuntimeAccess } from '../../runtime-access/runtime-access.dto';
 import type { TelemetryMediaPipeSandboxSchemaValues } from '@sentinel/shared';
+import { logScoreSnapshotColumnMismatch } from '../../shared/services/score-integrity-observability.service';
 
 export type RawExamRecord = {
     exam_id: string;
@@ -53,6 +55,8 @@ export type RawExamRecord = {
     release_score_mode?: string | null;
     essay_question_count?: number | string | null;
     attempt_finalized_at?: string | null;
+    attempt_assessment_snapshot?: unknown | null;
+    attempt_score_snapshot?: unknown | null;
 };
 
 function resolveMappedExamStatus(
@@ -104,6 +108,67 @@ function computeProgressPercentage(answeredCount?: number | null, totalQuestions
     return Math.round((answeredCount / totalQuestions) * 100);
 }
 
+function warnIfAttemptScoreSnapshotMismatch(
+    record: RawExamRecord,
+    snapshot: {
+        score: number;
+        totalScore: number;
+        percentage: number | null;
+    },
+) {
+    if (!record.attempt_id || record.attempt_score_snapshot == null) {
+        return;
+    }
+
+    const columnScore = record.attempt_score != null ? Number(record.attempt_score) : null;
+    const columnTotalScore =
+        record.attempt_total_score != null ? Number(record.attempt_total_score) : null;
+    const columnPercentage = computePercentage(columnScore, columnTotalScore);
+
+    logScoreSnapshotColumnMismatch({
+        boundary: 'history',
+        attemptId: record.attempt_id,
+        examId: record.exam_id,
+        columnScore,
+        columnTotalScore,
+        columnPercentage,
+        snapshotScore: snapshot.score,
+        snapshotTotalScore: snapshot.totalScore,
+        snapshotPercentage: snapshot.percentage,
+        scoringVersion:
+            Schema.attemptScoreSnapshotSchema.safeParse(record.attempt_score_snapshot).success
+                ? Schema.attemptScoreSnapshotSchema.parse(record.attempt_score_snapshot)
+                      .scoringVersion
+                : null,
+    });
+}
+
+function resolvePersistedAttemptScore(record: RawExamRecord) {
+    const parsedSnapshot = Schema.attemptScoreSnapshotSchema.safeParse(record.attempt_score_snapshot);
+
+    if (parsedSnapshot.success) {
+        const snapshot = {
+            score: parsedSnapshot.data.score,
+            totalScore: parsedSnapshot.data.totalScore,
+            percentage: parsedSnapshot.data.percentage,
+        };
+
+        warnIfAttemptScoreSnapshotMismatch(record, snapshot);
+
+        return snapshot;
+    }
+
+    const score = record.attempt_score != null ? Number(record.attempt_score) : null;
+    const totalScore = record.attempt_total_score != null ? Number(record.attempt_total_score) : null;
+    const percentage = computePercentage(score, totalScore);
+
+    return {
+        score,
+        totalScore,
+        percentage,
+    };
+}
+
 function mapIncidentTypeToCheatingType(
     incidentType?: string | null,
     incidentCount?: number | null,
@@ -133,7 +198,7 @@ function mapIncidentTypeToCheatingType(
 }
 
 function resolveHistoryResult(record: RawExamRecord): ExamHistorySummary['result'] {
-    const percentage = computePercentage(record.attempt_score, record.attempt_total_score);
+    const { percentage } = resolvePersistedAttemptScore(record);
 
     if (percentage === null) {
         return null;
@@ -198,6 +263,7 @@ export function mapExamSummaryResponse(
     const classroomIds = buildClassroomIds(record);
     const classroomNames = buildClassroomNames(record);
     const passingScore = requireResolvedPassingScore(record);
+    const persistedAttemptScore = resolvePersistedAttemptScore(record);
 
     return {
         id: record.exam_id,
@@ -228,12 +294,12 @@ export function mapExamSummaryResponse(
         updatedAt: record.updated_at ?? null,
         attemptId: record.attempt_id ?? null,
         completedAt: record.attempt_completed_at ?? null,
-        score: record.attempt_score != null ? Number(record.attempt_score) : null,
-        totalScore: record.attempt_total_score != null ? Number(record.attempt_total_score) : null,
+        score: persistedAttemptScore.score,
+        totalScore: persistedAttemptScore.totalScore,
         percentage:
             record.attempt_status?.toUpperCase() === 'COMPLETED' ||
             record.attempt_completed_at != null
-                ? computePercentage(record.attempt_score, record.attempt_total_score)
+                ? persistedAttemptScore.percentage
                 : computeProgressPercentage(record.attempt_answered_count, record.question_count),
         timeSpentMinutes: record.attempt_time_spent_minutes ?? null,
         cheated: (record.attempt_incident_count ?? 0) > 0,
@@ -267,6 +333,7 @@ export function mapExamSummaryResponse(
 
 export function mapExamHistorySummaryResponse(record: RawExamRecord): ExamHistorySummary {
     const isReleased = isHistoryScoreReleased(record);
+    const persistedAttemptScore = resolvePersistedAttemptScore(record);
 
     return {
         id: record.attempt_id ?? record.exam_id,
@@ -282,14 +349,10 @@ export function mapExamHistorySummaryResponse(record: RawExamRecord): ExamHistor
         availableAt: getAvailableAt(record),
         dueAt: getDueAt(record),
         completedAt: record.attempt_completed_at ?? null,
-        score: isReleased && record.attempt_score != null ? Number(record.attempt_score) : null,
+        score: isReleased ? persistedAttemptScore.score : null,
         totalScore:
-            isReleased && record.attempt_total_score != null
-                ? Number(record.attempt_total_score)
-                : null,
-        percentage: isReleased
-            ? computePercentage(record.attempt_score, record.attempt_total_score)
-            : null,
+            isReleased ? persistedAttemptScore.totalScore : null,
+        percentage: isReleased ? persistedAttemptScore.percentage : null,
         timeSpent: record.attempt_time_spent_minutes ?? null,
         cheated: (record.attempt_incident_count ?? 0) > 0,
         cheatingType:

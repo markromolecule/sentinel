@@ -2,7 +2,6 @@ import { type DbClient } from '@sentinel/db';
 import type {
     GradingStudentListType,
     GradingStudentSectionType,
-    GradingStudentType,
 } from '@sentinel/shared/schema';
 import { getGradingStudentsData } from '../data/get-grading-students';
 

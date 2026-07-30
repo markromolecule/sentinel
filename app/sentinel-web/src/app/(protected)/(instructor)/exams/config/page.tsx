@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ExamConfigForm } from '@/features/exams';
 import {
     useExamConfigurationQuery,
+    useExaminationConfigurationDefaultsQuery,
     useExamQuery,
     useUpdateExamConfigurationMutation,
 } from '@sentinel/hooks';
@@ -21,6 +22,7 @@ function ProctorExamConfigContent() {
     const { data: exam, isLoading: isExamLoading } = useExamQuery(id ?? undefined);
     const { data: configurationState, isLoading: isConfigurationLoading } =
         useExamConfigurationQuery(id ?? undefined);
+    const { data: examinationDefaults } = useExaminationConfigurationDefaultsQuery();
     const updateConfigurationMutation = useUpdateExamConfigurationMutation();
 
     const handleSubmit = async (values: ExamConfigurationState) => {
@@ -78,7 +80,11 @@ function ProctorExamConfigContent() {
                     </div>
                 </div>
             ) : configurationState ? (
-                <ExamConfigForm defaultValues={configurationState} onSubmit={handleSubmit} />
+                <ExamConfigForm
+                    defaultValues={configurationState}
+                    examinationDefaults={examinationDefaults}
+                    onSubmit={handleSubmit}
+                />
             ) : (
                 <div className="border-border/60 text-muted-foreground rounded-2xl border border-dashed px-6 py-10 text-sm">
                     Unable to load the current configuration for this exam.

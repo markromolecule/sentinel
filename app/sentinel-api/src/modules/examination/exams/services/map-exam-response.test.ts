@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_TELEMETRY_SETTINGS } from '@sentinel/shared';
 import { mapExamDetailResponse, mapExamHistoryDetailResponse } from './map-exam-response.service';
 
@@ -70,6 +70,10 @@ function createExamConfiguration() {
         },
     } as const;
 }
+
+afterEach(() => {
+    vi.restoreAllMocks();
+});
 
 describe('mapExamDetailResponse', () => {
     it('keeps mediaPipeSandbox on the mapped student exam detail payload', () => {
@@ -340,5 +344,73 @@ describe('mapExamHistoryDetailResponse', () => {
         expect(detail.totalScore).toBe(2);
         expect(detail.percentage).toBe(100);
         expect(detail.result).toBe('passed');
+    });
+
+    it('prefers persisted score snapshots over stale aggregate columns', () => {
+        const detail = mapExamHistoryDetailResponse({
+            ...createRawExamRecord(),
+            attempt_id: 'attempt-1',
+            attempt_status: 'COMPLETED',
+            attempt_completed_at: new Date('2026-06-26T10:00:00.000Z'),
+            attempt_score: 0,
+            attempt_total_score: 5,
+            attempt_score_snapshot: {
+                version: 'attempt-score.v1',
+                scoringVersion: 'objective-baseline.v1',
+                generatedAt: '2026-07-29T05:00:00.000Z',
+                score: 3,
+                totalScore: 5,
+                percentage: 60,
+                answeredCount: 5,
+                autoGradableQuestionCount: 5,
+                manualReviewQuestionCount: 0,
+                requiresManualReview: false,
+                questionReports: [],
+            },
+        });
+
+        expect(detail.score).toBe(3);
+        expect(detail.totalScore).toBe(5);
+        expect(detail.percentage).toBe(60);
+        expect(detail.result).toBe('failed');
+    });
+
+    it('warns when persisted score snapshots disagree with aggregate columns', () => {
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+        mapExamHistoryDetailResponse({
+            ...createRawExamRecord(),
+            attempt_id: 'attempt-1',
+            attempt_status: 'COMPLETED',
+            attempt_completed_at: new Date('2026-06-26T10:00:00.000Z'),
+            attempt_score: 0,
+            attempt_total_score: 5,
+            attempt_score_snapshot: {
+                version: 'attempt-score.v1',
+                scoringVersion: 'objective-baseline.v1',
+                generatedAt: '2026-07-29T05:00:00.000Z',
+                score: 3,
+                totalScore: 5,
+                percentage: 60,
+                answeredCount: 5,
+                autoGradableQuestionCount: 5,
+                manualReviewQuestionCount: 0,
+                requiresManualReview: false,
+                questionReports: [],
+            },
+        });
+
+        expect(warnSpy).toHaveBeenCalledWith(
+            '[score-integrity]',
+            expect.objectContaining({
+                metric: 'legacy_column_vs_snapshot_mismatch',
+                boundary: 'history',
+                attemptId: 'attempt-1',
+                examId: 'exam-1',
+                columnScore: 0,
+                snapshotScore: 3,
+                scoringVersion: 'objective-baseline.v1',
+            }),
+        );
     });
 });

@@ -2,7 +2,8 @@ import { type DbClient } from '@sentinel/db';
 import { startSessionService } from './services/start-session.service';
 import { syncSessionService } from './services/sync-session.service';
 import { completeSessionService } from './services/complete-session.service';
-import type { CompleteSessionBody, SyncSessionBody } from './flow.dto';
+import { prepareSessionService } from './services/prepare-session.service';
+import type { CompleteSessionBody, PrepareSessionBody, SyncSessionBody } from './flow.dto';
 
 /**
  * Service class for examination session flow management.
@@ -26,6 +27,10 @@ export class FlowService {
      */
     static async syncSession(db: DbClient, studentUserId: string, body: SyncSessionBody) {
         return syncSessionService({ dbClient: db, studentUserId, body });
+    }
+
+    static async prepareSession(db: DbClient, studentUserId: string, body: PrepareSessionBody) {
+        return prepareSessionService({ dbClient: db, studentUserId, body });
     }
 
     /**

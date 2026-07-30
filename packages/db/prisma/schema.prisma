@@ -1537,6 +1537,12 @@ model exam_attempts {
   total_score             Int?
   /// Auto-graded score at time of submission, before any instructor overrides. Write-once.
   initial_score           Int?
+  /// Frozen attempt-time assessment payload used as the source of truth for scoring and reports.
+  assessment_snapshot     Json?
+  /// Persisted item-level scoring payload derived from assessment_snapshot.
+  score_snapshot          Json?
+  /// Version label for the scoring pipeline that generated score_snapshot.
+  scoring_version         String?             @db.VarChar(64)
   status                  exam_status?        @default(IN_PROGRESS)
   time_spent_minutes      Int?                @default(0)
   is_verified             Boolean?            @default(false)

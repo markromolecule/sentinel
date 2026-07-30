@@ -11,6 +11,19 @@ import {
 import { FileText } from 'lucide-react';
 import type { GradingQuestionPaneProps } from './_types';
 
+function formatSubmittedAnswer(value: GradingQuestionPaneProps['answers'][string]): string {
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+    if (Array.isArray(value)) return value.map((item) => String(item)).join(', ');
+    if (value && typeof value === 'object') {
+        return Object.entries(value)
+            .map(([key, entryValue]) => `${key}: ${entryValue}`)
+            .join('\n');
+    }
+
+    return '';
+}
+
 /**
  * Displays the list of essay questions, prompt switcher, student response,
  * and question-specific feedback.
@@ -24,6 +37,8 @@ function GradingQuestionPane({
     onFeedbackChange,
     answers,
 }: GradingQuestionPaneProps) {
+    const submittedAnswer = activeQuestion ? formatSubmittedAnswer(answers[activeQuestion.id]) : '';
+
     return (
         <div className="space-y-6 lg:col-span-6">
             {/* Essay Question Switcher if multiple */}
@@ -62,7 +77,7 @@ function GradingQuestionPane({
                                 Student Response
                             </Label>
                             <div className="bg-muted/20 mt-2 max-h-[400px] overflow-y-auto rounded-xl border p-4 font-mono text-sm leading-relaxed whitespace-pre-wrap select-text">
-                                {answers[activeQuestion.id] || (
+                                {submittedAnswer || (
                                     <span className="text-muted-foreground italic">
                                         No response submitted
                                     </span>

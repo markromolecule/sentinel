@@ -37,6 +37,7 @@ export function buildActionItemSource(student: ExamReportStudentSummary): Report
         time_spent_minutes: student.timeSpentMinutes,
         score: student.score,
         total_score: student.totalScore,
+        percentage: student.percentage,
         attempt_count: student.attemptCount,
         incident_count: student.incidentCount,
         open_incident_count: student.openIncidentCount,

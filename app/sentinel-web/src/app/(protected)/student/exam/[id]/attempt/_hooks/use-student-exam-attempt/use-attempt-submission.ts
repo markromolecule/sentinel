@@ -1,9 +1,12 @@
 import { useRouter } from 'next/navigation';
-import { scoreExamAttempt } from '@sentinel/shared';
+import { useApi } from '@sentinel/hooks';
+import { prepareExamSession } from '@sentinel/services';
 import type { ExamAttemptAnswers, ExamConfiguration, ExamQuestion } from '@sentinel/shared/types';
 import type { ExamAnswerValue } from '@/features/exams/_components/engine';
 import { writeStoredExamTurnInPreview } from '@/app/(protected)/student/exam/[id]/_lib/exam-turn-in-storage';
 import type { AttemptMonitoringPhase } from '@/app/(protected)/student/exam/[id]/_hooks/use-exam-monitoring';
+import { toast } from 'sonner';
+import { resolveStudentExamSessionError } from '@/app/(protected)/student/exam/[id]/_lib/student-exam-session-feedback';
 
 export type UseAttemptSubmissionArgs = {
     examId: string;
@@ -44,8 +47,9 @@ export function useAttemptSubmission({
     setMonitoringPhase,
 }: UseAttemptSubmissionArgs) {
     const router = useRouter();
+    const apiClient = useApi();
 
-    const proceedToTurnInReview = () => {
+    const proceedToTurnInReview = async () => {
         if (isRedirectingToTurnIn || !sessionId || isBlocked) return;
         setMonitoringPhase?.('submitting');
         const monitoringSuspended = suspendSecurityMonitoring();
@@ -62,29 +66,40 @@ export function useAttemptSubmission({
 
         setIsRedirectingToTurnIn(true);
 
-        const summary = scoreExamAttempt({
-            questions,
-            answers: selectedAnswers as ExamAttemptAnswers,
-        });
         const scoreVisible = releaseScoreMode === 'AUTO_RELEASE';
+        try {
+            const prepared = await prepareExamSession(apiClient, {
+                sessionId,
+                answers: selectedAnswers as ExamAttemptAnswers,
+                elapsedSeconds,
+            });
 
-        writeStoredExamTurnInPreview({
-            examId,
-            sessionId: sessionId,
-            answers: selectedAnswers as ExamAttemptAnswers,
-            elapsedSeconds,
-            releaseScoreMode,
-            scoreVisible,
-            summary: {
-                ...summary,
-                score: scoreVisible ? summary.score : null,
-                totalScore: scoreVisible ? summary.totalScore : null,
-                percentage: scoreVisible ? summary.percentage : null,
-            },
-            storedAt: new Date().toISOString(),
-        });
+            writeStoredExamTurnInPreview({
+                examId,
+                sessionId,
+                answers: selectedAnswers as ExamAttemptAnswers,
+                elapsedSeconds,
+                preparationToken: prepared.preparationToken,
+                releaseScoreMode,
+                scoreVisible,
+                summary: {
+                    score: scoreVisible ? prepared.score : null,
+                    totalScore: scoreVisible ? prepared.totalScore : null,
+                    percentage: scoreVisible ? prepared.percentage : null,
+                    answeredCount: prepared.answeredCount,
+                    autoGradableQuestionCount: prepared.autoGradableQuestionCount,
+                    manualReviewQuestionCount: prepared.manualReviewQuestionCount,
+                    requiresManualReview: prepared.requiresManualReview,
+                },
+                storedAt: new Date().toISOString(),
+            });
 
-        router.replace(`/student/exam/${examId}/result`);
+            router.replace(`/student/exam/${examId}/result`);
+        } catch (error) {
+            setIsRedirectingToTurnIn(false);
+            toast.error(resolveStudentExamSessionError(error));
+            return;
+        }
 
         window.setTimeout(() => {
             if (!monitoringSuspended) {
@@ -115,7 +130,7 @@ export function useAttemptSubmission({
             setIsSubmitDialogOpen(true);
             return;
         }
-        proceedToTurnInReview();
+        void proceedToTurnInReview();
     };
 
     return {

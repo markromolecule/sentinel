@@ -6,6 +6,10 @@ import {
     completeSessionRouteHandler,
 } from './controllers/complete-session.controller';
 import {
+    prepareSessionRoute,
+    prepareSessionRouteHandler,
+} from './controllers/prepare-session.controller';
+import {
     startSessionRoute,
     startSessionRouteHandler,
 } from './controllers/start-session.controller';
@@ -19,6 +23,7 @@ flowRoutes.use('*', authMiddleware);
 
 flowRoutes
     .openapi(startSessionRoute, startSessionRouteHandler)
+    .openapi(prepareSessionRoute, prepareSessionRouteHandler)
     .openapi(syncSessionRoute, syncSessionRouteHandler)
     .openapi(completeSessionRoute, completeSessionRouteHandler);
 

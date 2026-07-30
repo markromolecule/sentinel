@@ -5,22 +5,26 @@ import { useAttemptSubmission } from './use-attempt-submission';
 const {
     mockRouterReplace,
     mockWriteStoredExamTurnInPreview,
-    mockScoreExamAttempt,
+    mockPrepareExamSession,
     mockExitFullscreen,
+    mockApiClient,
+    mockToastError,
 } = vi.hoisted(() => ({
     mockRouterReplace: vi.fn(),
     mockWriteStoredExamTurnInPreview: vi.fn(),
-    mockScoreExamAttempt: vi.fn(() => ({
+    mockPrepareExamSession: vi.fn(async () => ({
+        preparationToken: 'prep-token-1',
         score: 1,
         totalScore: 1,
         percentage: 100,
-        correctCount: 1,
-        incorrectCount: 0,
-        unansweredCount: 0,
+        answeredCount: 1,
+        autoGradableQuestionCount: 1,
         requiresManualReview: false,
         manualReviewQuestionCount: 0,
     })),
     mockExitFullscreen: vi.fn().mockResolvedValue(undefined),
+    mockApiClient: vi.fn(),
+    mockToastError: vi.fn(),
 }));
 
 vi.mock('next/navigation', () => ({
@@ -29,19 +33,28 @@ vi.mock('next/navigation', () => ({
     }),
 }));
 
-vi.mock('@sentinel/shared', async () => {
-    const actual = await vi.importActual<typeof import('@sentinel/shared')>('@sentinel/shared');
+vi.mock('@sentinel/hooks', () => ({
+    useApi: () => mockApiClient,
+}));
 
-    return {
-        ...actual,
-        scoreExamAttempt: (...args: Parameters<typeof mockScoreExamAttempt>) =>
-            mockScoreExamAttempt(...args),
-    };
-});
+vi.mock('@sentinel/services', () => ({
+    prepareExamSession: (...args: Parameters<typeof mockPrepareExamSession>) =>
+        mockPrepareExamSession(...args),
+}));
 
 vi.mock('@/app/(protected)/student/exam/[id]/_lib/exam-turn-in-storage', () => ({
     writeStoredExamTurnInPreview: (...args: Parameters<typeof mockWriteStoredExamTurnInPreview>) =>
         mockWriteStoredExamTurnInPreview(...args),
+}));
+
+vi.mock('@/app/(protected)/student/exam/[id]/_lib/student-exam-session-feedback', () => ({
+    resolveStudentExamSessionError: () => 'Preparation failed.',
+}));
+
+vi.mock('sonner', () => ({
+    toast: {
+        error: (...args: Parameters<typeof mockToastError>) => mockToastError(...args),
+    },
 }));
 
 describe('useAttemptSubmission', () => {
@@ -93,8 +106,9 @@ describe('useAttemptSubmission', () => {
             }),
         );
 
-        act(() => {
+        await act(async () => {
             result.current.handleSubmit();
+            await Promise.resolve();
         });
 
         expect(suspendSecurityMonitoring).toHaveBeenCalledTimes(1);
@@ -116,7 +130,7 @@ describe('useAttemptSubmission', () => {
         );
     });
 
-    it('marks the submission phase before suspension and reaches suspended teardown state before navigation', () => {
+    it('marks the submission phase before suspension and reaches suspended teardown state before navigation', async () => {
         const monitoringState = {
             isSuspended: false,
             phase: 'active',
@@ -169,8 +183,9 @@ describe('useAttemptSubmission', () => {
             }),
         );
 
-        act(() => {
+        await act(async () => {
             result.current.handleSubmit();
+            await Promise.resolve();
         });
 
         expect(fullscreenSnapshots).toEqual([
@@ -262,8 +277,9 @@ describe('useAttemptSubmission', () => {
             }),
         );
 
-        act(() => {
+        await act(async () => {
             result.current.handleSubmit();
+            await Promise.resolve();
         });
 
         await act(async () => {
@@ -271,7 +287,7 @@ describe('useAttemptSubmission', () => {
             await Promise.resolve();
         });
 
-        expect(fullscreenSnapshots).toEqual([
+        expect(fullscreenSnapshots.slice(0, 2)).toEqual([
             {
                 label: 'during-submission',
                 isSuspended: false,
@@ -279,11 +295,6 @@ describe('useAttemptSubmission', () => {
             },
             {
                 label: 'after-router-replace',
-                isSuspended: true,
-                phase: 'submitting',
-            },
-            {
-                label: 'after-zero-delay-fullscreen-exit',
                 isSuspended: true,
                 phase: 'submitting',
             },

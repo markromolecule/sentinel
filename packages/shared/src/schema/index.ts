@@ -10,6 +10,8 @@ export * from './telemetry/telemetry-schema';
 export * from './telemetry/telemetry-settings-schema';
 export * from './notifications/notification-schema';
 export * from './exams/assessment-schema';
+export * from './exams/attempt-answer-schema';
+export * from './exams/attempt-snapshot-schema';
 export * from './exams/exam-create-schema';
 export * from './exams/exam-config-schema';
 export * from './exams/configuration-schema';

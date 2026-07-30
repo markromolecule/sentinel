@@ -1,9 +1,14 @@
 import { type DbClient } from '@sentinel/db';
+import type { AttemptAssessmentSnapshot, AttemptScoreSnapshot } from '@sentinel/shared';
 import type { ExamAttemptAnswers } from '@sentinel/shared/types';
 import type { StudentExamAccessOverride } from '../../student-overrides/student-overrides.dto';
 import { executeCreateSession, type CreateSessionResult } from './_logic/create-session.logic';
 import { findOwnedAttempt } from './_queries/attempt-queries';
-import { completeAttempt, syncAttemptProgress } from './_mutations/attempt-mutations';
+import {
+    completeAttempt,
+    persistAttemptAssessmentSnapshot,
+    syncAttemptProgress,
+} from './_mutations/attempt-mutations';
 
 /**
  * Thin facade for all exam session persistence operations.
@@ -55,13 +60,26 @@ export class SessionRepository {
         args: {
             sessionId: string;
             score: number;
+            initialScore: number;
             totalScore: number;
             timeSpentMinutes: number;
             answeredCount: number;
             answers: ExamAttemptAnswers;
+            scoreSnapshot: AttemptScoreSnapshot;
+            scoringVersion: string;
         },
     ) {
         return completeAttempt(db, args);
+    }
+
+    static async persistAssessmentSnapshot(
+        db: DbClient,
+        args: {
+            attemptId: string;
+            snapshot: AttemptAssessmentSnapshot;
+        },
+    ) {
+        return persistAttemptAssessmentSnapshot(db, args);
     }
 
     /**

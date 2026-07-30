@@ -75,8 +75,26 @@ export function buildLatestAttemptsQuery(dbClient: DbClient, examId: string) {
             'ea.started_at',
             'ea.completed_at',
             'ea.time_spent_minutes',
-            'ea.score',
-            'ea.total_score',
+            sql<number | null>`coalesce(
+                (ea.score_snapshot->>'score')::numeric,
+                ea.score::numeric,
+                ea.initial_score::numeric
+            )`.as('score'),
+            sql<number | null>`coalesce(
+                (ea.score_snapshot->>'totalScore')::numeric,
+                ea.total_score::numeric
+            )`.as('total_score'),
+            sql<number | null>`coalesce(
+                (ea.score_snapshot->>'percentage')::numeric,
+                case
+                    when ea.total_score is not null and ea.total_score > 0
+                    then (
+                        coalesce(ea.score::numeric, ea.initial_score::numeric, 0::numeric)
+                        / nullif(ea.total_score::numeric, 0::numeric)
+                    ) * 100
+                    else null
+                end
+            )`.as('percentage'),
             'ea.created_at',
             'ea.answer_snapshot',
             sql<string | null>`ea.lifecycle_state::text`.as('lifecycle_state'),

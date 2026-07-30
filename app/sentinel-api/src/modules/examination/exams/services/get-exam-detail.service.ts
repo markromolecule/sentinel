@@ -13,12 +13,38 @@ import { buildStudentOverrideRuntimeAccess } from '../../student-overrides/stude
 import type { ExamRuntimeAccess } from '../../runtime-access/runtime-access.dto';
 import { TelemetrySettingsService } from '../../../telemetry/settings/telemetry-settings.service';
 import {
+    type AttemptAssessmentSnapshot,
+    Schema,
     randomizeQuestionChoices,
     shuffleExamQuestions,
     type ExamQuestion,
 } from '@sentinel/shared';
+import type { ExamQuestionContent } from '@sentinel/shared/types';
 import { sanitizeQuestionForStudentAttempt } from './student-question-sanitizer.service';
 import { applyEffectiveExamBaselineToRawRecord } from './resolve-effective-exam-baseline.service';
+
+function normalizeSnapshotQuestion(
+    question: AttemptAssessmentSnapshot['questions'][number],
+): ExamQuestion {
+    return {
+        id: question.id,
+        examId: question.examId,
+        sectionId: question.sectionId ?? undefined,
+        sourceQuestionBankQuestionId: question.sourceQuestionBankQuestionId ?? undefined,
+        sourceCollectionId: question.sourceCollectionId ?? undefined,
+        sourceOrigin: question.sourceOrigin ?? undefined,
+        sourceFileName: question.sourceFileName ?? null,
+        sourcePageNumber: question.sourcePageNumber ?? null,
+        sourceEvidence: question.sourceEvidence ?? null,
+        passageContent: question.passageContent ?? null,
+        passageType: question.passageType ?? null,
+        type: question.type,
+        points: question.points,
+        orderIndex: question.orderIndex,
+        tags: question.tags ?? [],
+        content: question.content as ExamQuestionContent,
+    };
+}
 
 export async function getExamDetail(
     dbClient: DbClient,
@@ -117,6 +143,16 @@ export async function getExamDetail(
 
             if (!studentUserId) {
                 return mappedQuestions;
+            }
+
+            const persistedSnapshot = Schema.attemptAssessmentSnapshotSchema.safeParse(
+                resolvedExam.attempt_assessment_snapshot,
+            );
+
+            if (persistedSnapshot.success) {
+                return persistedSnapshot.data.questions.map((question) =>
+                    sanitizeQuestionForStudentAttempt(normalizeSnapshotQuestion(question)),
+                );
             }
 
             const seed = resolvedExam.attempt_id || `${studentUserId}-${id}`;

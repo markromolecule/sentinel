@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useUpdateExamMutation } from '@sentinel/hooks';
 import { type UpdateExamPayload } from '@sentinel/services';
 import { examCreateFormSchema, type ExamCreateFormValues } from '@sentinel/shared/schema';
+import { DEFAULT_EXAMINATION_GLOBAL_SETTINGS } from '@sentinel/shared/constants';
 import type { ProctorExam } from '@sentinel/shared/types';
 import {
     DEFAULT_EXAM_DURATION_MINUTES,
@@ -33,14 +34,22 @@ function buildEditFormValues(exam: ProctorExam): ExamCreateFormValues {
         startDateTime,
         endDateTime,
         durationMinutes:
-            exam.duration ||
-            getDurationMinutes(startDateTime, endDateTime) ||
+            exam.duration ??
+            getDurationMinutes(startDateTime, endDateTime) ??
             DEFAULT_EXAM_DURATION_MINUTES,
-        passingScore: exam.passingScore || 75,
-        shuffleQuestions: exam.settings?.shuffleQuestions ?? true,
-        showCorrectAnswers: exam.settings?.showCorrectAnswers ?? false,
-        allowReview: exam.settings?.allowReview ?? true,
-        randomizeChoices: exam.settings?.randomizeChoices ?? true,
+        passingScore:
+            exam.passingScore ?? DEFAULT_EXAMINATION_GLOBAL_SETTINGS.defaultPassingScore,
+        shuffleQuestions:
+            exam.settings?.shuffleQuestions ??
+            DEFAULT_EXAMINATION_GLOBAL_SETTINGS.defaultShuffleQuestions,
+        showCorrectAnswers:
+            exam.settings?.showCorrectAnswers ??
+            DEFAULT_EXAMINATION_GLOBAL_SETTINGS.defaultShowCorrectAnswers,
+        allowReview:
+            exam.settings?.allowReview ?? DEFAULT_EXAMINATION_GLOBAL_SETTINGS.defaultAllowReview,
+        randomizeChoices:
+            exam.settings?.randomizeChoices ??
+            DEFAULT_EXAMINATION_GLOBAL_SETTINGS.defaultRandomizeChoices,
         isPublic: exam.isPublic ?? false,
     };
 }

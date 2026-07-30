@@ -38,12 +38,36 @@ const matchingPairSchema = z.object({
     right: answerString,
 });
 
+function findDuplicateValues(values: string[]) {
+    const normalized = new Set<string>();
+    const duplicates = new Set<string>();
+
+    for (const value of values) {
+        const key = value.trim().toLocaleLowerCase();
+        if (normalized.has(key)) {
+            duplicates.add(key);
+            continue;
+        }
+        normalized.add(key);
+    }
+
+    return duplicates.size;
+}
+
 export const multipleChoiceContentSchema = promptSchema
     .extend({
         options: optionsSchema,
         correctAnswer: answerString,
     })
     .superRefine((value, ctx) => {
+        if (findDuplicateValues(value.options) > 0) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Options must be unique.',
+                path: ['options'],
+            });
+        }
+
         if (!value.options.includes(value.correctAnswer)) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
@@ -61,6 +85,14 @@ export const multipleResponseContentSchema = promptSchema
         }),
     })
     .superRefine((value, ctx) => {
+        if (findDuplicateValues(value.options) > 0) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Options must be unique.',
+                path: ['options'],
+            });
+        }
+
         const invalidAnswers = value.correctAnswer.filter(
             (answer) => !value.options.includes(answer),
         );
@@ -68,6 +100,14 @@ export const multipleResponseContentSchema = promptSchema
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 message: 'All selected answers must match an option.',
+                path: ['correctAnswer'],
+            });
+        }
+
+        if (findDuplicateValues(value.correctAnswer) > 0) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Correct answers must be unique.',
                 path: ['correctAnswer'],
             });
         }

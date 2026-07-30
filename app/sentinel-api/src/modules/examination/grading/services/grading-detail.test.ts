@@ -139,30 +139,38 @@ describe('Grading attempt details and update services', () => {
             expect(result.attempt.itemOverrides).toEqual(mockAttempt.answerSnapshot._itemOverrides);
             expect(result.attempt.grading).toEqual(mockAttempt.answerSnapshot._grading);
             expect(result.attempt.questionReports).toEqual([
-                {
+                expect.objectContaining({
                     questionId: 'q-obj-1',
                     questionType: 'MULTIPLE_CHOICE',
                     prompt: 'Objective Prompt',
+                    submittedAnswer: 'A',
+                    displayAnswer: 'A',
                     answer: 'A',
                     correctAnswer: 'A',
                     isCorrect: true,
+                    objectiveAwardedScore: 5,
                     awardedScore: 5,
                     maxScore: 5,
+                    manualReviewState: 'NOT_REQUIRED',
                     evaluation: null,
                     override: null,
-                },
-                {
+                }),
+                expect.objectContaining({
                     questionId: 'q-essay-1',
                     questionType: 'ESSAY',
                     prompt: 'Essay Prompt',
+                    submittedAnswer: 'Student essay response text',
+                    displayAnswer: 'Student essay response text',
                     answer: 'Student essay response text',
                     correctAnswer: null,
                     isCorrect: null,
+                    objectiveAwardedScore: null,
                     awardedScore: 4,
                     maxScore: 5,
+                    manualReviewState: 'REVIEWED',
                     evaluation: mockAttempt.answerSnapshot._evaluations['q-essay-1'],
                     override: mockAttempt.answerSnapshot._itemOverrides['q-essay-1'],
-                },
+                }),
             ]);
             expect(result.questions[0]).toMatchObject({
                 sourceFileName: 'math-source.pdf',
