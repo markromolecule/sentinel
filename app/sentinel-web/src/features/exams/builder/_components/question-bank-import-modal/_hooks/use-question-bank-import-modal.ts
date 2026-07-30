@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo } from 'react';
-import type { ExamQuestion } from '@sentinel/shared/types';
+import type { ExamQuestion, QuestionType } from '@sentinel/shared/types';
 import type { QuestionBankImportModalState } from '../types';
 import { buildImportedExamQuestions } from '../utils';
 import { useQuestionBankImportData } from './use-question-bank-import-data';
@@ -9,8 +9,9 @@ import { useQuestionBankImportSelection } from './use-question-bank-import-selec
 
 export function useQuestionBankImportModal(
     existingQuestions: ExamQuestion[] = [],
+    allowedQuestionType?: QuestionType,
 ): QuestionBankImportModalState {
-    const selection = useQuestionBankImportSelection();
+    const selection = useQuestionBankImportSelection(allowedQuestionType);
     const alreadyAddedIds = useMemo(
         () =>
             existingQuestions.flatMap((question) =>

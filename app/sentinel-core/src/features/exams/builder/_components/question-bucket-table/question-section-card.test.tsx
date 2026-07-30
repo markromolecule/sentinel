@@ -1,20 +1,45 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { QuestionSectionCard } from './question-section-card';
 
+afterEach(() => {
+    cleanup();
+});
+
+const mockQuestionTypes = [
+    {
+        value: 'MULTIPLE_CHOICE',
+        label: 'Multiple Choice',
+        description: 'Single correct answer from choices.',
+        instruction: 'Select the best answer from the choices provided.',
+        defaultContent: {},
+    },
+    {
+        value: 'TRUE_FALSE',
+        label: 'True or False',
+        description: 'True or false statements.',
+        instruction: 'Determine whether each statement is true or false.',
+        defaultContent: {},
+    },
+] as any[];
+
 describe('QuestionSectionCard', () => {
-    it('reveals the instruction editor on demand and updates the description', () => {
-        const handleDescriptionChange = vi.fn();
+    it('renders the question type dropdown and displays the read-only generated instruction', () => {
+        const handleQuestionTypeChange = vi.fn();
 
         render(
             <QuestionSectionCard
                 section={{
                     id: 'section-1',
-                    title: 'Part I',
-                    description: '',
+                    title: 'Multiple Choice',
+                    description: 'Select the best answer from the choices provided.',
+                    questionType: 'MULTIPLE_CHOICE',
                     orderIndex: 0,
                     isCollapsed: false,
                 }}
+                questionTypes={mockQuestionTypes}
+                canChangeQuestionType={true}
+                onSectionQuestionTypeChange={handleQuestionTypeChange}
                 questionCount={0}
                 totalPoints={0}
                 isSectionDragging={false}
@@ -24,25 +49,85 @@ describe('QuestionSectionCard', () => {
                 onSectionDragOver={vi.fn()}
                 onSectionDrop={vi.fn()}
                 onSectionDragEnd={vi.fn()}
-                onSectionTitleChange={vi.fn()}
-                onSectionDescriptionChange={handleDescriptionChange}
                 onToggleCollapse={vi.fn()}
                 onImportQuestions={vi.fn()}
                 onAddQuestion={vi.fn()}
             />,
         );
 
-        expect(screen.queryByLabelText('Part I instructions')).toBeNull();
+        // Check that the title and instruction are displayed
+        expect(screen.getAllByText('Multiple Choice').length).toBeGreaterThan(0);
+        expect(screen.getByText('Select the best answer from the choices provided.')).toBeTruthy();
+        
+        // Assert there is no edit button/pencil or manual title textbox
+        expect(screen.queryByRole('textbox')).toBeNull();
+        expect(screen.queryByRole('button', { name: /add instruction/i })).toBeNull();
+    });
 
-        fireEvent.click(screen.getByRole('button', { name: /add instruction/i }));
+    it('renders placeholder select when questionType is null/untyped', () => {
+        render(
+            <QuestionSectionCard
+                section={{
+                    id: 'section-1',
+                    title: 'Select question type',
+                    description: null,
+                    questionType: null,
+                    orderIndex: 0,
+                    isCollapsed: false,
+                }}
+                questionTypes={mockQuestionTypes}
+                canChangeQuestionType={true}
+                onSectionQuestionTypeChange={vi.fn()}
+                questionCount={0}
+                totalPoints={0}
+                isSectionDragging={false}
+                isSectionDropTarget={false}
+                onSectionDragStart={vi.fn()}
+                onSectionDragEnter={vi.fn()}
+                onSectionDragOver={vi.fn()}
+                onSectionDrop={vi.fn()}
+                onSectionDragEnd={vi.fn()}
+                onToggleCollapse={vi.fn()}
+                onImportQuestions={vi.fn()}
+                onAddQuestion={vi.fn()}
+            />,
+        );
 
-        const instructions = screen.getByLabelText('Part I instructions');
-        expect(instructions).toBeTruthy();
+        // Should render select placeholder or select element
+        expect(screen.getByRole('combobox')).toBeTruthy();
+    });
 
-        fireEvent.change(instructions, {
-            target: { value: 'Use complete sentences.' },
-        });
+    it('disables the dropdown and shows helper text when section contains questions', () => {
+        render(
+            <QuestionSectionCard
+                section={{
+                    id: 'section-1',
+                    title: 'Multiple Choice',
+                    description: 'Select the best answer from the choices provided.',
+                    questionType: 'MULTIPLE_CHOICE',
+                    orderIndex: 0,
+                    isCollapsed: false,
+                }}
+                questionTypes={mockQuestionTypes}
+                canChangeQuestionType={false}
+                onSectionQuestionTypeChange={vi.fn()}
+                questionCount={3}
+                totalPoints={15}
+                isSectionDragging={false}
+                isSectionDropTarget={false}
+                onSectionDragStart={vi.fn()}
+                onSectionDragEnter={vi.fn()}
+                onSectionDragOver={vi.fn()}
+                onSectionDrop={vi.fn()}
+                onSectionDragEnd={vi.fn()}
+                onToggleCollapse={vi.fn()}
+                onImportQuestions={vi.fn()}
+                onAddQuestion={vi.fn()}
+            />,
+        );
 
-        expect(handleDescriptionChange).toHaveBeenCalledWith('Use complete sentences.');
+        const selectElement = screen.getByRole('combobox') as HTMLSelectElement;
+        expect(selectElement.disabled).toBe(true);
+        expect(screen.getByText(/remove all questions/i)).toBeTruthy();
     });
 });

@@ -11,6 +11,7 @@ export interface QuestionBankImportModalProps {
     onOpenChange: (open: boolean) => void;
     onImport: (questions: ExamQuestion[]) => void;
     existingQuestions?: ExamQuestion[];
+    allowedQuestionType?: QuestionType;
 }
 
 export interface QuestionBankImportModalState {

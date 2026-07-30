@@ -26,11 +26,61 @@ export const createQuestionSection = (
     title = `Section ${index + 1}`,
 ): ExamQuestionSection => ({
     id: generateSectionId(),
+    questionType: null,
     title,
     description: null,
     orderIndex: index,
     isCollapsed: false,
 });
+
+/**
+ * Atomic helper to derive section copy fields (title, description) from a QuestionTypeDefinition.
+ *
+ * @param definition - The question type definition from the workspace.
+ * @returns The copied fields mapped to internal structure.
+ */
+export function buildQuestionSectionCopy(definition: { value: string; label: string; instruction: string }) {
+    return {
+        questionType: definition.value as any,
+        title: definition.label,
+        description: definition.instruction,
+    };
+}
+
+export const QUESTION_TYPE_INSTRUCTIONS: Record<string, { label: string; instruction: string }> = {
+    MULTIPLE_CHOICE: {
+        label: 'Multiple Choice',
+        instruction: 'Select the best answer from the choices provided.',
+    },
+    MULTIPLE_RESPONSE: {
+        label: 'Multiple Response',
+        instruction: 'Select all answers that apply for each question.',
+    },
+    TRUE_FALSE: {
+        label: 'True or False',
+        instruction: 'Determine whether each statement is true or false.',
+    },
+    IDENTIFICATION: {
+        label: 'Identification',
+        instruction: 'Write the correct term, concept, or short answer.',
+    },
+    MATCHING: {
+        label: 'Matching Type',
+        instruction: 'Match each item with its correct corresponding answer.',
+    },
+    ESSAY: {
+        label: 'Essay',
+        instruction: 'Answer each question clearly and completely.',
+    },
+    FILL_BLANK: {
+        label: 'Fill in the Blank',
+        instruction: 'Complete each statement with the correct word or phrase.',
+    },
+    ENUMERATION: {
+        label: 'Enumeration',
+        instruction: 'List all required answers for each question.',
+    },
+};
 
 /**
  * Calculates the end date and time of an exam session based on its start time and duration.
@@ -184,6 +234,7 @@ export function buildBuilderWorkspacePayload(state: ExamStoreState): SaveBuilder
 
             return {
                 id: nextId,
+                questionType: section.questionType || null,
                 title: section.title,
                 description: section.description?.trim() || null,
                 orderIndex: index,

@@ -287,4 +287,64 @@ describe('mapExam', () => {
         expect(student.flags?.[0]?.evidenceCount).toBe(2);
         expect(student.flags?.[0]?.evidenceStates).toEqual(['AVAILABLE', 'EXPIRED']);
     });
+
+    it('maps section questionType and description correctly', () => {
+        const exam = mapExam({
+            id: 'exam-7',
+            title: 'Section Type Exam',
+            description: 'Exam with section types.',
+            durationMinutes: 60,
+            passingScore: 75,
+            status: 'PUBLISHED',
+            classroomId: 'classroom-1',
+            classroomName: 'Classroom 1',
+            subjectId: 'subject-1',
+            subjectTitle: 'Science',
+            sectionId: null,
+            sectionName: null,
+            roomId: null,
+            roomName: null,
+            scheduledDate: '2026-06-14T08:00:00.000Z',
+            endDateTime: '2026-06-14T09:00:00.000Z',
+            publishedAt: '2026-06-14T07:30:00.000Z',
+            questionCount: 10,
+            createdAt: '2026-06-14T07:00:00.000Z',
+            updatedAt: '2026-06-14T07:45:00.000Z',
+            questionSections: [
+                {
+                    id: 'section-1',
+                    title: 'Multiple Choice Part',
+                    description: 'Select the best answer from the choices provided.',
+                    questionType: 'MULTIPLE_CHOICE',
+                    orderIndex: 0,
+                },
+                {
+                    id: 'section-2',
+                    title: 'Legacy Mixed Part',
+                    description: null,
+                    questionType: null,
+                    orderIndex: 1,
+                },
+            ],
+            isPublic: false,
+            assignedRoomNames: [],
+            assignedInstructorNames: [],
+            sectionNames: [],
+        } as any);
+
+        expect(exam.questionSections).toHaveLength(2);
+        expect(exam.questionSections?.[0]).toMatchObject({
+            id: 'section-1',
+            questionType: 'MULTIPLE_CHOICE',
+            title: 'Multiple Choice Part',
+            description: 'Select the best answer from the choices provided.',
+        });
+        expect(exam.questionSections?.[1]).toMatchObject({
+            id: 'section-2',
+            questionType: null,
+            title: 'Legacy Mixed Part',
+            description: null,
+        });
+    });
 });
+

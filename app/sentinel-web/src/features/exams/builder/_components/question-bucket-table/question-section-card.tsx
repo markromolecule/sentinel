@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { Button, Collapsible, CollapsibleContent, Textarea, cn } from '@sentinel/ui';
 import { ChevronDown, Database, GripVertical, Plus, PencilLine, Trash2 } from 'lucide-react';
-import type { ExamQuestionSection } from '@sentinel/shared/types';
+import type { ExamQuestionSection, QuestionType } from '@sentinel/shared/types';
 
 type QuestionSectionCardProps = {
     section: ExamQuestionSection;
@@ -16,13 +16,17 @@ type QuestionSectionCardProps = {
     onSectionDragOver: (event: React.DragEvent<HTMLDivElement>) => void;
     onSectionDrop: (event: React.DragEvent<HTMLDivElement>) => void;
     onSectionDragEnd: () => void;
-    onSectionTitleChange: (title: string) => void;
-    onSectionDescriptionChange: (description: string) => void;
+    onSectionTitleChange?: (title: string) => void;
+    onSectionDescriptionChange?: (description: string) => void;
     onDeleteSection?: () => void;
     onToggleCollapse: () => void;
     onImportQuestions: () => void;
     onAddQuestion: () => void;
     children?: React.ReactNode;
+    // New props for typed sections
+    questionTypes?: Array<{ value: QuestionType; label: string; instruction: string }>;
+    canChangeQuestionType?: boolean;
+    onSectionQuestionTypeChange?: (type: QuestionType | null) => void;
 };
 
 export function QuestionSectionCard({
@@ -43,8 +47,12 @@ export function QuestionSectionCard({
     onImportQuestions,
     onAddQuestion,
     children,
+    questionTypes = [],
+    canChangeQuestionType = true,
+    onSectionQuestionTypeChange,
 }: QuestionSectionCardProps) {
     const isOpen = !section.isCollapsed;
+    const isTyped = Boolean(section.questionType);
     const hasInstruction = Boolean(section.description?.trim());
     const [isInstructionEditorOpen, setIsInstructionEditorOpen] = React.useState(false);
 
@@ -94,14 +102,50 @@ export function QuestionSectionCard({
                                 />
                             </button>
 
-                            {/* Inline Title Input & Stats */}
-                            <div className="flex min-w-0 flex-1 items-center gap-3">
-                                <input
-                                    aria-label={`${section.title} title`}
-                                    value={section.title}
-                                    onChange={(event) => onSectionTitleChange(event.target.value)}
-                                    className="focus:bg-background max-w-[240px] min-w-[120px] truncate rounded-md border-transparent bg-transparent px-1.5 py-0.5 text-sm font-semibold shadow-none transition hover:bg-zinc-100/50 focus:border-zinc-200 focus:ring-0 focus:outline-none"
-                                />
+                            {/* Title area & type selection & Stats */}
+                            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
+                                {isTyped ? (
+                                    <span className="text-sm font-semibold text-zinc-900 select-none">
+                                        {section.title}
+                                    </span>
+                                ) : (
+                                    <input
+                                        aria-label={`${section.title} title`}
+                                        value={section.title}
+                                        onChange={(event) => onSectionTitleChange?.(event.target.value)}
+                                        className="focus:bg-background max-w-[240px] min-w-[120px] truncate rounded-md border-transparent bg-transparent px-1.5 py-0.5 text-sm font-semibold shadow-none transition hover:bg-zinc-100/50 focus:border-zinc-200 focus:ring-0 focus:outline-none"
+                                    />
+                                )}
+
+                                {/* Question Type Selection Dropdown */}
+                                <div className="flex items-center gap-1.5">
+                                    <select
+                                        aria-label="Section question type"
+                                        role="combobox"
+                                        value={section.questionType || ''}
+                                        disabled={!canChangeQuestionType}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            onSectionQuestionTypeChange?.(
+                                                val === '' ? null : (val as QuestionType),
+                                            );
+                                        }}
+                                        className="focus:bg-background rounded-md border border-zinc-200 bg-transparent px-2 py-0.5 text-xs shadow-none focus:outline-none disabled:bg-zinc-50 disabled:text-zinc-400"
+                                    >
+                                        <option value="">Select question type</option>
+                                        {questionTypes.map((t) => (
+                                            <option key={t.value} value={t.value}>
+                                                {t.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {!canChangeQuestionType && (
+                                        <span className="text-[10px] text-zinc-400 select-none">
+                                            Remove all questions to change type
+                                        </span>
+                                    )}
+                                </div>
+
                                 <span className="shrink-0 text-xs font-normal text-zinc-400 select-none">
                                     {questionCount} question{questionCount === 1 ? '' : 's'} ·{' '}
                                     {totalPoints} pt{totalPoints === 1 ? '' : 's'}
@@ -132,21 +176,23 @@ export function QuestionSectionCard({
                                 Add Question
                             </Button>
 
-                            {/* Pencil to Edit Instructions */}
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setIsInstructionEditorOpen((curr) => !curr)}
-                                className={cn(
-                                    'h-8 w-8 rounded-md text-zinc-400 hover:text-zinc-600',
-                                    isInstructionEditorOpen &&
-                                        'text-primary bg-primary/5 hover:text-primary hover:bg-primary/10',
-                                )}
-                                title={hasInstruction ? 'Edit Instruction' : 'Add Instruction'}
-                            >
-                                <PencilLine className="h-4 w-4" />
-                            </Button>
+                            {/* Pencil to Edit Instructions (only for legacy mixed sections) */}
+                            {!isTyped && (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setIsInstructionEditorOpen((curr) => !curr)}
+                                    className={cn(
+                                        'h-8 w-8 rounded-md text-zinc-400 hover:text-zinc-600',
+                                        isInstructionEditorOpen &&
+                                            'text-primary bg-primary/5 hover:text-primary hover:bg-primary/10',
+                                    )}
+                                    title={hasInstruction ? 'Edit Instruction' : 'Add Instruction'}
+                                >
+                                    <PencilLine className="h-4 w-4" />
+                                </Button>
+                            )}
 
                             {/* Delete Section */}
                             {onDeleteSection ? (
@@ -164,29 +210,40 @@ export function QuestionSectionCard({
                         </div>
                     </div>
 
-                    {/* Inline Static Instructions (when editor closed but instruction exists) */}
-                    {hasInstruction && !isInstructionEditorOpen && (
-                        <div className="pr-4 pb-1.5 pl-[76px]">
-                            <p className="line-clamp-2 text-xs text-zinc-500 italic">
-                                {section.description}
-                            </p>
-                        </div>
-                    )}
+                    {/* Inline Static Instructions (read-only for typed, fallback editable/toggleable for untyped) */}
+                    {isTyped ? (
+                        hasInstruction && (
+                            <div className="pr-4 pb-1.5 pl-[76px]">
+                                <p className="text-xs text-zinc-500 italic select-none">
+                                    {section.description}
+                                </p>
+                            </div>
+                        )
+                    ) : (
+                        <>
+                            {hasInstruction && !isInstructionEditorOpen && (
+                                <div className="pr-4 pb-1.5 pl-[76px]">
+                                    <p className="line-clamp-2 text-xs text-zinc-500 italic">
+                                        {section.description}
+                                    </p>
+                                </div>
+                            )}
 
-                    {/* Expandable Instruction Editor */}
-                    {isInstructionEditorOpen && (
-                        <div className="pt-1 pr-4 pb-2.5 pl-[76px]">
-                            <Textarea
-                                aria-label={`${section.title} instructions`}
-                                value={section.description ?? ''}
-                                onChange={(event) => onSectionDescriptionChange(event.target.value)}
-                                placeholder="Section instruction (optional)"
-                                className="bg-background focus-visible:ring-primary min-h-16 resize-y rounded-md border-zinc-200 text-xs shadow-none focus-visible:ring-1"
-                            />
-                            <p className="mt-1 text-[10px] text-zinc-400">
-                                Plain text only. Keep instructions clear and concise.
-                            </p>
-                        </div>
+                            {isInstructionEditorOpen && (
+                                <div className="pt-1 pr-4 pb-2.5 pl-[76px]">
+                                    <Textarea
+                                        aria-label={`${section.title} instructions`}
+                                        value={section.description ?? ''}
+                                        onChange={(event) => onSectionDescriptionChange?.(event.target.value)}
+                                        placeholder="Section instruction (optional)"
+                                        className="bg-background focus-visible:ring-primary min-h-16 resize-y rounded-md border-zinc-200 text-xs shadow-none focus-visible:ring-1"
+                                    />
+                                    <p className="mt-1 text-[10px] text-zinc-400">
+                                        Plain text only. Keep instructions clear and concise.
+                                    </p>
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
 

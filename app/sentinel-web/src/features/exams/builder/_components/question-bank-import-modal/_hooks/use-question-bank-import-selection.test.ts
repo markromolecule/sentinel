@@ -47,4 +47,27 @@ describe('useQuestionBankImportSelection', () => {
         expect(result.current.currentPage).toBe(1);
         expect(result.current.selectedQuestionType).toBe('MULTIPLE_CHOICE');
     });
+
+    it('enforces allowedQuestionType on initialization and dynamically clears incompatible selections on change', () => {
+        let allowedType: any = undefined;
+        const { result, rerender } = renderHook(() => useQuestionBankImportSelection(allowedType));
+
+        expect(result.current.selectedQuestionType).toBe('all');
+
+        // Add some selected questions of different types
+        act(() => {
+            result.current.toggleQuestion({ id: 'q1', type: 'MULTIPLE_CHOICE', content: {} } as any);
+            result.current.toggleQuestion({ id: 'q2', type: 'TRUE_FALSE', content: {} } as any);
+        });
+
+        expect(result.current.selectedIds).toEqual(['q1', 'q2']);
+
+        // Now rerender with allowedType set to MULTIPLE_CHOICE
+        allowedType = 'MULTIPLE_CHOICE';
+        rerender();
+
+        // Should lock type filter and discard incompatible 'q2'
+        expect(result.current.selectedQuestionType).toBe('MULTIPLE_CHOICE');
+        expect(result.current.selectedIds).toEqual(['q1']);
+    });
 });

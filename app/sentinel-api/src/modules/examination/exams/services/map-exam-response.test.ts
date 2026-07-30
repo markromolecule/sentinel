@@ -135,6 +135,40 @@ describe('mapExamDetailResponse', () => {
         ]);
     });
 
+    it('preserves section questionType on the mapped exam detail payload', () => {
+        const detail = mapExamDetailResponse({
+            exam: createRawExamRecord(),
+            settings: {
+                shuffleQuestions: false,
+                showCorrectAnswers: false,
+                allowReview: true,
+                randomizeChoices: false,
+            },
+            configuration: createExamConfiguration(),
+            mediaPipeSandbox: DEFAULT_TELEMETRY_SETTINGS.mediaPipeSandbox,
+            questionSections: [
+                {
+                    id: 'section-1',
+                    title: 'Multiple Choice',
+                    description: 'Select the best answer.',
+                    questionType: 'MULTIPLE_CHOICE' as any,
+                    orderIndex: 0,
+                },
+            ],
+            questions: [],
+        });
+
+        expect(detail.questionSections).toEqual([
+            {
+                id: 'section-1',
+                title: 'Multiple Choice',
+                description: 'Select the best answer.',
+                questionType: 'MULTIPLE_CHOICE',
+                orderIndex: 0,
+            },
+        ]);
+    });
+
     it('maps assignedRoomNames and assignedInstructorNames as empty arrays when raw record has no assignments', () => {
         const detail = mapExamDetailResponse({
             exam: {

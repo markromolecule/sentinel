@@ -5,6 +5,7 @@ export const questionTypeDefinitionSchema = z.object({
     value: questionTypeSchema,
     label: z.string(),
     description: z.string(),
+    instruction: z.string(),
     defaultContent: questionContentSchema,
 });
 

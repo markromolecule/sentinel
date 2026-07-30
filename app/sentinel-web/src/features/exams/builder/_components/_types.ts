@@ -11,6 +11,7 @@ import type { QuestionTypeDefinition } from '@sentinel/services';
 export interface QuestionBucketTableProps {
     sections?: ExamQuestionSection[];
     questions: ExamQuestion[];
+    questionTypes?: QuestionTypeDefinition[];
     onEdit: (questionId: string) => void;
     onDelete: (questionId: string) => void;
     onAddToBank?: (questionId: string) => void | Promise<void>;

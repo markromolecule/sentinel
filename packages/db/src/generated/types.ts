@@ -792,6 +792,7 @@ export type exam_sections = {
     created_at: Generated<Timestamp | null>;
     updated_at: Timestamp | null;
     description: string | null;
+    question_type: question_type | null;
 };
 export type exam_shares = {
     exam_id: string;

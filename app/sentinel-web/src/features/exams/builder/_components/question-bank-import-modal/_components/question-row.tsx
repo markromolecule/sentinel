@@ -11,6 +11,7 @@ interface QuestionRowProps {
     selected: boolean;
     isAlreadyAdded?: boolean;
     onToggle: () => void;
+    disabled?: boolean;
 }
 
 export const QuestionRow = memo(function QuestionRow({
@@ -18,18 +19,23 @@ export const QuestionRow = memo(function QuestionRow({
     selected,
     isAlreadyAdded = false,
     onToggle,
+    disabled = false,
 }: QuestionRowProps) {
+    const isInteractionDisabled = isAlreadyAdded || disabled;
+
     return (
         <div
             className={cn(
-                'group flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-all',
+                'group flex items-start gap-3 rounded-lg border p-3 transition-all',
                 selected
                     ? 'border-primary/20 bg-primary/[0.03]'
                     : 'bg-background hover:border-border hover:bg-muted/20',
                 isAlreadyAdded && 'cursor-default',
+                disabled && 'opacity-40 cursor-not-allowed hover:bg-background hover:border-zinc-200',
+                !isInteractionDisabled && 'cursor-pointer',
             )}
             onClick={() => {
-                if (!isAlreadyAdded) {
+                if (!isInteractionDisabled) {
                     onToggle();
                 }
             }}
@@ -37,6 +43,7 @@ export const QuestionRow = memo(function QuestionRow({
             <div className="pt-0.5">
                 <Checkbox
                     checked={selected}
+                    disabled={disabled}
                     onCheckedChange={() => undefined}
                     className="data-[state=checked]:bg-primary pointer-events-none h-4 w-4 rounded-md"
                 />

@@ -80,4 +80,39 @@ describe('QuestionsPanel', () => {
             expect(defaultProps.onPageChange).toHaveBeenCalledWith(2);
         }
     });
+
+    it('disables the type filter dropdown when allowedQuestionType is provided', () => {
+        render(
+            <QuestionsPanel
+                {...defaultProps}
+                allowedQuestionType="MULTIPLE_CHOICE"
+                selectedQuestionType="MULTIPLE_CHOICE"
+            />,
+        );
+
+        const trigger = screen.getByRole('button', { name: /Type: Multiple Choice/i }) as HTMLButtonElement;
+        expect(trigger.disabled).toBe(true);
+        expect(screen.getByText(/Section locked to:/i)).toBeTruthy();
+    });
+
+    it('renders incompatible question rows as disabled and prevents toggle', () => {
+        const onToggleQuestion = vi.fn();
+        render(
+            <QuestionsPanel
+                {...defaultProps}
+                allowedQuestionType="MULTIPLE_CHOICE"
+                selectedQuestionType="MULTIPLE_CHOICE"
+                onToggleQuestion={onToggleQuestion}
+            />,
+        );
+
+        // Click on the incompatible TRUE_FALSE question (q-2)
+        const row2 = screen.getByText('True/False question').closest('div');
+        expect(row2).toBeTruthy();
+        if (row2) {
+            fireEvent.click(row2);
+        }
+
+        expect(onToggleQuestion).not.toHaveBeenCalled();
+    });
 });

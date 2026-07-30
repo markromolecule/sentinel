@@ -6,6 +6,11 @@ import type {
     NormalizeExamStructureInputArgs,
 } from './exam-service.types.service';
 
+/**
+ * Normalizes exam structure input, maps and validates section/question constraints.
+ *
+ * @throws {HTTPException} If total score is not positive, if section ID is invalid, or if section questionType doesn't match question type.
+ */
 export function normalizeExamStructureInput(args: NormalizeExamStructureInputArgs) {
     assertExamStructureInput({
         questionSections: args.questionSections,
@@ -28,6 +33,7 @@ export function normalizeExamStructureInput(args: NormalizeExamStructureInputArg
     const normalizedSections = questionSections.map((section, index) => ({
         exam_section_id: section.id ?? crypto.randomUUID(),
         exam_id: args.examId,
+        question_type: (section as any).questionType || null,
         title: section.title,
         description: section.description?.trim() || null,
         order_index: section.orderIndex ?? index,
@@ -37,11 +43,24 @@ export function normalizeExamStructureInput(args: NormalizeExamStructureInputArg
 
     const validSectionIds = new Set(normalizedSections.map((section) => section.exam_section_id));
 
+    const sectionTypeMap = new Map<string, string | null>(
+        normalizedSections.map((section) => [section.exam_section_id, section.question_type]),
+    );
+
     const normalizedQuestions = questions.map((question, index) => {
         if (question.sectionId && !validSectionIds.has(question.sectionId)) {
             throw new HTTPException(400, {
                 message: `Question section ${question.sectionId} does not exist in the submitted exam structure.`,
             });
+        }
+
+        if (question.sectionId) {
+            const sectionType = sectionTypeMap.get(question.sectionId);
+            if (sectionType && sectionType !== question.type) {
+                throw new HTTPException(400, {
+                    message: `Question type ${question.type} is not compatible with section type ${sectionType}.`,
+                });
+            }
         }
 
         return {

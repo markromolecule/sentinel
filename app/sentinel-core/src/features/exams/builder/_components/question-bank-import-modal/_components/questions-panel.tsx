@@ -46,6 +46,7 @@ interface QuestionsPanelProps {
     onPageChange: (page: number) => void;
     onToggleSelectAll: () => void;
     onToggleQuestion: (id: string) => void;
+    allowedQuestionType?: QuestionType;
 }
 
 export function QuestionsPanel({
@@ -71,6 +72,7 @@ export function QuestionsPanel({
     onPageChange,
     onToggleSelectAll,
     onToggleQuestion,
+    allowedQuestionType,
 }: QuestionsPanelProps) {
     const importableQuestionRecords = useMemo(
         () => questionRecords.filter((question) => !alreadyAddedIdSet.has(question.id)),
@@ -80,8 +82,11 @@ export function QuestionsPanel({
     const allFilteredSelected = useMemo(
         () =>
             importableQuestionRecords.length > 0 &&
-            importableQuestionRecords.every((question) => selectedIdSet.has(question.id)),
-        [importableQuestionRecords, selectedIdSet],
+            importableQuestionRecords.every((question) => {
+                const isCompatible = !allowedQuestionType || question.type === allowedQuestionType;
+                return !isCompatible || selectedIdSet.has(question.id);
+            }),
+        [importableQuestionRecords, selectedIdSet, allowedQuestionType],
     );
 
     const facets = useMemo(() => {
@@ -149,7 +154,12 @@ export function QuestionsPanel({
                         />
                     </div>
 
-                    <div className="shrink-0">
+                    <div className="shrink-0 flex items-center gap-2">
+                        {allowedQuestionType && (
+                            <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 select-none">
+                                Section locked to:
+                            </span>
+                        )}
                         {isQuestionTypesLoading || isTypeCountsLoading ? (
                             <p className="text-muted-foreground py-2 text-xs">Loading...</p>
                         ) : (
@@ -157,13 +167,16 @@ export function QuestionsPanel({
                                 <DropdownMenuTrigger asChild>
                                     <button
                                         type="button"
-                                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800/80"
+                                        disabled={Boolean(allowedQuestionType)}
+                                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800/80 disabled:opacity-80 disabled:cursor-not-allowed disabled:bg-zinc-50"
                                     >
                                         <span>Type: {activeFacetLabel}</span>{' '}
                                         <span className="rounded-full bg-zinc-100 px-1.5 py-0.25 text-[10px] font-bold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
                                             {activeFacetCount}
                                         </span>
-                                        <ChevronDown className="ml-0.5 h-3.5 w-3.5 opacity-60" />
+                                        {!allowedQuestionType && (
+                                            <ChevronDown className="ml-0.5 h-3.5 w-3.5 opacity-60" />
+                                        )}
                                     </button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent
@@ -262,6 +275,10 @@ export function QuestionsPanel({
                                         alreadyAddedIdSet.has(question.id)
                                     }
                                     isAlreadyAdded={alreadyAddedIdSet.has(question.id)}
+                                    disabled={
+                                        Boolean(allowedQuestionType) &&
+                                        question.type !== allowedQuestionType
+                                    }
                                     onToggle={() => onToggleQuestion(question.id)}
                                 />
                             ))}

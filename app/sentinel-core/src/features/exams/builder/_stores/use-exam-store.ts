@@ -35,6 +35,41 @@ const DEFAULT_EXAM_CONFIGURATION: ExamConfiguration = {
 
 const DEFAULT_SECTION_TITLE = 'Section 1';
 
+export const QUESTION_TYPE_INSTRUCTIONS: Record<string, { label: string; instruction: string }> = {
+    MULTIPLE_CHOICE: {
+        label: 'Multiple Choice',
+        instruction: 'Select the best answer from the choices provided.',
+    },
+    MULTIPLE_RESPONSE: {
+        label: 'Multiple Response',
+        instruction: 'Select all answers that apply for each question.',
+    },
+    TRUE_FALSE: {
+        label: 'True or False',
+        instruction: 'Determine whether each statement is true or false.',
+    },
+    IDENTIFICATION: {
+        label: 'Identification',
+        instruction: 'Write the correct term, concept, or short answer.',
+    },
+    MATCHING: {
+        label: 'Matching Type',
+        instruction: 'Match each item with its correct corresponding answer.',
+    },
+    ESSAY: {
+        label: 'Essay',
+        instruction: 'Answer each question clearly and completely.',
+    },
+    FILL_BLANK: {
+        label: 'Fill in the Blank',
+        instruction: 'Complete each statement with the correct word or phrase.',
+    },
+    ENUMERATION: {
+        label: 'Enumeration',
+        instruction: 'List all required answers for each question.',
+    },
+};
+
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const generateSectionId = () => crypto.randomUUID();
@@ -44,11 +79,26 @@ const createQuestionSection = (
     title = `Section ${index + 1}`,
 ): ExamQuestionSection => ({
     id: generateSectionId(),
+    questionType: null,
     title,
     description: null,
     orderIndex: index,
     isCollapsed: false,
 });
+
+/**
+ * Atomic helper to derive section copy fields (title, description) from a QuestionTypeDefinition.
+ *
+ * @param definition - The question type definition from the workspace.
+ * @returns The copied fields mapped to internal structure.
+ */
+export function buildQuestionSectionCopy(definition: { value: string; label: string; instruction: string }) {
+    return {
+        questionType: definition.value as any,
+        title: definition.label,
+        description: definition.instruction,
+    };
+}
 
 const getEndDateTime = (
     startDateTime?: string,
@@ -235,6 +285,7 @@ export function buildBuilderWorkspacePayload(state: ExamStoreState): SaveBuilder
 
             return {
                 id: nextId,
+                questionType: section.questionType || null,
                 title: section.title,
                 description: section.description?.trim() || null,
                 orderIndex: index,
@@ -416,7 +467,22 @@ export const useExamStore = create(
                     (section) => section.id === sectionId,
                 );
                 if (sectionIndex !== -1) {
-                    Object.assign(state.questionSections[sectionIndex], updates);
+                    const currentSection = state.questionSections[sectionIndex];
+                    let finalUpdates = { ...updates };
+                    if ('questionType' in updates && updates.questionType !== undefined) {
+                        const newType = updates.questionType;
+                        if (newType === null) {
+                            finalUpdates.questionType = null;
+                        } else {
+                            const meta = QUESTION_TYPE_INSTRUCTIONS[newType];
+                            if (meta) {
+                                finalUpdates.questionType = newType;
+                                finalUpdates.title = meta.label;
+                                finalUpdates.description = meta.instruction;
+                            }
+                        }
+                    }
+                    Object.assign(currentSection, finalUpdates);
                     state.isDirty = true;
                 }
             });
