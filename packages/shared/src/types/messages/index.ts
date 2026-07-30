@@ -10,7 +10,6 @@ import {
     messageRecipientSchema,
 } from '../../schema/messages/message-schema';
 
-
 /**
  * Participant of a conversation.
  */
@@ -66,4 +65,3 @@ export interface SendMessagePayload {
  * A messageable recipient.
  */
 export type MessageRecipient = z.infer<typeof messageRecipientSchema>;
-

@@ -60,11 +60,7 @@ export function useIncidentEvidenceUpload() {
     const supabaseRef = useRef(createSupabaseClient());
 
     const startIncidentEvidenceUpload = useCallback(
-        async ({
-            apiClient,
-            upload,
-            blob,
-        }: StartIncidentEvidenceUploadArgs) => {
+        async ({ apiClient, upload, blob }: StartIncidentEvidenceUploadArgs) => {
             await retry(
                 async () => {
                     const path = new URL(upload.uploadUrl).pathname
@@ -74,7 +70,9 @@ export function useIncidentEvidenceUpload() {
                     const filePath = pathParts.join('/');
 
                     if (!bucket || !filePath) {
-                        throw new Error('Evidence upload target did not include a valid storage path.');
+                        throw new Error(
+                            'Evidence upload target did not include a valid storage path.',
+                        );
                     }
 
                     const { error } = await supabaseRef.current.storage

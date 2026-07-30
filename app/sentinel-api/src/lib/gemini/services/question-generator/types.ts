@@ -21,6 +21,7 @@ export type RawGeneratedQuestion = {
     sourceFileName: string;
     sourcePageNumber: number;
     sourceEvidence: string;
+    passageContent: string;
     difficulty?: string;
     points?: number;
     tags?: string[];
@@ -31,3 +32,8 @@ export type RawGeneratedQuestion = {
     cognitive_level?: string;
     predicted_difficulty?: string;
 };
+
+export interface GenerateBatchesResult {
+    rawQuestions: RawGeneratedQuestion[];
+    deficits: Array<{ type: string; count: number }>;
+}

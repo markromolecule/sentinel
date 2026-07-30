@@ -3,7 +3,6 @@ import { type CreateCalendarEventBody } from '../../../calendar/calendar.dto';
 import * as activityBase from './activity-notification-base.service';
 import { type SupportedActorRole } from './activity-notification-base.service';
 
-
 const DEFAULT_CALENDAR_AUDIENCE_RECIPIENT_ROLES = [
     'student',
     'instructor',

@@ -48,7 +48,9 @@ describe('processQueuedTelemetryEvent', () => {
             disposition: 'duplicate-ignored',
         } as any);
 
-        await expect(processQueuedTelemetryEvent({} as never, payload)).resolves.toBe('duplicate-ignored');
+        await expect(processQueuedTelemetryEvent({} as never, payload)).resolves.toBe(
+            'duplicate-ignored',
+        );
     });
 
     it('drops terminal not-found storage errors without retrying the queue job', async () => {

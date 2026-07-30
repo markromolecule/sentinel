@@ -57,9 +57,7 @@ export function assertCompletableAttempt(
     };
 }
 
-export function assertCompletedAttemptTimestamp(
-    completedAt: Date | string | null,
-): Date | string {
+export function assertCompletedAttemptTimestamp(completedAt: Date | string | null): Date | string {
     if (!completedAt) {
         throw new HTTPException(500, {
             message: 'Completed exam attempt is missing its completion timestamp.',

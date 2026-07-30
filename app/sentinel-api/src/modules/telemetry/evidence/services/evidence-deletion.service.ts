@@ -62,7 +62,9 @@ export class EvidenceDeletionService {
 
         if (enforceScope) {
             if (!userScope) {
-                throw new HTTPException(500, { message: 'Missing user scope for evidence deletion.' });
+                throw new HTTPException(500, {
+                    message: 'Missing user scope for evidence deletion.',
+                });
             }
 
             if (evidence.incident_id) {

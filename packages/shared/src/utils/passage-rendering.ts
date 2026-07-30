@@ -184,9 +184,11 @@ export function renderPassage(args: {
     passageContent?: string | null;
     passageType?: PassageType | null;
     sourceEvidence?: string | null;
+    fallbackToSourceEvidence?: boolean;
 }): RenderedPassage | null {
     const passageContent = args.passageContent?.trim() ?? '';
     const legacyEvidence = args.sourceEvidence?.trim() ?? '';
+    const fallbackToSourceEvidence = args.fallbackToSourceEvidence ?? true;
 
     if (passageContent) {
         if (args.passageType === 'html') {
@@ -202,7 +204,7 @@ export function renderPassage(args: {
         };
     }
 
-    if (legacyEvidence) {
+    if (legacyEvidence && fallbackToSourceEvidence) {
         return {
             html: renderPlainPassage(legacyEvidence),
             isHtml: true,

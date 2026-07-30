@@ -13,7 +13,6 @@ import { NotificationService } from '../../notification/notification.service';
 import { LogsService } from '../../logs/logs.service';
 import { assertEligibleDirectMessageRecipient } from './message-recipient-eligibility.service';
 
-
 /**
  * Creates a direct 1:1 conversation between two users.
  * If a direct conversation already exists between them, it returns the existing one.
@@ -49,7 +48,9 @@ export async function createDirectConversation(
 
     if (requesterRole === 'student') {
         if (!institutionId) {
-            throw new HTTPException(400, { message: 'Institution ID is required for student conversations.' });
+            throw new HTTPException(400, {
+                message: 'Institution ID is required for student conversations.',
+            });
         }
         await assertEligibleDirectMessageRecipient(dbClient, {
             requesterUserId: userId,
@@ -69,8 +70,6 @@ export async function createDirectConversation(
             throw new HTTPException(404, { message: 'Recipient user profile not found.' });
         }
     }
-
-
 
     // 2. Check if a direct conversation already exists
     const existingId = await findDirectConversationData(dbClient, {
@@ -225,7 +224,6 @@ export async function sendMessage(
     } catch (err) {
         console.error('Failed to trigger database notification for message:', err);
     }
-
 
     if (activeInstitutionId) {
         try {

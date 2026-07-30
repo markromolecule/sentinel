@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { generateBatchesStep } from './generate-batches';
 import { resolvePageCountsStep } from './resolve-page-counts';
 import { buildSourceDocumentsStep, normalizeFileNameForMatch } from './build-source-documents';
+import { replenishQuestionDeficits } from './replenish-question-deficits';
 import type { QuestionGeneratorLlmProvider } from '../types';
 import type { GenerateQuestionPreviewConfig } from '@sentinel/shared';
 
@@ -22,6 +23,7 @@ describe('Question Generator steps modules', () => {
                             sourceFileName: 'lesson.pdf',
                             sourcePageNumber: 2,
                             sourceEvidence: 'Evidence text',
+                            passageContent: 'This is a passage.',
                             content: {
                                 prompt: 'What is 1+1?',
                                 options: ['1', '2'],
@@ -40,7 +42,7 @@ describe('Question Generator steps modules', () => {
                 questionCount: 1,
             };
 
-            const rawQuestions = await generateBatchesStep({
+            const { rawQuestions, deficits } = await generateBatchesStep({
                 batches: [config],
                 files: [new File([], 'lesson.pdf')],
                 uploadedFiles: [{ name: 'file1', uri: 'uri1', mimeType: 'pdf' }],
@@ -51,6 +53,33 @@ describe('Question Generator steps modules', () => {
             expect(rawQuestions).toHaveLength(1);
             expect(rawQuestions[0].type).toBe('MULTIPLE_CHOICE');
             expect(rawQuestions[0].sourceFileName).toBe('lesson.pdf');
+            expect(rawQuestions[0].passageContent).toBe('This is a passage.');
+            expect(deficits).toHaveLength(0);
+        });
+
+        it('propagates provider failures instead of converting them to deficits', async () => {
+            const upstreamError = new Error('quota exceeded');
+            const mockProvider: Partial<QuestionGeneratorLlmProvider> = {
+                generateStructuredJson: vi.fn().mockRejectedValue(upstreamError),
+            };
+            const config: GenerateQuestionPreviewConfig = {
+                target: 'QUESTION_COLLECTION',
+                institutionId: '123',
+                tags: [],
+                isPublic: false,
+                questionType: 'MULTIPLE_CHOICE',
+                questionCount: 1,
+            };
+
+            await expect(
+                generateBatchesStep({
+                    batches: [config],
+                    files: [new File([], 'lesson.pdf')],
+                    uploadedFiles: [{ name: 'file1', uri: 'uri1', mimeType: 'pdf' }],
+                    model: 'gemini-model',
+                    provider: mockProvider as QuestionGeneratorLlmProvider,
+                }),
+            ).rejects.toBe(upstreamError);
         });
     });
 
@@ -75,6 +104,72 @@ describe('Question Generator steps modules', () => {
         });
     });
 
+    describe('replenishQuestionDeficits', () => {
+        it('requests all missing slots in one targeted generation call', async () => {
+            const generateStructuredJson = vi.fn().mockResolvedValue({
+                MULTIPLE_CHOICE: [
+                    {
+                        sourceFileName: 'lesson.pdf',
+                        sourcePageNumber: 1,
+                        sourceEvidence: 'Arithmetic combines quantities.',
+                        passageContent: 'Use elementary addition to combine two equal groups.',
+                        difficulty: 'EASY',
+                        points: 1,
+                        content: {
+                            prompt: 'What is 1+1?',
+                            options: ['1', '2', '3', '4'],
+                            correctAnswer: '2',
+                        },
+                    },
+                ],
+            });
+            const config: GenerateQuestionPreviewConfig = {
+                target: 'QUESTION_COLLECTION',
+                tags: [],
+                isPublic: false,
+                questionType: 'MULTIPLE_CHOICE',
+                questionCount: 2,
+            };
+
+            const questions = await replenishQuestionDeficits({
+                reconciliation: {
+                    slots: [
+                        {
+                            slotId: 'slot-0',
+                            type: 'MULTIPLE_CHOICE',
+                            question: {},
+                        },
+                        {
+                            slotId: 'slot-1',
+                            type: 'MULTIPLE_CHOICE',
+                            question: null,
+                        },
+                    ],
+                    deficits: [{ type: 'MULTIPLE_CHOICE', count: 1 }],
+                    excess: [],
+                },
+                config,
+                files: [new File([], 'lesson.pdf')],
+                uploadedFiles: [{ name: 'file1', uri: 'uri1', mimeType: 'pdf' }],
+                sourceDocuments: [
+                    {
+                        fileName: 'lesson.pdf',
+                        pageCount: 1,
+                        pages: [],
+                    },
+                ],
+                model: 'gemini-model',
+                provider: {
+                    generateStructuredJson,
+                } as unknown as QuestionGeneratorLlmProvider,
+            });
+
+            expect(generateStructuredJson).toHaveBeenCalledTimes(1);
+            expect(questions).toHaveLength(1);
+            expect(questions[0].type).toBe('MULTIPLE_CHOICE');
+        });
+    });
+
     describe('buildSourceDocumentsStep', () => {
         it('constructs source documents correctly', () => {
             const files = [new File([], 'lesson.pdf')];
@@ -84,6 +179,7 @@ describe('Question Generator steps modules', () => {
                     sourceFileName: 'lesson.pdf',
                     sourcePageNumber: 4,
                     sourceEvidence: 'Evidence text',
+                    passageContent: 'Evidence text',
                     content: {},
                 },
             ];

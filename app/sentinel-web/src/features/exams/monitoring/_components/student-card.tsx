@@ -50,13 +50,14 @@ export function StudentCard({
                             />
                         ) : (
                             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#323d8f] to-[#4a5bb8] text-[10px] font-bold text-white">
-                                {student.firstName[0]}{student.lastName[0]}
+                                {student.firstName[0]}
+                                {student.lastName[0]}
                             </div>
                         )}
                     </div>
                     <div className="min-w-0 flex-1">
                         <p
-                            className="text-foreground truncate text-sm font-semibold leading-tight"
+                            className="text-foreground truncate text-sm leading-tight font-semibold"
                             title={`${student.firstName} ${student.lastName}`}
                         >
                             {student.firstName} {student.lastName}

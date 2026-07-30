@@ -45,10 +45,7 @@ export async function findGradingAttemptDetailRow(args: {
         .executeTakeFirst()) as GradingAttemptDetailRow | undefined;
 }
 
-export async function findExamQuestionsForGrading(args: {
-    dbClient: DbClient;
-    examId: string;
-}) {
+export async function findExamQuestionsForGrading(args: { dbClient: DbClient; examId: string }) {
     return (await args.dbClient
         .selectFrom('exam_questions as eq')
         .leftJoin(

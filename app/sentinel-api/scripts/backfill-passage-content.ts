@@ -1,39 +1,37 @@
 import 'dotenv/config';
 import pg from 'pg';
+import fs from 'fs/promises';
+import { fileURLToPath } from 'url';
 
 const { Client } = pg;
 
-type Mode = 'dry-run' | 'apply';
+export type Mode = 'dry-run' | 'apply';
 
-type TableConfig = {
-    label: string;
-    table: string;
-    idColumn: string;
-};
-
-type BackfillSampleRow = {
+export type AuditRecord = {
     id: string;
-    sourceEvidence: string;
-    passageContent: string | null;
+    classification:
+        | 'ELIGIBLE_NON_AI'
+        | 'AI_NULL_PASSAGE'
+        | 'AI_EQUAL_PASSAGE'
+        | 'AI_DISTINCT_PASSAGE'
+        | 'EXAM_SNAPSHOT_AI_EQUAL_PASSAGE';
 };
 
-type TableBackfillResult = {
-    label: string;
-    eligibleCount: number;
-    totalLegacyCount: number;
-    updatedCount: number;
-    samples: BackfillSampleRow[];
+export type AuditReport = {
+    timestamp: string;
+    summary: {
+        dryRun: boolean;
+        nonAiEligibleCount: number;
+        nonAiUpdatedCount: number;
+        aiNullPassageCount: number;
+        aiEqualPassageCount: number;
+        aiDistinctPassageCount: number;
+        examSnapshotAiEqualPassageCount: number;
+    };
+    records: AuditRecord[];
 };
 
-const TABLES: TableConfig[] = [
-    {
-        label: 'question_bank_questions',
-        table: 'public.question_bank_questions',
-        idColumn: 'question_bank_question_id',
-    },
-];
-
-function parseArgs(argv: string[]) {
+export function parseArgs(argv: string[]): Record<string, string | boolean> {
     const args: Record<string, string | boolean> = {};
 
     for (let index = 0; index < argv.length; index += 1) {
@@ -58,15 +56,11 @@ function parseArgs(argv: string[]) {
     return args;
 }
 
-function resolveMode(args: Record<string, string | boolean>): Mode {
-    if (args.apply === true) {
-        return 'apply';
-    }
-
-    return 'dry-run';
+export function resolveMode(args: Record<string, string | boolean>): Mode {
+    return args.apply === true ? 'apply' : 'dry-run';
 }
 
-function resolveSampleLimit(args: Record<string, string | boolean>) {
+export function resolveSampleLimit(args: Record<string, string | boolean>): number {
     const rawLimit = typeof args.limit === 'string' ? Number(args.limit) : 5;
 
     if (!Number.isInteger(rawLimit) || rawLimit < 0) {
@@ -76,101 +70,103 @@ function resolveSampleLimit(args: Record<string, string | boolean>) {
     return rawLimit;
 }
 
-function resolveDatabaseUrl() {
+export function resolveDatabaseUrl(): string | null {
     return process.env.DIRECT_URL ?? process.env.DATABASE_URL ?? null;
 }
 
-async function query<T extends Record<string, unknown>>(
-    client: pg.Client,
-    sql: string,
-    params: unknown[] = [],
-) {
-    const result = await client.query<T>(sql, params);
-    return result.rows;
-}
-
-async function fetchTableStats(
-    client: pg.Client,
-    table: TableConfig,
-    sampleLimit: number,
-): Promise<Omit<TableBackfillResult, 'updatedCount'>> {
-    const counts = await query<{ eligible_count: string; legacy_count: string }>(
-        client,
-        `
-            select
-                count(*) filter (
-                    where passage_content is null
-                      and coalesce(btrim(source_evidence), '') <> ''
-                )::text as eligible_count,
-                count(*) filter (
-                    where coalesce(btrim(source_evidence), '') <> ''
-                )::text as legacy_count
-            from ${table.table}
-        `,
+/**
+ * Runs the read-only audit queries against the database.
+ */
+export async function runAudit(client: pg.Client): Promise<AuditReport> {
+    // 1. ELIGIBLE_NON_AI
+    const nonAiEligibleRows = await client.query<{ id: string }>(
+        `select question_bank_question_id::text as id 
+         from public.question_bank_questions 
+         where source_origin <> 'AI_PDF' 
+           and passage_content is null 
+           and coalesce(btrim(source_evidence), '') <> ''`,
     );
 
-    const samples = await query<BackfillSampleRow>(
-        client,
-        `
-            select
-                ${table.idColumn}::text as id,
-                source_evidence as "sourceEvidence",
-                passage_content as "passageContent"
-            from ${table.table}
-            where passage_content is null
-              and coalesce(btrim(source_evidence), '') <> ''
-            order by created_at nulls last, ${table.idColumn}
-            limit $1
-        `,
-        [sampleLimit],
+    // 2. AI_NULL_PASSAGE
+    const aiNullRows = await client.query<{ id: string }>(
+        `select question_bank_question_id::text as id 
+         from public.question_bank_questions 
+         where source_origin = 'AI_PDF' 
+           and passage_content is null 
+           and coalesce(btrim(source_evidence), '') <> ''`,
+    );
+
+    // 3. AI_EQUAL_PASSAGE
+    const aiEqualRows = await client.query<{ id: string }>(
+        `select question_bank_question_id::text as id 
+         from public.question_bank_questions 
+         where source_origin = 'AI_PDF' 
+           and passage_content = source_evidence`,
+    );
+
+    // 4. AI_DISTINCT_PASSAGE
+    const aiDistinctRows = await client.query<{ id: string }>(
+        `select question_bank_question_id::text as id 
+         from public.question_bank_questions 
+         where source_origin = 'AI_PDF' 
+           and passage_content is not null 
+           and passage_content <> source_evidence`,
+    );
+
+    // 5. EXAM_SNAPSHOT_AI_EQUAL_PASSAGE
+    const examSnapshotRows = await client.query<{ id: string }>(
+        `select eq.question_id::text as id
+         from public.exam_questions eq
+         join public.question_bank_questions qbq on eq.source_question_bank_question_id = qbq.question_bank_question_id
+         where qbq.source_origin = 'AI_PDF'
+           and eq.passage_content = qbq.source_evidence`,
+    );
+
+    const records: AuditRecord[] = [];
+    nonAiEligibleRows.rows.forEach((r) =>
+        records.push({ id: r.id, classification: 'ELIGIBLE_NON_AI' }),
+    );
+    aiNullRows.rows.forEach((r) => records.push({ id: r.id, classification: 'AI_NULL_PASSAGE' }));
+    aiEqualRows.rows.forEach((r) => records.push({ id: r.id, classification: 'AI_EQUAL_PASSAGE' }));
+    aiDistinctRows.rows.forEach((r) =>
+        records.push({ id: r.id, classification: 'AI_DISTINCT_PASSAGE' }),
+    );
+    examSnapshotRows.rows.forEach((r) =>
+        records.push({ id: r.id, classification: 'EXAM_SNAPSHOT_AI_EQUAL_PASSAGE' }),
     );
 
     return {
-        label: table.label,
-        eligibleCount: Number(counts[0]?.eligible_count ?? 0),
-        totalLegacyCount: Number(counts[0]?.legacy_count ?? 0),
-        samples,
+        timestamp: new Date().toISOString(),
+        summary: {
+            dryRun: true,
+            nonAiEligibleCount: nonAiEligibleRows.rowCount ?? 0,
+            nonAiUpdatedCount: 0,
+            aiNullPassageCount: aiNullRows.rowCount ?? 0,
+            aiEqualPassageCount: aiEqualRows.rowCount ?? 0,
+            aiDistinctPassageCount: aiDistinctRows.rowCount ?? 0,
+            examSnapshotAiEqualPassageCount: examSnapshotRows.rowCount ?? 0,
+        },
+        records,
     };
 }
 
-async function applyTableBackfill(client: pg.Client, table: TableConfig): Promise<number> {
-    const updatedRows = await query<{ id: string }>(
-        client,
-        `
-            update ${table.table}
-            set
-                passage_content = source_evidence,
-                passage_type = 'plain'
-            where passage_content is null
-              and coalesce(btrim(source_evidence), '') <> ''
-            returning ${table.idColumn}::text as id
-        `,
+/**
+ * Updates eligible manual/non-AI rows to backfill passage content.
+ */
+export async function applyBackfill(client: pg.Client): Promise<number> {
+    const result = await client.query(
+        `update public.question_bank_questions
+         set passage_content = source_evidence,
+             passage_type = 'plain'
+         where source_origin <> 'AI_PDF'
+           and passage_content is null
+           and coalesce(btrim(source_evidence), '') <> ''`,
     );
-
-    return updatedRows.length;
+    return result.rowCount ?? 0;
 }
 
-function printTableResult(result: TableBackfillResult, mode: Mode) {
-    console.log(`\n[${result.label}]`);
-    console.log(`Legacy rows with source evidence: ${result.totalLegacyCount}`);
-    console.log(`Rows eligible for backfill: ${result.eligibleCount}`);
-
-    if (mode === 'apply') {
-        console.log(`Rows updated: ${result.updatedCount}`);
-    }
-
-    if (result.samples.length === 0) {
-        console.log('Sample rows: none');
-        return;
-    }
-
-    console.log('Sample rows:');
-    for (const sample of result.samples) {
-        const targetPreview = sample.passageContent ?? sample.sourceEvidence;
-        console.log(
-            `- ${sample.id}: sourceEvidence="${sample.sourceEvidence.slice(0, 80)}" passageContent="${targetPreview.slice(0, 80)}"`,
-        );
-    }
+export async function writeOutputFile(outputPath: string, report: AuditReport): Promise<void> {
+    await fs.writeFile(outputPath, JSON.stringify(report, null, 2), 'utf-8');
 }
 
 async function main() {
@@ -178,15 +174,16 @@ async function main() {
 
     if (args.help === true) {
         console.log(
-            'Usage: pnpm --dir app/sentinel-api exec tsx -r dotenv/config scripts/backfill-passage-content.ts [--apply] [--limit N]',
+            'Usage: pnpm --dir app/sentinel-api exec tsx scripts/backfill-passage-content.ts [--apply] [--limit N] [--output <path>]',
         );
-        console.log('Default mode is dry-run. Use --apply to update rows.');
+        console.log('Default mode is dry-run. Use --apply to update eligible non-AI rows.');
         return;
     }
 
     const mode = resolveMode(args);
     const sampleLimit = resolveSampleLimit(args);
     const databaseUrl = resolveDatabaseUrl();
+    const outputPath = typeof args.output === 'string' ? args.output : null;
 
     if (!databaseUrl) {
         throw new Error('Missing DIRECT_URL or DATABASE_URL in the environment.');
@@ -198,42 +195,68 @@ async function main() {
         await client.connect();
         console.log(`Connected to database. Mode: ${mode}. Sample limit: ${sampleLimit}.`);
 
+        // Run full audit first (always read-only)
+        const report = await runAudit(client);
+        report.summary.dryRun = mode === 'dry-run';
+
+        const totalAiSkipped =
+            report.summary.aiNullPassageCount +
+            report.summary.aiEqualPassageCount +
+            report.summary.aiDistinctPassageCount;
+        console.log(`\nAudit results:`);
+        console.log(`- Non-AI rows eligible for backfill: ${report.summary.nonAiEligibleCount}`);
+        console.log(`- AI rows with null passage (skipped): ${report.summary.aiNullPassageCount}`);
+        console.log(
+            `- AI rows where passage equals evidence (skipped): ${report.summary.aiEqualPassageCount}`,
+        );
+        console.log(
+            `- AI rows with distinct passage (skipped): ${report.summary.aiDistinctPassageCount}`,
+        );
+        console.log(`- Total AI rows skipped: ${totalAiSkipped}`);
+        console.log(
+            `- Exam snapshots where passage equals AI evidence: ${report.summary.examSnapshotAiEqualPassageCount}`,
+        );
+
+        // Print samples
+        console.log(`\nSamples (Limit: ${sampleLimit}):`);
+        const sampleRecords = report.records.slice(0, sampleLimit);
+        for (const sample of sampleRecords) {
+            console.log(`- ID: ${sample.id}, Classification: ${sample.classification}`);
+        }
+
         if (mode === 'apply') {
             await client.query('begin');
-        }
-
-        for (const table of TABLES) {
-            const baseStats = await fetchTableStats(client, table, sampleLimit);
-            let updatedCount = 0;
-
-            if (mode === 'apply') {
-                updatedCount = await applyTableBackfill(client, table);
-            }
-
-            const result: TableBackfillResult = {
-                ...baseStats,
-                updatedCount,
-            };
-
-            printTableResult(result, mode);
-        }
-
-        if (mode === 'apply') {
+            console.log('\nApplying backfill updates to eligible non-AI rows...');
+            const updated = await applyBackfill(client);
+            report.summary.nonAiUpdatedCount = updated;
             await client.query('commit');
-            console.log('\nBackfill complete.');
+            console.log(`Successfully updated ${updated} non-AI rows.`);
         } else {
-            console.log('\nDry-run complete. Re-run with --apply to persist changes.');
+            console.log('\nDry-run complete. No rows were modified.');
+        }
+
+        if (outputPath) {
+            await writeOutputFile(outputPath, report);
+            console.log(`Saved audit report to ${outputPath}`);
         }
     } catch (error) {
         if (mode === 'apply') {
             await client.query('rollback').catch(() => {});
         }
-
-        console.error('Backfill failed:', error);
+        console.error('Backfill execution failed:', error);
         process.exitCode = 1;
     } finally {
         await client.end();
     }
 }
 
-main();
+// Guard main from running when imported in tests
+const isMain =
+    typeof process !== 'undefined' &&
+    process.argv[1] &&
+    (process.argv[1] === fileURLToPath(import.meta.url) ||
+        process.argv[1].endsWith('backfill-passage-content.ts'));
+
+if (isMain) {
+    main();
+}

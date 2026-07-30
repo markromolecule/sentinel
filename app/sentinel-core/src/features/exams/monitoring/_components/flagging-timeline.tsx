@@ -41,7 +41,7 @@ export function FlaggingTimeline({ flags, lifecycleEvents = [] }: FlaggingTimeli
     }
 
     return (
-        <div className="before:via-border relative space-y-8 before:pointer-events-none before:absolute before:inset-0 before:ml-5 before:h-full before:w-0.5 before:-translate-x-px before:bg-gradient-to-b before:from-[#323d8f]/20 before:to-transparent before:z-0">
+        <div className="before:via-border relative space-y-8 before:pointer-events-none before:absolute before:inset-0 before:z-0 before:ml-5 before:h-full before:w-0.5 before:-translate-x-px before:bg-gradient-to-b before:from-[#323d8f]/20 before:to-transparent">
             {timelineItems.map((item) => {
                 if (item.kind === 'lifecycle') {
                     return <LifecycleTimelineItem key={item.event.eventId} event={item.event} />;

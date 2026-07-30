@@ -62,7 +62,9 @@ vi.mock('../_components', () => ({
             {branding ? (
                 <div>
                     <span>{branding.logo_original_name}</span>
-                    <button onClick={onRemove} disabled={disabled}>Remove logo</button>
+                    <button onClick={onRemove} disabled={disabled}>
+                        Remove logo
+                    </button>
                 </div>
             ) : (
                 <div>
@@ -120,10 +122,15 @@ describe('PdfTemplateBrandingPage', () => {
 
         fireEvent.change(screen.getByRole('combobox'), { target: { value: 'parent-1' } });
 
-        expect(mockUseInstitutionPdfBrandingQuery).toHaveBeenCalledWith('parent-1', expect.any(Object));
+        expect(mockUseInstitutionPdfBrandingQuery).toHaveBeenCalledWith(
+            'parent-1',
+            expect.any(Object),
+        );
 
         await waitFor(() => {
-            expect(screen.queryByText(/Branding is available only for parent-institution overrides/i)).toBeNull();
+            expect(
+                screen.queryByText(/Branding is available only for parent-institution overrides/i),
+            ).toBeNull();
         });
 
         const file = new File(['dummy content'], 'logo.png', { type: 'image/png' });

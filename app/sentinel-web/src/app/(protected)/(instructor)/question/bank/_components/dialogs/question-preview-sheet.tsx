@@ -48,6 +48,7 @@ export function QuestionPreviewSheet({
         sourceEvidence,
         passageContent,
         passageType,
+        fallbackToSourceEvidence: false,
     });
 
     if (!question) return null;

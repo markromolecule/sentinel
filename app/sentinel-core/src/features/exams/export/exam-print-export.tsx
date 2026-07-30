@@ -154,6 +154,7 @@ function QuestionPassage({ question }: { question: ExamQuestion }) {
         sourceEvidence: question.sourceEvidence,
         passageContent: question.passageContent,
         passageType: question.passageType,
+        fallbackToSourceEvidence: false,
     });
 
     if (!renderedPassage) {

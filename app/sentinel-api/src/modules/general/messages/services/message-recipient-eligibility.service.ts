@@ -90,9 +90,7 @@ export async function assertEligibleDirectMessageRecipient(
     const query = dbClient
         .selectFrom('user_profiles as up')
         .leftJoin('institutions as inst', 'inst.id', 'up.institution_id')
-        .select([
-            'up.user_id as userId',
-        ])
+        .select(['up.user_id as userId'])
         .where('up.user_id', '=', args.recipientId)
         .where('up.user_id', '!=', args.requesterUserId)
         .where('up.status', '=', 'ACTIVE')
@@ -106,8 +104,7 @@ export async function assertEligibleDirectMessageRecipient(
                 .whereRef('ur_sub.user_id', '=', 'up.user_id' as any)
                 .orderBy('r_sub.is_system', 'desc')
                 .orderBy('r_sub.domain_scope', 'asc')
-                .limit(1)
-            }), 'student')`,
+                .limit(1)}), 'student')`,
             'not in',
             ['support', 'superadmin'],
         )

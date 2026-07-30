@@ -2,10 +2,7 @@ import { z } from 'zod';
 
 export const examAttemptPrimitiveAnswerSchema = z.union([z.string(), z.number(), z.boolean()]);
 
-export const examAttemptChoiceAnswerSchema = z.union([
-    z.array(z.string()),
-    z.array(z.number()),
-]);
+export const examAttemptChoiceAnswerSchema = z.union([z.array(z.string()), z.array(z.number())]);
 
 export const examAttemptMatchingAnswerSchema = z.record(z.string(), z.string());
 

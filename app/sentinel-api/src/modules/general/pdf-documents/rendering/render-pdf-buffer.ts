@@ -78,11 +78,11 @@ export async function renderPdfDocumentBuffer(
     const range = doc.bufferedPageRange();
     for (let i = range.start; i < range.start + range.count; i++) {
         doc.switchToPage(i);
-        
+
         // Temporarily clear margins to prevent auto-page wrapping during header/footer stamping
         const oldMargins = doc.page.margins;
         doc.page.margins = { top: 0, bottom: 0, left: 0, right: 0 };
-        
+
         try {
             renderPdfHeader(doc, headerConfig, logoBuffer, sentinelLogo);
             renderPdfFooter(doc, footerConfig, i + 1 - range.start, range.count);

@@ -7,9 +7,7 @@ import type {
     CompleteSessionScoringContext,
 } from './complete-session.types';
 
-export async function notifyCompletedSession(
-    args: CompleteSessionNotificationArgs,
-) {
+export async function notifyCompletedSession(args: CompleteSessionNotificationArgs) {
     const { dbClient, studentUserId, body, attemptContext, completedAttempt, summary } = args;
     const { attempt, examId } = attemptContext;
 

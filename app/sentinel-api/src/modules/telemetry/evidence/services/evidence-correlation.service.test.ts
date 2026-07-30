@@ -193,224 +193,236 @@ describe('EvidenceCorrelationService', () => {
         ).rejects.toThrow('Evidence row is already linked to a different incident.');
     });
 
-    testWithDbClient('reconciles evidence-first uploads by matching incident details event id', async ({ dbClient }) => {
-        const fixture = await createFixture(dbClient);
-        const eventId = randomUUID();
+    testWithDbClient(
+        'reconciles evidence-first uploads by matching incident details event id',
+        async ({ dbClient }) => {
+            const fixture = await createFixture(dbClient);
+            const eventId = randomUUID();
 
-        await dbClient
-            .insertInto('telemetry_incident_evidence')
-            .values({
-                attempt_id: fixture.attemptId,
-                incident_id: null,
-                institution_id: fixture.institutionId,
-                student_id: fixture.studentId,
-                event_id: eventId,
-                event_type: 'FACE_NOT_VISIBLE',
-                captured_at: new Date('2026-07-27T10:05:00.000Z'),
-                received_at: new Date('2026-07-27T10:05:10.000Z'),
-                storage_bucket: 'sentinel-proctoring-evidence',
-                storage_path: `${fixture.attemptId}/${eventId}.webp`,
-                mime_type: 'image/webp',
-                declared_size_bytes: 12345,
-                state: 'AVAILABLE',
-                expires_at: new Date('2026-08-03T10:05:00.000Z'),
-            })
-            .executeTakeFirst();
+            await dbClient
+                .insertInto('telemetry_incident_evidence')
+                .values({
+                    attempt_id: fixture.attemptId,
+                    incident_id: null,
+                    institution_id: fixture.institutionId,
+                    student_id: fixture.studentId,
+                    event_id: eventId,
+                    event_type: 'FACE_NOT_VISIBLE',
+                    captured_at: new Date('2026-07-27T10:05:00.000Z'),
+                    received_at: new Date('2026-07-27T10:05:10.000Z'),
+                    storage_bucket: 'sentinel-proctoring-evidence',
+                    storage_path: `${fixture.attemptId}/${eventId}.webp`,
+                    mime_type: 'image/webp',
+                    declared_size_bytes: 12345,
+                    state: 'AVAILABLE',
+                    expires_at: new Date('2026-08-03T10:05:00.000Z'),
+                })
+                .executeTakeFirst();
 
-        const incident = await dbClient
-            .insertInto('flagged_incidents')
-            .values({
-                attempt_id: fixture.attemptId,
-                incident_type: 'FACE_NOT_VISIBLE',
-                status: 'PENDING',
-                dedupe_key: `attempt:NO_FACE_DETECTED:${eventId}`,
-                details: JSON.stringify({
-                    lastEvent: {
-                        eventType: 'NO_FACE_DETECTED',
-                        timestamp: '2026-07-27T10:05:11.000Z',
-                        metadata: {
-                            eventId,
-                            dedupeKey: `attempt:NO_FACE_DETECTED:${eventId}`,
+            const incident = await dbClient
+                .insertInto('flagged_incidents')
+                .values({
+                    attempt_id: fixture.attemptId,
+                    incident_type: 'FACE_NOT_VISIBLE',
+                    status: 'PENDING',
+                    dedupe_key: `attempt:NO_FACE_DETECTED:${eventId}`,
+                    details: JSON.stringify({
+                        lastEvent: {
+                            eventType: 'NO_FACE_DETECTED',
+                            timestamp: '2026-07-27T10:05:11.000Z',
+                            metadata: {
+                                eventId,
+                                dedupeKey: `attempt:NO_FACE_DETECTED:${eventId}`,
+                            },
                         },
-                    },
-                }),
-            })
-            .returningAll()
-            .executeTakeFirstOrThrow();
+                    }),
+                })
+                .returningAll()
+                .executeTakeFirstOrThrow();
 
-        const result = await EvidenceReconciliationService.reconcileEvidence(dbClient);
+            const result = await EvidenceReconciliationService.reconcileEvidence(dbClient);
 
-        expect(result.processedCount).toBe(1);
+            expect(result.processedCount).toBe(1);
 
-        const linked = await dbClient
-            .selectFrom('telemetry_incident_evidence')
-            .select(['incident_id'])
-            .where('attempt_id', '=', fixture.attemptId)
-            .where('event_id', '=', eventId)
-            .executeTakeFirstOrThrow();
+            const linked = await dbClient
+                .selectFrom('telemetry_incident_evidence')
+                .select(['incident_id'])
+                .where('attempt_id', '=', fixture.attemptId)
+                .where('event_id', '=', eventId)
+                .executeTakeFirstOrThrow();
 
-        expect(linked.incident_id).toBe(incident.incident_id);
-    });
+            expect(linked.incident_id).toBe(incident.incident_id);
+        },
+    );
 
-    testWithDbClient('links evidence during upload completion when the incident already exists', async ({ dbClient }) => {
-        const fixture = await createFixture(dbClient);
-        const eventId = randomUUID();
+    testWithDbClient(
+        'links evidence during upload completion when the incident already exists',
+        async ({ dbClient }) => {
+            const fixture = await createFixture(dbClient);
+            const eventId = randomUUID();
 
-        const initialized = await EvidenceUploadService.initializeUpload(dbClient, {
-            attemptId: fixture.attemptId,
-            eventId,
-            eventType: 'FACE_NOT_VISIBLE',
-            capturedAt: '2026-07-27T10:05:00.000Z',
-            mimeType: 'image/webp',
-            sizeBytes: 12345,
-            studentUserId: (
-                await dbClient
-                    .selectFrom('students')
-                    .innerJoin('users', 'users.id', 'students.user_id')
-                    .select('users.id as user_id')
-                    .where('students.student_id', '=', fixture.studentId)
-                    .executeTakeFirstOrThrow()
-            ).user_id,
-        });
+            const initialized = await EvidenceUploadService.initializeUpload(dbClient, {
+                attemptId: fixture.attemptId,
+                eventId,
+                eventType: 'FACE_NOT_VISIBLE',
+                capturedAt: '2026-07-27T10:05:00.000Z',
+                mimeType: 'image/webp',
+                sizeBytes: 12345,
+                studentUserId: (
+                    await dbClient
+                        .selectFrom('students')
+                        .innerJoin('users', 'users.id', 'students.user_id')
+                        .select('users.id as user_id')
+                        .where('students.student_id', '=', fixture.studentId)
+                        .executeTakeFirstOrThrow()
+                ).user_id,
+            });
 
-        const incident = await dbClient
-            .insertInto('flagged_incidents')
-            .values({
-                attempt_id: fixture.attemptId,
-                incident_type: 'FACE_NOT_VISIBLE',
-                status: 'PENDING',
-                dedupe_key: `attempt:NO_FACE_DETECTED:${eventId}`,
-                details: JSON.stringify({
-                    lastEvent: {
-                        eventType: 'NO_FACE_DETECTED',
-                        timestamp: '2026-07-27T10:05:11.000Z',
-                        metadata: {
-                            eventId,
-                            dedupeKey: `attempt:NO_FACE_DETECTED:${eventId}`,
+            const incident = await dbClient
+                .insertInto('flagged_incidents')
+                .values({
+                    attempt_id: fixture.attemptId,
+                    incident_type: 'FACE_NOT_VISIBLE',
+                    status: 'PENDING',
+                    dedupe_key: `attempt:NO_FACE_DETECTED:${eventId}`,
+                    details: JSON.stringify({
+                        lastEvent: {
+                            eventType: 'NO_FACE_DETECTED',
+                            timestamp: '2026-07-27T10:05:11.000Z',
+                            metadata: {
+                                eventId,
+                                dedupeKey: `attempt:NO_FACE_DETECTED:${eventId}`,
+                            },
                         },
-                    },
-                }),
-            })
-            .returningAll()
-            .executeTakeFirstOrThrow();
+                    }),
+                })
+                .returningAll()
+                .executeTakeFirstOrThrow();
 
-        await EvidenceUploadService.completeUpload(
-            dbClient,
-            initialized.evidenceId,
-            (
-                await dbClient
-                    .selectFrom('students')
-                    .innerJoin('users', 'users.id', 'students.user_id')
-                    .select('users.id as user_id')
-                    .where('students.student_id', '=', fixture.studentId)
-                    .executeTakeFirstOrThrow()
-            ).user_id,
-        );
+            await EvidenceUploadService.completeUpload(
+                dbClient,
+                initialized.evidenceId,
+                (
+                    await dbClient
+                        .selectFrom('students')
+                        .innerJoin('users', 'users.id', 'students.user_id')
+                        .select('users.id as user_id')
+                        .where('students.student_id', '=', fixture.studentId)
+                        .executeTakeFirstOrThrow()
+                ).user_id,
+            );
 
-        const linked = await dbClient
-            .selectFrom('telemetry_incident_evidence')
-            .select(['incident_id'])
-            .where('evidence_id', '=', initialized.evidenceId)
-            .executeTakeFirstOrThrow();
+            const linked = await dbClient
+                .selectFrom('telemetry_incident_evidence')
+                .select(['incident_id'])
+                .where('evidence_id', '=', initialized.evidenceId)
+                .executeTakeFirstOrThrow();
 
-        expect(linked.incident_id).toBe(incident.incident_id);
-    });
+            expect(linked.incident_id).toBe(incident.incident_id);
+        },
+    );
 
-    testWithDbClient('purges stale unlinked evidence after the reconciliation timeout', async ({ dbClient }) => {
-        const fixture = await createFixture(dbClient);
-        const eventId = randomUUID();
+    testWithDbClient(
+        'purges stale unlinked evidence after the reconciliation timeout',
+        async ({ dbClient }) => {
+            const fixture = await createFixture(dbClient);
+            const eventId = randomUUID();
 
-        const evidence = await dbClient
-            .insertInto('telemetry_incident_evidence')
-            .values({
-                attempt_id: fixture.attemptId,
-                incident_id: null,
-                institution_id: fixture.institutionId,
-                student_id: fixture.studentId,
-                event_id: eventId,
-                event_type: 'FACE_NOT_VISIBLE',
-                captured_at: new Date('2026-07-27T10:05:00.000Z'),
-                received_at: new Date(Date.now() - 16 * 60 * 1000),
-                storage_bucket: 'sentinel-proctoring-evidence',
-                storage_path: `${fixture.attemptId}/${eventId}.webp`,
-                mime_type: 'image/webp',
-                declared_size_bytes: 12345,
-                state: 'AVAILABLE',
-                expires_at: new Date('2026-08-03T10:05:00.000Z'),
-            })
-            .returningAll()
-            .executeTakeFirstOrThrow();
+            const evidence = await dbClient
+                .insertInto('telemetry_incident_evidence')
+                .values({
+                    attempt_id: fixture.attemptId,
+                    incident_id: null,
+                    institution_id: fixture.institutionId,
+                    student_id: fixture.studentId,
+                    event_id: eventId,
+                    event_type: 'FACE_NOT_VISIBLE',
+                    captured_at: new Date('2026-07-27T10:05:00.000Z'),
+                    received_at: new Date(Date.now() - 16 * 60 * 1000),
+                    storage_bucket: 'sentinel-proctoring-evidence',
+                    storage_path: `${fixture.attemptId}/${eventId}.webp`,
+                    mime_type: 'image/webp',
+                    declared_size_bytes: 12345,
+                    state: 'AVAILABLE',
+                    expires_at: new Date('2026-08-03T10:05:00.000Z'),
+                })
+                .returningAll()
+                .executeTakeFirstOrThrow();
 
-        const result = await EvidenceReconciliationService.reconcileEvidence(dbClient);
+            const result = await EvidenceReconciliationService.reconcileEvidence(dbClient);
 
-        expect(result.details.unlinkedPurged).toBe(1);
-        expect(vi.mocked(EvidenceStorageService.deleteObject)).toHaveBeenCalledWith(
-            'sentinel-proctoring-evidence',
-            `${fixture.attemptId}/${eventId}.webp`,
-        );
+            expect(result.details.unlinkedPurged).toBe(1);
+            expect(vi.mocked(EvidenceStorageService.deleteObject)).toHaveBeenCalledWith(
+                'sentinel-proctoring-evidence',
+                `${fixture.attemptId}/${eventId}.webp`,
+            );
 
-        const deleted = await dbClient
-            .selectFrom('telemetry_incident_evidence')
-            .select(['state', 'deletion_reason', 'storage_bucket', 'storage_path'])
-            .where('evidence_id', '=', evidence.evidence_id)
-            .executeTakeFirstOrThrow();
+            const deleted = await dbClient
+                .selectFrom('telemetry_incident_evidence')
+                .select(['state', 'deletion_reason', 'storage_bucket', 'storage_path'])
+                .where('evidence_id', '=', evidence.evidence_id)
+                .executeTakeFirstOrThrow();
 
-        expect(deleted).toMatchObject({
-            state: 'DELETED',
-            deletion_reason: 'TELEMETRY_UNLINKED',
-            storage_bucket: null,
-            storage_path: null,
-        });
-    });
+            expect(deleted).toMatchObject({
+                state: 'DELETED',
+                deletion_reason: 'TELEMETRY_UNLINKED',
+                storage_bucket: null,
+                storage_path: null,
+            });
+        },
+    );
 
-    testWithDbClient('extends evidence expiry when attempt completion produces a later deadline', async ({ dbClient }) => {
-        const fixture = await createFixture(dbClient);
-        const eventId = randomUUID();
+    testWithDbClient(
+        'extends evidence expiry when attempt completion produces a later deadline',
+        async ({ dbClient }) => {
+            const fixture = await createFixture(dbClient);
+            const eventId = randomUUID();
 
-        await dbClient
-            .updateTable('exam_attempts')
-            .set({
-                completed_at: new Date('2026-07-27T12:30:00.000Z'),
-            })
-            .where('attempt_id', '=', fixture.attemptId)
-            .execute();
+            await dbClient
+                .updateTable('exam_attempts')
+                .set({
+                    completed_at: new Date('2026-07-27T12:30:00.000Z'),
+                })
+                .where('attempt_id', '=', fixture.attemptId)
+                .execute();
 
-        const evidence = await dbClient
-            .insertInto('telemetry_incident_evidence')
-            .values({
-                attempt_id: fixture.attemptId,
-                incident_id: '11111111-1111-4111-8111-111111111111',
-                institution_id: fixture.institutionId,
-                student_id: fixture.studentId,
-                event_id: eventId,
-                event_type: 'FACE_NOT_VISIBLE',
-                captured_at: new Date('2026-07-27T10:05:00.000Z'),
-                received_at: new Date('2026-07-27T10:05:10.000Z'),
-                storage_bucket: 'sentinel-proctoring-evidence',
-                storage_path: `${fixture.attemptId}/${eventId}.webp`,
-                mime_type: 'image/webp',
-                declared_size_bytes: 12345,
-                state: 'AVAILABLE',
-                expires_at: new Date('2026-07-27T10:06:00.000Z'),
-            })
-            .returningAll()
-            .executeTakeFirstOrThrow();
+            const evidence = await dbClient
+                .insertInto('telemetry_incident_evidence')
+                .values({
+                    attempt_id: fixture.attemptId,
+                    incident_id: '11111111-1111-4111-8111-111111111111',
+                    institution_id: fixture.institutionId,
+                    student_id: fixture.studentId,
+                    event_id: eventId,
+                    event_type: 'FACE_NOT_VISIBLE',
+                    captured_at: new Date('2026-07-27T10:05:00.000Z'),
+                    received_at: new Date('2026-07-27T10:05:10.000Z'),
+                    storage_bucket: 'sentinel-proctoring-evidence',
+                    storage_path: `${fixture.attemptId}/${eventId}.webp`,
+                    mime_type: 'image/webp',
+                    declared_size_bytes: 12345,
+                    state: 'AVAILABLE',
+                    expires_at: new Date('2026-07-27T10:06:00.000Z'),
+                })
+                .returningAll()
+                .executeTakeFirstOrThrow();
 
-        const result = await EvidenceReconciliationService.reconcileEvidence(dbClient);
+            const result = await EvidenceReconciliationService.reconcileEvidence(dbClient);
 
-        expect(result.processedCount).toBeGreaterThan(0);
+            expect(result.processedCount).toBeGreaterThan(0);
 
-        const updated = await dbClient
-            .selectFrom('telemetry_incident_evidence')
-            .select(['state', 'expires_at'])
-            .where('evidence_id', '=', evidence.evidence_id)
-            .executeTakeFirstOrThrow();
+            const updated = await dbClient
+                .selectFrom('telemetry_incident_evidence')
+                .select(['state', 'expires_at'])
+                .where('evidence_id', '=', evidence.evidence_id)
+                .executeTakeFirstOrThrow();
 
-        expect(updated.state).toBe('AVAILABLE');
-        expect(new Date(updated.expires_at).getTime()).toBeGreaterThan(
-            new Date('2026-07-27T10:06:00.000Z').getTime(),
-        );
-    });
+            expect(updated.state).toBe('AVAILABLE');
+            expect(new Date(updated.expires_at).getTime()).toBeGreaterThan(
+                new Date('2026-07-27T10:06:00.000Z').getTime(),
+            );
+        },
+    );
 
     testWithDbClient('purges stale pending uploads during reconciliation', async ({ dbClient }) => {
         const fixture = await createFixture(dbClient);

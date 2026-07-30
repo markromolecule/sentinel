@@ -24,7 +24,13 @@ function toQuestionReportAnswerValue(value: unknown): ExamAttemptQuestionReportA
 export function buildExamAttemptQuestionReports(
     args: BuildExamAttemptQuestionReportsArgs,
 ): ExamAttemptQuestionReport[] {
-    const { questions, answers, evaluations = {}, itemOverrides = {}, scoringVersion = 'legacy' } = args;
+    const {
+        questions,
+        answers,
+        evaluations = {},
+        itemOverrides = {},
+        scoringVersion = 'legacy',
+    } = args;
 
     return questions.map((question) => {
         const submittedAnswer = toQuestionReportAnswerValue(answers[question.id]);
@@ -34,8 +40,7 @@ export function buildExamAttemptQuestionReports(
         const isCorrect = isCorrectAnswer(question, submittedAnswer);
         const evaluation = evaluations[question.id] ?? null;
         const itemOverride = itemOverrides[question.id] ?? null;
-        const objectiveAwardedScore =
-            isCorrect === null ? null : isCorrect ? question.points : 0;
+        const objectiveAwardedScore = isCorrect === null ? null : isCorrect ? question.points : 0;
         const awardedScore =
             typeof itemOverride?.awardedScore === 'number'
                 ? itemOverride.awardedScore

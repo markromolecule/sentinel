@@ -184,8 +184,6 @@ describe('useInstructorLobby', () => {
 
         expect(result.current.overridingStudentId).toBeNull();
         expect(mockGetExamLobbyWaitingList).toHaveBeenCalledTimes(2);
-        expect(mockToastSuccess).toHaveBeenCalledWith(
-            'Reconnect override granted successfully.',
-        );
+        expect(mockToastSuccess).toHaveBeenCalledWith('Reconnect override granted successfully.');
     });
 });

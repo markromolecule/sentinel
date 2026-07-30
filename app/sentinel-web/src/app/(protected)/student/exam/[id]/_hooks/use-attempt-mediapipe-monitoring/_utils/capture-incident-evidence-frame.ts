@@ -15,11 +15,7 @@ export type CapturedIncidentEvidenceFrame = {
     height: number;
 };
 
-function toBlob(
-    canvas: HTMLCanvasElement,
-    mimeType: 'image/webp' | 'image/jpeg',
-    quality: number,
-) {
+function toBlob(canvas: HTMLCanvasElement, mimeType: 'image/webp' | 'image/jpeg', quality: number) {
     return new Promise<Blob | null>((resolve) => {
         canvas.toBlob((blob) => resolve(blob), mimeType, quality);
     });

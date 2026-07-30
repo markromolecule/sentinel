@@ -85,15 +85,12 @@ export function UserSearchBar({ redirectPath, className, iconOnly = false }: Use
                         <Button
                             variant="ghost"
                             size="icon"
-                            className={`text-muted-foreground hover:text-foreground h-10 w-10 flex items-center justify-center rounded-full ${className || ''}`}
+                            className={`text-muted-foreground hover:text-foreground flex h-10 w-10 items-center justify-center rounded-full ${className || ''}`}
                         >
                             <Search className="h-[22px] w-[22px]" />
                         </Button>
                     </PopoverTrigger>
-                    <PopoverContent
-                        className="w-[calc(100vw-2rem)] sm:w-96 p-0"
-                        align="end"
-                    >
+                    <PopoverContent className="w-[calc(100vw-2rem)] p-0 sm:w-96" align="end">
                         <div className="bg-popover text-popover-foreground flex h-full w-full flex-col overflow-hidden rounded-md">
                             <div className="flex items-center gap-2 border-b px-3 py-2">
                                 <Search className="text-muted-foreground h-4 w-4 shrink-0" />

@@ -24,6 +24,10 @@ describe('question-content-schema', () => {
         });
 
         expect(result.success).toBe(false);
-        expect(result.error?.issues.some((issue) => issue.message === 'Correct answers must be unique.')).toBe(true);
+        expect(
+            result.error?.issues.some(
+                (issue) => issue.message === 'Correct answers must be unique.',
+            ),
+        ).toBe(true);
     });
 });

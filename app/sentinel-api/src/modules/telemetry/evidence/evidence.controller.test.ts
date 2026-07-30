@@ -102,7 +102,7 @@ describe('Telemetry Evidence Controllers', () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': 'Bearer user-token',
+                    Authorization: 'Bearer user-token',
                 },
                 body: JSON.stringify({
                     examSessionId: '123e4567-e89b-12d3-a456-426614174000',
@@ -114,8 +114,7 @@ describe('Telemetry Evidence Controllers', () => {
                     eventType: 'NO_FACE_DETECTED',
                     metadata: {
                         eventId: '987f6543-e89b-12d3-a456-426614174000',
-                        dedupeKey:
-                            'attempt:NO_FACE_DETECTED:987f6543-e89b-12d3-a456-426614174000',
+                        dedupeKey: 'attempt:NO_FACE_DETECTED:987f6543-e89b-12d3-a456-426614174000',
                         clientActionAt: '2026-07-27T12:00:00.000Z',
                     },
                     capture: {
@@ -151,7 +150,7 @@ describe('Telemetry Evidence Controllers', () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': 'Bearer user-token',
+                    Authorization: 'Bearer user-token',
                 },
                 body: JSON.stringify({
                     examSessionId: '123e4567-e89b-12d3-a456-426614174000',
@@ -163,8 +162,7 @@ describe('Telemetry Evidence Controllers', () => {
                     eventType: 'NO_FACE_DETECTED',
                     metadata: {
                         eventId: '987f6543-e89b-12d3-a456-426614174000',
-                        dedupeKey:
-                            'attempt:NO_FACE_DETECTED:987f6543-e89b-12d3-a456-426614174000',
+                        dedupeKey: 'attempt:NO_FACE_DETECTED:987f6543-e89b-12d3-a456-426614174000',
                         clientActionAt: '2026-07-27T12:00:00.000Z',
                     },
                     capture: {
@@ -187,7 +185,7 @@ describe('Telemetry Evidence Controllers', () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': 'Bearer user-token',
+                    Authorization: 'Bearer user-token',
                 },
                 body: JSON.stringify({
                     examSessionId: '123e4567-e89b-12d3-a456-426614174000',
@@ -199,8 +197,7 @@ describe('Telemetry Evidence Controllers', () => {
                     eventType: 'NO_FACE_DETECTED',
                     metadata: {
                         eventId: '987f6543-e89b-12d3-a456-426614174000',
-                        dedupeKey:
-                            'attempt:NO_FACE_DETECTED:987f6543-e89b-12d3-a456-426614174000',
+                        dedupeKey: 'attempt:NO_FACE_DETECTED:987f6543-e89b-12d3-a456-426614174000',
                         clientActionAt: '2026-07-27T12:00:00.000Z',
                     },
                     capture: {
@@ -220,7 +217,7 @@ describe('Telemetry Evidence Controllers', () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': 'Bearer user-token',
+                    Authorization: 'Bearer user-token',
                 },
                 body: JSON.stringify({
                     examSessionId: '123e4567-e89b-12d3-a456-426614174000',
@@ -232,8 +229,7 @@ describe('Telemetry Evidence Controllers', () => {
                     eventType: 'AUDIO_ANOMALY',
                     metadata: {
                         eventId: '987f6543-e89b-12d3-a456-426614174000',
-                        dedupeKey:
-                            'attempt:NO_FACE_DETECTED:987f6543-e89b-12d3-a456-426614174000',
+                        dedupeKey: 'attempt:NO_FACE_DETECTED:987f6543-e89b-12d3-a456-426614174000',
                         clientActionAt: '2026-07-27T12:00:00.000Z',
                     },
                     capture: {
@@ -253,7 +249,7 @@ describe('Telemetry Evidence Controllers', () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': 'Bearer user-token',
+                    Authorization: 'Bearer user-token',
                 },
                 body: JSON.stringify({
                     attemptId: '123e4567-e89b-12d3-a456-426614174000',
@@ -277,12 +273,15 @@ describe('Telemetry Evidence Controllers', () => {
                 expiresAt: new Date('2026-07-27T12:00:00.000Z'),
             });
 
-            const response = await app.request('/evidence/123e4567-e89b-12d3-a456-426614174000/complete', {
-                method: 'POST',
-                headers: {
-                    'Authorization': 'Bearer user-token',
+            const response = await app.request(
+                '/evidence/123e4567-e89b-12d3-a456-426614174000/complete',
+                {
+                    method: 'POST',
+                    headers: {
+                        Authorization: 'Bearer user-token',
+                    },
                 },
-            });
+            );
 
             expect(response.status).toBe(200);
             const body = await response.json();
@@ -311,12 +310,15 @@ describe('Telemetry Evidence Controllers', () => {
                 },
             ]);
 
-            const response = await app.request('/incidents/123e4567-e89b-12d3-a456-426614174000/evidence', {
-                method: 'GET',
-                headers: {
-                    'Authorization': 'Bearer user-token',
+            const response = await app.request(
+                '/incidents/123e4567-e89b-12d3-a456-426614174000/evidence',
+                {
+                    method: 'GET',
+                    headers: {
+                        Authorization: 'Bearer user-token',
+                    },
                 },
-            });
+            );
 
             expect(response.status).toBe(200);
             const body = await response.json();
@@ -334,7 +336,7 @@ describe('Telemetry Evidence Controllers', () => {
             const response = await app.request('/evidence/123e4567-e89b-12d3-a456-426614174000', {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': 'Bearer user-token',
+                    Authorization: 'Bearer user-token',
                 },
             });
 
@@ -363,7 +365,7 @@ describe('Telemetry Evidence Controllers', () => {
             const response = await app.request('/internal/evidence/reconcile', {
                 method: 'POST',
                 headers: {
-                    'Authorization': 'Bearer cron-secret',
+                    Authorization: 'Bearer cron-secret',
                 },
             });
 
@@ -383,7 +385,7 @@ describe('Telemetry Evidence Controllers', () => {
             const response = await app.request('/internal/evidence/reconcile', {
                 method: 'POST',
                 headers: {
-                    'Authorization': 'Bearer wrong-secret',
+                    Authorization: 'Bearer wrong-secret',
                 },
             });
 

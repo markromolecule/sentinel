@@ -48,7 +48,6 @@ vi.mock('@sentinel/hooks', () => ({
     useCreateDirectConversationMutation: mockUseCreateDirectConversationMutation,
 }));
 
-
 vi.mock('./_components/message-list', () => ({
     MessageList: () => <div data-testid="message-list">Message List</div>,
 }));
@@ -104,7 +103,6 @@ describe('ProctorMessagesPage - Replicated Layout and Functionality Tests', () =
             data: [],
             isLoading: false,
         });
-
     });
 
     it('should call handleStartConversation once per targetUserId parameter, and avoid duplicate calls', async () => {

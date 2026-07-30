@@ -83,13 +83,16 @@ export class EvidenceCandidateService {
                 },
             };
         } catch (error) {
-            console.warn('[TelemetryEvidence] Upload target unavailable after candidate persisted', {
-                attemptId: payload.examSessionId,
-                eventId: payload.metadata.eventId,
-                incidentId: persistenceResult.incidentId,
-                eventType: payload.eventType,
-                error: error instanceof Error ? error.message : error,
-            });
+            console.warn(
+                '[TelemetryEvidence] Upload target unavailable after candidate persisted',
+                {
+                    attemptId: payload.examSessionId,
+                    eventId: payload.metadata.eventId,
+                    incidentId: persistenceResult.incidentId,
+                    eventType: payload.eventType,
+                    error: error instanceof Error ? error.message : error,
+                },
+            );
 
             return {
                 telemetryDisposition: persistenceResult.disposition,
@@ -121,13 +124,7 @@ export class EvidenceCandidateService {
     ): Promise<EvidenceCandidateResponse> {
         const evidence = await db
             .selectFrom('telemetry_incident_evidence')
-            .select([
-                'evidence_id',
-                'incident_id',
-                'event_type',
-                'state',
-                'expires_at',
-            ])
+            .select(['evidence_id', 'incident_id', 'event_type', 'state', 'expires_at'])
             .where('attempt_id', '=', payload.examSessionId)
             .where('event_id', '=', payload.metadata.eventId)
             .executeTakeFirst();

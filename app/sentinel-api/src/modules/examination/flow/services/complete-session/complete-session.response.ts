@@ -1,8 +1,5 @@
 import { assertCompletedAttemptTimestamp } from './complete-session.guards';
-import type {
-    CompletedAttemptResult,
-    CompleteSessionSummary,
-} from './complete-session.types';
+import type { CompletedAttemptResult, CompleteSessionSummary } from './complete-session.types';
 
 export function buildCompletedSessionResponse(args: {
     completedAttempt: CompletedAttemptResult;

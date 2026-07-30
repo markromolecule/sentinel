@@ -119,8 +119,6 @@ describe('captureIncidentEvidenceFrame', () => {
             } as unknown as HTMLCanvasElement;
         }) as typeof document.createElement);
 
-        await expect(captureIncidentEvidenceFrame(video)).rejects.toThrow(
-            /exceeded 524288 bytes/i,
-        );
+        await expect(captureIncidentEvidenceFrame(video)).rejects.toThrow(/exceeded 524288 bytes/i);
     });
 });

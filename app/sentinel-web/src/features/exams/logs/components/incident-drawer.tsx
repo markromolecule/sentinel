@@ -109,7 +109,8 @@ export function IncidentDrawer({
     const severityLadderLabel = formatSeverityLadder(incident);
     const resolvedEvidenceUrl =
         incident.evidenceUrl ??
-        evidenceQuery.data?.find((item) => item.state === 'AVAILABLE' && item.signedUrl)?.signedUrl ??
+        evidenceQuery.data?.find((item) => item.state === 'AVAILABLE' && item.signedUrl)
+            ?.signedUrl ??
         null;
 
     const handleConfirm = () => {

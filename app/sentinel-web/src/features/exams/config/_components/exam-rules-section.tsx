@@ -134,9 +134,9 @@ export function ExamRulesSection(args: { examinationDefaults?: ExaminationGlobal
     return (
         <div className="space-y-3">
             <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                Changes to question order, randomized choices, review access, or score release
-                apply only to attempts started after the change. Active and submitted attempts
-                keep their stored exam snapshot.
+                Changes to question order, randomized choices, review access, or score release apply
+                only to attempts started after the change. Active and submitted attempts keep their
+                stored exam snapshot.
             </div>
             {EXAM_RULE_OPTIONS.map((option) => {
                 const ruleMetadata = resolveGlobalBackedRuleMetadata({

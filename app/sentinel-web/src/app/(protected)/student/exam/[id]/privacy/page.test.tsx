@@ -145,7 +145,9 @@ describe('StudentExamPrivacyPage', () => {
             screen.getByText(/does not enable microphone publishing or recording/i),
         ).toBeTruthy();
         expect(
-            screen.getByText(/capture one frame for reviewer context, retain it for up to seven days/i),
+            screen.getByText(
+                /capture one frame for reviewer context, retain it for up to seven days/i,
+            ),
         ).toBeTruthy();
         expect(screen.queryByText('What this means')).toBeNull();
         expect(screen.getByText('Policies & terms')).toBeTruthy();
@@ -224,7 +226,9 @@ describe('StudentExamPrivacyPage', () => {
         render(<StudentExamPrivacyPage />);
 
         expect(
-            screen.getByText(/automatic frame capture is inactive unless this exam enables a reviewable camera rule/i),
+            screen.getByText(
+                /automatic frame capture is inactive unless this exam enables a reviewable camera rule/i,
+            ),
         ).toBeTruthy();
     });
 

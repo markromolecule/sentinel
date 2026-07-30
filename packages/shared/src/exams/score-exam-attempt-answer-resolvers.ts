@@ -169,11 +169,15 @@ function resolveMultiChoiceAnswers(question: ExamQuestion, value: ExamAttemptAns
     // Guard: empty answer key should never be treated as correct
     if (answerKey.length === 0) return false;
 
-    const hasTokenizedSubmission = value.some((item) => resolveTokenizedOptionIndex(item, question) !== null);
+    const hasTokenizedSubmission = value.some(
+        (item) => resolveTokenizedOptionIndex(item, question) !== null,
+    );
     const hasNumericAnswerKey = answerKey.every((item) => typeof item === 'number');
 
     if (hasTokenizedSubmission && hasNumericAnswerKey) {
-        const expectedIndexes = new Set(answerKey.filter((item): item is number => typeof item === 'number'));
+        const expectedIndexes = new Set(
+            answerKey.filter((item): item is number => typeof item === 'number'),
+        );
         const receivedIndexes = new Set(
             value
                 .map((item) => resolveTokenizedOptionIndex(item, question))
@@ -215,8 +219,8 @@ function resolveIdentificationAnswer(
     const acceptedAnswers = question.content.acceptedAnswers?.length
         ? question.content.acceptedAnswers
         : typeof question.content.correctAnswer === 'string'
-            ? [question.content.correctAnswer]
-            : [];
+          ? [question.content.correctAnswer]
+          : [];
 
     const normalizedValue = normalizeText(value, caseSensitive);
     return acceptedAnswers.some(
@@ -257,7 +261,7 @@ function resolveMatchingAnswer(question: ExamQuestion, value: ExamAttemptAnswerV
         return (
             typeof submittedValue === 'string' &&
             normalizeText(submittedValue, caseSensitive) ===
-            normalizeText(pair.right, caseSensitive)
+                normalizeText(pair.right, caseSensitive)
         );
     });
 }
@@ -366,8 +370,8 @@ export function resolveQuestionCorrectAnswer(
             return question.content.acceptedAnswers?.length
                 ? question.content.acceptedAnswers
                 : typeof question.content.correctAnswer === 'string'
-                    ? [question.content.correctAnswer]
-                    : null;
+                  ? [question.content.correctAnswer]
+                  : null;
         case 'FILL_BLANK':
             return question.content.blanks ?? null;
         case 'MATCHING':

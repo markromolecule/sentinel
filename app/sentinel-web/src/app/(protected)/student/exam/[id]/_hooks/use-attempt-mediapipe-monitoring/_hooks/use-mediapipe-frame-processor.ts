@@ -26,7 +26,9 @@ export type UseMediaPipeFrameProcessorArgs = {
     calibrationProfile: any;
     configuration: ExamConfig | undefined;
     thresholds: MediapipeSignalThresholds;
-    trackerRef: React.MutableRefObject<ReturnType<typeof import('@sentinel/shared').createMediaPipeSignalTrackerState>>;
+    trackerRef: React.MutableRefObject<
+        ReturnType<typeof import('@sentinel/shared').createMediaPipeSignalTrackerState>
+    >;
     setAnalysis: (analysis: MediaPipeFrameAnalysis | null) => void;
     dispatchIncidentRef: React.MutableRefObject<(args: any) => Promise<void>>;
     eligibility: MediapipeRuntimeEligibility;
@@ -37,7 +39,11 @@ export type UseMediaPipeFrameProcessorArgs = {
 };
 
 export type UseMediaPipeFrameProcessorResult = {
-    processFrame: (now: number, videoElement: HTMLVideoElement, faceLandmarker: FaceLandmarker) => void;
+    processFrame: (
+        now: number,
+        videoElement: HTMLVideoElement,
+        faceLandmarker: FaceLandmarker,
+    ) => void;
 };
 
 /**
@@ -59,118 +65,114 @@ export function useMediaPipeFrameProcessor({
     studentId,
     setActiveIncident,
 }: UseMediaPipeFrameProcessorArgs): UseMediaPipeFrameProcessorResult {
-    const processFrame = useCallback((
-        now: number,
-        videoElement: HTMLVideoElement,
-        faceLandmarker: FaceLandmarker
-    ): void => {
-        const currentSandbox = activeSandbox;
-        const tolerateDownwardGaze = true;
+    const processFrame = useCallback(
+        (now: number, videoElement: HTMLVideoElement, faceLandmarker: FaceLandmarker): void => {
+            const currentSandbox = activeSandbox;
+            const tolerateDownwardGaze = true;
 
-        if (!currentSandbox || !configuration || !examSessionId || !studentId) {
-            return;
-        }
+            if (!currentSandbox || !configuration || !examSessionId || !studentId) {
+                return;
+            }
 
-        const detectionResult = faceLandmarker.detectForVideo(videoElement, now);
+            const detectionResult = faceLandmarker.detectForVideo(videoElement, now);
 
-        const landmarksByFace = mapNormalizedLandmarksToMediaPipeLandmarks(
-            detectionResult.faceLandmarks ?? [],
-        );
+            const landmarksByFace = mapNormalizedLandmarksToMediaPipeLandmarks(
+                detectionResult.faceLandmarks ?? [],
+            );
 
-        const frameAnalysis = analyzeMediaPipeFrame({
-            landmarksByFace,
-            confidenceThreshold: currentSandbox.confidenceThreshold,
+            const frameAnalysis = analyzeMediaPipeFrame({
+                landmarksByFace,
+                confidenceThreshold: currentSandbox.confidenceThreshold,
+                calibrationProfile,
+                tolerateDownwardGaze,
+            });
+
+            const normalizedAnalysis = normalizeAttemptMediaPipeAnalysis({
+                analysis: frameAnalysis,
+                configuration,
+            });
+
+            // Only dispatch telemetry for signals that are enabled for this exam.
+            const telemetrySignal =
+                normalizedAnalysis.signal &&
+                isMediaPipeTelemetryEventEnabled(configuration, normalizedAnalysis.signal)
+                    ? normalizedAnalysis.signal
+                    : null;
+
+            setAnalysis(normalizedAnalysis);
+
+            const detectionTime = new Date(Date.now()).toISOString();
+            const developmentDiagnostics = buildAttemptMediaPipeDevelopmentDiagnostics({
+                activeSandbox: currentSandbox,
+                thresholds,
+                hasCalibrationProfile: Boolean(calibrationProfile),
+                tolerateDownwardGaze,
+            });
+
+            const dispatch = evaluateMediaPipeSignalDispatch({
+                currentSignal: telemetrySignal,
+                tracker: trackerRef.current,
+                nowMs: Date.now(),
+                thresholds,
+                signalGapGraceMs: currentSandbox.frameIntervalMs,
+            });
+
+            trackerRef.current = dispatch.tracker;
+
+            if (telemetrySignal && !dispatch.shouldEmit) {
+                writeMonitoringEventTrace({
+                    detectorSource: 'mediapipe',
+                    eventType: telemetrySignal,
+                    eventSubtype: normalizedAnalysis.status,
+                    detectionTime,
+                    disposition: 'suppressed',
+                    reason:
+                        dispatch.tracker.lastEmittedAtMs !== null
+                            ? 'dispatch-cooldown-active'
+                            : 'awaiting-duration-threshold',
+                    developmentContext: {
+                        ...developmentDiagnostics,
+                        analysisStatus: normalizedAnalysis.status,
+                        confidenceScore: normalizedAnalysis.confidenceScore ?? undefined,
+                        trackedSignal: dispatch.tracker.activeSignal ?? undefined,
+                        activeSinceMs: dispatch.tracker.activeSinceMs ?? undefined,
+                    },
+                });
+            }
+
+            if (dispatch.shouldEmit && telemetrySignal) {
+                void dispatchIncidentRef.current({
+                    telemetrySignal,
+                    normalizedAnalysis,
+                    detectionTime,
+                    developmentDiagnostics,
+                    dispatch,
+                    videoElement,
+                    eligibility,
+                    attemptId,
+                    sessionId: examSessionId,
+                    resolvedStudentId: studentId,
+                    resolvedConfiguration: configuration,
+                    sandbox: currentSandbox,
+                    setActiveIncident,
+                });
+            }
+        },
+        [
+            activeSandbox,
             calibrationProfile,
-            tolerateDownwardGaze,
-        });
-
-        const normalizedAnalysis = normalizeAttemptMediaPipeAnalysis({
-            analysis: frameAnalysis,
             configuration,
-        });
-
-        // Only dispatch telemetry for signals that are enabled for this exam.
-        const telemetrySignal =
-            normalizedAnalysis.signal &&
-                isMediaPipeTelemetryEventEnabled(
-                    configuration,
-                    normalizedAnalysis.signal,
-                )
-                ? normalizedAnalysis.signal
-                : null;
-
-        setAnalysis(normalizedAnalysis);
-
-        const detectionTime = new Date(Date.now()).toISOString();
-        const developmentDiagnostics = buildAttemptMediaPipeDevelopmentDiagnostics({
-            activeSandbox: currentSandbox,
             thresholds,
-            hasCalibrationProfile: Boolean(calibrationProfile),
-            tolerateDownwardGaze,
-        });
-
-        const dispatch = evaluateMediaPipeSignalDispatch({
-            currentSignal: telemetrySignal,
-            tracker: trackerRef.current,
-            nowMs: Date.now(),
-            thresholds,
-            signalGapGraceMs: currentSandbox.frameIntervalMs,
-        });
-
-        trackerRef.current = dispatch.tracker;
-
-        if (telemetrySignal && !dispatch.shouldEmit) {
-            writeMonitoringEventTrace({
-                detectorSource: 'mediapipe',
-                eventType: telemetrySignal,
-                eventSubtype: normalizedAnalysis.status,
-                detectionTime,
-                disposition: 'suppressed',
-                reason:
-                    dispatch.tracker.lastEmittedAtMs !== null
-                        ? 'dispatch-cooldown-active'
-                        : 'awaiting-duration-threshold',
-                developmentContext: {
-                    ...developmentDiagnostics,
-                    analysisStatus: normalizedAnalysis.status,
-                    confidenceScore: normalizedAnalysis.confidenceScore ?? undefined,
-                    trackedSignal: dispatch.tracker.activeSignal ?? undefined,
-                    activeSinceMs: dispatch.tracker.activeSinceMs ?? undefined,
-                },
-            });
-        }
-
-        if (dispatch.shouldEmit && telemetrySignal) {
-            void dispatchIncidentRef.current({
-                telemetrySignal,
-                normalizedAnalysis,
-                detectionTime,
-                developmentDiagnostics,
-                dispatch,
-                videoElement,
-                eligibility,
-                attemptId,
-                sessionId: examSessionId,
-                resolvedStudentId: studentId,
-                resolvedConfiguration: configuration,
-                sandbox: currentSandbox,
-                setActiveIncident,
-            });
-        }
-    }, [
-        activeSandbox,
-        calibrationProfile,
-        configuration,
-        thresholds,
-        trackerRef,
-        setAnalysis,
-        dispatchIncidentRef,
-        eligibility,
-        attemptId,
-        examSessionId,
-        studentId,
-        setActiveIncident,
-    ]);
+            trackerRef,
+            setAnalysis,
+            dispatchIncidentRef,
+            eligibility,
+            attemptId,
+            examSessionId,
+            studentId,
+            setActiveIncident,
+        ],
+    );
 
     return { processFrame };
 }

@@ -30,9 +30,9 @@ export const getMessageRecipientsRoute = createRoute({
     },
 });
 
-export const getMessageRecipientsRouteHandler: AppRouteHandler<typeof getMessageRecipientsRoute> = async (
-    c,
-) => {
+export const getMessageRecipientsRouteHandler: AppRouteHandler<
+    typeof getMessageRecipientsRoute
+> = async (c) => {
     try {
         requireActivePermission(
             c,

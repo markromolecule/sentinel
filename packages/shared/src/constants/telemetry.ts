@@ -14,9 +14,7 @@ export const TELEMETRY_MEDIAPIPE_SANDBOX_V1_EVENT_TYPES = [
     'MULTIPLE_FACES',
 ] as const;
 
-export const TELEMETRY_MEDIAPIPE_SANDBOX_V1_INERT_FIELDS = [
-
-] as const;
+export const TELEMETRY_MEDIAPIPE_SANDBOX_V1_INERT_FIELDS = [] as const;
 
 export const TELEMETRY_MEDIAPIPE_SANDBOX_V1_PREREQUISITES = [
     'Checkup calibration validation',

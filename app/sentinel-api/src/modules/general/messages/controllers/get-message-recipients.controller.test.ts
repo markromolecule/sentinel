@@ -16,7 +16,10 @@ describe('get-message-recipients.controller', () => {
     const userId = 'a7c93cb6-bce7-440a-9db1-3ef5a9b9a67a';
     const institutionId = '550e8400-e29b-41d4-a716-446655440000';
 
-    function createTestApp(permissionKeys: string[], userProfile: any = { institution_id: institutionId }) {
+    function createTestApp(
+        permissionKeys: string[],
+        userProfile: any = { institution_id: institutionId },
+    ) {
         const app = new OpenAPIHono();
 
         app.use('*', async (c, next) => {

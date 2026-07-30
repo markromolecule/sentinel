@@ -50,7 +50,7 @@ function parseNumericEnv(
     value: string | undefined,
     fallback: number,
     min: number,
-    max: number
+    max: number,
 ): number {
     if (value === undefined) return fallback;
     const parsed = parseInt(value, 10);

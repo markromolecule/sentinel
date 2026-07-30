@@ -69,10 +69,10 @@ export function buildPrompt(args: {
         sourceFiles.length === 1
             ? sourceFiles[0].fileName
             : sourceFiles.length > 1
-              ? `${sourceFiles.length} files: ${sourceFiles.map((file) => file.fileName).join(', ')}`
-              : sourceDocuments.length === 1
-                ? sourceDocuments[0].fileName
-                : `${sourceDocuments.length} files: ${sourceDocuments.map((document) => document.fileName).join(', ')}`;
+                ? `${sourceFiles.length} files: ${sourceFiles.map((file) => file.fileName).join(', ')}`
+                : sourceDocuments.length === 1
+                    ? sourceDocuments[0].fileName
+                    : `${sourceDocuments.length} files: ${sourceDocuments.map((document) => document.fileName).join(', ')}`;
 
     return [
         hasExtractedSourceText
@@ -96,12 +96,13 @@ export function buildPrompt(args: {
         'Each question should be classroom-ready and phrased clearly for students.',
         'For all question types except ESSAY, all options, correct answers, accepted answers, blanks, and matching pair elements MUST be concise and MUST NOT exceed 200 characters.',
         'Add one to three concise topical tags per question when helpful.',
-        'Every generated question must include "sourceFileName", "sourcePageNumber", and "sourceEvidence".',
+        'Every generated question must include "sourceFileName", "sourcePageNumber", "sourceEvidence", and "passageContent".',
         sourceFiles.length > 0
             ? 'Set "sourceFileName" to one of the exact attached PDF file names listed below.'
             : 'Set "sourceFileName" to the exact file name of the supporting source document.',
         'Set "sourcePageNumber" to the exact 1-based PDF page number where the answer support appears.',
-        'Set "sourceEvidence" to a short verbatim excerpt copied from that exact page text.',
+        'Set "sourceEvidence" to a short verbatim excerpt copied from that exact page text to serve as private instructor provenance. It is allowed to contain the correct answer.',
+        'Set "passageContent" to a non-empty plain-text passage that contains enough context for the student to solve the question. The passageContent MUST NOT contain the exact answer, key names, dates, numbers, formulas, or phrases that make the question a trivial copy-paste match. The student must use interpretation, comparison, calculation, application, or synthesis rather than pure recall of the passage content. Write the passageContent in plain text; do not generate HTML.',
         hasExtractedSourceText
             ? 'Do not use a source page number that does not exist in the provided source documents.'
             : 'Use Gemini native PDF understanding for document structure, page text, tables, and embedded images. Do not invent page numbers.',
@@ -168,6 +169,9 @@ export function buildResponseJsonSchema(config: GenerateQuestionPreviewConfig) {
                     sourceEvidence: {
                         type: 'string',
                     },
+                    passageContent: {
+                        type: 'string',
+                    },
                     difficulty: {
                         type: 'string',
                         enum: allowedDifficulties,
@@ -196,6 +200,7 @@ export function buildResponseJsonSchema(config: GenerateQuestionPreviewConfig) {
                     'sourceFileName',
                     'sourcePageNumber',
                     'sourceEvidence',
+                    'passageContent',
                     'difficulty',
                     'points',
                     'content',

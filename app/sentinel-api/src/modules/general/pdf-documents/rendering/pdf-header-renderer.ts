@@ -68,7 +68,12 @@ export function renderPdfHeader(
         try {
             doc.image(logoBuffer, logoX, logoY, {
                 fit: [logoWidth, logoHeight],
-                align: config.logo_placement === 'RIGHT' ? 'right' : config.logo_placement === 'CENTER' ? 'center' : undefined,
+                align:
+                    config.logo_placement === 'RIGHT'
+                        ? 'right'
+                        : config.logo_placement === 'CENTER'
+                          ? 'center'
+                          : undefined,
                 valign: 'center',
             });
         } catch (e) {
@@ -129,7 +134,9 @@ export function renderPdfHeader(
     // Draw Title
     doc.font(PDF_LAYOUT.fonts.bold).fontSize(titleFontSize);
 
-    const titleAlign = isCenterLogo ? 'center' : ((config.title_alignment?.toLowerCase() as any) || 'left');
+    const titleAlign = isCenterLogo
+        ? 'center'
+        : (config.title_alignment?.toLowerCase() as any) || 'left';
     doc.text(titleText, textX, textY, {
         width: textWidth,
         align: titleAlign,
@@ -138,9 +145,13 @@ export function renderPdfHeader(
 
     // Draw Subtitle if present
     if (subtitleText) {
-        doc.font(PDF_LAYOUT.fonts.regular).fontSize(subtitleFontSize).fillColor(PDF_LAYOUT.colors.textSecondary);
+        doc.font(PDF_LAYOUT.fonts.regular)
+            .fontSize(subtitleFontSize)
+            .fillColor(PDF_LAYOUT.colors.textSecondary);
 
-        const subtitleAlign = isCenterLogo ? 'center' : ((config.subtitle_alignment?.toLowerCase() as any) || 'left');
+        const subtitleAlign = isCenterLogo
+            ? 'center'
+            : (config.subtitle_alignment?.toLowerCase() as any) || 'left';
         doc.text(subtitleText, textX, textY + titleFontSize + 2, {
             width: textWidth,
             align: subtitleAlign,

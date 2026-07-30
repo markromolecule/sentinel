@@ -37,8 +37,7 @@ function buildEditFormValues(exam: ProctorExam): ExamCreateFormValues {
             exam.duration ??
             getDurationMinutes(startDateTime, endDateTime) ??
             DEFAULT_EXAM_DURATION_MINUTES,
-        passingScore:
-            exam.passingScore ?? DEFAULT_EXAMINATION_GLOBAL_SETTINGS.defaultPassingScore,
+        passingScore: exam.passingScore ?? DEFAULT_EXAMINATION_GLOBAL_SETTINGS.defaultPassingScore,
         shuffleQuestions:
             exam.settings?.shuffleQuestions ??
             DEFAULT_EXAMINATION_GLOBAL_SETTINGS.defaultShuffleQuestions,

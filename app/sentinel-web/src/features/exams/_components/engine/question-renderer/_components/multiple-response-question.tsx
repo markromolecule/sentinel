@@ -16,31 +16,31 @@ export function MultipleResponseQuestion({
     const hasOptionTokens = optionTokens.length > 0;
     const selectedTokenValues: string[] = Array.isArray(value)
         ? value.flatMap((item) => {
-            if (typeof item === 'string') {
-                return optionTokens.includes(item) ? [item] : [];
-            }
+              if (typeof item === 'string') {
+                  return optionTokens.includes(item) ? [item] : [];
+              }
 
-            if (typeof item === 'number') {
-                const token = optionTokens[item];
-                return token ? [token] : [];
-            }
+              if (typeof item === 'number') {
+                  const token = optionTokens[item];
+                  return token ? [token] : [];
+              }
 
-            return [];
-        })
+              return [];
+          })
         : [];
     const selectedIndexValues: number[] = Array.isArray(value)
         ? value.flatMap((item) => {
-            if (typeof item === 'number') {
-                return [item];
-            }
+              if (typeof item === 'number') {
+                  return [item];
+              }
 
-            if (typeof item === 'string') {
-                const optionIndex = options.indexOf(item);
-                return optionIndex >= 0 ? [optionIndex] : [];
-            }
+              if (typeof item === 'string') {
+                  const optionIndex = options.indexOf(item);
+                  return optionIndex >= 0 ? [optionIndex] : [];
+              }
 
-            return [];
-        })
+              return [];
+          })
         : [];
     const correctValues = Array.isArray(question.content.correctAnswer)
         ? question.content.correctAnswer

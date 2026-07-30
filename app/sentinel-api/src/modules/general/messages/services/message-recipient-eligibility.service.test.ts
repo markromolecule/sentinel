@@ -61,7 +61,7 @@ describe('message-recipient-eligibility.service', () => {
     describe('listEligibleMessageRecipients', () => {
         it('calls getMessageRecipientsData with isRequesterStudent: true for student requester', async () => {
             const dbClient = createFakeDbClient({
-                executeTakeFirst: { roleName: 'student' }
+                executeTakeFirst: { roleName: 'student' },
             });
 
             const spy = vi
@@ -90,7 +90,7 @@ describe('message-recipient-eligibility.service', () => {
 
         it('calls getMessageRecipientsData with isRequesterStudent: false for non-student requester', async () => {
             const dbClient = createFakeDbClient({
-                executeTakeFirst: { roleName: 'instructor' }
+                executeTakeFirst: { roleName: 'instructor' },
             });
 
             const spy = vi
@@ -121,7 +121,7 @@ describe('message-recipient-eligibility.service', () => {
     describe('assertEligibleDirectMessageRecipient', () => {
         it('resolves if requester is a non-student and recipient exists', async () => {
             const dbClient = createFakeDbClient({
-                executeTakeFirst: { user_id: 'recipient-1' }
+                executeTakeFirst: { user_id: 'recipient-1' },
             });
 
             await expect(
@@ -136,7 +136,7 @@ describe('message-recipient-eligibility.service', () => {
 
         it('throws 404 if requester is a non-student and recipient does not exist', async () => {
             const dbClient = createFakeDbClient({
-                executeTakeFirst: undefined
+                executeTakeFirst: undefined,
             });
 
             await expect(
@@ -151,7 +151,7 @@ describe('message-recipient-eligibility.service', () => {
 
         it('resolves if requester is a student and recipient meets all criteria', async () => {
             const dbClient = createFakeDbClient({
-                executeTakeFirst: { userId: 'recipient-1' }
+                executeTakeFirst: { userId: 'recipient-1' },
             });
 
             await expect(
@@ -166,7 +166,7 @@ describe('message-recipient-eligibility.service', () => {
 
         it('throws 404 if requester is a student and recipient does not meet criteria', async () => {
             const dbClient = createFakeDbClient({
-                executeTakeFirst: undefined
+                executeTakeFirst: undefined,
             });
 
             await expect(

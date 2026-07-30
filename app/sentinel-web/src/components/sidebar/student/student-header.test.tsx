@@ -119,10 +119,9 @@ describe('StudentHeader', () => {
         const dropdown = screen.getByTestId('mock-web-notification-dropdown');
         expect(dropdown).toBeTruthy();
         expect(dropdown.getAttribute('data-query-key')).toBe(
-            JSON.stringify(['notifications', 'student-header'])
+            JSON.stringify(['notifications', 'student-header']),
         );
         expect(dropdown.getAttribute('data-view-all-href')).toBe('/student/notifications');
         expect(dropdown.getAttribute('data-trigger-class-name')).toContain('hidden sm:flex');
     });
 });
-

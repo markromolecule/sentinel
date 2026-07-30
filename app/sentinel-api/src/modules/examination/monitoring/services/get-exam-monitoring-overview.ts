@@ -59,7 +59,8 @@ export async function getExamMonitoringOverview({
         .where('ea.exam_id', '=', examId)
         .where('ea.student_id', 'is not', null);
 
-    const latestAttempts = applyMonitoringAttemptOrdering(latestAttemptsQuery).as('latest_attempts');
+    const latestAttempts =
+        applyMonitoringAttemptOrdering(latestAttemptsQuery).as('latest_attempts');
 
     const incidentSummary = dbClient
         .selectFrom('flagged_incidents as fi')

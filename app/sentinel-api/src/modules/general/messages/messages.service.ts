@@ -37,4 +37,3 @@ export const MessagesService = {
      */
     markConversationRead: writeService.markConversationRead,
 };
-

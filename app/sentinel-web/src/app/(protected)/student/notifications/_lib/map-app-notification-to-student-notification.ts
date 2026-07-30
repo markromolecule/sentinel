@@ -43,7 +43,7 @@ function mapNotificationPriority(notification: AppNotification): Notification['p
 
 /**
  * Resolves the destination URL for a student notification based on its resource and metadata.
- * 
+ *
  * @param notification - The app notification to resolve a link for.
  * @returns The destination path or undefined if unsupported.
  */
@@ -91,4 +91,3 @@ export function mapAppNotificationToStudentNotification(
         link: resolveStudentNotificationHref(notification),
     };
 }
-

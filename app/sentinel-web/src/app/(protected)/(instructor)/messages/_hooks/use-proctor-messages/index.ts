@@ -59,7 +59,6 @@ export function useProctorMessages(): UseProctorMessagesReturn {
     );
     const rawDirectoryUsers = directoryQuery.data ?? [];
 
-
     const createDirectConversationMutation = useCreateDirectConversationMutation({
         onSuccess: (conversation) => {
             setSelectedConversationId(conversation.conversationId);
@@ -206,7 +205,6 @@ export function useProctorMessages(): UseProctorMessagesReturn {
         role: u.role,
         institution: u.institution?.name ?? null,
     }));
-
 
     // Map DB ConversationMessage to UI Message
     const mappedMessages: Message[] = currentMessagesRaw.map((m) => ({

@@ -27,10 +27,7 @@ type LegacyAttemptRow = {
 };
 
 type AuditOutcome =
-    | 'safe_backfill'
-    | 'unresolved_unfinalized'
-    | 'finalized_safe_match'
-    | 'finalized_mismatch';
+    'safe_backfill' | 'unresolved_unfinalized' | 'finalized_safe_match' | 'finalized_mismatch';
 
 type ReconstructionStrategy = 'assessment_snapshot' | 'current_exam_questions';
 
@@ -110,7 +107,10 @@ function parseBooleanOrNull(value: unknown): boolean | null {
     return typeof value === 'boolean' ? value : null;
 }
 
-async function loadLegacyAttempts(db: DbClient, args: { batchSize: number; cursorAttemptId?: string }) {
+async function loadLegacyAttempts(
+    db: DbClient,
+    args: { batchSize: number; cursorAttemptId?: string },
+) {
     let query = db
         .selectFrom('exam_attempts')
         .select([
@@ -343,7 +343,7 @@ export async function auditAttemptScoreSnapshots(
         dryRun,
         batchSize,
         cursorAttemptId: options.cursorAttemptId ?? null,
-        nextCursorAttemptId: hasMore ? attempts.at(-1)?.attempt_id ?? null : null,
+        nextCursorAttemptId: hasMore ? (attempts.at(-1)?.attempt_id ?? null) : null,
         hasMore,
         processedCount: rows.length,
         safeBackfillCount: rows.filter((row) => row.outcome === 'safe_backfill').length,

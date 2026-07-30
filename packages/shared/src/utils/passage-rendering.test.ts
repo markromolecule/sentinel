@@ -47,4 +47,32 @@ describe('passage rendering', () => {
         expect(rendered).not.toContain('javascript:');
         expect(rendered).not.toContain('data:text/html');
     });
+
+    it('falls back to sourceEvidence by default when passageContent is empty', () => {
+        const rendered = renderPassage({
+            sourceEvidence: 'Legacy evidence content',
+            passageContent: '',
+            passageType: 'plain',
+        });
+        expect(rendered?.html).toBe('Legacy evidence content');
+    });
+
+    it('does not fall back to sourceEvidence when fallbackToSourceEvidence is false', () => {
+        const rendered = renderPassage({
+            sourceEvidence: 'Legacy evidence content',
+            passageContent: '',
+            passageType: 'plain',
+            fallbackToSourceEvidence: false,
+        });
+        expect(rendered).toBeNull();
+    });
+
+    it('returns null when both passageContent and sourceEvidence are empty', () => {
+        const rendered = renderPassage({
+            sourceEvidence: '',
+            passageContent: '',
+            passageType: 'plain',
+        });
+        expect(rendered).toBeNull();
+    });
 });

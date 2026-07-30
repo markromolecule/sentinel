@@ -81,5 +81,6 @@ export function getQuestionPassage(question?: {
         sourceEvidence: question.sourceEvidence ?? null,
         passageContent: question.passageContent ?? null,
         passageType: question.passageType ?? null,
+        fallbackToSourceEvidence: false,
     });
 }

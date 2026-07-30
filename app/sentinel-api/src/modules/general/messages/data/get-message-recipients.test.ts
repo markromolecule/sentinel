@@ -47,7 +47,6 @@ function createFakeDbClient(result: FakeBuilderResult) {
     } as any;
 }
 
-
 describe('getMessageRecipientsData', () => {
     it('returns messageable recipients with mapped default student role', async () => {
         const dbClient = createFakeDbClient({
@@ -70,7 +69,6 @@ describe('getMessageRecipientsData', () => {
                 },
             ],
         });
-
 
         const result = await getMessageRecipientsData(dbClient, {
             requesterUserId: 'requester-1',

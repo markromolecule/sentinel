@@ -76,11 +76,11 @@ vi.mock('@sentinel/hooks', () => ({
     useSendMessageMutation: (args: unknown) => mockUseSendMessageMutation(args),
     useMarkConversationReadMutation: () => mockUseMarkConversationReadMutation(),
     useUsersQuery: (args: unknown) => mockUseUsersQuery(args),
-    useMessageRecipientsQuery: (args: unknown, limit?: number) => mockUseMessageRecipientsQuery(args, limit),
+    useMessageRecipientsQuery: (args: unknown, limit?: number) =>
+        mockUseMessageRecipientsQuery(args, limit),
     useMessageRealtime: (args: unknown) => mockUseMessageRealtime(args),
     useUserQuery: (id: string) => mockUseUserQuery(id),
 }));
-
 
 describe('MessagingPageClient', () => {
     beforeEach(() => {
@@ -115,7 +115,6 @@ describe('MessagingPageClient', () => {
             error: null,
         });
     });
-
 
     afterEach(() => {
         cleanup();
@@ -465,4 +464,3 @@ describe('MessagingPageClient', () => {
         }
     });
 });
-

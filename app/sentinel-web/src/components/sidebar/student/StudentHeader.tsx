@@ -106,7 +106,6 @@ export default function StudentHeader() {
                         triggerClassName="text-muted-foreground hover:text-foreground hidden sm:flex"
                     />
 
-
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <div className="relative ml-2 flex h-8 w-8 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#323d8f] to-[#4a5bb8] text-xs font-bold text-white transition-all">
@@ -144,7 +143,7 @@ export default function StudentHeader() {
                                 </Link>
                             </DropdownMenuItem>
 
-                             <DropdownMenuItem asChild className="cursor-pointer">
+                            <DropdownMenuItem asChild className="cursor-pointer">
                                 <Link href="/student/setting" className="flex w-full items-center">
                                     <Settings className="mr-2 h-4 w-4" />
                                     <span>Settings</span>
@@ -152,7 +151,9 @@ export default function StudentHeader() {
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <div className="px-2 py-1.5">
-                                <p className="text-muted-foreground mb-2 px-2 text-xs font-semibold">Theme</p>
+                                <p className="text-muted-foreground mb-2 px-2 text-xs font-semibold">
+                                    Theme
+                                </p>
                                 <div className="space-y-0.5">
                                     {themeOptions.map((opt) => (
                                         <DropdownMenuItem
@@ -164,7 +165,9 @@ export default function StudentHeader() {
                                                 <opt.icon className="h-3.5 w-3.5" />
                                                 <span className="text-sm">{opt.name}</span>
                                             </div>
-                                            {theme === opt.value && <Check className="text-primary h-3 w-3" />}
+                                            {theme === opt.value && (
+                                                <Check className="text-primary h-3 w-3" />
+                                            )}
                                         </DropdownMenuItem>
                                     ))}
                                 </div>
@@ -179,8 +182,6 @@ export default function StudentHeader() {
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
-
-
                 </div>
             </div>
         </header>

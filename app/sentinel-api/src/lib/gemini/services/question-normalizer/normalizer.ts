@@ -14,12 +14,13 @@ import { normalizeDifficulty, resolveQuestionType } from './domain-logic';
  * Raw generated question schema, defining the basic shape expected from
  * the AI's response before it is normalized and validated.
  */
-const rawGeneratedQuestionSchema = z.object({
+export const rawGeneratedQuestionSchema = z.object({
     subjectId: z.string().optional(),
     type: z.string().optional(),
     sourceFileName: z.string().min(1),
     sourcePageNumber: z.number().int().min(1),
     sourceEvidence: z.string().min(1),
+    passageContent: z.string().min(1),
     difficulty: z.string().optional(),
     points: z.number().int().optional(),
     tags: z.array(z.string()).optional(),
@@ -29,6 +30,48 @@ const rawGeneratedQuestionSchema = z.object({
     cognitive_level: z.string().optional(),
     predicted_difficulty: z.string().optional(),
 });
+
+/**
+ * Normalizes a single raw generated question.
+ *
+ * Performs individual parsing, type resolution, content shape validation,
+ * source document metadata matching, and schema mapping.
+ */
+export function normalizeGeneratedQuestion(
+    rawQuestion: z.infer<typeof rawGeneratedQuestionSchema>,
+    config: GenerateQuestionPreviewConfig,
+    sourceDocuments: ExtractedPdfDocument[],
+) {
+    const question = rawGeneratedQuestionSchema.parse(rawQuestion);
+    const resolvedType = resolveQuestionType(question.type, config);
+    const normalizedContent = normalizeQuestionContentShape(resolvedType, question.content);
+    const validatedContent = validateQuestionContentByType(resolvedType, normalizedContent);
+
+    const sourceMetadata = resolveSourceMetadata({
+        sourceDocuments,
+        sourceFileName: question.sourceFileName,
+        sourcePageNumber: question.sourcePageNumber,
+        sourceEvidence: question.sourceEvidence,
+        prompt: String(validatedContent.prompt ?? ''),
+    });
+
+    return Schema.questionInputSchema.parse({
+        ...question,
+        ...sourceMetadata,
+        type: resolvedType,
+        subjectId: config.subjectId ?? question.subjectId,
+        difficulty: normalizeDifficulty(question.difficulty, config.difficulty),
+        points: config.points ?? question.points ?? 1,
+        tags: dedupe(question.tags ?? []),
+        content: validatedContent,
+        passageContent: question.passageContent.trim(),
+        passageType: 'plain',
+        // Forward TOS metadata — snake_case from AI → camelCase schema
+        topic: question.topic ?? undefined,
+        cognitiveLevel: (question.cognitive_level as any) ?? undefined,
+        predictedDifficulty: (question.predicted_difficulty as any) ?? undefined,
+    });
+}
 
 /**
  * Validates and normalizes the raw AI-generated question list into typed,
@@ -46,35 +89,9 @@ export function normalizeGeneratedQuestions(
     config: GenerateQuestionPreviewConfig,
     sourceDocuments: ExtractedPdfDocument[],
 ) {
-    return rawQuestions.map((rawQuestion) => {
-        const question = rawGeneratedQuestionSchema.parse(rawQuestion);
-        const resolvedType = resolveQuestionType(question.type, config);
-        const normalizedContent = normalizeQuestionContentShape(resolvedType, question.content);
-        const validatedContent = validateQuestionContentByType(resolvedType, normalizedContent);
-
-        const sourceMetadata = resolveSourceMetadata({
-            sourceDocuments,
-            sourceFileName: question.sourceFileName,
-            sourcePageNumber: question.sourcePageNumber,
-            sourceEvidence: question.sourceEvidence,
-            prompt: String(validatedContent.prompt ?? ''),
-        });
-
-        return Schema.questionInputSchema.parse({
-            ...question,
-            ...sourceMetadata,
-            type: resolvedType,
-            subjectId: config.subjectId ?? question.subjectId,
-            difficulty: normalizeDifficulty(question.difficulty, config.difficulty),
-            points: config.points ?? question.points ?? 1,
-            tags: dedupe(question.tags ?? []),
-            content: validatedContent,
-            // Forward TOS metadata — snake_case from AI → camelCase schema
-            topic: question.topic ?? undefined,
-            cognitiveLevel: (question.cognitive_level as any) ?? undefined,
-            predictedDifficulty: (question.predicted_difficulty as any) ?? undefined,
-        });
-    });
+    return rawQuestions.map((rawQuestion) =>
+        normalizeGeneratedQuestion(rawQuestion, config, sourceDocuments),
+    );
 }
 
 /**

@@ -135,16 +135,17 @@ function warnIfAttemptScoreSnapshotMismatch(
         snapshotScore: snapshot.score,
         snapshotTotalScore: snapshot.totalScore,
         snapshotPercentage: snapshot.percentage,
-        scoringVersion:
-            Schema.attemptScoreSnapshotSchema.safeParse(record.attempt_score_snapshot).success
-                ? Schema.attemptScoreSnapshotSchema.parse(record.attempt_score_snapshot)
-                      .scoringVersion
-                : null,
+        scoringVersion: Schema.attemptScoreSnapshotSchema.safeParse(record.attempt_score_snapshot)
+            .success
+            ? Schema.attemptScoreSnapshotSchema.parse(record.attempt_score_snapshot).scoringVersion
+            : null,
     });
 }
 
 function resolvePersistedAttemptScore(record: RawExamRecord) {
-    const parsedSnapshot = Schema.attemptScoreSnapshotSchema.safeParse(record.attempt_score_snapshot);
+    const parsedSnapshot = Schema.attemptScoreSnapshotSchema.safeParse(
+        record.attempt_score_snapshot,
+    );
 
     if (parsedSnapshot.success) {
         const snapshot = {
@@ -159,7 +160,8 @@ function resolvePersistedAttemptScore(record: RawExamRecord) {
     }
 
     const score = record.attempt_score != null ? Number(record.attempt_score) : null;
-    const totalScore = record.attempt_total_score != null ? Number(record.attempt_total_score) : null;
+    const totalScore =
+        record.attempt_total_score != null ? Number(record.attempt_total_score) : null;
     const percentage = computePercentage(score, totalScore);
 
     return {
@@ -350,8 +352,7 @@ export function mapExamHistorySummaryResponse(record: RawExamRecord): ExamHistor
         dueAt: getDueAt(record),
         completedAt: record.attempt_completed_at ?? null,
         score: isReleased ? persistedAttemptScore.score : null,
-        totalScore:
-            isReleased ? persistedAttemptScore.totalScore : null,
+        totalScore: isReleased ? persistedAttemptScore.totalScore : null,
         percentage: isReleased ? persistedAttemptScore.percentage : null,
         timeSpent: record.attempt_time_spent_minutes ?? null,
         cheated: (record.attempt_incident_count ?? 0) > 0,

@@ -48,9 +48,6 @@ describe('message-write.service', () => {
                 execute: vi.fn((cb) => cb(mockDbClient)),
             }),
         } as any;
-
-
-
     });
 
     describe('createDirectConversation', () => {
@@ -154,10 +151,10 @@ describe('message-write.service', () => {
                 .mockResolvedValueOnce({ roleName: 'student' }) // requesterRole (student)
                 .mockResolvedValueOnce({ userId: recipientId }) // assertEligibleDirectMessageRecipient matches eligible recipient
                 .mockResolvedValueOnce({ institution_id: 'inst-1' }); // log sender profile check
-            
+
             vi.mocked(dataLayer.findDirectConversationData).mockResolvedValue(null);
             vi.mocked(dataLayer.createConversationData).mockResolvedValue(conversationId);
-            
+
             const mockConv = {
                 conversationId,
                 type: 'DIRECT',
@@ -173,7 +170,6 @@ describe('message-write.service', () => {
             expect(result.conversationId).toBe(conversationId);
         });
     });
-
 
     describe('sendMessage', () => {
         const content = 'Hello!';
@@ -222,10 +218,12 @@ describe('message-write.service', () => {
         });
 
         describe('sendMessage notifications', () => {
-            const longContent = 'Hello, this is a very long message that should be truncated when used in the notification preview text to keep things clean and concise.';
+            const longContent =
+                'Hello, this is a very long message that should be truncated when used in the notification preview text to keep things clean and concise.';
 
             it('sends notifications to other participants with correct metadata and institutionId', async () => {
-                const mockExecuteTakeFirst = vi.fn()
+                const mockExecuteTakeFirst = vi
+                    .fn()
                     .mockResolvedValueOnce({ conversation_id: conversationId })
                     .mockResolvedValueOnce({ institution_id: 'inst-789' })
                     .mockResolvedValueOnce({ first_name: 'John', last_name: 'Doe' });
@@ -264,7 +262,8 @@ describe('message-write.service', () => {
                     actorUserId: userId,
                     institutionId: 'inst-789',
                     title: 'New Message',
-                    message: 'John Doe messaged you: "Hello, this is a very long message that should be truncat..."',
+                    message:
+                        'John Doe messaged you: "Hello, this is a very long message that should be truncat..."',
                     actionType: 'INSTITUTION_ACTIVITY_CREATED',
                     resourceType: 'INSTITUTION_ACTIVITY',
                     resourceId: conversationId,
@@ -278,7 +277,8 @@ describe('message-write.service', () => {
             });
 
             it('does not roll back message if notification throws error', async () => {
-                const mockExecuteTakeFirst = vi.fn()
+                const mockExecuteTakeFirst = vi
+                    .fn()
                     .mockResolvedValueOnce({ conversation_id: conversationId })
                     .mockResolvedValueOnce({ institution_id: 'inst-789' })
                     .mockResolvedValueOnce({ first_name: 'John', last_name: 'Doe' });
@@ -295,7 +295,6 @@ describe('message-write.service', () => {
                     execute: mockExecute,
                 } as any;
 
-
                 const mockMessage = {
                     messageId: 'b3cd17f8-fb3a-4be0-80de-4ff45037d032',
                     conversationId,
@@ -305,7 +304,9 @@ describe('message-write.service', () => {
                     createdAt: new Date(),
                 };
                 vi.mocked(dataLayer.createMessageData).mockResolvedValue(mockMessage as any);
-                vi.mocked(NotificationService.createNotification).mockRejectedValueOnce(new Error('DB Error'));
+                vi.mocked(NotificationService.createNotification).mockRejectedValueOnce(
+                    new Error('DB Error'),
+                );
 
                 const result = await sendMessage(mockDb, {
                     conversationId,
@@ -318,7 +319,6 @@ describe('message-write.service', () => {
             });
         });
     });
-
 
     describe('markConversationRead', () => {
         it('should mark conversation as read if user is participant', async () => {

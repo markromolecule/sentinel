@@ -146,8 +146,7 @@ export function drawAnalyticsOverallBody(
     y = checkPageBreak(doc, y, 150);
     y = drawSectionHeader(doc, 'DEPARTMENT & SUBJECT PERFORMANCE', y);
 
-    const tableWidth =
-        PDF_LAYOUT.pageWidth - PDF_LAYOUT.marginLeft - PDF_LAYOUT.marginRight;
+    const tableWidth = PDF_LAYOUT.pageWidth - PDF_LAYOUT.marginLeft - PDF_LAYOUT.marginRight;
     const cols = [
         { name: 'Department', width: 210, align: 'left' },
         { name: 'Courses', width: 55, align: 'center' },

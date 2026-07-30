@@ -45,7 +45,9 @@ export function LifecycleTimelineItem({ event }: LifecycleTimelineItemProps) {
                 </div>
                 <div className="bg-muted/30 border-border/50 rounded-xl border p-4">
                     <p className="text-muted-foreground text-sm leading-relaxed">
-                        {event.notes || event.reasonCode || 'Lifecycle event recorded for this attempt.'}
+                        {event.notes ||
+                            event.reasonCode ||
+                            'Lifecycle event recorded for this attempt.'}
                     </p>
                 </div>
             </div>
