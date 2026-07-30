@@ -24,6 +24,7 @@ export function SectionedQuestionBucketTable({
     onUpdateSection,
     onDeleteSection,
     onToggleSectionCollapse,
+    questionTypes = [],
 }: QuestionBucketTableProps & { sections: ExamQuestionSection[] }) {
     const { totalPoints, sectionViewModels } = useSectionedQuestionBucketMetrics(
         sections,
@@ -91,6 +92,11 @@ export function SectionedQuestionBucketTable({
                                     onToggleCollapse={() => onToggleSectionCollapse?.(section.id)}
                                     onImportQuestions={() => onImport(section.id)}
                                     onAddQuestion={() => onAdd(section.id)}
+                                    questionTypes={questionTypes}
+                                    canChangeQuestionType={true}
+                                    onSectionQuestionTypeChange={(type) =>
+                                        onUpdateSection?.(section.id, { questionType: type })
+                                    }
                                 >
                                     <EmptySectionState
                                         onImportQuestions={() => onImport(section.id)}
@@ -152,6 +158,11 @@ export function SectionedQuestionBucketTable({
                             onToggleCollapse={() => onToggleSectionCollapse?.(section.id)}
                             onImportQuestions={() => onImport(section.id)}
                             onAddQuestion={() => onAdd(section.id)}
+                            questionTypes={questionTypes}
+                            canChangeQuestionType={sectionQuestions.length === 0}
+                            onSectionQuestionTypeChange={(type) =>
+                                onUpdateSection?.(section.id, { questionType: type })
+                            }
                         >
                             {sectionQuestions.length === 0 ? (
                                 <EmptySectionState
@@ -162,7 +173,7 @@ export function SectionedQuestionBucketTable({
                                 <QuestionRowsTable
                                     questions={sectionQuestions}
                                     questionNumberOffset={questionNumberOffset}
-                                    footerLabel={`${section.title} Totals`}
+                                    footerLabel="Totals"
                                     footerPoints={sectionPoints}
                                     draggedIndex={questionDragState.draggedIndex}
                                     dropTargetIndex={questionDragState.dropTargetIndex}

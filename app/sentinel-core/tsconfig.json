@@ -22,6 +22,7 @@
             "@/*": ["./src/*"],
             "@sentinel/db": ["../../packages/db/src"],
             "@sentinel/shared": ["../../packages/shared/src"],
+            "@sentinel/shared/*": ["../../packages/shared/src/*"],
             "@sentinel/ui": ["../../packages/ui/src"],
             "@sentinel/hooks": ["../../packages/hooks/src"],
             "@sentinel/services": ["../../packages/services/src"]

@@ -3,7 +3,7 @@
 > **Task summary:** separate AI provenance from student-facing passages, reject answer-leaking generated content, repair invalid items within a bounded Gemini workflow, and stop student and builder surfaces from treating `sourceEvidence` as passage content.
 
 **Source:** `docs/context/July/July 30/fix-passage-content-generation.md`  
-**Status:** Ready for implementation  
+**Status:** Completed  
 **Delivery boundary:** AI PDF question generation, passage-quality validation, passage rendering policy, builder initialization, and non-destructive legacy auditing  
 **Migration required:** No — `question_bank_questions` and `exam_questions` already contain `passage_content` and `passage_type`; shared question contracts and persistence paths already carry those fields.
 

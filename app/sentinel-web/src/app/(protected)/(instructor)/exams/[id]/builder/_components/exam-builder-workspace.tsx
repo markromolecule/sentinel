@@ -9,6 +9,7 @@ import {
 } from '@/features/exams';
 import type { UseExamBuilderResult } from '../hooks/use-exam-builder/_types';
 import type { ExamBuilderWorkspaceProps } from './_types';
+import { toast } from 'sonner';
 
 export function ExamBuilderWorkspace({
     activeQuestionType,
@@ -40,6 +41,9 @@ export function ExamBuilderWorkspace({
 }: ExamBuilderWorkspaceProps) {
     const [targetSectionId, setTargetSectionId] = React.useState<string | undefined>();
 
+    const targetSection = questionSections.find((s) => s.id === targetSectionId);
+    const allowedQuestionType = targetSection?.questionType ?? undefined;
+
     return (
         <>
             <div className="min-w-0">
@@ -67,9 +71,35 @@ export function ExamBuilderWorkspace({
                     <ExamStructureSection
                         questionSections={questionSections}
                         questions={questions}
+                        questionTypes={questionTypes}
                         onAddQuestion={(sectionId) => {
-                            setTargetSectionId(sectionId);
-                            setIsTypeSelectorOpen(true);
+                            if (sectionId) {
+                                const section = questionSections.find((s) => s.id === sectionId);
+                                if (section) {
+                                    if (section.questionType) {
+                                        setTargetSectionId(sectionId);
+                                        handleSelectQuestionType(section.questionType);
+                                    } else {
+                                        const sectionQuestions = questions.filter(
+                                            (q) => q.sectionId === sectionId,
+                                        );
+                                        if (sectionQuestions.length === 0) {
+                                            toast.error(
+                                                'Please select a question type for this section before adding questions.',
+                                            );
+                                        } else {
+                                            setTargetSectionId(sectionId);
+                                            setIsTypeSelectorOpen(true);
+                                        }
+                                    }
+                                } else {
+                                    setTargetSectionId(undefined);
+                                    setIsTypeSelectorOpen(true);
+                                }
+                            } else {
+                                setTargetSectionId(undefined);
+                                setIsTypeSelectorOpen(true);
+                            }
                         }}
                         onAddSection={handleAddQuestionSection}
                         onImportQuestions={(sectionId) => {
@@ -110,6 +140,7 @@ export function ExamBuilderWorkspace({
                     }
                 }}
                 existingQuestions={questions}
+                allowedQuestionType={allowedQuestionType}
                 onImport={(importedQuestions) =>
                     handleImportQuestions(importedQuestions, targetSectionId)
                 }
@@ -121,6 +152,7 @@ export function ExamBuilderWorkspace({
 function ExamStructureSection({
     questionSections,
     questions,
+    questionTypes,
     onAddQuestion,
     onAddSection,
     onImportQuestions,
@@ -135,6 +167,7 @@ function ExamStructureSection({
 }: {
     questionSections: UseExamBuilderResult['questionSections'];
     questions: UseExamBuilderResult['questions'];
+    questionTypes: UseExamBuilderResult['questionTypes'];
     onAddQuestion: (sectionId?: string) => void;
     onAddSection: UseExamBuilderResult['handleAddQuestionSection'];
     onImportQuestions: (sectionId?: string) => void;
@@ -152,6 +185,7 @@ function ExamStructureSection({
             <QuestionBucketTable
                 sections={questionSections}
                 questions={questions}
+                questionTypes={questionTypes}
                 onAdd={onAddQuestion}
                 onAddSection={onAddSection}
                 onImport={onImportQuestions}

@@ -5,6 +5,7 @@ import { EntitlementsRepository } from '../../access/data/entitlements.repositor
 import { getReportingExamContext } from '../../reporting/services/get-reporting-exam-context';
 import { requireLifecycleMutationAccess } from '../lifecycle-access';
 import { grantMakeupExamWindowSchema } from '../lifecycle.dto';
+import { resolveLifecycleStudentId } from '../services/resolve-lifecycle-student-id';
 import { grantMakeupExamWindow } from '../services/grant-makeup-exam-window';
 
 export const grantMakeupExamWindowRoute = createRoute({
@@ -41,6 +42,7 @@ export const grantMakeupExamWindowRouteHandler: AppRouteHandler<
 
     const { id, studentId } = c.req.valid('param');
     const body = c.req.valid('json');
+    const resolvedStudentId = await resolveLifecycleStudentId(c.get('dbClient'), studentId);
     const exam = await getReportingExamContext({
         dbClient: c.get('dbClient'),
         examId: id,
@@ -50,7 +52,7 @@ export const grantMakeupExamWindowRouteHandler: AppRouteHandler<
     });
 
     const isEnrolled = await EntitlementsRepository.hasStudentExamEnrollment(c.get('dbClient'), {
-        studentId,
+        studentId: resolvedStudentId,
         classGroupId: exam.classGroupId,
         subjectId: exam.subjectId,
         sectionId: exam.sectionId,
@@ -66,7 +68,7 @@ export const grantMakeupExamWindowRouteHandler: AppRouteHandler<
     const result = await grantMakeupExamWindow({
         dbClient: c.get('dbClient'),
         examId: id,
-        studentId,
+        studentId: resolvedStudentId,
         availableFrom: body.availableFrom,
         availableUntil: body.availableUntil,
         allowedAttempts: body.allowedAttempts,

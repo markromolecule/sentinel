@@ -212,6 +212,7 @@ export type ExamQuestionContent = {
 
 export type ExamQuestionSection = {
     id: string;
+    questionType?: QuestionType | null;
     title: string;
     description?: string | null;
     orderIndex: number;

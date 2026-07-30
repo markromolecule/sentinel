@@ -1,22 +1,43 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { QuestionRecord } from '@sentinel/services';
 import type { QuestionType } from '@sentinel/shared/types';
 import { ALL_COLLECTIONS_ID } from '../constants';
 import type { SelectedImportQuestionRecord } from '../utils';
 import { toggleAllSelectionIds, toggleSelectionId } from '../utils';
 
-export function useQuestionBankImportSelection() {
+export function useQuestionBankImportSelection(allowedQuestionType?: QuestionType) {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [selectedQuestionsById, setSelectedQuestionsById] = useState<
         Record<string, SelectedImportQuestionRecord>
     >({});
     const [alreadyAddedIds, setAlreadyAddedIds] = useState<string[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedQuestionType, setSelectedQuestionType] = useState<QuestionType | 'all'>('all');
+    const [selectedQuestionType, setSelectedQuestionType] = useState<QuestionType | 'all'>(
+        allowedQuestionType ?? 'all',
+    );
     const [selectedCollectionId, setSelectedCollectionId] = useState<string>(ALL_COLLECTIONS_ID);
     const [currentPage, setCurrentPage] = useState(1);
+
+    useEffect(() => {
+        if (allowedQuestionType) {
+            setSelectedQuestionType(allowedQuestionType);
+            setSelectedQuestionsById((currentQuestions) => {
+                const nextQuestions = { ...currentQuestions };
+                const nextIds: string[] = [];
+                Object.keys(nextQuestions).forEach((id) => {
+                    if (nextQuestions[id]?.question.type === allowedQuestionType) {
+                        nextIds.push(id);
+                    } else {
+                        delete nextQuestions[id];
+                    }
+                });
+                setSelectedIds(nextIds);
+                return nextQuestions;
+            });
+        }
+    }, [allowedQuestionType]);
 
     const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
     const selectedQuestions = useMemo(
@@ -34,7 +55,7 @@ export function useQuestionBankImportSelection() {
         setSelectedQuestionsById({});
         setAlreadyAddedIds(options?.preserveAlreadyAddedIds ?? []);
         setSearchQuery('');
-        setSelectedQuestionType('all');
+        setSelectedQuestionType(allowedQuestionType ?? 'all');
         setSelectedCollectionId(ALL_COLLECTIONS_ID);
         setCurrentPage(1);
     };

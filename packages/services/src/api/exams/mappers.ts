@@ -251,6 +251,7 @@ export function mapExam(apiExam: ApiExamSummary | ApiExamDetail): ProctorExam {
             'questionSections' in apiExam
                 ? apiExam.questionSections.map((section) => ({
                       id: section.id,
+                      questionType: (section.questionType as any) ?? null,
                       title: section.title,
                       description: section.description ?? null,
                       orderIndex: section.orderIndex,

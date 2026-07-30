@@ -7,6 +7,7 @@ import { getReportingExamContext } from '../reporting/services/get-reporting-exa
 import { EntitlementsRepository } from '../access/data/entitlements.repository';
 import { grantMakeupExamWindow } from './services/grant-makeup-exam-window';
 import { grantRetakeExamWindow } from './services/grant-retake-exam-window';
+import { resolveLifecycleStudentId } from './services/resolve-lifecycle-student-id';
 
 vi.mock('./services/lock-exam-attempt', () => ({
     lockExamAttempt: vi.fn(),
@@ -28,6 +29,10 @@ vi.mock('./services/grant-makeup-exam-window', () => ({
 
 vi.mock('./services/grant-retake-exam-window', () => ({
     grantRetakeExamWindow: vi.fn(),
+}));
+
+vi.mock('./services/resolve-lifecycle-student-id', () => ({
+    resolveLifecycleStudentId: vi.fn(),
 }));
 
 describe('registerLifecycleRoutes', () => {
@@ -55,6 +60,9 @@ describe('registerLifecycleRoutes', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        vi.mocked(resolveLifecycleStudentId).mockImplementation(
+            async (_dbClient, studentId) => studentId,
+        );
     });
 
     it('returns 403 when the caller lacks examination update permissions', async () => {

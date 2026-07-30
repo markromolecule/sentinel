@@ -56,6 +56,7 @@ export function useExamBuilder(): UseExamBuilderResult {
     const sectionManagement = useSectionManagement({
         questionSections,
         questions,
+        questionTypes,
     });
 
     return {

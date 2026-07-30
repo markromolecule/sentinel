@@ -113,6 +113,7 @@ export async function getExamDetail(
         mediaPipeSandbox: telemetrySettings.value.mediaPipeSandbox,
         questionSections: sections.map((section) => ({
             id: section.exam_section_id,
+            questionType: section.question_type ?? null,
             title: section.title,
             description: section.description,
             orderIndex: section.order_index,

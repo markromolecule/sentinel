@@ -16,6 +16,46 @@ interface UseQuestionManagementProps {
     setEditingQuestion: (question: ExamQuestion | null) => void;
 }
 
+/**
+ * Guard to verify if a question of a given type can be added to a section.
+ * Returns true if valid, or a string error message if blocked.
+ */
+export function verifyQuestionAddition(
+    sectionId: string,
+    questionType: string,
+    questionSections: ExamQuestionSection[],
+    questions: ExamQuestion[],
+): { valid: true } | { valid: false; message: string } {
+    const targetSection = questionSections.find((s) => s.id === sectionId);
+    if (!targetSection) {
+        return { valid: false, message: 'Target section does not exist.' };
+    }
+
+    const sectionQuestions = questions.filter((q) => q.sectionId === sectionId);
+    const hasExistingQuestions = sectionQuestions.length > 0;
+    const resolvedType = targetSection.questionType;
+
+    if (!resolvedType) {
+        if (!hasExistingQuestions) {
+            return {
+                valid: false,
+                message: 'Please select a question type for this section before adding questions.',
+            };
+        }
+        // Legacy mixed section - allow
+        return { valid: true };
+    }
+
+    if (resolvedType !== questionType) {
+        return {
+            valid: false,
+            message: `Cannot add question. This section only accepts ${resolvedType.replace('_', ' ')} questions.`,
+        };
+    }
+
+    return { valid: true };
+}
+
 export function useQuestionManagement({
     id,
     questionSections,
@@ -33,6 +73,12 @@ export function useQuestionManagement({
 
     const handleCreateQuestion = async (payload: QuestionBuilderPayload, sectionId?: string) => {
         const targetSectionId = resolveTargetSectionId(sectionId);
+        const check = verifyQuestionAddition(targetSectionId, payload.type, questionSections, questions);
+        if (!check.valid) {
+            toast.error(check.message);
+            return;
+        }
+
         const validationResult = await validateQuestionTypeContentMutation.mutateAsync({
             type: payload.type,
             content: payload.content,
@@ -58,6 +104,12 @@ export function useQuestionManagement({
 
     const handleDuplicateQuestion = async (payload: QuestionBuilderPayload, sectionId?: string) => {
         const targetSectionId = resolveTargetSectionId(sectionId);
+        const check = verifyQuestionAddition(targetSectionId, payload.type, questionSections, questions);
+        if (!check.valid) {
+            toast.error(check.message);
+            return;
+        }
+
         const validationResult = await validateQuestionTypeContentMutation.mutateAsync({
             type: payload.type,
             content: payload.content,
@@ -89,6 +141,9 @@ export function useQuestionManagement({
     };
 
     const handleUpdateQuestion = async (questionId: string, payload: QuestionBuilderPayload) => {
+        const question = questions.find((q) => q.id === questionId);
+        if (!question) return;
+
         const validationResult = await validateQuestionTypeContentMutation.mutateAsync({
             type: payload.type,
             content: payload.content,
@@ -143,6 +198,15 @@ export function useQuestionManagement({
 
     const handleImportQuestions = (newQuestions: ExamQuestion[], sectionId?: string) => {
         const targetSectionId = resolveTargetSectionId(sectionId);
+
+        // Pre-validate all imported questions before performing any mutations
+        for (const q of newQuestions) {
+            const check = verifyQuestionAddition(targetSectionId, q.type, questionSections, questions);
+            if (!check.valid) {
+                toast.error(check.message);
+                return;
+            }
+        }
 
         newQuestions.forEach((q, index) => {
             addQuestion({

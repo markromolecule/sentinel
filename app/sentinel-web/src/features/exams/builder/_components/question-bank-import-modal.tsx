@@ -14,9 +14,10 @@ export function QuestionBankImportModal({
     onOpenChange,
     onImport,
     existingQuestions = [],
+    allowedQuestionType,
 }: QuestionBankImportModalProps) {
     const questionsScrollContainerRef = useRef<HTMLDivElement | null>(null);
-    const modal = useQuestionBankImportModal(existingQuestions);
+    const modal = useQuestionBankImportModal(existingQuestions, allowedQuestionType);
 
     const handleImport = () => {
         onImport(modal.buildImportedQuestions());

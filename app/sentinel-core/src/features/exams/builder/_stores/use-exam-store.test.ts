@@ -174,4 +174,38 @@ describe('useExamStore', () => {
             },
         ]);
     });
+
+    it('hydrates section questionType and description from the exam workspace', () => {
+        useExamStore.getState().hydrateExam(
+            createExam({
+                questionSections: [
+                    {
+                        id: 'section-1',
+                        title: 'Multiple Choice Part',
+                        description:
+                            'Read each question carefully. Choose the one best answer from the options provided.',
+                        questionType: 'MULTIPLE_CHOICE',
+                        orderIndex: 0,
+                    } as any,
+                ],
+            }),
+        );
+
+        expect(useExamStore.getState().questionSections[0]?.questionType).toBe('MULTIPLE_CHOICE');
+        expect(useExamStore.getState().questionSections[0]?.description).toBe(
+            'Read each question carefully. Choose the one best answer from the options provided.',
+        );
+    });
+
+    it('setting a section questionType updates questionType, title, and description atomically', () => {
+        useExamStore.getState().hydrateExam(createExam());
+        
+        useExamStore.getState().updateQuestionSection('section-1', { questionType: 'MULTIPLE_CHOICE' });
+
+        expect(useExamStore.getState().questionSections[0]?.questionType).toBe('MULTIPLE_CHOICE');
+        expect(useExamStore.getState().questionSections[0]?.title).toBe('Multiple Choice');
+        expect(useExamStore.getState().questionSections[0]?.description).toBe(
+            'Read each question carefully. Choose the one best answer from the options provided.',
+        );
+    });
 });

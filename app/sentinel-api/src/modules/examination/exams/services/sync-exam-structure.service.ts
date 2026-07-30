@@ -51,6 +51,7 @@ export async function syncExamStructure({
             body.questionSections ??
             currentSections.map((section) => ({
                 id: section.exam_section_id,
+                questionType: section.question_type,
                 title: section.title,
                 description: section.description,
                 orderIndex: section.order_index,

@@ -1,13 +1,32 @@
 import { toast } from 'sonner';
 import { type ExamQuestion, type ExamQuestionSection } from '@sentinel/shared/types';
-import { useExamStore } from '@/features/exams/builder/_stores/use-exam-store';
+import { useExamStore, buildQuestionSectionCopy } from '@/features/exams/builder/_stores/use-exam-store';
 
 interface UseSectionManagementProps {
     questionSections: ExamQuestionSection[];
     questions: ExamQuestion[];
+    questionTypes: Array<{ value: string; label: string; instruction: string }>;
 }
 
-export function useSectionManagement({ questionSections, questions }: UseSectionManagementProps) {
+/**
+ * Guard to verify if a target question type is compatible with a section's existing questions.
+ *
+ * @param sectionId - The section ID to verify.
+ * @param targetType - The target question type (or null).
+ * @param questions - The list of all questions in the store.
+ * @returns True if compatible, false otherwise.
+ */
+export function isSectionTypeCompatible(
+    sectionId: string,
+    targetType: string | null,
+    questions: Array<{ sectionId?: string | null; type: string }>
+): boolean {
+    if (!targetType) return true;
+    const sectionQuestions = questions.filter((q) => q.sectionId === sectionId);
+    return sectionQuestions.every((q) => q.type === targetType);
+}
+
+export function useSectionManagement({ questionSections, questions, questionTypes }: UseSectionManagementProps) {
     const {
         addQuestionSection,
         updateQuestionSection,
@@ -25,6 +44,29 @@ export function useSectionManagement({ questionSections, questions }: UseSection
         sectionId: string,
         updates: Partial<ExamQuestionSection>,
     ) => {
+        if ('questionType' in updates) {
+            const newType = updates.questionType;
+            if (newType !== undefined) {
+                if (!isSectionTypeCompatible(sectionId, newType, questions)) {
+                    toast.error('Cannot change section type. Existing questions in this section do not match the selected type.');
+                    return;
+                }
+
+                if (newType === null) {
+                    updateQuestionSection(sectionId, { questionType: null });
+                } else {
+                    const definition = questionTypes.find((t) => t.value === newType);
+                    if (definition) {
+                        const copy = buildQuestionSectionCopy(definition);
+                        updateQuestionSection(sectionId, copy);
+                    } else {
+                        updateQuestionSection(sectionId, { questionType: newType });
+                    }
+                }
+                return;
+            }
+        }
+
         updateQuestionSection(sectionId, updates);
     };
 

@@ -10,6 +10,7 @@ export interface QuestionTypeDefinition {
     value: QuestionType;
     label: string;
     description: string;
+    instruction: string;
     defaultContent: ExamQuestionContent;
 }
 

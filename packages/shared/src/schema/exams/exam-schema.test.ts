@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createExamBodySchema, updateExamBodySchema } from './exam-schema';
+import { createExamBodySchema, updateExamBodySchema, examSectionSchema, examSectionInputSchema } from './exam-schema';
 
 describe('exam-schema inheritance contracts', () => {
     const validCreateBody = {
@@ -47,5 +47,70 @@ describe('exam-schema inheritance contracts', () => {
                 webSecurity: null,
             },
         });
+    });
+});
+
+describe('examSectionSchema and examSectionInputSchema questionType contracts', () => {
+    const validSection = {
+        id: 'd3b07384-d113-4956-a5a0-b423366cae66',
+        title: 'Multiple Choice Section',
+        description: 'Select the best answer from the choices provided.',
+        orderIndex: 0,
+    };
+
+    it('allows questionType to be a valid QuestionType, null, or omitted', () => {
+        // Valid QuestionType
+        const result1 = examSectionSchema.safeParse({
+            ...validSection,
+            questionType: 'MULTIPLE_CHOICE',
+        });
+        expect(result1.success).toBe(true);
+        expect(result1.data?.questionType).toBe('MULTIPLE_CHOICE');
+
+        // Null questionType (legacy/empty/mixed sections)
+        const result2 = examSectionSchema.safeParse({
+            ...validSection,
+            questionType: null,
+        });
+        expect(result2.success).toBe(true);
+        expect(result2.data?.questionType).toBeNull();
+
+        // Omitted questionType
+        const result3 = examSectionSchema.safeParse(validSection);
+        expect(result3.success).toBe(true);
+        expect(result3.data?.questionType).toBeUndefined();
+    });
+
+    it('allows questionType to be null or omitted on input schema', () => {
+        const resultInput1 = examSectionInputSchema.safeParse({
+            title: 'Multiple Choice Section',
+            orderIndex: 0,
+            questionType: 'MULTIPLE_CHOICE',
+        });
+        expect(resultInput1.success).toBe(true);
+        expect(resultInput1.data?.questionType).toBe('MULTIPLE_CHOICE');
+
+        const resultInput2 = examSectionInputSchema.safeParse({
+            title: 'Legacy Section',
+            orderIndex: 0,
+            questionType: null,
+        });
+        expect(resultInput2.success).toBe(true);
+        expect(resultInput2.data?.questionType).toBeNull();
+
+        const resultInput3 = examSectionInputSchema.safeParse({
+            title: 'Legacy Section',
+            orderIndex: 0,
+        });
+        expect(resultInput3.success).toBe(true);
+        expect(resultInput3.data?.questionType).toBeUndefined();
+    });
+
+    it('rejects invalid questionType values', () => {
+        const result = examSectionSchema.safeParse({
+            ...validSection,
+            questionType: 'INVALID_TYPE',
+        });
+        expect(result.success).toBe(false);
     });
 });

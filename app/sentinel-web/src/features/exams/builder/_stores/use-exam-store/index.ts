@@ -9,7 +9,7 @@ import {
     DEFAULT_EXAM_CONFIGURATION,
     DEFAULT_EXAM_STORE_STATE,
 } from './constants';
-import { createQuestionSection, getEndDateTime, normalizeExamStructure } from './helpers';
+import { createQuestionSection, getEndDateTime, normalizeExamStructure, QUESTION_TYPE_INSTRUCTIONS } from './helpers';
 
 export * from './types';
 export * from './constants';
@@ -141,7 +141,22 @@ export const useExamStore = create(
                     (section) => section.id === sectionId,
                 );
                 if (sectionIndex !== -1) {
-                    Object.assign(state.questionSections[sectionIndex], updates);
+                    const currentSection = state.questionSections[sectionIndex];
+                    let finalUpdates = { ...updates };
+                    if ('questionType' in updates && updates.questionType !== undefined) {
+                        const newType = updates.questionType;
+                        if (newType === null) {
+                            finalUpdates.questionType = null;
+                        } else {
+                            const meta = QUESTION_TYPE_INSTRUCTIONS[newType];
+                            if (meta) {
+                                finalUpdates.questionType = newType;
+                                finalUpdates.title = meta.label;
+                                finalUpdates.description = meta.instruction;
+                            }
+                        }
+                    }
+                    Object.assign(currentSection, finalUpdates);
                     state.isDirty = true;
                 }
             });

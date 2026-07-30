@@ -139,6 +139,51 @@ describe('map reporting response', () => {
         expect(student.needsMakeup).toBe(false);
     });
 
+    it('does not keep a student in the makeup queue when a makeup remediation was already granted', () => {
+        const student = mapReportStudentSummary(
+            {
+                student_user_id: '11111111-1111-4111-8111-111111111111',
+                student_record_id: '22222222-2222-4222-8222-222222222222',
+                student_number: '2024-0005',
+                first_name: 'Joel',
+                last_name: 'Lim',
+                attempt_id: null,
+                attempt_status: null,
+                started_at: null,
+                completed_at: null,
+                time_spent_minutes: null,
+                score: null,
+                total_score: null,
+                attempt_count: 0,
+                incident_count: 0,
+                open_incident_count: 0,
+                pending_incident_count: 0,
+                reviewed_incident_count: 0,
+                confirmed_incident_count: 0,
+                dismissed_incident_count: 0,
+                highest_incident_type: null,
+                highest_incident_severity: null,
+                active_override_type: null,
+            },
+            75,
+            {
+                remediations: [
+                    {
+                        remediationId: '33333333-3333-4333-8333-333333333333',
+                        remediationExamId: '44444444-4444-4444-8444-444444444444',
+                        remediationType: 'MAKEUP',
+                        scheduledDate: '2026-07-31T01:00:00.000Z',
+                        endDateTime: '2026-07-31T03:00:00.000Z',
+                        title: 'Final Exam (Makeup)',
+                        status: 'PUBLISHED',
+                    },
+                ],
+            },
+        );
+
+        expect(student.needsMakeup).toBe(false);
+    });
+
     it('builds the report summary with averages and action item counts', () => {
         const report = buildExamReport({
             exam: {
