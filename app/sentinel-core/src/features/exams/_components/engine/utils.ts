@@ -76,6 +76,7 @@ export function getExamContextDetails({
         sourceEvidence: questionBody,
         passageContent: questionPassageContent,
         passageType: questionPassageType,
+        fallbackToSourceEvidence: false,
     });
 
     if (renderedPassage) {

@@ -111,8 +111,9 @@ export async function getExamMonitoringStudentDetail({
         .where('ea.exam_id', '=', examId)
         .where(sql<boolean>`(st.user_id = ${studentId} or st.student_id = ${studentId})`);
 
-    const latestAttempt = (await applyMonitoringAttemptOrdering(latestAttemptQuery)
-        .executeTakeFirst()) as MonitoringStudentRow | undefined;
+    const latestAttempt = (await applyMonitoringAttemptOrdering(
+        latestAttemptQuery,
+    ).executeTakeFirst()) as MonitoringStudentRow | undefined;
 
     if (!latestAttempt) {
         throw new HTTPException(404, {

@@ -106,7 +106,11 @@ describe('EvidenceCandidateService', () => {
             );
 
         const first = await EvidenceCandidateService.process({} as any, payload, payload.studentId);
-        const second = await EvidenceCandidateService.process({} as any, payload, payload.studentId);
+        const second = await EvidenceCandidateService.process(
+            {} as any,
+            payload,
+            payload.studentId,
+        );
 
         expect(first).toEqual({
             telemetryDisposition: 'inserted',
@@ -171,7 +175,11 @@ describe('EvidenceCandidateService', () => {
             }),
         );
 
-        const result = await EvidenceCandidateService.process({} as any, payload, payload.studentId);
+        const result = await EvidenceCandidateService.process(
+            {} as any,
+            payload,
+            payload.studentId,
+        );
 
         expect(result).toMatchObject({
             telemetryDisposition: 'aggregated',
@@ -196,7 +204,11 @@ describe('EvidenceCandidateService', () => {
                 }),
             );
 
-        const medium = await EvidenceCandidateService.process({} as any, payload, payload.studentId);
+        const medium = await EvidenceCandidateService.process(
+            {} as any,
+            payload,
+            payload.studentId,
+        );
         const high = await EvidenceCandidateService.process({} as any, payload, payload.studentId);
 
         expect(medium.evidenceDecision).toBe('UPLOAD');
@@ -206,7 +218,11 @@ describe('EvidenceCandidateService', () => {
     it('maps policy ignore to NOT_ELIGIBLE', async () => {
         vi.mocked(TelemetryIngestionService.persistEvidenceCandidate).mockResolvedValue(null);
 
-        const result = await EvidenceCandidateService.process({} as any, payload, payload.studentId);
+        const result = await EvidenceCandidateService.process(
+            {} as any,
+            payload,
+            payload.studentId,
+        );
 
         expect(result).toEqual({
             telemetryDisposition: 'ignored',
@@ -224,7 +240,11 @@ describe('EvidenceCandidateService', () => {
             new HTTPException(403, { message: 'Evidence disabled' }),
         );
 
-        const result = await EvidenceCandidateService.process({} as any, payload, payload.studentId);
+        const result = await EvidenceCandidateService.process(
+            {} as any,
+            payload,
+            payload.studentId,
+        );
 
         expect(result).toEqual({
             telemetryDisposition: 'aggregated',

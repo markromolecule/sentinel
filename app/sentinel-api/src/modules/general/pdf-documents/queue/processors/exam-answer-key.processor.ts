@@ -50,10 +50,7 @@ export class ExamAnswerKeyDocumentProcessor implements PdfDocumentProcessor {
             examId,
             exportRecord.institution_id!,
         );
-        const answerKeyData = mapAnswerKeySourceToViewModel(
-            answerKeySource,
-            'Sentinel Support',
-        );
+        const answerKeyData = mapAnswerKeySourceToViewModel(answerKeySource, 'Sentinel Support');
 
         const pdfBuffer = await renderExamAnswerKeyPdf(
             headerConfig,
@@ -69,7 +66,7 @@ export class ExamAnswerKeyDocumentProcessor implements PdfDocumentProcessor {
         completedAt: Date,
         bucket: string,
         storagePath: string,
-        resolvedTemplate: { templateId: string | null;[key: string]: any },
+        resolvedTemplate: { templateId: string | null; [key: string]: any },
     ): Record<string, any> {
         return {
             status: 'READY',

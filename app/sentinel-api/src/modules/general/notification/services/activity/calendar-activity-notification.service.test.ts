@@ -10,8 +10,6 @@ describe('CalendarActivityNotificationService', () => {
         vi.restoreAllMocks();
     });
 
-
-
     describe('mapCalendarAudienceToRecipientRoles', () => {
         it('excludes support recipients for support-created ALL events', () => {
             expect(
@@ -82,7 +80,9 @@ describe('CalendarActivityNotificationService', () => {
             const dbClient = {} as any;
             vi.spyOn(activityBaseService, 'getUserDisplayName').mockResolvedValue('Morgan Admin');
             vi.spyOn(activityBaseService, 'getUserPrimaryRole').mockResolvedValue('admin');
-            vi.spyOn(activityBaseService, 'notifyInstitutionActivity').mockResolvedValue(undefined as any);
+            vi.spyOn(activityBaseService, 'notifyInstitutionActivity').mockResolvedValue(
+                undefined as any,
+            );
 
             await CalendarActivityNotificationService.notifyCalendarEventCreated({
                 dbClient,
@@ -127,7 +127,9 @@ describe('CalendarActivityNotificationService', () => {
             const dbClient = {} as any;
             vi.spyOn(activityBaseService, 'getUserDisplayName').mockResolvedValue('Morgan Admin');
             vi.spyOn(activityBaseService, 'getUserPrimaryRole').mockResolvedValue('admin');
-            vi.spyOn(activityBaseService, 'notifyInstitutionActivity').mockResolvedValue(undefined as any);
+            vi.spyOn(activityBaseService, 'notifyInstitutionActivity').mockResolvedValue(
+                undefined as any,
+            );
 
             await CalendarActivityNotificationService.notifyCalendarEventCreated({
                 dbClient,
@@ -161,7 +163,9 @@ describe('CalendarActivityNotificationService', () => {
             const dbClient = {} as any;
             vi.spyOn(activityBaseService, 'getUserDisplayName').mockResolvedValue('Morgan Admin');
             vi.spyOn(activityBaseService, 'getUserPrimaryRole').mockResolvedValue('admin');
-            vi.spyOn(activityBaseService, 'notifyInstitutionActivity').mockResolvedValue(undefined as any);
+            vi.spyOn(activityBaseService, 'notifyInstitutionActivity').mockResolvedValue(
+                undefined as any,
+            );
 
             await CalendarActivityNotificationService.notifyCalendarEventCreated({
                 dbClient,
@@ -180,5 +184,4 @@ describe('CalendarActivityNotificationService', () => {
             expect(activityBaseService.notifyInstitutionActivity).not.toHaveBeenCalled();
         });
     });
-
 });

@@ -25,15 +25,16 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         <div
             className={cn(
                 'bg-background text-foreground flex min-h-screen flex-col pb-20 md:pb-0',
-                isMessages &&
-                    'h-dvh overflow-hidden md:h-auto md:min-h-screen md:overflow-visible',
+                isMessages && 'h-dvh overflow-hidden md:h-auto md:min-h-screen md:overflow-visible',
             )}
         >
             <StudentHeader />
             <main
                 className={cn(
                     'flex-1',
-                    isMessages ? 'flex min-h-0 flex-1 flex-col overflow-hidden md:block md:overflow-visible' : '',
+                    isMessages
+                        ? 'flex min-h-0 flex-1 flex-col overflow-hidden md:block md:overflow-visible'
+                        : '',
                 )}
             >
                 <PageShell
@@ -41,7 +42,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                     maxWidth={isMessages ? 'full' : '2xl'}
                     className={cn(
                         isMessages &&
-                            'min-h-0 flex-1 gap-0 overflow-hidden p-0 md:mx-auto md:px-4 md:sm:px-6 md:p-6 md:max-w-7xl md:flex-none md:overflow-visible md:gap-6',
+                            'min-h-0 flex-1 gap-0 overflow-hidden p-0 md:mx-auto md:max-w-7xl md:flex-none md:gap-6 md:overflow-visible md:p-6 md:px-4 md:sm:px-6',
                     )}
                 >
                     {children}

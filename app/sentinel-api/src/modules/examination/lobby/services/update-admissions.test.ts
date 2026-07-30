@@ -36,7 +36,7 @@ describe('updateAdmissions', () => {
             'exam-123',
             ['student-1'],
             'APPROVED',
-            'instructor-456'
+            'instructor-456',
         );
 
         expect(result).toEqual({ updatedCount: 1 });
@@ -79,7 +79,7 @@ describe('updateAdmissions', () => {
             'exam-123',
             ['student-1'],
             'REJECTED',
-            'instructor-456'
+            'instructor-456',
         );
 
         expect(NotificationService.createNotification).toHaveBeenCalledWith({
@@ -121,7 +121,7 @@ describe('updateAdmissions', () => {
             'exam-123',
             ['student-1'],
             'APPROVED',
-            'instructor-456'
+            'instructor-456',
         );
 
         expect(result).toEqual({ updatedCount: 1 });
@@ -145,7 +145,7 @@ describe('updateAdmissions', () => {
         } as any;
 
         vi.mocked(NotificationService.createNotification).mockRejectedValueOnce(
-            new Error('Notification DB error')
+            new Error('Notification DB error'),
         );
 
         const result = await updateAdmissions(
@@ -153,7 +153,7 @@ describe('updateAdmissions', () => {
             'exam-123',
             ['student-1'],
             'APPROVED',
-            'instructor-456'
+            'instructor-456',
         );
 
         expect(result).toEqual({ updatedCount: 2 });

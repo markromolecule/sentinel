@@ -32,9 +32,9 @@ export const reconcileEvidenceRoute = createRoute({
     },
 });
 
-export const reconcileEvidenceRouteHandler: AppRouteHandler<
-    typeof reconcileEvidenceRoute
-> = async (c) => {
+export const reconcileEvidenceRouteHandler: AppRouteHandler<typeof reconcileEvidenceRoute> = async (
+    c,
+) => {
     try {
         const authHeader = c.req.header('Authorization');
         const cronSecret = process.env.TELEMETRY_CRON_SECRET || process.env.CRON_SECRET;

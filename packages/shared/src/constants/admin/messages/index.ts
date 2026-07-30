@@ -15,4 +15,3 @@ export const MESSAGES_QUERY_KEYS = {
     recipients: (search: string, limit?: number) =>
         ['/messages', 'recipients', { search, limit }] as const,
 };
-

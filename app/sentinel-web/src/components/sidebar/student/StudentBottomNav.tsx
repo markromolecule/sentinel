@@ -61,7 +61,7 @@ export default function StudentBottomNav() {
                 <Drawer>
                     <DrawerTrigger asChild>
                         <div className="text-muted-foreground hover:text-foreground flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg py-2 transition-colors">
-                            <div className="relative flex h-6 w-6 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#323d8f] to-[#4a5bb8] text-[8px] font-bold text-white ring-2 ring-white/10 shadow-sm">
+                            <div className="relative flex h-6 w-6 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#323d8f] to-[#4a5bb8] text-[8px] font-bold text-white shadow-sm ring-2 ring-white/10">
                                 {isLoading ? (
                                     '...'
                                 ) : profile?.avatarUrl ? (
@@ -80,7 +80,7 @@ export default function StudentBottomNav() {
                     <DrawerContent className="bg-background border-border/40 text-foreground border-t">
                         <div className="mx-auto w-full max-w-sm">
                             <DrawerHeader className="flex flex-col items-center gap-4 py-6">
-                                <div className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#323d8f] to-[#4a5bb8] text-2xl font-bold text-white ring-4 ring-white/10 shadow-md">
+                                <div className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#323d8f] to-[#4a5bb8] text-2xl font-bold text-white shadow-md ring-4 ring-white/10">
                                     {isLoading ? (
                                         '...'
                                     ) : profile?.avatarUrl ? (

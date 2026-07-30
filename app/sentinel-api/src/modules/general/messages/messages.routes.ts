@@ -23,7 +23,6 @@ import {
     getMessageRecipientsRouteHandler,
 } from './controllers/get-message-recipients.controller';
 
-
 const messagesRoutes = new OpenAPIHono<HonoEnv>();
 
 messagesRoutes.use('*', authMiddleware);
@@ -35,6 +34,5 @@ messagesRoutes
     .openapi(createDirectConversationRoute, createDirectConversationRouteHandler)
     .openapi(sendMessageRoute, sendMessageRouteHandler)
     .openapi(markConversationReadRoute, markConversationReadRouteHandler);
-
 
 export default messagesRoutes;

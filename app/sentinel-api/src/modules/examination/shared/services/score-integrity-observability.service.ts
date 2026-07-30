@@ -1,10 +1,5 @@
 type ScoreIntegrityBoundary =
-    | 'prepare'
-    | 'commit'
-    | 'history'
-    | 'report'
-    | 'grading'
-    | 'grading_dual_read';
+    'prepare' | 'commit' | 'history' | 'report' | 'grading' | 'grading_dual_read';
 
 type QuestionReportLike = {
     awardedScore?: number | null;

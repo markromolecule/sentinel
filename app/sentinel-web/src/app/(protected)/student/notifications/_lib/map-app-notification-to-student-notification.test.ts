@@ -47,7 +47,9 @@ describe('resolveStudentNotificationHref', () => {
             resource: { type: 'INSTITUTION_ACTIVITY', id: 'conv-123', label: 'Msg' },
             metadata: { conversationId: 'conv-123' },
         });
-        expect(resolveStudentNotificationHref(notification)).toBe('/student/message?conversationId=conv-123');
+        expect(resolveStudentNotificationHref(notification)).toBe(
+            '/student/message?conversationId=conv-123',
+        );
     });
 
     it('resolves INSTITUTION_ACTIVITY with calendarEventId to calendar page', () => {
@@ -70,7 +72,9 @@ describe('resolveStudentNotificationHref', () => {
         const notification = buildAppNotification({
             resource: { type: 'EXAM_ASSIGNMENT', id: 'exam-123', label: 'Exam' },
         });
-        expect(resolveStudentNotificationHref(notification)).toBe('/student/exam/exam-123/instruction');
+        expect(resolveStudentNotificationHref(notification)).toBe(
+            '/student/exam/exam-123/instruction',
+        );
     });
 
     it('resolves INSTRUCTOR_SUBJECT_REQUEST to history page', () => {

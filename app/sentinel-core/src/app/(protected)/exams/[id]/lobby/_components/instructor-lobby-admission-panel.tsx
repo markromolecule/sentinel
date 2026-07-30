@@ -85,7 +85,9 @@ function StudentLobbyRow({
                     <p className="text-foreground truncate text-sm font-semibold">
                         {student.studentName}
                     </p>
-                    <p className="text-muted-foreground text-xs">{student.studentNumber ?? 'N/A'}</p>
+                    <p className="text-muted-foreground text-xs">
+                        {student.studentNumber ?? 'N/A'}
+                    </p>
                 </div>
             </div>
             <div className="text-muted-foreground flex flex-wrap items-center gap-1.5 text-[11px]">
@@ -109,7 +111,9 @@ function QueueSection({
     children,
 }: QueueSectionProps) {
     return (
-        <section className={`flex flex-col rounded-lg border border-t-4 ${accentColor} bg-slate-50/50 h-full`}>
+        <section
+            className={`flex flex-col rounded-lg border border-t-4 ${accentColor} h-full bg-slate-50/50`}
+        >
             <div className="sticky top-0 z-10 flex flex-col gap-2 border-b bg-slate-50/95 p-3 backdrop-blur">
                 <div className="flex items-center gap-2">
                     {icon}
@@ -211,7 +215,9 @@ export function InstructorLobbyAdmissionPanel({
                             variant="outline"
                             className="w-full text-xs"
                             disabled={isUpdatingLobbyAdmissions || waitingStudentIds.length === 0}
-                            onClick={() => void onUpdateLobbyAdmissions(waitingStudentIds, 'APPROVED')}
+                            onClick={() =>
+                                void onUpdateLobbyAdmissions(waitingStudentIds, 'APPROVED')
+                            }
                         >
                             Admit All
                         </Button>

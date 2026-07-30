@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { auditAttemptScoreSnapshots, runAttemptScoreSnapshotAudit } from './audit-attempt-score-snapshots';
+import {
+    auditAttemptScoreSnapshots,
+    runAttemptScoreSnapshotAudit,
+} from './audit-attempt-score-snapshots';
 import { dbClient } from '@sentinel/db';
 import { getExamConfigurationState } from '../modules/examination/configuration/configuration.service';
 import { getExamConfigurationData } from '../modules/examination/exams/data/get-exam-configuration';

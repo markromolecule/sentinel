@@ -66,16 +66,14 @@ export function formatTimer(totalSeconds: number) {
 export function getRuntimePassageDetails({
     questionPassageContent,
     questionPassageType,
-    questionSourceEvidence,
 }: {
     questionPassageContent?: string | null;
     questionPassageType?: 'plain' | 'html' | null;
-    questionSourceEvidence?: string | null;
 }) {
     const renderedPassage = renderPassage({
         passageContent: questionPassageContent,
         passageType: questionPassageType,
-        sourceEvidence: questionSourceEvidence,
+        fallbackToSourceEvidence: false,
     });
 
     if (renderedPassage) {
@@ -113,6 +111,7 @@ export function getExamContextDetails({
         sourceEvidence: questionBody,
         passageContent: questionPassageContent,
         passageType: questionPassageType,
+        fallbackToSourceEvidence: false,
     });
 
     if (renderedPassage) {

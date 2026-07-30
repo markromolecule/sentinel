@@ -158,16 +158,15 @@ export function MessagingPageClient() {
     const selectedConversationExists = conversations.some(
         (conversation) => conversation.conversationId === selectedConversationId,
     );
-    const effectiveSelectedConversationId =
-        isMobile
-            ? (selectedConversationId ?? '')
-            : selectedConversationId === null
-              ? (conversations[0]?.conversationId ?? '')
-              : selectedConversationId !== '' &&
-                  !selectedConversationExists &&
-                  pendingConversation?.conversationId !== selectedConversationId
-                ? (conversations[0]?.conversationId ?? '')
-                : selectedConversationId;
+    const effectiveSelectedConversationId = isMobile
+        ? (selectedConversationId ?? '')
+        : selectedConversationId === null
+          ? (conversations[0]?.conversationId ?? '')
+          : selectedConversationId !== '' &&
+              !selectedConversationExists &&
+              pendingConversation?.conversationId !== selectedConversationId
+            ? (conversations[0]?.conversationId ?? '')
+            : selectedConversationId;
     useMessageRealtime({
         enabled: canViewMessages && !!effectiveSelectedConversationId,
         conversationId: effectiveSelectedConversationId || undefined,
@@ -200,7 +199,6 @@ export function MessagingPageClient() {
             (left, right) =>
                 Number(onlineUserIds.has(right.id)) - Number(onlineUserIds.has(left.id)),
         );
-
 
     function selectConversation(conversation: ConversationSummary) {
         startTransition(() => {
@@ -338,14 +336,14 @@ export function MessagingPageClient() {
             className={cn(
                 isMessagesRoute
                     ? 'flex h-full min-h-0 flex-1 overflow-hidden'
-                    : 'grid h-full min-h-0 overflow-hidden md:h-[calc(100vh-20rem)] md:min-h-[520px] md:overflow-visible gap-4 md:grid-cols-[22rem_minmax(0,1fr)]',
+                    : 'grid h-full min-h-0 gap-4 overflow-hidden md:h-[calc(100vh-20rem)] md:min-h-[520px] md:grid-cols-[22rem_minmax(0,1fr)] md:overflow-visible',
             )}
         >
             <aside
                 className={cn(
                     isMessagesRoute
                         ? 'border-border bg-card h-full w-full shrink-0 flex-col border-r md:w-[320px] lg:w-[380px]'
-                        : 'bg-muted/40 border-border/60 flex min-h-0 flex-col overflow-hidden h-full w-full md:rounded-3xl md:border',
+                        : 'bg-muted/40 border-border/60 flex h-full min-h-0 w-full flex-col overflow-hidden md:rounded-3xl md:border',
                     effectiveSelectedConversationId
                         ? isMessagesRoute
                             ? 'hidden md:flex'
@@ -396,7 +394,7 @@ export function MessagingPageClient() {
                 className={cn(
                     isMessagesRoute
                         ? 'bg-background relative flex h-full w-full flex-1 flex-col overflow-hidden'
-                        : 'bg-background border-border/60 min-h-0 overflow-hidden h-full w-full md:rounded-3xl md:border',
+                        : 'bg-background border-border/60 h-full min-h-0 w-full overflow-hidden md:rounded-3xl md:border',
                     effectiveSelectedConversationId
                         ? 'flex'
                         : isMessagesRoute
@@ -477,7 +475,7 @@ function MessagingPageFrame({
     children: ReactNode;
 }) {
     return (
-        <div className="flex flex-col h-full w-full min-h-0 flex-1 overflow-hidden md:overflow-visible">
+        <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden md:overflow-visible">
             {children}
         </div>
     );
@@ -489,14 +487,14 @@ export function MessagingPageSkeleton() {
             title="Messages"
             description="Collaborate across your institution network in one thread-based inbox."
         >
-            <div className="grid h-full md:h-[calc(100vh-20rem)] md:min-h-[520px] gap-4 md:grid-cols-[22rem_minmax(0,1fr)]">
-                <div className="space-y-3 md:rounded-3xl md:border p-4">
+            <div className="grid h-full gap-4 md:h-[calc(100vh-20rem)] md:min-h-[520px] md:grid-cols-[22rem_minmax(0,1fr)]">
+                <div className="space-y-3 p-4 md:rounded-3xl md:border">
                     <Skeleton className="h-10 w-full rounded-xl" />
                     <Skeleton className="h-10 w-full rounded-xl" />
                     <Skeleton className="h-20 w-full rounded-2xl" />
                     <Skeleton className="h-20 w-full rounded-2xl" />
                 </div>
-                <div className="space-y-4 md:rounded-3xl md:border p-4">
+                <div className="space-y-4 p-4 md:rounded-3xl md:border">
                     <Skeleton className="h-14 w-full rounded-2xl" />
                     <Skeleton className="h-[60%] w-full rounded-2xl" />
                     <Skeleton className="h-24 w-full rounded-2xl" />
@@ -799,7 +797,6 @@ function NewConversationPanel({
                                                 'No institution assigned'}
                                         </p>
                                     </div>
-
                                 </button>
                             );
                         })
@@ -856,7 +853,7 @@ function ConversationPanel({
         <>
             <div
                 className={cn(
-                    'bg-background/80 border-border/60 flex items-center justify-between border-b px-4 py-3 shrink-0 md:px-6',
+                    'bg-background/80 border-border/60 flex shrink-0 items-center justify-between border-b px-4 py-3 md:px-6',
                     isMessagesRoute ? 'bg-card h-16 px-4 py-0 md:h-20 md:px-6' : '',
                 )}
             >
@@ -888,7 +885,6 @@ function ConversationPanel({
                             >
                                 {participant?.name ?? 'Conversation'}
                             </h2>
-
                         </div>
                         {isMessagesRoute ? (
                             participant?.institution?.name && (
@@ -1045,7 +1041,7 @@ function ConversationPanel({
                                     : 'You can view this conversation, but sending is disabled.'
                             }
                             disabled={!canCreateMessages || isSendingMessage}
-                            className="h-11 min-h-0 resize-none rounded-2xl py-3 px-4"
+                            className="h-11 min-h-0 resize-none rounded-2xl px-4 py-3"
                             style={{ fieldSizing: 'fixed' }}
                         />
                     )}
@@ -1056,7 +1052,7 @@ function ConversationPanel({
                         className={cn(
                             isMessagesRoute
                                 ? 'bg-primary hover:bg-primary/90 h-12 w-12 shrink-0 rounded-md transition-colors'
-                                : 'h-11 w-11 shrink-0 rounded-full flex items-center justify-center',
+                                : 'flex h-11 w-11 shrink-0 items-center justify-center rounded-full',
                         )}
                     >
                         {isSendingMessage ? (

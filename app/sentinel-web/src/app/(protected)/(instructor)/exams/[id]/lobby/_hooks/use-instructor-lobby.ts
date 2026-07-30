@@ -1,11 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-    useApi,
-    useDebounce,
-    useOverrideReconnectLimitMutation,
-} from '@sentinel/hooks';
+import { useApi, useDebounce, useOverrideReconnectLimitMutation } from '@sentinel/hooks';
 import {
     getExamLobbyWaitingList,
     updateExamLobbyAdmissions,

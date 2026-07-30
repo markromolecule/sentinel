@@ -29,3 +29,27 @@ export class SourceMetadataValidationError extends QuestionNormalizationError {
         this.name = 'SourceMetadataValidationError';
     }
 }
+
+/**
+ * Thrown when the generated passage fails deterministic or semantic quality validation.
+ */
+export class PassageQualityValidationError extends QuestionNormalizationError {
+    public readonly slotId?: string;
+    public readonly type?: string;
+    public readonly violations?: Array<{ code: string; message: string }>;
+
+    constructor(
+        message: string,
+        details?: {
+            slotId?: string;
+            type?: string;
+            violations?: Array<{ code: string; message: string }>;
+        },
+    ) {
+        super(message);
+        this.name = 'PassageQualityValidationError';
+        this.slotId = details?.slotId;
+        this.type = details?.type;
+        this.violations = details?.violations;
+    }
+}

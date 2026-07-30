@@ -31,7 +31,10 @@ describe('EvidenceStorageService', () => {
             };
             vi.mocked(supabaseAdmin.storage.from).mockReturnValue(mockStorageFrom as any);
 
-            const result = await EvidenceStorageService.createSignedUploadTarget(mockBucket, mockPath);
+            const result = await EvidenceStorageService.createSignedUploadTarget(
+                mockBucket,
+                mockPath,
+            );
 
             expect(supabaseAdmin.storage.from).toHaveBeenCalledWith(mockBucket);
             expect(mockStorageFrom.createSignedUploadUrl).toHaveBeenCalledWith(mockPath);
@@ -51,8 +54,10 @@ describe('EvidenceStorageService', () => {
             vi.mocked(supabaseAdmin.storage.from).mockReturnValue(mockStorageFrom as any);
 
             await expect(
-                EvidenceStorageService.createSignedUploadTarget(mockBucket, mockPath)
-            ).rejects.toThrow('Storage signed upload target generation error: Provider connection failure');
+                EvidenceStorageService.createSignedUploadTarget(mockBucket, mockPath),
+            ).rejects.toThrow(
+                'Storage signed upload target generation error: Provider connection failure',
+            );
         });
     });
 
@@ -97,7 +102,7 @@ describe('EvidenceStorageService', () => {
             vi.mocked(supabaseAdmin.storage.from).mockReturnValue(mockStorageFrom as any);
 
             await expect(
-                EvidenceStorageService.inspectObject(mockBucket, mockPath)
+                EvidenceStorageService.inspectObject(mockBucket, mockPath),
             ).rejects.toThrow('Storage object inspection error: Object not found in storage');
         });
 
@@ -116,7 +121,7 @@ describe('EvidenceStorageService', () => {
             vi.mocked(supabaseAdmin.storage.from).mockReturnValue(mockStorageFrom as any);
 
             await expect(
-                EvidenceStorageService.inspectObject(mockBucket, mockPath)
+                EvidenceStorageService.inspectObject(mockBucket, mockPath),
             ).rejects.toThrow('Storage object inspection error: Missing file metadata in storage');
         });
     });
@@ -131,7 +136,11 @@ describe('EvidenceStorageService', () => {
             };
             vi.mocked(supabaseAdmin.storage.from).mockReturnValue(mockStorageFrom as any);
 
-            const result = await EvidenceStorageService.createSignedViewUrl(mockBucket, mockPath, 300);
+            const result = await EvidenceStorageService.createSignedViewUrl(
+                mockBucket,
+                mockPath,
+                300,
+            );
 
             expect(mockStorageFrom.createSignedUrl).toHaveBeenCalledWith(mockPath, 300);
             expect(result).toBe('https://supabase.co/view-url');
@@ -147,8 +156,10 @@ describe('EvidenceStorageService', () => {
             vi.mocked(supabaseAdmin.storage.from).mockReturnValue(mockStorageFrom as any);
 
             await expect(
-                EvidenceStorageService.createSignedViewUrl(mockBucket, mockPath, 300)
-            ).rejects.toThrow('Storage signed view URL generation error: Expired or invalid URL parameters');
+                EvidenceStorageService.createSignedViewUrl(mockBucket, mockPath, 300),
+            ).rejects.toThrow(
+                'Storage signed view URL generation error: Expired or invalid URL parameters',
+            );
         });
     });
 
@@ -163,7 +174,7 @@ describe('EvidenceStorageService', () => {
             vi.mocked(supabaseAdmin.storage.from).mockReturnValue(mockStorageFrom as any);
 
             await expect(
-                EvidenceStorageService.deleteObject(mockBucket, mockPath)
+                EvidenceStorageService.deleteObject(mockBucket, mockPath),
             ).resolves.not.toThrow();
 
             expect(mockStorageFrom.remove).toHaveBeenCalledWith([mockPath]);
@@ -178,9 +189,9 @@ describe('EvidenceStorageService', () => {
             };
             vi.mocked(supabaseAdmin.storage.from).mockReturnValue(mockStorageFrom as any);
 
-            await expect(
-                EvidenceStorageService.deleteObject(mockBucket, mockPath)
-            ).rejects.toThrow('Storage file deletion error: Network Timeout');
+            await expect(EvidenceStorageService.deleteObject(mockBucket, mockPath)).rejects.toThrow(
+                'Storage file deletion error: Network Timeout',
+            );
         });
     });
 });

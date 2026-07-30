@@ -242,7 +242,6 @@ describe('WebNotificationDropdown', () => {
         });
     });
 
-
     it('supports selecting and bulk-deleting notifications', async () => {
         mockUseNotificationsQuery.mockReturnValue({
             data: {
@@ -304,4 +303,3 @@ describe('WebNotificationDropdown', () => {
         expect(viewAllLink.getAttribute('href')).toBe('/student/notifications');
     });
 });
-

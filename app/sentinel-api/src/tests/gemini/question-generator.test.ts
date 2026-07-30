@@ -60,12 +60,46 @@ describe('Gemini question generator contracts', () => {
                     };
                 }
 
+                if (args.prompt.includes('critic') || args.prompt.includes('SLOTS TO EVALUATE')) {
+                    return {
+                        evaluations: [
+                            {
+                                slotId: 'slot-0',
+                                leaksAnswer: false,
+                                answerableFromPassage: true,
+                                reasonCode: 'SAFE',
+                                reason: 'Clear passage.',
+                            },
+                        ],
+                    };
+                }
+
+                if (args.prompt.includes('Repair')) {
+                    return {
+                        sourceFileName: 'lesson.pdf',
+                        sourcePageNumber: 3,
+                        sourceEvidence: 'The correct answer is 4.',
+                        passageContent: 'A passage about simple math.',
+                        difficulty: 'MODERATE',
+                        points: 1,
+                        content: {
+                            prompt: 'What is 2 + 2?',
+                            options: ['3', '4', '5', '6'],
+                            correctAnswer: '4',
+                        },
+                        topic: 'Math',
+                        cognitive_level: 'REMEMBERING',
+                        predicted_difficulty: 'EASY',
+                    };
+                }
+
                 return {
                     MULTIPLE_CHOICE: [
                         {
                             sourceFileName: 'lesson.pdf',
                             sourcePageNumber: 3,
                             sourceEvidence: 'The correct answer is 4.',
+                            passageContent: 'A passage about simple math.',
                             difficulty: 'MODERATE',
                             points: 1,
                             content: {
@@ -112,6 +146,9 @@ describe('Gemini question generator contracts', () => {
             sourceOrigin: 'AI_PDF',
             sourceFileName: 'lesson.pdf',
             sourcePageNumber: 3,
+            sourceEvidence: 'The correct answer is 4.',
+            passageContent: 'A passage about simple math.',
+            passageType: 'plain',
         });
     });
 
@@ -123,6 +160,7 @@ describe('Gemini question generator contracts', () => {
                     sourceFileName: 'algebra.pdf',
                     sourcePageNumber: 1,
                     sourceEvidence: 'The correct answer is 4.',
+                    passageContent: 'This is a passage about math.',
                     difficulty: 'medium',
                     points: 2,
                     tags: [' algebra ', 'algebra', ''],
@@ -172,6 +210,7 @@ describe('Gemini question generator contracts', () => {
                     sourceFileName: 'algebra.pdf',
                     sourcePageNumber: 1,
                     sourceEvidence: 'The Earth revolves around the Sun.',
+                    passageContent: 'This is a passage about solar system.',
                     difficulty: 'moderate',
                     points: 1,
                     content: {
@@ -211,6 +250,7 @@ describe('Gemini question generator contracts', () => {
                     sourceFileName: 'algebra.pdf',
                     sourcePageNumber: 2,
                     sourceEvidence: 'available means and affordable loss',
+                    passageContent: 'This is a passage about effectuation.',
                     difficulty: 'moderate',
                     points: 1,
                     content: {
@@ -245,6 +285,7 @@ describe('Gemini question generator contracts', () => {
                     sourceFileName: 'Week 3 – Global Server OS Statistics.pdf',
                     sourcePageNumber: 1,
                     sourceEvidence: 'The correct answer is 4.',
+                    passageContent: 'This is a passage.',
                     difficulty: 'moderate',
                     points: 1,
                     content: {
@@ -285,6 +326,7 @@ describe('Gemini question generator contracts', () => {
                     sourceFileName: 'algebra.pdf',
                     sourcePageNumber: 1,
                     sourceEvidence: 'available means affordable loss strategic partnerships',
+                    passageContent: 'This is a passage.',
                     difficulty: 'moderate',
                     points: 1,
                     content: {
@@ -318,6 +360,7 @@ describe('Gemini question generator contracts', () => {
                     sourceFileName: 'algebra.pdf',
                     sourcePageNumber: 1,
                     sourceEvidence: 'The correct answer is 4.',
+                    passageContent: 'This is a passage.',
                     difficulty: 'moderate',
                     points: 1,
                     content: {
@@ -345,6 +388,7 @@ describe('Gemini question generator contracts', () => {
                     sourceFileName: 'algebra.pdf',
                     sourcePageNumber: 1,
                     sourceEvidence: 'The correct answer is 4.',
+                    passageContent: 'This is a passage.',
                     difficulty: 'moderate',
                     points: 1,
                     content: {
@@ -389,6 +433,7 @@ describe('Gemini question generator contracts', () => {
                     sourceFileName: 'input_file_1.pdf',
                     sourcePageNumber: 2,
                     sourceEvidence: 'Evidence content',
+                    passageContent: 'This is a passage.',
                     content: {
                         prompt: 'Question?',
                         options: ['A', 'B'],
@@ -409,6 +454,7 @@ describe('Gemini question generator contracts', () => {
                     sourceFileName: 'chemistry-study-guide',
                     sourcePageNumber: 2,
                     sourceEvidence: 'Evidence content',
+                    passageContent: 'This is a passage.',
                     content: {
                         prompt: 'Question?',
                         options: ['A', 'B'],
@@ -429,6 +475,7 @@ describe('Gemini question generator contracts', () => {
                     sourceFileName: 'totally-hallucinated-name.pdf',
                     sourcePageNumber: 2,
                     sourceEvidence: 'Evidence content',
+                    passageContent: 'This is a passage.',
                     content: {
                         prompt: 'Question?',
                         options: ['A', 'B'],
@@ -440,5 +487,34 @@ describe('Gemini question generator contracts', () => {
             multiDocs,
         );
         expect(resultFallback[0].sourceFileName).toBe('physics-lecture.pdf');
+    });
+
+    it('fails parsing/normalization if passageContent is absent or empty', () => {
+        const rawQuestionNoPassage = {
+            type: 'MULTIPLE_CHOICE',
+            sourceFileName: 'algebra.pdf',
+            sourcePageNumber: 1,
+            sourceEvidence: 'The correct answer is 4.',
+            difficulty: 'moderate',
+            points: 1,
+            content: {
+                prompt: 'What is 2 + 2?',
+                options: ['3', '4', '5', '6'],
+                correctAnswer: '4',
+            },
+        };
+
+        expect(() =>
+            normalizeGeneratedQuestions([rawQuestionNoPassage as any], baseConfig, sourceDocuments),
+        ).toThrow();
+
+        const rawQuestionEmptyPassage = {
+            ...rawQuestionNoPassage,
+            passageContent: '',
+        };
+
+        expect(() =>
+            normalizeGeneratedQuestions([rawQuestionEmptyPassage], baseConfig, sourceDocuments),
+        ).toThrow();
     });
 });

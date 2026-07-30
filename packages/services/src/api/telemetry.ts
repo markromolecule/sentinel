@@ -248,17 +248,14 @@ export async function ingestMediaPipeEvidenceCandidate(
     payload: IngestMediaPipeEvidenceCandidatePayload,
     signal?: AbortSignal,
 ): Promise<IngestMediaPipeEvidenceCandidateResponse> {
-    const response = await apiClient(
-        '/telemetry/evidence/candidates',
-        {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
-            signal,
+    const response = await apiClient('/telemetry/evidence/candidates', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
         },
-    );
+        body: JSON.stringify(payload),
+        signal,
+    });
     return unwrapApiResponse<IngestMediaPipeEvidenceCandidateResponse>(response);
 }
 
@@ -266,12 +263,9 @@ export async function completeEvidenceUpload(
     apiClient: ApiClientType,
     evidenceId: string,
 ): Promise<CompleteEvidenceUploadResponse> {
-    const response = await apiClient(
-        `/telemetry/evidence/${evidenceId}/complete`,
-        {
-            method: 'POST',
-        },
-    );
+    const response = await apiClient(`/telemetry/evidence/${evidenceId}/complete`, {
+        method: 'POST',
+    });
     return unwrapApiResponse<CompleteEvidenceUploadResponse>(response);
 }
 
@@ -279,9 +273,7 @@ export async function getIncidentEvidence(
     apiClient: ApiClientType,
     incidentId: string,
 ): Promise<IncidentEvidenceRecord[]> {
-    const response = await apiClient(
-        `/telemetry/incidents/${incidentId}/evidence`,
-    );
+    const response = await apiClient(`/telemetry/incidents/${incidentId}/evidence`);
     return unwrapApiResponse<IncidentEvidenceRecord[]>(response);
 }
 
@@ -289,23 +281,17 @@ export async function deleteEvidence(
     apiClient: ApiClientType,
     evidenceId: string,
 ): Promise<DeleteEvidenceResponse> {
-    const response = await apiClient(
-        `/telemetry/evidence/${evidenceId}`,
-        {
-            method: 'DELETE',
-        },
-    );
+    const response = await apiClient(`/telemetry/evidence/${evidenceId}`, {
+        method: 'DELETE',
+    });
     return unwrapApiResponse<DeleteEvidenceResponse>(response);
 }
 
 export async function reconcileEvidence(
     apiClient: ApiClientType,
 ): Promise<ReconcileEvidenceResponse> {
-    const response = await apiClient(
-        '/telemetry/internal/evidence/reconcile',
-        {
-            method: 'POST',
-        },
-    );
+    const response = await apiClient('/telemetry/internal/evidence/reconcile', {
+        method: 'POST',
+    });
     return unwrapApiResponse<ReconcileEvidenceResponse>(response);
 }

@@ -4,10 +4,7 @@ import { SessionRepository } from '../../data/session.repository';
 import { appendExamAttemptLifecycleEvent } from '../../../lifecycle/services/lifecycle-event.service';
 import { ATTEMPT_SCORING_VERSION, parseScoreSnapshot } from '../attempt-snapshot.service';
 import type { DbClient } from '@sentinel/db';
-import type {
-    CompletedAttemptResult,
-    PersistCompleteSessionArgs,
-} from './complete-session.types';
+import type { CompletedAttemptResult, PersistCompleteSessionArgs } from './complete-session.types';
 import { assertCompletedAttemptTimestamp } from './complete-session.guards';
 
 async function executeInTransactionIfAvailable<T>(
@@ -30,8 +27,15 @@ async function executeInTransactionIfAvailable<T>(
 export async function persistCompletedSession(
     args: PersistCompleteSessionArgs,
 ): Promise<CompletedAttemptResult> {
-    const { dbClient, studentUserId, body, attemptContext, summary, scoreSnapshot, answerChecksum } =
-        args;
+    const {
+        dbClient,
+        studentUserId,
+        body,
+        attemptContext,
+        summary,
+        scoreSnapshot,
+        answerChecksum,
+    } = args;
     const { attempt, examId, studentId } = attemptContext;
 
     return executeInTransactionIfAvailable(dbClient, async (trx) => {

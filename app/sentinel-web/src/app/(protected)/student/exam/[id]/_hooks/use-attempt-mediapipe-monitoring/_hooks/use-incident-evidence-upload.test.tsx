@@ -2,15 +2,13 @@ import { renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useIncidentEvidenceUpload } from './use-incident-evidence-upload';
 
-const {
-    mockCompleteEvidenceUpload,
-    mockUploadToSignedUrl,
-    mockCreateSupabaseClient,
-} = vi.hoisted(() => ({
-    mockCompleteEvidenceUpload: vi.fn(),
-    mockUploadToSignedUrl: vi.fn(),
-    mockCreateSupabaseClient: vi.fn(),
-}));
+const { mockCompleteEvidenceUpload, mockUploadToSignedUrl, mockCreateSupabaseClient } = vi.hoisted(
+    () => ({
+        mockCompleteEvidenceUpload: vi.fn(),
+        mockUploadToSignedUrl: vi.fn(),
+        mockCreateSupabaseClient: vi.fn(),
+    }),
+);
 
 vi.mock('@sentinel/services', () => ({
     completeEvidenceUpload: mockCompleteEvidenceUpload,
@@ -127,9 +125,10 @@ describe('useIncidentEvidenceUpload', () => {
             throw new Error('Upload resolver was not initialized.');
         };
         mockUploadToSignedUrl.mockImplementation(
-            () => new Promise((resolve) => {
-                resolveUpload = resolve;
-            }),
+            () =>
+                new Promise((resolve) => {
+                    resolveUpload = resolve;
+                }),
         );
         mockCompleteEvidenceUpload.mockResolvedValue({
             evidenceId: 'evidence-1',
@@ -155,9 +154,6 @@ describe('useIncidentEvidenceUpload', () => {
         resolveUpload({ error: null });
 
         await expect(pending).resolves.toBeUndefined();
-        expect(mockCompleteEvidenceUpload).toHaveBeenCalledWith(
-            expect.any(Function),
-            'evidence-1',
-        );
+        expect(mockCompleteEvidenceUpload).toHaveBeenCalledWith(expect.any(Function), 'evidence-1');
     });
 });

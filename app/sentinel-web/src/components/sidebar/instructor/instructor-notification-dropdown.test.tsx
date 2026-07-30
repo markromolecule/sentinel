@@ -26,7 +26,6 @@ vi.mock('next/navigation', () => ({
     }),
 }));
 
-
 vi.mock('@sentinel/services', async () => {
     const actual = await vi.importActual<typeof import('@sentinel/services')>('@sentinel/services');
 

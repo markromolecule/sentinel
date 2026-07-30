@@ -85,13 +85,17 @@ function StudentLobbyRow({
                     <p className="text-foreground truncate text-sm font-semibold">
                         {student.studentName}
                     </p>
-                    <p className="text-muted-foreground text-xs">{student.studentNumber ?? 'N/A'}</p>
+                    <p className="text-muted-foreground text-xs">
+                        {student.studentNumber ?? 'N/A'}
+                    </p>
                 </div>
             </div>
             <div className="text-muted-foreground flex flex-wrap items-center gap-1.5 text-[11px]">
                 <span>{formatCheckedInAt(student.checkedInAt)}</span>
                 <span aria-hidden="true">•</span>
-                <span>{student.reconnectCount} / {student.maxReconnectAttempts} reconnects</span>
+                <span>
+                    {student.reconnectCount} / {student.maxReconnectAttempts} reconnects
+                </span>
             </div>
             {children ? <div className="mt-1 flex flex-col gap-1">{children}</div> : null}
         </div>
@@ -109,7 +113,9 @@ function QueueSection({
     children,
 }: QueueSectionProps) {
     return (
-        <section className={`flex flex-col rounded-lg border-t-4 ${accentColor} bg-slate-50/50 h-full`}>
+        <section
+            className={`flex flex-col rounded-lg border-t-4 ${accentColor} h-full bg-slate-50/50`}
+        >
             <div className="sticky top-0 z-10 flex flex-col gap-2 border-b bg-slate-50/95 p-3 backdrop-blur">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -123,7 +129,7 @@ function QueueSection({
                 {headerAction}
             </div>
 
-            <div className="flex flex-col gap-2 p-2 overflow-y-auto">
+            <div className="flex flex-col gap-2 overflow-y-auto p-2">
                 {students.length === 0 ? (
                     <div className="text-muted-foreground border-border rounded-md border border-dashed px-2 py-8 text-center text-xs">
                         {emptyLabel}
@@ -194,7 +200,7 @@ export function InstructorLobbyAdmissionPanel({
                 </NativeSelect>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4 h-full">
+            <div className="grid h-full grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <QueueSection
                     title="Waiting"
                     count={waitingStudents.length}
@@ -208,7 +214,9 @@ export function InstructorLobbyAdmissionPanel({
                             variant="outline"
                             className="w-full text-xs"
                             disabled={isUpdatingLobbyAdmissions || waitingStudentIds.length === 0}
-                            onClick={() => void onUpdateLobbyAdmissions(waitingStudentIds, 'APPROVED')}
+                            onClick={() =>
+                                void onUpdateLobbyAdmissions(waitingStudentIds, 'APPROVED')
+                            }
                         >
                             Admit All
                         </Button>
@@ -221,7 +229,12 @@ export function InstructorLobbyAdmissionPanel({
                                     size="sm"
                                     className="flex-1 text-xs"
                                     disabled={isUpdatingLobbyAdmissions}
-                                    onClick={() => void onUpdateLobbyAdmissions([student.studentId], 'APPROVED')}
+                                    onClick={() =>
+                                        void onUpdateLobbyAdmissions(
+                                            [student.studentId],
+                                            'APPROVED',
+                                        )
+                                    }
                                 >
                                     Admit
                                 </Button>
@@ -230,13 +243,18 @@ export function InstructorLobbyAdmissionPanel({
                                     variant="outline"
                                     className="flex-1 text-xs"
                                     disabled={isUpdatingLobbyAdmissions}
-                                    onClick={() => void onUpdateLobbyAdmissions([student.studentId], 'REJECTED')}
+                                    onClick={() =>
+                                        void onUpdateLobbyAdmissions(
+                                            [student.studentId],
+                                            'REJECTED',
+                                        )
+                                    }
                                 >
                                     Reject
                                 </Button>
                             </div>
                             {student.hasActiveAttempt &&
-                                student.reconnectCount >= student.maxReconnectAttempts ? (
+                            student.reconnectCount >= student.maxReconnectAttempts ? (
                                 <Button
                                     size="sm"
                                     variant="secondary"

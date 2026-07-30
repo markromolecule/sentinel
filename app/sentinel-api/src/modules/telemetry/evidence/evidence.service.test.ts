@@ -228,37 +228,40 @@ describe('Telemetry Evidence Services', () => {
             expect(row.incident_id).toBe(incidentId);
         });
 
-        testWithDbClient('performs idempotency lookup before quota checks', async ({ dbClient }) => {
-            (globalThis as any).activeTestTrx = dbClient;
-            process.env.TELEMETRY_EVIDENCE_MAX_PER_ATTEMPT = '1';
-            const fix = await createTestFixture(dbClient);
-            const eventId = randomUUID();
+        testWithDbClient(
+            'performs idempotency lookup before quota checks',
+            async ({ dbClient }) => {
+                (globalThis as any).activeTestTrx = dbClient;
+                process.env.TELEMETRY_EVIDENCE_MAX_PER_ATTEMPT = '1';
+                const fix = await createTestFixture(dbClient);
+                const eventId = randomUUID();
 
-            const first = await EvidenceUploadService.initializeUpload(dbClient, {
-                attemptId: fix.attemptId,
-                incidentId: randomUUID(),
-                eventId,
-                eventType: 'FACE_NOT_VISIBLE',
-                capturedAt: new Date().toISOString(),
-                mimeType: 'image/webp',
-                sizeBytes: 25000,
-                studentUserId: fix.userId,
-            });
+                const first = await EvidenceUploadService.initializeUpload(dbClient, {
+                    attemptId: fix.attemptId,
+                    incidentId: randomUUID(),
+                    eventId,
+                    eventType: 'FACE_NOT_VISIBLE',
+                    capturedAt: new Date().toISOString(),
+                    mimeType: 'image/webp',
+                    sizeBytes: 25000,
+                    studentUserId: fix.userId,
+                });
 
-            const second = await EvidenceUploadService.initializeUpload(dbClient, {
-                attemptId: fix.attemptId,
-                incidentId: randomUUID(),
-                eventId,
-                eventType: 'FACE_NOT_VISIBLE',
-                capturedAt: new Date().toISOString(),
-                mimeType: 'image/webp',
-                sizeBytes: 25000,
-                studentUserId: fix.userId,
-            });
+                const second = await EvidenceUploadService.initializeUpload(dbClient, {
+                    attemptId: fix.attemptId,
+                    incidentId: randomUUID(),
+                    eventId,
+                    eventType: 'FACE_NOT_VISIBLE',
+                    capturedAt: new Date().toISOString(),
+                    mimeType: 'image/webp',
+                    sizeBytes: 25000,
+                    studentUserId: fix.userId,
+                });
 
-            expect(second.evidenceId).toBe(first.evidenceId);
-            expect(EvidenceStorageService.createSignedUploadTarget).toHaveBeenCalledTimes(2);
-        });
+                expect(second.evidenceId).toBe(first.evidenceId);
+                expect(EvidenceStorageService.createSignedUploadTarget).toHaveBeenCalledTimes(2);
+            },
+        );
 
         testWithDbClient('completes upload successfully', async ({ dbClient }) => {
             (globalThis as any).activeTestTrx = dbClient;
@@ -325,26 +328,14 @@ describe('Telemetry Evidence Services', () => {
             expect(EvidenceStorageService.deleteObject).toHaveBeenCalled();
         });
 
-        testWithDbClient('refuses terminal-state reinitialization for the same event', async ({ dbClient }) => {
-            (globalThis as any).activeTestTrx = dbClient;
-            const fix = await createTestFixture(dbClient);
-            const eventId = randomUUID();
+        testWithDbClient(
+            'refuses terminal-state reinitialization for the same event',
+            async ({ dbClient }) => {
+                (globalThis as any).activeTestTrx = dbClient;
+                const fix = await createTestFixture(dbClient);
+                const eventId = randomUUID();
 
-            const init = await EvidenceUploadService.initializeUpload(dbClient, {
-                attemptId: fix.attemptId,
-                incidentId: randomUUID(),
-                eventId,
-                eventType: 'FACE_NOT_VISIBLE',
-                capturedAt: new Date().toISOString(),
-                mimeType: 'image/webp',
-                sizeBytes: 12345,
-                studentUserId: fix.userId,
-            });
-
-            await EvidenceUploadService.completeUpload(dbClient, init.evidenceId, fix.userId);
-
-            await expect(
-                EvidenceUploadService.initializeUpload(dbClient, {
+                const init = await EvidenceUploadService.initializeUpload(dbClient, {
                     attemptId: fix.attemptId,
                     incidentId: randomUUID(),
                     eventId,
@@ -353,44 +344,62 @@ describe('Telemetry Evidence Services', () => {
                     mimeType: 'image/webp',
                     sizeBytes: 12345,
                     studentUserId: fix.userId,
-                }),
-            ).rejects.toThrow('Evidence upload cannot be reinitialized from state AVAILABLE.');
-        });
+                });
 
-        testWithDbClient('counts failed evidence rows toward lifetime quota limits', async ({ dbClient }) => {
-            (globalThis as any).activeTestTrx = dbClient;
-            process.env.TELEMETRY_EVIDENCE_MAX_PER_ATTEMPT = '1';
-            const fix = await createTestFixture(dbClient);
+                await EvidenceUploadService.completeUpload(dbClient, init.evidenceId, fix.userId);
 
-            const failedEventId = randomUUID();
-            const failed = await EvidenceUploadService.initializeUpload(dbClient, {
-                attemptId: fix.attemptId,
-                incidentId: randomUUID(),
-                eventId: failedEventId,
-                eventType: 'FACE_NOT_VISIBLE',
-                capturedAt: new Date().toISOString(),
-                mimeType: 'image/webp',
-                sizeBytes: 99999,
-                studentUserId: fix.userId,
-            });
+                await expect(
+                    EvidenceUploadService.initializeUpload(dbClient, {
+                        attemptId: fix.attemptId,
+                        incidentId: randomUUID(),
+                        eventId,
+                        eventType: 'FACE_NOT_VISIBLE',
+                        capturedAt: new Date().toISOString(),
+                        mimeType: 'image/webp',
+                        sizeBytes: 12345,
+                        studentUserId: fix.userId,
+                    }),
+                ).rejects.toThrow('Evidence upload cannot be reinitialized from state AVAILABLE.');
+            },
+        );
 
-            await expect(
-                EvidenceUploadService.completeUpload(dbClient, failed.evidenceId, fix.userId),
-            ).rejects.toThrow('Upload validation failed: Size mismatch.');
+        testWithDbClient(
+            'counts failed evidence rows toward lifetime quota limits',
+            async ({ dbClient }) => {
+                (globalThis as any).activeTestTrx = dbClient;
+                process.env.TELEMETRY_EVIDENCE_MAX_PER_ATTEMPT = '1';
+                const fix = await createTestFixture(dbClient);
 
-            await expect(
-                EvidenceUploadService.initializeUpload(dbClient, {
+                const failedEventId = randomUUID();
+                const failed = await EvidenceUploadService.initializeUpload(dbClient, {
                     attemptId: fix.attemptId,
                     incidentId: randomUUID(),
-                    eventId: randomUUID(),
-                    eventType: 'MULTIPLE_FACES',
+                    eventId: failedEventId,
+                    eventType: 'FACE_NOT_VISIBLE',
                     capturedAt: new Date().toISOString(),
                     mimeType: 'image/webp',
-                    sizeBytes: 25000,
+                    sizeBytes: 99999,
                     studentUserId: fix.userId,
-                }),
-            ).rejects.toThrow('Attempt has reached the maximum allowed evidence quota of 1.');
-        });
+                });
+
+                await expect(
+                    EvidenceUploadService.completeUpload(dbClient, failed.evidenceId, fix.userId),
+                ).rejects.toThrow('Upload validation failed: Size mismatch.');
+
+                await expect(
+                    EvidenceUploadService.initializeUpload(dbClient, {
+                        attemptId: fix.attemptId,
+                        incidentId: randomUUID(),
+                        eventId: randomUUID(),
+                        eventType: 'MULTIPLE_FACES',
+                        capturedAt: new Date().toISOString(),
+                        mimeType: 'image/webp',
+                        sizeBytes: 25000,
+                        studentUserId: fix.userId,
+                    }),
+                ).rejects.toThrow('Attempt has reached the maximum allowed evidence quota of 1.');
+            },
+        );
     });
 
     describe('EvidenceQueryService & DeletionService', () => {

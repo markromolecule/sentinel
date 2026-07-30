@@ -22,6 +22,7 @@ describe('Question Generator steps modules', () => {
                             sourceFileName: 'lesson.pdf',
                             sourcePageNumber: 2,
                             sourceEvidence: 'Evidence text',
+                            passageContent: 'This is a passage.',
                             content: {
                                 prompt: 'What is 1+1?',
                                 options: ['1', '2'],
@@ -40,7 +41,7 @@ describe('Question Generator steps modules', () => {
                 questionCount: 1,
             };
 
-            const rawQuestions = await generateBatchesStep({
+            const { rawQuestions, deficits } = await generateBatchesStep({
                 batches: [config],
                 files: [new File([], 'lesson.pdf')],
                 uploadedFiles: [{ name: 'file1', uri: 'uri1', mimeType: 'pdf' }],
@@ -51,6 +52,8 @@ describe('Question Generator steps modules', () => {
             expect(rawQuestions).toHaveLength(1);
             expect(rawQuestions[0].type).toBe('MULTIPLE_CHOICE');
             expect(rawQuestions[0].sourceFileName).toBe('lesson.pdf');
+            expect(rawQuestions[0].passageContent).toBe('This is a passage.');
+            expect(deficits).toHaveLength(0);
         });
     });
 
@@ -84,6 +87,7 @@ describe('Question Generator steps modules', () => {
                     sourceFileName: 'lesson.pdf',
                     sourcePageNumber: 4,
                     sourceEvidence: 'Evidence text',
+                    passageContent: 'Evidence text',
                     content: {},
                 },
             ];

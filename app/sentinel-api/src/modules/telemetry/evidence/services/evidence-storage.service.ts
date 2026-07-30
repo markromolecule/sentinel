@@ -47,10 +47,7 @@ export class EvidenceStorageService {
      * @param path The exact object path
      * @returns The object's verified size and MIME type
      */
-    static async inspectObject(
-        bucket: string,
-        path: string,
-    ): Promise<StorageObjectMetadata> {
+    static async inspectObject(bucket: string, path: string): Promise<StorageObjectMetadata> {
         try {
             const lastSlash = path.lastIndexOf('/');
             const folder = lastSlash === -1 ? '' : path.substring(0, lastSlash);

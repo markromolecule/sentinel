@@ -132,14 +132,14 @@ export function WebNotificationDropdown({
                     <div className="relative">
                         <Bell className="h-[22px] w-[22px]" />
                         {unreadCount > 0 && (
-                            <span className="bg-destructive ring-background animate-in fade-in zoom-in-75 absolute top-0 right-0 translate-x-1/2 -translate-y-1/2 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] leading-none font-bold text-white shadow-sm ring-2 duration-200">
+                            <span className="bg-destructive ring-background animate-in fade-in zoom-in-75 absolute top-0 right-0 flex h-4 min-w-4 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full px-1 text-[9px] leading-none font-bold text-white shadow-sm ring-2 duration-200">
                                 {unreadCount > 99 ? '99+' : unreadCount}
                             </span>
                         )}
                     </div>
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80 sm:w-96 p-0">
+            <DropdownMenuContent align="end" className="w-80 p-0 sm:w-96">
                 <div className="flex items-center justify-between px-4 py-3">
                     <div className="flex items-center gap-2">
                         <span className="text-base font-semibold">Notifications</span>
@@ -166,7 +166,7 @@ export function WebNotificationDropdown({
                 <DropdownMenuSeparator className="mx-0" />
                 <div className="max-h-72 overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                     {recentNotifications.length === 0 ? (
-                        <div className="text-muted-foreground p-4 text-sm text-center">
+                        <div className="text-muted-foreground p-4 text-center text-sm">
                             No notifications yet.
                         </div>
                     ) : (
@@ -202,7 +202,7 @@ export function WebNotificationDropdown({
                                         onClick={(event) => event.stopPropagation()}
                                         onPointerDownCapture={(event) => event.stopPropagation()}
                                     />
-                                    <div className="flex w-full items-start justify-between gap-3 min-w-0">
+                                    <div className="flex w-full min-w-0 items-start justify-between gap-3">
                                         <div className="flex min-w-0 items-start gap-2">
                                             {notification.status === 'UNREAD' && (
                                                 <span className="bg-primary mt-1 h-2 w-2 flex-shrink-0 rounded-full" />

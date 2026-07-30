@@ -182,14 +182,7 @@ export type MatchingPair = {
 };
 
 export type ExamAttemptAnswerValue =
-    | string
-    | number
-    | boolean
-    | string[]
-    | number[]
-    | Record<string, string>
-    | null
-    | undefined;
+    string | number | boolean | string[] | number[] | Record<string, string> | null | undefined;
 
 export type ExamAttemptAnswers = Record<string, ExamAttemptAnswerValue>;
 

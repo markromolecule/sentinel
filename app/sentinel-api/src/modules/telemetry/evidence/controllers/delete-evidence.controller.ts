@@ -36,9 +36,9 @@ export const deleteEvidenceRoute = createRoute({
     },
 });
 
-export const deleteEvidenceRouteHandler: AppRouteHandler<
-    typeof deleteEvidenceRoute
-> = async (c) => {
+export const deleteEvidenceRouteHandler: AppRouteHandler<typeof deleteEvidenceRoute> = async (
+    c,
+) => {
     try {
         const { evidenceId } = c.req.valid('param');
         const supabaseUser = c.get('supabaseUser') as any;

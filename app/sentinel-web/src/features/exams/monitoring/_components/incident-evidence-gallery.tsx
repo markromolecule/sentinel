@@ -1,10 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import {
-    useDeleteIncidentEvidenceMutation,
-    useIncidentEvidenceQuery,
-} from '@sentinel/hooks';
+import { useDeleteIncidentEvidenceMutation, useIncidentEvidenceQuery } from '@sentinel/hooks';
 import type { IncidentEvidenceRecord } from '@sentinel/services';
 import type { Flag } from '@sentinel/shared/types';
 import { Button, Collapsible, CollapsibleContent, CollapsibleTrigger, cn } from '@sentinel/ui';
@@ -62,7 +59,10 @@ export function IncidentEvidenceGallery({
     const [selectedEvidence, setSelectedEvidence] = useState<IncidentEvidenceRecord | null>(null);
     const [thumbnailFailures, setThumbnailFailures] = useState<Record<string, boolean>>({});
 
-    const evidenceQuery = useIncidentEvidenceQuery(flag.id, isOpen && (flag.evidenceCount ?? 0) > 0);
+    const evidenceQuery = useIncidentEvidenceQuery(
+        flag.id,
+        isOpen && (flag.evidenceCount ?? 0) > 0,
+    );
     const deleteEvidenceMutation = useDeleteIncidentEvidenceMutation();
 
     const fallbackEvidence = useMemo<IncidentEvidenceRecord[]>(
@@ -127,7 +127,10 @@ export function IncidentEvidenceGallery({
                                 </span>
                             ))}
                             <ChevronDown
-                                className={cn('h-4 w-4 transition-transform', isOpen && 'rotate-180')}
+                                className={cn(
+                                    'h-4 w-4 transition-transform',
+                                    isOpen && 'rotate-180',
+                                )}
                             />
                         </div>
                     </Button>
@@ -150,7 +153,8 @@ export function IncidentEvidenceGallery({
 
                     {evidenceItems.map((evidence, index) => {
                         const hasThumbnailError = thumbnailFailures[evidence.evidenceId];
-                        const canPreview = Boolean(evidence.signedUrl) && evidence.state === 'AVAILABLE';
+                        const canPreview =
+                            Boolean(evidence.signedUrl) && evidence.state === 'AVAILABLE';
 
                         return (
                             <div
@@ -186,7 +190,8 @@ export function IncidentEvidenceGallery({
                                 <div className="min-w-0 flex-1 space-y-2">
                                     <div className="flex flex-wrap items-center gap-2">
                                         <span className="text-sm font-semibold">
-                                            Evidence {index + 1} of {Math.max(totalCount, evidenceItems.length)}
+                                            Evidence {index + 1} of{' '}
+                                            {Math.max(totalCount, evidenceItems.length)}
                                         </span>
                                         <span
                                             className={cn(

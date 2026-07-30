@@ -29,7 +29,8 @@ export function StudentMonitoringDetail({
         liveInspectionEnabled && LIVE_INSPECTION_ELIGIBLE_STATUSES.has(student.status);
     const firstEvidenceIncidentId =
         student.flags?.find(
-            (flag) => (flag.evidenceCount ?? 0) > 0 || Boolean(flag.evidenceUrl || flag.snapshotUrl),
+            (flag) =>
+                (flag.evidenceCount ?? 0) > 0 || Boolean(flag.evidenceUrl || flag.snapshotUrl),
         )?.id ?? null;
 
     return (

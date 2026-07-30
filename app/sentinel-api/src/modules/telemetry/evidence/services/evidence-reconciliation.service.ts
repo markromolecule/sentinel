@@ -105,7 +105,8 @@ export class EvidenceReconciliationService {
         for (const row of expiredRows) {
             const retentionContext = await loadEvidenceRetentionContext(db, row.attempt_id);
             const recalculatedExpiresAt = computeEvidenceExpiresAt({
-                capturedAt: row.captured_at instanceof Date ? row.captured_at : new Date(row.captured_at),
+                capturedAt:
+                    row.captured_at instanceof Date ? row.captured_at : new Date(row.captured_at),
                 examEndsAt: retentionContext.examEndsAt,
                 attemptStartedAt: retentionContext.attemptStartedAt,
                 attemptCompletedAt: retentionContext.attemptCompletedAt,
@@ -173,12 +174,7 @@ export class EvidenceReconciliationService {
 
         const unlinkedRows = await db
             .selectFrom('telemetry_incident_evidence')
-            .select([
-                'evidence_id',
-                'attempt_id',
-                'event_id',
-                'received_at',
-            ])
+            .select(['evidence_id', 'attempt_id', 'event_id', 'received_at'])
             .where('state', '=', 'AVAILABLE')
             .where('incident_id', 'is', null)
             .orderBy('received_at', 'asc')

@@ -19,12 +19,11 @@ const EVIDENCE_CANDIDATE_EVENT_TYPES = new Set([
     'MULTIPLE_FACES',
 ] as const);
 
-type PreparedTelemetryEvent =
-    | {
-          settingsRecord: Awaited<ReturnType<typeof telemetrySettingsResolverService.resolve>> | undefined;
-          payload: PersistableProctoringEvent;
-      }
-    | null;
+type PreparedTelemetryEvent = {
+    settingsRecord:
+        Awaited<ReturnType<typeof telemetrySettingsResolverService.resolve>> | undefined;
+    payload: PersistableProctoringEvent;
+} | null;
 
 export class TelemetryIngestionService {
     private static async prepareEventForPersistence(

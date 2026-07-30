@@ -30,7 +30,9 @@ export async function getMessageRecipientsData(
         .leftJoin('institutions as inst', 'inst.id', 'up.institution_id')
         .select((eb) => [
             'up.user_id as userId',
-            sql<string>`coalesce(nullif(trim(concat_ws(' ', up.first_name, up.last_name)), ''), 'User')`.as('name'),
+            sql<string>`coalesce(nullif(trim(concat_ws(' ', up.first_name, up.last_name)), ''), 'User')`.as(
+                'name',
+            ),
             'up.avatar_url as avatarUrl',
             'up.status as status',
             eb
@@ -64,8 +66,7 @@ export async function getMessageRecipientsData(
                 .whereRef('ur_sub.user_id', '=', 'up.user_id' as any)
                 .orderBy('r_sub.is_system', 'desc')
                 .orderBy('r_sub.domain_scope', 'asc')
-                .limit(1)
-            }), 'student')`,
+                .limit(1)}), 'student')`,
             'not in',
             ['support', 'superadmin'],
         );

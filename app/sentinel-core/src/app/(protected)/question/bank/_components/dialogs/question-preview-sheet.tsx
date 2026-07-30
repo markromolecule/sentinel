@@ -50,6 +50,7 @@ export function QuestionPreviewSheet({
         sourceEvidence,
         passageContent,
         passageType,
+        fallbackToSourceEvidence: false,
     });
 
     if (!question) return null;
@@ -74,7 +75,10 @@ export function QuestionPreviewSheet({
                                 <h4 className="text-sm font-bold tracking-tight text-zinc-900 uppercase dark:text-zinc-100">
                                     Question Configuration
                                 </h4>
-                                <Badge variant="outline" className="text-[10px] font-medium opacity-60">
+                                <Badge
+                                    variant="outline"
+                                    className="text-[10px] font-medium opacity-60"
+                                >
                                     ID: {id.slice(0, 8)}
                                 </Badge>
                             </div>
@@ -89,7 +93,9 @@ export function QuestionPreviewSheet({
                                     </h4>
                                     <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-6 text-sm leading-relaxed text-zinc-700 dark:border-zinc-800/50 dark:bg-zinc-900/30 dark:text-zinc-200">
                                         <div
-                                            dangerouslySetInnerHTML={{ __html: renderedPassage.html }}
+                                            dangerouslySetInnerHTML={{
+                                                __html: renderedPassage.html,
+                                            }}
                                         />
                                     </div>
                                 </div>

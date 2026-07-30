@@ -6,3 +6,4 @@ export * from './text-utils';
 export * from './evidence-service';
 export * from './domain-logic';
 export * from './normalizer';
+export * from './passage-leak-validator';

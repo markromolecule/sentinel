@@ -51,7 +51,8 @@ export const ingestEvidenceCandidateRouteHandler: AppRouteHandler<
 
         if (body.studentId !== user.id) {
             throw new HTTPException(403, {
-                message: 'Telemetry evidence candidate student does not match the authenticated user.',
+                message:
+                    'Telemetry evidence candidate student does not match the authenticated user.',
             });
         }
 

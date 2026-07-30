@@ -3,7 +3,6 @@ import { ActivityNotificationService } from './activity-notification.service';
 import { NotificationService } from '../notification.service';
 import { CalendarActivityNotificationService } from './activity/calendar-activity-notification.service';
 
-
 type FakeBuilderResult = {
     execute?: any[];
     executeTakeFirst?: any;
@@ -71,7 +70,10 @@ describe('ActivityNotificationService', () => {
     beforeEach(() => {
         vi.restoreAllMocks();
         vi.spyOn(NotificationService, 'createNotification').mockResolvedValue({} as any);
-        vi.spyOn(CalendarActivityNotificationService, 'notifyCalendarEventCreated').mockResolvedValue(undefined as any);
+        vi.spyOn(
+            CalendarActivityNotificationService,
+            'notifyCalendarEventCreated',
+        ).mockResolvedValue(undefined as any);
     });
 
     it('notifies institution approvers for a new subject enrollment request', async () => {

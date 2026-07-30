@@ -66,10 +66,10 @@ export async function getGradingAttemptDetail({
 
     const persistedQuestionReports = scoreSnapshot
         ? normalizeQuestionReports({
-            questionReports: scoreSnapshot.questionReports,
-            questions: finalQuestions,
-            scoringVersion: scoreSnapshot.scoringVersion,
-        })
+              questionReports: scoreSnapshot.questionReports,
+              questions: finalQuestions,
+              scoringVersion: scoreSnapshot.scoringVersion,
+          })
         : null;
 
     const legacyQuestionReports = buildExamAttemptQuestionReports({

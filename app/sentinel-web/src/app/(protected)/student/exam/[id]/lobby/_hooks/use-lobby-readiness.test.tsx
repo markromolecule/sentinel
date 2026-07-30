@@ -13,12 +13,9 @@ vi.mock('../../_lib/student-exam-flow', () => ({
     readStoredStudentExamFlow: (examId: string) => mockReadStoredStudentExamFlow(examId),
 }));
 
-vi.mock(
-    '@/app/(protected)/student/exam/[id]/_components/student-exam-mediapipe-provider',
-    () => ({
-        useStudentExamMediaPipeStream: () => mockUseStudentExamMediaPipeStream(),
-    }),
-);
+vi.mock('@/app/(protected)/student/exam/[id]/_components/student-exam-mediapipe-provider', () => ({
+    useStudentExamMediaPipeStream: () => mockUseStudentExamMediaPipeStream(),
+}));
 
 vi.mock('@/app/(protected)/student/exam/[id]/_components/student-exam-audio-provider', () => ({
     useCheckupAudio: () => mockUseCheckupAudio(),

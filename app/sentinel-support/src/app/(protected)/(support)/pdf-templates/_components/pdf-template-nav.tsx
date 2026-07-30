@@ -25,7 +25,6 @@ const NAV_ITEMS = [
         title: 'Examination Template',
         href: '/pdf-templates/examinations',
     },
-
 ];
 
 export function PdfTemplateNav({ activeSection }: PdfTemplateNavProps) {

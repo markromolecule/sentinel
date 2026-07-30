@@ -3,7 +3,8 @@ import { HTTPException } from 'hono/http-exception';
 import type { PersistableProctoringEvent } from '../ingestion.dto';
 import { TelemetryStorageService } from '../../storage/storage.service';
 
-export type TelemetryJobProcessingResult = 'inserted' | 'aggregated' | 'duplicate-ignored' | 'dropped';
+export type TelemetryJobProcessingResult =
+    'inserted' | 'aggregated' | 'duplicate-ignored' | 'dropped';
 
 export function buildTelemetryJobLogContext(payload: PersistableProctoringEvent) {
     return {

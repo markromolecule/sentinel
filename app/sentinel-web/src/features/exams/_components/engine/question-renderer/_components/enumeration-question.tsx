@@ -8,7 +8,9 @@ export function EnumerationQuestion({
     showCorrectAnswer,
 }: ExamQuestionRendererProps) {
     const blanks = question.content.acceptedAnswers ?? question.content.blanks ?? ['', '', ''];
-    const values: string[] = Array.isArray(value) ? value.map((item) => String(item ?? '')) : blanks.map(() => '');
+    const values: string[] = Array.isArray(value)
+        ? value.map((item) => String(item ?? ''))
+        : blanks.map(() => '');
 
     const updateItem = (index: number, nextValue: string) => {
         const nextValues = [...values];

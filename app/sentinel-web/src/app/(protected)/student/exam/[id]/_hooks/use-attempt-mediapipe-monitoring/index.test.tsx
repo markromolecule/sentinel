@@ -1117,5 +1117,4 @@ describe('use-attempt-mediapipe-monitoring', () => {
 
         expect(mockTrackStop).toHaveBeenCalled();
     });
-
 });

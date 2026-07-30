@@ -156,7 +156,11 @@ export const messageRecipientOpenApi = z
 
 export const getMessageRecipientsSchema = {
     query: z.object({
-        search: z.string().trim().min(2, 'Search term must be at least 2 characters').max(100, 'Search term is too long'),
+        search: z
+            .string()
+            .trim()
+            .min(2, 'Search term must be at least 2 characters')
+            .max(100, 'Search term is too long'),
         limit: z
             .string()
             .optional()
@@ -171,4 +175,3 @@ export const getMessageRecipientsSchema = {
         })
         .openapi('GetMessageRecipientsResponse'),
 };
-

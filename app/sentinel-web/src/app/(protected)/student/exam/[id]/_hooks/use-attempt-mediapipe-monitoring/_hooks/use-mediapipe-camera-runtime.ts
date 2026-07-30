@@ -1,8 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-    createMediaPipeSignalTrackerState,
-    resolveMediaPipeThresholds,
-} from '@sentinel/shared';
+import { createMediaPipeSignalTrackerState, resolveMediaPipeThresholds } from '@sentinel/shared';
 import type { MediaPipeFrameAnalysis } from '@sentinel/shared';
 import type { ExamConfig } from '@sentinel/shared/types';
 import { useStudentExamMediaPipeStream } from '@/app/(protected)/student/exam/[id]/_components/student-exam-mediapipe-provider';
@@ -68,7 +65,8 @@ export function useMediapipeCameraRuntime({
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     const { startStream, stopStream } = useCameraStream();
-    const { faceLandmarkerRef, initFaceLandmarker, closeFaceLandmarker } = useMediapipeFaceLandmarker();
+    const { faceLandmarkerRef, initFaceLandmarker, closeFaceLandmarker } =
+        useMediapipeFaceLandmarker();
     const { dispatchIncident, clearInFlightEvents } = useIncidentTelemetryDispatcher();
 
     const { baseRuntimeEnabled, activationState, isEnabled } = eligibility;
@@ -118,7 +116,13 @@ export function useMediapipeCameraRuntime({
         stopStream(videoRef.current);
         clearInFlightEvents();
         setActiveIncident(null);
-    }, [closeFaceLandmarker, stopStream, clearInFlightEvents, preLoadedFaceLandmarker, setActiveIncident]);
+    }, [
+        closeFaceLandmarker,
+        stopStream,
+        clearInFlightEvents,
+        preLoadedFaceLandmarker,
+        setActiveIncident,
+    ]);
 
     // ---------------------------------------------------------------------------
     // Main effect — starts the runtime when eligibility is satisfied and tears it
@@ -176,7 +180,7 @@ export function useMediapipeCameraRuntime({
                 const landmarker = await initFaceLandmarkerRef.current(
                     preLoadedFaceLandmarker,
                     sandbox,
-                    () => disposed
+                    () => disposed,
                 );
 
                 if (disposed || !landmarker) return;

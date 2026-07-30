@@ -165,9 +165,7 @@ export function ReportTemplateEditor({
             <div className="space-y-4">
                 <Tabs
                     value={activeTab}
-                    onValueChange={(value) =>
-                        setActiveTab(value as 'header' | 'footer')
-                    }
+                    onValueChange={(value) => setActiveTab(value as 'header' | 'footer')}
                 >
                     <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="header">Header</TabsTrigger>

@@ -83,7 +83,6 @@ describe('Message Schemas', () => {
     });
 
     describe('messageParticipantSchema', () => {
-
         it('should validate a correct participant object', () => {
             const valid = {
                 userId: '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d',

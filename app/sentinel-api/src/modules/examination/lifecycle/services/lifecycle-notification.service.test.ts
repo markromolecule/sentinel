@@ -99,7 +99,7 @@ describe('LifecycleNotificationService', () => {
             expect(NotificationService.createNotification).toHaveBeenCalledWith(
                 expect.objectContaining({
                     institutionId: 'override-inst-456',
-                })
+                }),
             );
         });
 
@@ -140,8 +140,9 @@ describe('LifecycleNotificationService', () => {
             expect(NotificationService.createNotification).toHaveBeenCalledWith(
                 expect.objectContaining({
                     title: 'Exam Attempt Automatically Closed',
-                    message: 'Your attempt for "Midterm Physics" has been automatically closed due to proctoring policy.',
-                })
+                    message:
+                        'Your attempt for "Midterm Physics" has been automatically closed due to proctoring policy.',
+                }),
             );
         });
     });
@@ -156,7 +157,9 @@ describe('LifecycleNotificationService', () => {
                 eventType: 'SUBMITTED',
             });
 
-            expect(ActivityNotificationService.notifyInstitutionActivityCreated).toHaveBeenCalledWith({
+            expect(
+                ActivityNotificationService.notifyInstitutionActivityCreated,
+            ).toHaveBeenCalledWith({
                 dbClient: mockDbClient,
                 actorUserId: '00000000-0000-0000-0000-000000000000',
                 institutionId: 'inst-123',
@@ -164,7 +167,7 @@ describe('LifecycleNotificationService', () => {
                 targetId: 'attempt-456',
                 targetLabel: 'Midterm Physics',
                 title: 'Student Exam Attempt Submitted',
-                message: "Alice Smith's attempt for \"Midterm Physics\" has been submitted.",
+                message: 'Alice Smith\'s attempt for "Midterm Physics" has been submitted.',
                 sourceModule: 'exams',
                 sourceAction: 'attempt-submitted',
                 metadata: {
@@ -193,4 +196,3 @@ describe('LifecycleNotificationService', () => {
         });
     });
 });
-

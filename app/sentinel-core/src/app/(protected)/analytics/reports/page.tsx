@@ -34,7 +34,8 @@ export default function ReportsAnalyticsPage() {
     });
 
     // Report generation mutation
-    const { mutate: generateReport, isPending: isGenerating } = useGenerateAnalyticsReportMutation();
+    const { mutate: generateReport, isPending: isGenerating } =
+        useGenerateAnalyticsReportMutation();
 
     const downloadReportMutation = useAnalyticsReportDownloadMutation();
     const [activeDownloadId, setActiveDownloadId] = React.useState<string | null>(null);

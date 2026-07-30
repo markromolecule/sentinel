@@ -3,7 +3,6 @@ import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
 import StudentLayout from './layout';
 
-
 const mockUsePathname = vi.fn();
 vi.mock('next/navigation', () => ({
     usePathname: () => mockUsePathname(),
@@ -40,7 +39,7 @@ describe('StudentLayout', () => {
         render(
             <StudentLayout>
                 <div data-testid="test-child">Child Content</div>
-            </StudentLayout>
+            </StudentLayout>,
         );
 
         expect(screen.getByTestId('student-header')).toBeTruthy();
@@ -55,7 +54,7 @@ describe('StudentLayout', () => {
         render(
             <StudentLayout>
                 <div data-testid="test-child">Child Content</div>
-            </StudentLayout>
+            </StudentLayout>,
         );
 
         expect(screen.getByTestId('student-header')).toBeTruthy();

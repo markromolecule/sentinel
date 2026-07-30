@@ -93,7 +93,8 @@ describe('ExamRulesSection', () => {
                 defaultValues: {
                     ...defaultValues,
                     settings: {
-                        shuffleQuestions: DEFAULT_EXAMINATION_GLOBAL_SETTINGS.defaultShuffleQuestions,
+                        shuffleQuestions:
+                            DEFAULT_EXAMINATION_GLOBAL_SETTINGS.defaultShuffleQuestions,
                         showCorrectAnswers:
                             DEFAULT_EXAMINATION_GLOBAL_SETTINGS.defaultShowCorrectAnswers,
                         allowReview: DEFAULT_EXAMINATION_GLOBAL_SETTINGS.defaultAllowReview,
@@ -120,7 +121,9 @@ describe('ExamRulesSection', () => {
         render(<Harness />);
 
         expect(screen.getAllByText('Inherited').length).toBeGreaterThan(0);
-        expect(screen.getByText(/uses the institution default for shuffle questions/i)).toBeTruthy();
+        expect(
+            screen.getByText(/uses the institution default for shuffle questions/i),
+        ).toBeTruthy();
     });
 
     it('labels differing rule values as exam overrides when institution defaults are provided', () => {
@@ -129,7 +132,8 @@ describe('ExamRulesSection', () => {
                 defaultValues: {
                     ...defaultValues,
                     settings: {
-                        shuffleQuestions: !DEFAULT_EXAMINATION_GLOBAL_SETTINGS.defaultShuffleQuestions,
+                        shuffleQuestions:
+                            !DEFAULT_EXAMINATION_GLOBAL_SETTINGS.defaultShuffleQuestions,
                         showCorrectAnswers:
                             !DEFAULT_EXAMINATION_GLOBAL_SETTINGS.defaultShowCorrectAnswers,
                         allowReview: !DEFAULT_EXAMINATION_GLOBAL_SETTINGS.defaultAllowReview,

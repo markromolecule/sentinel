@@ -1,4 +1,6 @@
+import { z } from '@hono/zod-openapi';
 import { OpenAPIHono } from '@hono/zod-openapi';
+import { HTTPException } from 'hono/http-exception';
 import { describe, expect, it, beforeEach, vi } from 'vitest';
 import app from '../../app';
 import {
@@ -8,6 +10,7 @@ import {
 } from '../../modules/integrations/gemini/gemini.controller';
 import { QuestionGeneratorService } from '../../lib/gemini/services/question-generator';
 import { LogsService } from '../../modules/general/logs/logs.service';
+import { PassageQualityValidationError } from '../../lib/gemini/services/question-normalizer';
 
 describe('Gemini AI routes', () => {
     const createAuthorizedApp = (
@@ -173,4 +176,42 @@ describe('Gemini AI routes', () => {
             expect(generateSpy).not.toHaveBeenCalled();
         },
     );
+
+    it('returns 502 with quality validation message when PassageQualityValidationError is thrown', async () => {
+        vi.spyOn(QuestionGeneratorService, 'generatePreviewFromPdf').mockRejectedValue(
+            new HTTPException(502, {
+                message:
+                    'AI passage generation did not meet quality checks. The questions could not be generated without leaking answers.',
+            }),
+        );
+
+        const testApp = createAuthorizedApp({
+            permissionKeys: ['ai:generate_questions'],
+            role: 'instructor',
+        });
+        const formData = new FormData();
+        formData.append(
+            'file',
+            new File(['%PDF-1.4 test'], 'lesson.pdf', {
+                type: 'application/pdf',
+            }),
+        );
+        formData.append(
+            'config',
+            JSON.stringify({
+                target: 'QUESTION_BANK',
+                questionCount: 1,
+                questionTypeDistribution: [{ type: 'MULTIPLE_CHOICE', count: 1 }],
+            }),
+        );
+
+        const response = await testApp.request('/generate-preview', {
+            method: 'POST',
+            body: formData,
+        });
+
+        expect(response.status).toBe(502);
+        const text = await response.text();
+        expect(text).toContain('AI passage generation did not meet quality checks');
+    });
 });

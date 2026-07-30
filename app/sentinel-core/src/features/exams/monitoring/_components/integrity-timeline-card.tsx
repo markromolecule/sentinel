@@ -22,7 +22,7 @@ export function IntegrityTimelineCard({
 }: IntegrityTimelineCardProps) {
     return (
         <div className="flex min-h-full flex-col gap-4">
-            <div className="border-border/50 sticky top-0 z-20 flex shrink-0 flex-col gap-4 border-b bg-background pb-4 pt-1 sm:flex-row sm:items-center sm:justify-between">
+            <div className="border-border/50 bg-background sticky top-0 z-20 flex shrink-0 flex-col gap-4 border-b pt-1 pb-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="space-y-0.5">
                     <h3 className="text-foreground text-base font-bold">Integrity Timeline</h3>
                     <p className="text-muted-foreground text-xs">

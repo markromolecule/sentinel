@@ -75,7 +75,10 @@ export class EvidenceQueryService {
                     });
                 } catch (err: any) {
                     // Log failure to generate view URL, but don't crash listing other evidence
-                    console.error(`Failed to generate signed view URL for evidence ${row.evidence_id}:`, err);
+                    console.error(
+                        `Failed to generate signed view URL for evidence ${row.evidence_id}:`,
+                        err,
+                    );
                 }
             }
 

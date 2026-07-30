@@ -154,15 +154,15 @@ database row and storage object the severity gate is intended to avoid.
 
 ## Required behavior
 
-| Server outcome for the dispatched event | Telemetry | Evidence object |
-| --------------------------------------- | --------- | --------------- |
-| Ignored by telemetry policy             | Continue  | Do not upload   |
-| Persisted as `LOW`                      | Continue  | Do not upload   |
-| Persisted as `MEDIUM`                   | Continue  | Upload one frame |
-| Persisted as `HIGH`                     | Continue  | Upload one frame |
-| Duplicate retry                         | Idempotent | Do not create a second object |
-| Severity decision unavailable/timeout   | Continue  | Drop the local frame |
-| Capture, encoding, or upload failure    | Continue  | Record bounded diagnostics only |
+| Server outcome for the dispatched event | Telemetry  | Evidence object                 |
+| --------------------------------------- | ---------- | ------------------------------- |
+| Ignored by telemetry policy             | Continue   | Do not upload                   |
+| Persisted as `LOW`                      | Continue   | Do not upload                   |
+| Persisted as `MEDIUM`                   | Continue   | Upload one frame                |
+| Persisted as `HIGH`                     | Continue   | Upload one frame                |
+| Duplicate retry                         | Idempotent | Do not create a second object   |
+| Severity decision unavailable/timeout   | Continue   | Drop the local frame            |
+| Capture, encoding, or upload failure    | Continue   | Record bounded diagnostics only |
 
 When an existing incident escalates, the evidence must represent the **current dispatch that
 caused that escalation**, not the first low-severity occurrence and not a later arbitrary camera

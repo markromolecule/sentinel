@@ -8,7 +8,7 @@ export type UseMediapipeFaceLandmarkerResult = {
     initFaceLandmarker: (
         preLoadedFaceLandmarker: FaceLandmarker | null,
         sandbox: ResolvedMediaPipeSandbox,
-        isDisposed: () => boolean
+        isDisposed: () => boolean,
     ) => Promise<FaceLandmarker | null>;
     closeFaceLandmarker: (preLoadedFaceLandmarker: FaceLandmarker | null) => void;
 };
@@ -20,52 +20,43 @@ export type UseMediapipeFaceLandmarkerResult = {
 export function useMediapipeFaceLandmarker(): UseMediapipeFaceLandmarkerResult {
     const faceLandmarkerRef = useRef<FaceLandmarker | null>(null);
 
-    const initFaceLandmarker = useCallback(async (
-        preLoadedFaceLandmarker: FaceLandmarker | null,
-        sandbox: ResolvedMediaPipeSandbox,
-        isDisposed: () => boolean
-    ): Promise<FaceLandmarker | null> => {
-        if (preLoadedFaceLandmarker) {
-            faceLandmarkerRef.current = preLoadedFaceLandmarker;
-            return preLoadedFaceLandmarker;
-        }
+    const initFaceLandmarker = useCallback(
+        async (
+            preLoadedFaceLandmarker: FaceLandmarker | null,
+            sandbox: ResolvedMediaPipeSandbox,
+            isDisposed: () => boolean,
+        ): Promise<FaceLandmarker | null> => {
+            if (preLoadedFaceLandmarker) {
+                faceLandmarkerRef.current = preLoadedFaceLandmarker;
+                return preLoadedFaceLandmarker;
+            }
 
-        const visionModule = await import('@mediapipe/tasks-vision');
-        const resolver = await visionModule.FilesetResolver.forVisionTasks(MEDIAPIPE_WASM_PATH);
+            const visionModule = await import('@mediapipe/tasks-vision');
+            const resolver = await visionModule.FilesetResolver.forVisionTasks(MEDIAPIPE_WASM_PATH);
 
-        if (isDisposed()) return null;
+            if (isDisposed()) return null;
 
-        const landmarker = await visionModule.FaceLandmarker.createFromOptions(
-            resolver,
-            {
+            const landmarker = await visionModule.FaceLandmarker.createFromOptions(resolver, {
                 baseOptions: { modelAssetPath: MEDIAPIPE_MODEL_PATH },
                 runningMode: 'VIDEO',
                 numFaces: 2,
-                minFaceDetectionConfidence: Math.max(
-                    0.35,
-                    sandbox.confidenceThreshold - 0.2,
-                ),
-                minFacePresenceConfidence: Math.max(
-                    0.35,
-                    sandbox.confidenceThreshold - 0.2,
-                ),
-                minTrackingConfidence: Math.max(
-                    0.35,
-                    sandbox.confidenceThreshold - 0.2,
-                ),
-            },
-        );
+                minFaceDetectionConfidence: Math.max(0.35, sandbox.confidenceThreshold - 0.2),
+                minFacePresenceConfidence: Math.max(0.35, sandbox.confidenceThreshold - 0.2),
+                minTrackingConfidence: Math.max(0.35, sandbox.confidenceThreshold - 0.2),
+            });
 
-        if (isDisposed()) {
-            if (landmarker && typeof landmarker.close === 'function') {
-                landmarker.close();
+            if (isDisposed()) {
+                if (landmarker && typeof landmarker.close === 'function') {
+                    landmarker.close();
+                }
+                return null;
             }
-            return null;
-        }
 
-        faceLandmarkerRef.current = landmarker;
-        return landmarker;
-    }, []);
+            faceLandmarkerRef.current = landmarker;
+            return landmarker;
+        },
+        [],
+    );
 
     const closeFaceLandmarker = useCallback((preLoadedFaceLandmarker: FaceLandmarker | null) => {
         if (faceLandmarkerRef.current && typeof faceLandmarkerRef.current.close === 'function') {
