@@ -50,35 +50,35 @@ export function buildQuestionSectionCopy(definition: { value: string; label: str
 export const QUESTION_TYPE_INSTRUCTIONS: Record<string, { label: string; instruction: string }> = {
     MULTIPLE_CHOICE: {
         label: 'Multiple Choice',
-        instruction: 'Select the best answer from the choices provided.',
+        instruction: 'Read each question carefully. Choose the one best answer from the options provided.',
     },
     MULTIPLE_RESPONSE: {
         label: 'Multiple Response',
-        instruction: 'Select all answers that apply for each question.',
+        instruction: 'Read each question carefully. Select all options that correctly answer the item.',
     },
     TRUE_FALSE: {
         label: 'True or False',
-        instruction: 'Determine whether each statement is true or false.',
+        instruction: 'Read each statement carefully. Indicate whether each statement is true or false.',
     },
     IDENTIFICATION: {
         label: 'Identification',
-        instruction: 'Write the correct term, concept, or short answer.',
+        instruction: 'Read each item carefully. Write the correct term, concept, name, or short answer required.',
     },
     MATCHING: {
         label: 'Matching Type',
-        instruction: 'Match each item with its correct corresponding answer.',
+        instruction: 'Match each item in the first column with the most appropriate answer in the second column.',
     },
     ESSAY: {
         label: 'Essay',
-        instruction: 'Answer each question clearly and completely.',
+        instruction: 'Answer each question in a clear, organized, and well-developed manner. Support your response with relevant concepts, explanations, or evidence whenever appropriate.',
     },
     FILL_BLANK: {
         label: 'Fill in the Blank',
-        instruction: 'Complete each statement with the correct word or phrase.',
+        instruction: 'Read each statement carefully. Supply the word, phrase, or value that correctly completes the blank.',
     },
     ENUMERATION: {
         label: 'Enumeration',
-        instruction: 'List all required answers for each question.',
+        instruction: 'List the required answers for each item completely and in the correct order when applicable.',
     },
 };
 

@@ -5,6 +5,7 @@ import { EntitlementsRepository } from '../../access/data/entitlements.repositor
 import { getReportingExamContext } from '../../reporting/services/get-reporting-exam-context';
 import { requireLifecycleMutationAccess } from '../lifecycle-access';
 import { grantRetakeExamWindowSchema } from '../lifecycle.dto';
+import { resolveLifecycleStudentId } from '../services/resolve-lifecycle-student-id';
 import { grantRetakeExamWindow } from '../services/grant-retake-exam-window';
 
 export const grantRetakeExamWindowRoute = createRoute({
@@ -41,6 +42,7 @@ export const grantRetakeExamWindowRouteHandler: AppRouteHandler<
 
     const { id, studentId } = c.req.valid('param');
     const body = c.req.valid('json');
+    const resolvedStudentId = await resolveLifecycleStudentId(c.get('dbClient'), studentId);
     const exam = await getReportingExamContext({
         dbClient: c.get('dbClient'),
         examId: id,
@@ -50,7 +52,7 @@ export const grantRetakeExamWindowRouteHandler: AppRouteHandler<
     });
 
     const isEnrolled = await EntitlementsRepository.hasStudentExamEnrollment(c.get('dbClient'), {
-        studentId,
+        studentId: resolvedStudentId,
         classGroupId: exam.classGroupId,
         subjectId: exam.subjectId,
         sectionId: exam.sectionId,
@@ -66,7 +68,7 @@ export const grantRetakeExamWindowRouteHandler: AppRouteHandler<
     const result = await grantRetakeExamWindow({
         dbClient: c.get('dbClient'),
         examId: id,
-        studentId,
+        studentId: resolvedStudentId,
         sourceAttemptId: body.sourceAttemptId,
         availableFrom: body.availableFrom,
         availableUntil: body.availableUntil,

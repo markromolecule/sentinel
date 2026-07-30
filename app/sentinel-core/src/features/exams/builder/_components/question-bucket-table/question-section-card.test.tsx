@@ -11,14 +11,16 @@ const mockQuestionTypes = [
         value: 'MULTIPLE_CHOICE',
         label: 'Multiple Choice',
         description: 'Single correct answer from choices.',
-        instruction: 'Select the best answer from the choices provided.',
+        instruction:
+            'Read each question carefully. Choose the one best answer from the options provided.',
         defaultContent: {},
     },
     {
         value: 'TRUE_FALSE',
         label: 'True or False',
         description: 'True or false statements.',
-        instruction: 'Determine whether each statement is true or false.',
+        instruction:
+            'Read each statement carefully. Indicate whether each statement is true or false.',
         defaultContent: {},
     },
 ] as any[];
@@ -32,7 +34,8 @@ describe('QuestionSectionCard', () => {
                 section={{
                     id: 'section-1',
                     title: 'Multiple Choice',
-                    description: 'Select the best answer from the choices provided.',
+                    description:
+                        'Read each question carefully. Choose the one best answer from the options provided.',
                     questionType: 'MULTIPLE_CHOICE',
                     orderIndex: 0,
                     isCollapsed: false,
@@ -57,7 +60,11 @@ describe('QuestionSectionCard', () => {
 
         // Check that the title and instruction are displayed
         expect(screen.getAllByText('Multiple Choice').length).toBeGreaterThan(0);
-        expect(screen.getByText('Select the best answer from the choices provided.')).toBeTruthy();
+        expect(
+            screen.getByText(
+                'Read each question carefully. Choose the one best answer from the options provided.',
+            ),
+        ).toBeTruthy();
         
         // Assert there is no edit button/pencil or manual title textbox
         expect(screen.queryByRole('textbox')).toBeNull();
@@ -103,7 +110,8 @@ describe('QuestionSectionCard', () => {
                 section={{
                     id: 'section-1',
                     title: 'Multiple Choice',
-                    description: 'Select the best answer from the choices provided.',
+                    description:
+                        'Read each question carefully. Choose the one best answer from the options provided.',
                     questionType: 'MULTIPLE_CHOICE',
                     orderIndex: 0,
                     isCollapsed: false,

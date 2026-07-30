@@ -16,12 +16,14 @@ describe('useSectionManagement', () => {
         {
             value: 'MULTIPLE_CHOICE',
             label: 'Multiple Choice',
-            instruction: 'Select the best answer from the choices provided.',
+            instruction:
+                'Read each question carefully. Choose the one best answer from the options provided.',
         },
         {
             value: 'TRUE_FALSE',
             label: 'True or False',
-            instruction: 'Determine whether each statement is true or false.',
+            instruction:
+                'Read each statement carefully. Indicate whether each statement is true or false.',
         },
     ];
 
@@ -60,7 +62,9 @@ describe('useSectionManagement', () => {
         const updated = useExamStore.getState().questionSections[0];
         expect(updated?.questionType).toBe('MULTIPLE_CHOICE');
         expect(updated?.title).toBe('Multiple Choice');
-        expect(updated?.description).toBe('Select the best answer from the choices provided.');
+        expect(updated?.description).toBe(
+            'Read each question carefully. Choose the one best answer from the options provided.',
+        );
         expect(toast.error).not.toHaveBeenCalled();
     });
 

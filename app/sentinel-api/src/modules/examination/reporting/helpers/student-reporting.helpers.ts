@@ -133,6 +133,12 @@ export function mapStudentSummary(
     const makeupRequired = !row.attempt_id;
     const retakeRequired = needsRetake(row, passingScore);
     const { firstName, lastName } = resolveStudentNames(row);
+    const hasGrantedMakeupRemediation = Boolean(
+        options?.remediations?.some((remediation) => remediation.remediationType === 'MAKEUP'),
+    );
+    const hasGrantedRetakeRemediation = Boolean(
+        options?.remediations?.some((remediation) => remediation.remediationType === 'RETAKE'),
+    );
 
     return {
         id: row.student_user_id ?? row.student_record_id,
@@ -165,8 +171,10 @@ export function mapStudentSummary(
         attemptCount: toNumber(row.attempt_count),
         isFlagged: reviewRequired,
         needsReview: reviewRequired,
-        needsMakeup: makeupRequired && row.active_override_type !== 'MAKEUP',
-        needsRetake: retakeRequired,
+        needsMakeup:
+            makeupRequired && row.active_override_type !== 'MAKEUP' && !hasGrantedMakeupRemediation,
+        needsRetake:
+            retakeRequired && row.active_override_type !== 'RETAKE' && !hasGrantedRetakeRemediation,
         isFinalized: row.attempt_finalized_at != null || row.score_state === 'FINALIZED',
         finalizedAt: toIsoDate(row.attempt_finalized_at ?? row.finalized_at),
         lifecycleState: row.lifecycle_state ?? null,

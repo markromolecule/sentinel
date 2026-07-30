@@ -173,7 +173,7 @@ export function SectionedQuestionBucketTable({
                                 <QuestionRowsTable
                                     questions={sectionQuestions}
                                     questionNumberOffset={questionNumberOffset}
-                                    footerLabel={`${section.title} Totals`}
+                                    footerLabel="Totals"
                                     footerPoints={sectionPoints}
                                     draggedIndex={questionDragState.draggedIndex}
                                     dropTargetIndex={questionDragState.dropTargetIndex}

@@ -45,6 +45,18 @@ export async function createRemediationExam(args: {
         });
     }
 
+    const remediationStudent = await dbClient
+        .selectFrom('students')
+        .select(['user_id'])
+        .where('student_id', '=', studentId)
+        .executeTakeFirst();
+
+    if (!remediationStudent?.user_id) {
+        throw new HTTPException(404, {
+            message: 'Student account not found.',
+        });
+    }
+
     return await executeTransaction(async (tx) => {
         const newExamId = crypto.randomUUID();
 
@@ -219,7 +231,8 @@ export async function createRemediationExam(args: {
                 remediation_id: remediationId,
                 source_exam_id: sourceExamId,
                 remediation_exam_id: newExamId,
-                student_id: studentId,
+                // Remediation access is scoped by auth user ID in the persisted schema.
+                student_id: remediationStudent.user_id,
                 source_attempt_id: sourceAttemptId,
                 remediation_type: remediationType,
                 scheduled_date: new Date(scheduledDate),

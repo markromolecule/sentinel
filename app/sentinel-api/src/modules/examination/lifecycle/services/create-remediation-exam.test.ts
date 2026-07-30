@@ -1,7 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRemediationExam } from './create-remediation-exam';
-import type { DbClient } from '@sentinel/db';
+import { executeTransaction, type DbClient } from '@sentinel/db';
 import { HTTPException } from 'hono/http-exception';
+
+vi.mock('@sentinel/db', async () => {
+    const actual = await vi.importActual<typeof import('@sentinel/db')>('@sentinel/db');
+    return {
+        ...actual,
+        executeTransaction: vi.fn(),
+    };
+});
 
 describe('createRemediationExam', () => {
     let mockTx: any;
@@ -25,11 +33,14 @@ describe('createRemediationExam', () => {
         mockDb = {
             selectFrom: vi.fn().mockReturnThis(),
             selectAll: vi.fn().mockReturnThis(),
+            select: vi.fn().mockReturnThis(),
             where: vi.fn().mockReturnThis(),
             executeTakeFirst: vi.fn(),
             transaction: vi.fn().mockReturnThis(),
             execute: vi.fn((callback) => callback(mockTx)),
         };
+
+        vi.mocked(executeTransaction).mockImplementation(async (callback: any) => callback(mockTx));
     });
 
     it('throws 404 if source exam does not exist', async () => {
@@ -46,6 +57,29 @@ describe('createRemediationExam', () => {
                 createdBy: 'instructor-1',
             }),
         ).rejects.toThrow(HTTPException);
+    });
+
+    it('throws 404 if the student has no linked user account', async () => {
+        mockDb.executeTakeFirst
+            .mockResolvedValueOnce({
+                exam_id: 'source-exam-1',
+                title: 'Algorithm Design',
+            })
+            .mockResolvedValueOnce({
+                user_id: null,
+            });
+
+        await expect(
+            createRemediationExam({
+                dbClient: mockDb as unknown as DbClient,
+                sourceExamId: 'source-exam-1',
+                studentId: 'student-record-1',
+                remediationType: 'MAKEUP',
+                scheduledDate: '2026-07-04T10:00:00.000Z',
+                endDate: '2026-07-04T12:00:00.000Z',
+                createdBy: 'instructor-1',
+            }),
+        ).rejects.toThrow('Student account not found.');
     });
 
     it('clones metadata, configurations, sections, questions and schedules remediation', async () => {
@@ -84,7 +118,9 @@ describe('createRemediationExam', () => {
         ];
 
         // 1. Mock DB query for source exam
-        mockDb.executeTakeFirst.mockResolvedValue(sourceExamMock);
+        mockDb.executeTakeFirst
+            .mockResolvedValueOnce(sourceExamMock)
+            .mockResolvedValueOnce({ user_id: 'student-user-1' });
 
         // 2. Mock TX queries
         mockTx.executeTakeFirst.mockResolvedValueOnce(sourceConfigMock); // configuration query
@@ -119,6 +155,11 @@ describe('createRemediationExam', () => {
         expect(mockTx.insertInto).toHaveBeenCalledWith('exam_sections');
         expect(mockTx.insertInto).toHaveBeenCalledWith('exam_questions');
         expect(mockTx.insertInto).toHaveBeenCalledWith('exam_remediation_schedules');
+        expect(mockTx.values).toHaveBeenCalledWith(
+            expect.objectContaining({
+                student_id: 'student-user-1',
+            }),
+        );
 
         expect(result).toBeDefined();
     });

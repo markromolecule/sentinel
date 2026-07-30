@@ -182,7 +182,8 @@ describe('useExamStore', () => {
                     {
                         id: 'section-1',
                         title: 'Multiple Choice Part',
-                        description: 'Select the best answer from the choices provided.',
+                        description:
+                            'Read each question carefully. Choose the one best answer from the options provided.',
                         questionType: 'MULTIPLE_CHOICE',
                         orderIndex: 0,
                     } as any,
@@ -192,7 +193,7 @@ describe('useExamStore', () => {
 
         expect(useExamStore.getState().questionSections[0]?.questionType).toBe('MULTIPLE_CHOICE');
         expect(useExamStore.getState().questionSections[0]?.description).toBe(
-            'Select the best answer from the choices provided.',
+            'Read each question carefully. Choose the one best answer from the options provided.',
         );
     });
 
@@ -204,7 +205,7 @@ describe('useExamStore', () => {
         expect(useExamStore.getState().questionSections[0]?.questionType).toBe('MULTIPLE_CHOICE');
         expect(useExamStore.getState().questionSections[0]?.title).toBe('Multiple Choice');
         expect(useExamStore.getState().questionSections[0]?.description).toBe(
-            'Select the best answer from the choices provided.',
+            'Read each question carefully. Choose the one best answer from the options provided.',
         );
     });
 });
