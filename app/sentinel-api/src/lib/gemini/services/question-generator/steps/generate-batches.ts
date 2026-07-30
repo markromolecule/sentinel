@@ -74,11 +74,7 @@ export async function generateBatchesStep(args: {
             });
         } catch (error) {
             console.error('Batch generation model call failed:', error);
-            const deficits = getQuestionTypeDistribution(batchConfig).map((d) => ({
-                type: d.type,
-                count: d.count,
-            }));
-            return { rawQuestions: [], deficits };
+            throw error;
         }
 
         const parsedRecord = z
@@ -147,18 +143,16 @@ export async function generateBatchesStep(args: {
                 }
             }
         } else {
-            const batchConfig = batches[index];
-            const distribution = getQuestionTypeDistribution(batchConfig);
-            for (const dist of distribution) {
-                const existing = allDeficits.find((d) => d.type === dist.type);
-                if (existing) {
-                    existing.count += dist.count;
-                } else {
-                    allDeficits.push({ type: dist.type, count: dist.count });
-                }
-            }
+            console.error(`Question generation batch ${index + 1} failed:`, res.reason);
         }
     });
+
+    const failedBatch = batchResults.find(
+        (result): result is PromiseRejectedResult => result.status === 'rejected',
+    );
+    if (failedBatch) {
+        throw failedBatch.reason;
+    }
 
     return {
         rawQuestions: allRawQuestions,

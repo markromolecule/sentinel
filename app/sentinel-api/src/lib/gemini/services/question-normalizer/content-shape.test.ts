@@ -44,6 +44,23 @@ describe('normalizeQuestionContentShape', () => {
         expect(content.correctAnswer).toBe('Paris');
     });
 
+    it.each([
+        ['Option A', 'Paris'],
+        ['choice B', 'Rome'],
+        ['Option 3', 'Madrid'],
+        ['"Paris."', 'Paris'],
+    ])('resolves generated answer representation %s', (answer, expected) => {
+        const content = normalizeQuestionContentShape('MULTIPLE_CHOICE', {
+            prompt: 'What is the capital of France?',
+            options: ['Paris', 'Rome', 'Madrid', 'Berlin'],
+            correctAnswerText: answer,
+        }) as {
+            correctAnswer: string;
+        };
+
+        expect(content.correctAnswer).toBe(expected);
+    });
+
     it('strips leading option labels from multiple-response options and answers', () => {
         const content = normalizeQuestionContentShape('MULTIPLE_RESPONSE', {
             prompt: 'Which are prime numbers?',

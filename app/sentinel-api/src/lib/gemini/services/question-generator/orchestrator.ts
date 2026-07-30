@@ -21,10 +21,12 @@ import { buildResponseStep } from './steps/build-response';
 import { reconcileQuestionSlots } from './steps/reconcile-question-slots';
 import { assessPassageQuality } from './steps/assess-passage-quality';
 import { repairInvalidQuestions } from './steps/repair-invalid-questions';
+import { replenishQuestionDeficits } from './steps/replenish-question-deficits';
 
 export type { LlmFile, QuestionGeneratorLlmProvider, RawGeneratedQuestion } from './types';
 
 const MAX_PASSAGE_REPAIR_ROUNDS = 2;
+const MAX_DEFICIT_REPLENISHMENT_ROUNDS = 2;
 
 export class QuestionGeneratorService {
     /**
@@ -49,14 +51,13 @@ export class QuestionGeneratorService {
         const uploadedFiles = await uploadFilesStep(args.files, provider);
 
         try {
-            const { rawQuestions: allRawQuestions, deficits: initialDeficits } =
-                await generateBatchesStep({
-                    batches,
-                    files: args.files,
-                    uploadedFiles,
-                    model,
-                    provider,
-                });
+            const { rawQuestions: allRawQuestions } = await generateBatchesStep({
+                batches,
+                files: args.files,
+                uploadedFiles,
+                model,
+                provider,
+            });
 
             const sourcePageCounts = await resolvePageCountsStep({
                 files: args.files,
@@ -76,11 +77,44 @@ export class QuestionGeneratorService {
                 args.config,
                 sourceDocuments,
             );
+            const candidateQuestions = [...normalizedQuestions.successful];
 
-            let reconciliation = reconcileQuestionSlots(
-                normalizedQuestions.successful,
-                args.config,
-            );
+            let reconciliation = reconcileQuestionSlots(candidateQuestions, args.config);
+
+            let replenishmentRound = 0;
+            while (
+                reconciliation.deficits.length > 0 &&
+                replenishmentRound < MAX_DEFICIT_REPLENISHMENT_ROUNDS
+            ) {
+                replenishmentRound++;
+                const missingCount = reconciliation.deficits.reduce(
+                    (total, deficit) => total + deficit.count,
+                    0,
+                );
+                console.log(
+                    `Running deficit replenishment round ${replenishmentRound} for ${missingCount} missing questions.`,
+                );
+
+                const replenishedQuestions = await replenishQuestionDeficits({
+                    reconciliation,
+                    config: args.config,
+                    files: args.files,
+                    uploadedFiles,
+                    sourceDocuments,
+                    model,
+                    provider,
+                });
+
+                candidateQuestions.push(...replenishedQuestions);
+                reconciliation = reconcileQuestionSlots(candidateQuestions, args.config);
+            }
+
+            if (reconciliation.deficits.length > 0) {
+                throw new HTTPException(502, {
+                    message:
+                        'Gemini did not return the requested number of valid questions. Please try generating the preview again.',
+                });
+            }
 
             let assessResult = await assessPassageQuality(
                 reconciliation.slots,

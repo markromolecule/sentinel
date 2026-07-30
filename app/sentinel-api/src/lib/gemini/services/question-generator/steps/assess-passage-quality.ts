@@ -104,21 +104,8 @@ export async function assessPassageQuality(
                 responseJsonSchema,
             });
         } catch (error) {
-            console.error(
-                'Critic model call failed, falling back to fail-closed for survivors:',
-                error,
-            );
-            // Treat all survivors as failed
-            for (const slot of survivors) {
-                failedSlots.push({
-                    slotId: slot.slotId,
-                    type: slot.type,
-                    question: slot.question,
-                    violations: ['CRITIC_FAILED'],
-                    reasons: ['Critic evaluation model call failed.'],
-                });
-            }
-            return { passedSlots, failedSlots };
+            console.error('Critic model call failed:', error);
+            throw error;
         }
 
         const parsed = criticResponseSchema.safeParse(criticOutput);

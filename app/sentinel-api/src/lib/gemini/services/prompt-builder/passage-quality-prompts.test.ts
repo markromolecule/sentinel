@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
     buildPassageQualityCriticPrompt,
     buildPassageQualityCriticSchema,
+    buildPassageRepairBatchPrompt,
+    buildPassageRepairBatchSchema,
     buildPassageRepairPrompt,
     buildPassageRepairSchema,
 } from './passage-quality-prompts';
@@ -78,6 +80,48 @@ describe('PassageQualityPrompts', () => {
             expect(schema.properties.sourceEvidence).toBeDefined();
             expect(schema.properties.difficulty.enum).toEqual(['MODERATE']);
             expect(schema.required).toContain('passageContent');
+        });
+    });
+
+    describe('batched passage repairs', () => {
+        it('builds a slot-preserving prompt and schema', () => {
+            const prompt = buildPassageRepairBatchPrompt({
+                slots: [
+                    {
+                        slotId: 'slot-1',
+                        type: 'MULTIPLE_CHOICE',
+                        prompt: 'What is 2+2?',
+                        correctAnswer: '4',
+                        passageContent: 'Leaky passage.',
+                        sourceEvidence: 'Evidence.',
+                        violations: ['ANSWER_EXACT_MATCH'],
+                    },
+                    {
+                        slotId: 'slot-2',
+                        type: 'MULTIPLE_CHOICE',
+                        prompt: 'What is 3+3?',
+                        correctAnswer: '6',
+                        passageContent: 'Another leaky passage.',
+                        sourceEvidence: 'Evidence.',
+                        violations: ['ANSWER_EXACT_MATCH'],
+                    },
+                ],
+                sourceFiles: ['algebra.pdf'],
+            });
+            const schema = buildPassageRepairBatchSchema({
+                type: 'MULTIPLE_CHOICE',
+                slotIds: ['slot-1', 'slot-2'],
+            });
+
+            expect(prompt).toContain('Repair exactly 2 generated questions');
+            expect(prompt).toContain('slot-1');
+            expect(prompt).toContain('slot-2');
+            expect(schema.properties.repairs.minItems).toBe(2);
+            expect(schema.properties.repairs.maxItems).toBe(2);
+            expect(schema.properties.repairs.items.properties.slotId.enum).toEqual([
+                'slot-1',
+                'slot-2',
+            ]);
         });
     });
 });

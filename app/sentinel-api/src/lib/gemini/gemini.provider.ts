@@ -6,6 +6,9 @@ const DEFAULT_FLASH_MODEL =
     process.env.GEMINI_FLASH_MODEL?.trim() ||
     process.env.GEMINI_MODEL?.trim() ||
     'gemini-2.5-flash';
+const MAX_QUOTA_RETRIES = 1;
+const DEFAULT_QUOTA_RETRY_DELAY_MS = 30_000;
+const MAX_QUOTA_RETRY_DELAY_MS = 60_000;
 
 type GeminiJsonSchema = Record<string, unknown>;
 type UpstreamHttpStatus = 400 | 401 | 403 | 404 | 409 | 413 | 415 | 422 | 429 | 502;
@@ -108,40 +111,61 @@ export class GeminiProvider {
     }): Promise<T> {
         const apiKey = this.getApiKey();
         const model = this.resolveFlashModel(args.model);
-        const response = await this.fetchWithThrottle(
-            `${GEMINI_API_BASE_URL}/v1beta/models/${encodeURIComponent(model)}:generateContent`,
-            {
-                method: 'POST',
-                headers: {
-                    'x-goog-api-key': apiKey,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    contents: [
-                        {
-                            role: 'user',
-                            parts: [
-                                ...(args.files?.length
-                                    ? args.files.map((file) => ({
-                                          file_data: {
-                                              mime_type: file.mimeType,
-                                              file_uri: file.uri,
-                                          },
-                                      }))
-                                    : []),
-                                {
-                                    text: args.prompt,
-                                },
-                            ],
-                        },
-                    ],
-                    generationConfig: {
-                        responseMimeType: 'application/json',
-                        responseJsonSchema: args.responseJsonSchema,
-                    },
-                }),
+        const requestInit: RequestInit = {
+            method: 'POST',
+            headers: {
+                'x-goog-api-key': apiKey,
+                'Content-Type': 'application/json',
             },
-        );
+            body: JSON.stringify({
+                contents: [
+                    {
+                        role: 'user',
+                        parts: [
+                            ...(args.files?.length
+                                ? args.files.map((file) => ({
+                                      file_data: {
+                                          mime_type: file.mimeType,
+                                          file_uri: file.uri,
+                                      },
+                                  }))
+                                : []),
+                            {
+                                text: args.prompt,
+                            },
+                        ],
+                    },
+                ],
+                generationConfig: {
+                    responseMimeType: 'application/json',
+                    responseJsonSchema: args.responseJsonSchema,
+                },
+            }),
+        };
+
+        let response: Response | undefined;
+        for (let attempt = 0; attempt <= MAX_QUOTA_RETRIES; attempt++) {
+            response = await this.fetchWithThrottle(
+                `${GEMINI_API_BASE_URL}/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+                requestInit,
+            );
+
+            if (response.status !== 429 || attempt === MAX_QUOTA_RETRIES) {
+                break;
+            }
+
+            const retryDelayMs = await this.resolveQuotaRetryDelayMs(response);
+            console.warn(
+                `Gemini quota limit reached. Retrying generation in ${Math.ceil(retryDelayMs / 1000)} seconds.`,
+            );
+            await this.sleep(retryDelayMs);
+        }
+
+        if (!response) {
+            throw new HTTPException(502, {
+                message: 'Gemini did not return a response.',
+            });
+        }
 
         if (!response.ok) {
             throw await this.createUpstreamException(
@@ -267,6 +291,40 @@ export class GeminiProvider {
         const controller = new AbortControllerCtor();
         setTimeout(() => controller.abort(), timeoutMs);
         return controller.signal;
+    }
+
+    private static async resolveQuotaRetryDelayMs(response: Response) {
+        const retryAfter = response.headers.get('retry-after');
+
+        if (retryAfter) {
+            const seconds = Number(retryAfter);
+            if (Number.isFinite(seconds) && seconds >= 0) {
+                return Math.min(MAX_QUOTA_RETRY_DELAY_MS, Math.ceil(seconds * 1000));
+            }
+
+            const retryAt = Date.parse(retryAfter);
+            if (Number.isFinite(retryAt)) {
+                return Math.min(MAX_QUOTA_RETRY_DELAY_MS, Math.max(0, retryAt - Date.now()));
+            }
+        }
+
+        const responseText = await response.clone().text();
+        const retryDelayMatch =
+            responseText.match(/"retryDelay"\s*:\s*"([\d.]+)s"/i) ??
+            responseText.match(/retry in ([\d.]+)s/i);
+        const retryDelaySeconds = Number(retryDelayMatch?.[1]);
+
+        if (Number.isFinite(retryDelaySeconds) && retryDelaySeconds >= 0) {
+            return Math.min(MAX_QUOTA_RETRY_DELAY_MS, Math.ceil(retryDelaySeconds * 1000));
+        }
+
+        return DEFAULT_QUOTA_RETRY_DELAY_MS;
+    }
+
+    private static sleep(ms: number) {
+        return new Promise<void>((resolve) => {
+            setTimeout(resolve, ms);
+        });
     }
 
     private static async fetchWithThrottle(input: string, init: RequestInit) {

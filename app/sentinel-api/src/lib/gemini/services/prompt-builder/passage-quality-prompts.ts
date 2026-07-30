@@ -74,7 +74,7 @@ export function buildPassageQualityCriticSchema() {
     };
 }
 
-interface RepairPromptInput {
+export interface RepairPromptInput {
     slotId: string;
     type: string;
     prompt: string;
@@ -83,6 +83,27 @@ interface RepairPromptInput {
     sourceEvidence: string;
     violations: string[];
     sourceFiles: string[];
+}
+
+export function buildPassageRepairBatchPrompt(args: {
+    slots: Omit<RepairPromptInput, 'sourceFiles'>[];
+    sourceFiles: string[];
+}): string {
+    return [
+        `Repair exactly ${args.slots.length} generated questions.`,
+        'Return exactly one replacement for every requested slotId. Do not omit, duplicate, or rename slot IDs.',
+        'Each replacement must retain the requested question type and satisfy its supplied response schema.',
+        '',
+        'SLOTS TO REPAIR:',
+        JSON.stringify(args.slots, null, 2),
+        '',
+        'REPAIR INSTRUCTIONS:',
+        '1. Generate a complete replacement question with fresh source metadata and passageContent.',
+        '2. The passageContent must not contain the exact answer or clues that make the answer a trivial copy-paste match.',
+        '3. The passageContent must still contain enough context for the student to derive the answer.',
+        '4. The sourceEvidence must be a short verbatim excerpt from the exact source page. It may contain the answer because it is private provenance.',
+        `5. Set sourceFileName to one of: ${args.sourceFiles.join(', ')}.`,
+    ].join('\n');
 }
 
 /**
@@ -182,5 +203,30 @@ export function buildPassageRepairSchema(config: RepairSchemaConfig) {
             'cognitive_level',
             'predicted_difficulty',
         ],
+    };
+}
+
+export function buildPassageRepairBatchSchema(config: RepairSchemaConfig & { slotIds: string[] }) {
+    return {
+        type: 'object',
+        properties: {
+            repairs: {
+                type: 'array',
+                minItems: config.slotIds.length,
+                maxItems: config.slotIds.length,
+                items: {
+                    type: 'object',
+                    properties: {
+                        slotId: {
+                            type: 'string',
+                            enum: config.slotIds,
+                        },
+                        question: buildPassageRepairSchema(config),
+                    },
+                    required: ['slotId', 'question'],
+                },
+            },
+        },
+        required: ['repairs'],
     };
 }

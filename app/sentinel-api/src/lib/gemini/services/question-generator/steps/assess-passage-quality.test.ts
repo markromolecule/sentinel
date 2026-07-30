@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { assessPassageQuality } from './assess-passage-quality';
 import type { QuestionGeneratorLlmProvider } from '../types';
 import type { GenerateQuestionPreviewConfig } from '@sentinel/shared';
+import type { ReconciledSlot } from './reconcile-question-slots';
 
 describe('AssessPassageQualityStep', () => {
     const config: GenerateQuestionPreviewConfig = {
@@ -13,7 +14,7 @@ describe('AssessPassageQualityStep', () => {
     };
 
     it('short-circuits deterministic violations and runs critic on survivors', async () => {
-        const slots = [
+        const slots: ReconciledSlot[] = [
             {
                 slotId: 'slot-1',
                 type: 'MULTIPLE_CHOICE',
@@ -76,7 +77,7 @@ describe('AssessPassageQualityStep', () => {
     });
 
     it('fails closed when critic results are missing or malformed', async () => {
-        const slots = [
+        const slots: ReconciledSlot[] = [
             {
                 slotId: 'slot-1',
                 type: 'MULTIPLE_CHOICE',
@@ -108,5 +109,36 @@ describe('AssessPassageQualityStep', () => {
 
         expect(result.failedSlots).toHaveLength(1);
         expect(result.failedSlots[0].violations).toContain('CRITIC_FAIL_CLOSED');
+    });
+
+    it('propagates critic availability failures instead of reporting leakage', async () => {
+        const upstreamError = new Error('quota exceeded');
+        const slots: ReconciledSlot[] = [
+            {
+                slotId: 'slot-1',
+                type: 'MULTIPLE_CHOICE',
+                question: {
+                    content: {
+                        prompt: 'What is 3+3?',
+                        options: ['5', '6'],
+                        correctAnswer: '6',
+                    },
+                    passageContent: 'A passage about arithmetic operations.',
+                    sourceEvidence: 'Verbatim.',
+                },
+            },
+        ];
+        const mockProvider: Partial<QuestionGeneratorLlmProvider> = {
+            generateStructuredJson: vi.fn().mockRejectedValue(upstreamError),
+        };
+
+        await expect(
+            assessPassageQuality(
+                slots,
+                config,
+                'gemini-model',
+                mockProvider as QuestionGeneratorLlmProvider,
+            ),
+        ).rejects.toBe(upstreamError);
     });
 });

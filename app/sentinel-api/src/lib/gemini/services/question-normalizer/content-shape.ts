@@ -20,6 +20,40 @@ function normalizeChoiceOption(option: string): string {
     return stripChoiceLabelPrefix(option).trim();
 }
 
+function normalizeChoiceComparison(value: string): string {
+    return normalizeChoiceOption(value)
+        .normalize('NFKC')
+        .replace(/[“”]/g, '"')
+        .replace(/[‘’]/g, "'")
+        .replace(/\s+/g, ' ')
+        .replace(/^(['"])(.*)\1$/, '$2')
+        .replace(/[.!?]+$/, '')
+        .trim()
+        .toLocaleLowerCase();
+}
+
+function resolveExplicitChoiceIndex(answer: string, optionCount: number): number | null {
+    const normalizedAnswer = answer.trim();
+    const letterMatch =
+        normalizedAnswer.match(/^(?:option|choice|answer)\s+([A-Z])(?:\b|[\s.):-])/i) ??
+        normalizedAnswer.match(/^\(?([A-Z])\)?(?:\s*[.):-])?\s*$/i);
+
+    if (letterMatch) {
+        const optionIndex = letterMatch[1].toUpperCase().charCodeAt(0) - 65;
+        return optionIndex >= 0 && optionIndex < optionCount ? optionIndex : null;
+    }
+
+    const numberMatch = normalizedAnswer.match(
+        /^(?:option|choice|answer)\s+#?\s*(\d+)(?:\b|[\s.):-])/i,
+    );
+    if (numberMatch) {
+        const optionIndex = Number(numberMatch[1]) - 1;
+        return optionIndex >= 0 && optionIndex < optionCount ? optionIndex : null;
+    }
+
+    return null;
+}
+
 function resolveChoiceAnswerValue(answer: string, options?: string[]): string {
     const normalizedAnswer = normalizeChoiceOption(answer);
 
@@ -27,19 +61,23 @@ function resolveChoiceAnswerValue(answer: string, options?: string[]): string {
         return normalizedAnswer;
     }
 
+    const normalizedComparison = normalizeChoiceComparison(normalizedAnswer);
     const directMatch = options.find(
-        (option) => normalizeChoiceOption(option).toLowerCase() === normalizedAnswer.toLowerCase(),
+        (option) => normalizeChoiceComparison(option) === normalizedComparison,
     );
     if (directMatch) {
         return directMatch;
     }
 
-    const answerLabel = extractChoiceLabel(answer) ?? extractChoiceLabel(answer.trim() + '.');
+    const explicitOptionIndex = resolveExplicitChoiceIndex(answer, options.length);
+    if (explicitOptionIndex !== null) {
+        return options[explicitOptionIndex];
+    }
+
+    const answerLabel = extractChoiceLabel(answer);
     if (answerLabel) {
         const optionIndex = answerLabel.charCodeAt(0) - 65;
-        if (optionIndex >= 0 && optionIndex < options.length) {
-            return options[optionIndex];
-        }
+        return options[optionIndex] ?? normalizedAnswer;
     }
 
     return normalizedAnswer;
