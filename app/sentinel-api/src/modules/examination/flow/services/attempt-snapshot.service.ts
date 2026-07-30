@@ -58,6 +58,25 @@ function mapQuestionRecordToExamQuestion(question: ExamQuestionDataRow): ExamQue
     };
 }
 
+export function normalizeAssessmentSnapshotQuestion(
+    question: AttemptAssessmentSnapshot['questions'][number],
+): ExamQuestion {
+    return {
+        ...question,
+        sectionId: question.sectionId ?? undefined,
+        sourceQuestionBankQuestionId: question.sourceQuestionBankQuestionId ?? undefined,
+        sourceCollectionId: question.sourceCollectionId ?? undefined,
+        tags: question.tags ?? [],
+        content: question.content as ExamQuestion['content'],
+    };
+}
+
+export function normalizeAssessmentSnapshotQuestions(
+    questions: AttemptAssessmentSnapshot['questions'],
+): ExamQuestion[] {
+    return questions.map(normalizeAssessmentSnapshotQuestion);
+}
+
 function buildOptionTokens(attemptId: string, questionId: string, options: string[]) {
     return options.map((option, index) =>
         createHash('sha256')

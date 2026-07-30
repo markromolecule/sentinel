@@ -10,6 +10,7 @@ import {
     buildAnswerPayloadChecksum,
     buildAssessmentSnapshot,
     buildScoreSnapshot,
+    normalizeAssessmentSnapshotQuestions,
     parseAssessmentSnapshot,
 } from './attempt-snapshot.service';
 import { logScoreIntegrityCheck } from '../../shared/services/score-integrity-observability.service';
@@ -85,25 +86,31 @@ export async function prepareSessionService({
 
     assertAttemptCanBePrepared(attempt ?? {});
 
+    if (!attempt?.exam_id) {
+        throw new HTTPException(404, {
+            message: 'Exam session not found for the authenticated student.',
+        });
+    }
+
     const assessmentSnapshot =
-        parseAssessmentSnapshot(attempt?.assessment_snapshot) ??
-        (attempt?.exam_id
-            ? buildAssessmentSnapshot({
-                  attemptId: body.sessionId,
-                  examId: attempt.exam_id,
-                  configurationState: await getExamConfigurationState(dbClient, attempt.exam_id),
-                  questions: await getExamQuestionsData({
-                      dbClient,
-                      examId: attempt.exam_id,
-                  }),
-              })
-            : null);
+        parseAssessmentSnapshot(attempt.assessment_snapshot) ??
+        buildAssessmentSnapshot({
+            attemptId: body.sessionId,
+            examId: attempt.exam_id,
+            configurationState: await getExamConfigurationState(dbClient, attempt.exam_id),
+            questions: await getExamQuestionsData({
+                dbClient,
+                examId: attempt.exam_id,
+            }),
+        });
 
     if (!assessmentSnapshot) {
         throw new HTTPException(409, {
             message: 'This exam attempt is missing its assessment snapshot and cannot be prepared.',
         });
     }
+
+    const normalizedQuestions = normalizeAssessmentSnapshotQuestions(assessmentSnapshot.questions);
 
     const answerChecksum = buildAnswerPayloadChecksum({
         attemptId: body.sessionId,
@@ -112,7 +119,7 @@ export async function prepareSessionService({
     });
 
     const scoreSnapshot = buildScoreSnapshot({
-        questions: assessmentSnapshot.questions,
+        questions: normalizedQuestions,
         answers: body.answers as ExamAttemptAnswers,
         answerChecksum,
     });
@@ -132,7 +139,7 @@ export async function prepareSessionService({
             attemptId: body.sessionId,
             answerChecksum,
             elapsedSeconds: body.elapsedSeconds,
-            lifecycleState: attempt?.lifecycle_state,
+            lifecycleState: attempt.lifecycle_state,
         }),
         score: scoreSnapshot.score,
         totalScore: scoreSnapshot.totalScore,
