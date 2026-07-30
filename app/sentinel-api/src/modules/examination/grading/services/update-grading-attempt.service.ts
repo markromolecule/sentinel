@@ -1,5 +1,9 @@
 import { type DbClient } from '@sentinel/db';
-import { calculateEssayWeightedScore } from '@sentinel/shared';
+import {
+    calculateEssayWeightedScore,
+    type ExamAttemptItemOverride,
+    type ExamQuestion,
+} from '@sentinel/shared';
 import { HTTPException } from 'hono/http-exception';
 import { getGradingAttemptDetail } from './get-grading-attempt-detail.service';
 import { appendExamAttemptLifecycleEvent } from '../../lifecycle/services/lifecycle-event.service';
@@ -39,6 +43,41 @@ export type UpdateGradingAttemptArgs = {
     finalize?: boolean;
 };
 
+type PersistedGradingOverride = ExamAttemptItemOverride;
+
+function toExamQuestionContent(content: Record<string, any>): ExamQuestion['content'] {
+    return content as ExamQuestion['content'];
+}
+
+function mapGradingQuestionToExamQuestion(question: {
+    id: string;
+    examId: string;
+    type: string;
+    sourceFileName?: string | null;
+    sourcePageNumber?: number | null;
+    sourceEvidence?: string | null;
+    passageContent?: string | null;
+    passageType?: 'plain' | 'html' | null;
+    content: Record<string, any>;
+    points: number;
+    orderIndex: number;
+}): ExamQuestion {
+    return {
+        id: question.id,
+        examId: question.examId,
+        type: question.type as ExamQuestion['type'],
+        sourceFileName: question.sourceFileName ?? null,
+        sourcePageNumber: question.sourcePageNumber ?? null,
+        sourceEvidence: question.sourceEvidence ?? null,
+        passageContent: question.passageContent ?? null,
+        passageType: question.passageType ?? null,
+        points: question.points,
+        orderIndex: question.orderIndex,
+        content: toExamQuestionContent(question.content),
+        tags: [],
+    };
+}
+
 /**
  * Updates a student's exam attempt with manually scored essay questions,
  * recalculating the overall score and storing criteria breakdowns.
@@ -71,24 +110,11 @@ export async function updateGradingAttempt({
         });
     }
 
-    const mappedQuestions = questions.map((q) => ({
-        id: q.id,
-        examId: q.examId,
-        type: q.type as any,
-        sourceFileName: q.sourceFileName ?? null,
-        sourcePageNumber: q.sourcePageNumber ?? null,
-        sourceEvidence: q.sourceEvidence ?? null,
-        passageContent: q.passageContent ?? null,
-        passageType: q.passageType ?? null,
-        points: q.points,
-        orderIndex: q.orderIndex,
-        content: q.content,
-        tags: [],
-    }));
+    const mappedQuestions = questions.map(mapGradingQuestionToExamQuestion);
 
     const questionPointsMap = new Map(questions.map((question) => [question.id, question.points]));
 
-    const mergedOverrides = {
+    const mergedOverrides: Record<string, PersistedGradingOverride> = {
         ...attempt.itemOverrides,
         ...itemOverrides,
     };
