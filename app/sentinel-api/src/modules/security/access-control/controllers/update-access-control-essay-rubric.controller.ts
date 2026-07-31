@@ -61,7 +61,7 @@ export const updateBaselineEssayRubricRouteHandler: AppRouteHandler<
         action: 'essay_rubric.baseline_updated',
         resourceType: 'system',
         resourceId: 'system',
-        activeInstitutionId: undefined,
+        activeInstitutionId: 'system',
         details: {
             previousRubricVersionId: previousBaseline?.rubric_version_id || null,
             newRubricVersionId: newVersion.rubric_version_id,
