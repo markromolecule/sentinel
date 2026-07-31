@@ -20,7 +20,7 @@ export function EssayRubricSettingsView() {
     if (isLoading) {
         return (
             <div className="flex h-64 items-center justify-center">
-                <Spinner className="h-8 w-8 text-[#323d8f]" />
+                <Spinner className="text-primary h-8 w-8" />
                 <span className="ml-3 text-sm font-medium text-slate-500">
                     Loading baseline rubric...
                 </span>

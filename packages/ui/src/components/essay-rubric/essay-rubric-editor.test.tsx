@@ -38,6 +38,10 @@ const mockCriteria: EssayRubricCriterion[] = [
     },
 ];
 
+function openRubricBuilder() {
+    fireEvent.click(screen.getByRole('button', { name: /Open Rubric Builder/i }));
+}
+
 describe('EssayRubricEditor', () => {
     afterEach(() => {
         cleanup();
@@ -58,7 +62,7 @@ describe('EssayRubricEditor', () => {
         expect(screen.getByText('Criterion 2')).toBeTruthy();
     });
 
-    it('renders editor view with correct criteria list when canOverride is true', () => {
+    it('renders readable rubric view with builder entry when canOverride is true', () => {
         render(
             <EssayRubricEditor
                 initialCriteria={mockCriteria}
@@ -67,9 +71,45 @@ describe('EssayRubricEditor', () => {
             />,
         );
 
+        expect(screen.getByText('Essay Rubric Criteria')).toBeTruthy();
+        expect(screen.getByRole('button', { name: /Open Rubric Builder/i })).toBeTruthy();
+        expect(screen.getAllByText('Criterion 1').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('Criterion 2').length).toBeGreaterThan(0);
+        expect(screen.queryByRole('button', { name: /Save Changes/i })).toBeNull();
+    });
+
+    it('opens editor view with correct criteria list from the builder button', () => {
+        render(
+            <EssayRubricEditor
+                initialCriteria={mockCriteria}
+                onSave={vi.fn()}
+                canOverride={true}
+            />,
+        );
+
+        openRubricBuilder();
+
         expect(screen.getByText('Rubric Criteria List')).toBeTruthy();
-        expect(screen.getByText('Criterion 1')).toBeTruthy();
-        expect(screen.getByText('Criterion 2')).toBeTruthy();
+        expect(screen.getAllByText('Criterion 1').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('Criterion 2').length).toBeGreaterThan(0);
+        expect(screen.getByRole('button', { name: /Save Changes/i })).toBeTruthy();
+    });
+
+    it('supports a page-header controlled builder without the inline trigger strip', () => {
+        render(
+            <EssayRubricEditor
+                initialCriteria={mockCriteria}
+                onSave={vi.fn()}
+                canOverride={true}
+                builderOpen={true}
+                onBuilderOpenChange={vi.fn()}
+                showBuilderTrigger={false}
+            />,
+        );
+
+        expect(screen.queryByText('Essay Rubric Criteria')).toBeNull();
+        expect(screen.queryByRole('button', { name: /Open Rubric Builder/i })).toBeNull();
+        expect(screen.getByText('Rubric Criteria List')).toBeTruthy();
         expect(screen.getByRole('button', { name: /Save Changes/i })).toBeTruthy();
     });
 
@@ -82,12 +122,14 @@ describe('EssayRubricEditor', () => {
             />,
         );
 
+        openRubricBuilder();
+
         const addButton = screen.getByRole('button', { name: /Add/i });
         fireEvent.click(addButton);
 
         expect(screen.getByText('Criterion #3')).toBeTruthy();
         // Total weight will now be 100% (initial) + 0% (new) = 100%
-        expect(screen.getByText('100%')).toBeTruthy();
+        expect(screen.getAllByText('100%').length).toBeGreaterThan(0);
     });
 
     it('supports deleting a criterion', () => {
@@ -98,6 +140,8 @@ describe('EssayRubricEditor', () => {
                 canOverride={true}
             />,
         );
+
+        openRubricBuilder();
 
         // Delete second criterion
         const deleteButtons = screen.getAllByRole('button', { name: /Delete Criterion/i });
@@ -115,6 +159,8 @@ describe('EssayRubricEditor', () => {
         render(
             <EssayRubricEditor initialCriteria={mockCriteria} onSave={onSave} canOverride={true} />,
         );
+
+        openRubricBuilder();
 
         // Save should be disabled initially because dirty state is false (no changes made)
         const saveButton = screen.getByRole('button', { name: /Save Changes/i });
@@ -146,6 +192,8 @@ describe('EssayRubricEditor', () => {
             />,
         );
 
+        openRubricBuilder();
+
         const nameInput = screen.getByLabelText(/Criterion Name/i) as HTMLInputElement;
         fireEvent.change(nameInput, { target: { value: 'Changed Name' } });
 
@@ -155,7 +203,9 @@ describe('EssayRubricEditor', () => {
         fireEvent.click(discardButton);
 
         expect(screen.queryByDisplayValue('Changed Name')).toBeNull();
-        expect(screen.getByDisplayValue('Criterion 1')).toBeTruthy();
+        expect(screen.queryByLabelText(/Criterion Name/i)).toBeNull();
+        expect(screen.getByText('Essay Rubric Criteria')).toBeTruthy();
+        expect(screen.getAllByText('Criterion 1').length).toBeGreaterThan(0);
     });
 
     it('displays confirmation dialog before resetting to baseline', async () => {
@@ -169,6 +219,8 @@ describe('EssayRubricEditor', () => {
                 isSupport={false}
             />,
         );
+
+        openRubricBuilder();
 
         const resetButton = screen.getByRole('button', { name: /Reset to Baseline/i });
         fireEvent.click(resetButton);

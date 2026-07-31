@@ -14,11 +14,11 @@ const GUIDE_NAV_ITEMS = [
 ];
 
 /**
- * AdminGuideLayout wraps the guide steps, rubric, and TOS pages with a persistent sidebar layout.
+ * SupportGuideLayout wraps the guide steps, rubric, and TOS pages with a persistent sidebar layout.
  *
  * @param props - Layout props containing children ReactNode
  */
-export default function AdminGuideLayout({ children }: { children: ReactNode }) {
+export default function SupportGuideLayout({ children }: { children: ReactNode }) {
     const pathname = usePathname() || '';
 
     // Derive active section based on the current pathname

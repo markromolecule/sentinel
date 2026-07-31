@@ -202,7 +202,7 @@ describe('syncSystemPermissions', () => {
         );
     });
 
-    it('should define override essay rubric permission and assign it to instructor, admin, and superadmin blueprints', () => {
+    it('should define override essay rubric permission and assign it to instructor, admin, superadmin, and support blueprints', () => {
         const activeKeys = ALL_PERMISSIONS.map((p) => p.id);
         expect(activeKeys).toContain('examinations:override_essay_rubric');
 
@@ -213,6 +213,9 @@ describe('syncSystemPermissions', () => {
             'examinations:override_essay_rubric',
         );
         expect(SYSTEM_ROLE_BLUEPRINTS.instructor.permissionKeys).toContain(
+            'examinations:override_essay_rubric',
+        );
+        expect(SYSTEM_ROLE_BLUEPRINTS.support.permissionKeys).toContain(
             'examinations:override_essay_rubric',
         );
         expect(SYSTEM_ROLE_BLUEPRINTS.student.permissionKeys).not.toContain(

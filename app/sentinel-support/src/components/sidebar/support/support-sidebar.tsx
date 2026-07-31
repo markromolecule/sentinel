@@ -17,6 +17,7 @@ import {
     ANALYTICS_ITEMS,
     COMMUNICATION_ITEMS,
     USER_MANAGEMENT_ITEMS,
+    RESOURCES_ITEMS,
 } from './constants';
 import { useDashboardNav } from '../common/hooks/use-dashboard-nav';
 import { DashboardSidebarItem } from '../common/dashboard-sidebar-item';
@@ -48,6 +49,7 @@ export function SuperAdminSidebar() {
         { label: 'Configuration', items: filteredConfigurationItems, showSeparator: true },
         { label: 'Analytics & Logs', items: ANALYTICS_ITEMS, showSeparator: true },
         { label: 'Communication', items: COMMUNICATION_ITEMS, showSeparator: true },
+        { label: 'Resources', items: RESOURCES_ITEMS, showSeparator: false },
     ].filter((section) => section.items.length > 0);
 
     return (

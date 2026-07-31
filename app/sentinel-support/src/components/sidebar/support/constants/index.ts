@@ -17,6 +17,7 @@ import {
     Library,
     MessageSquare,
     Megaphone,
+    HelpCircle,
 } from 'lucide-react';
 
 export interface SubItem {
@@ -137,5 +138,13 @@ export const COMMUNICATION_ITEMS: SidebarItem[] = [
         title: 'Announcements',
         url: '/announcements',
         icon: Megaphone,
+    },
+];
+
+export const RESOURCES_ITEMS: SidebarItem[] = [
+    {
+        title: 'Guide',
+        url: '/guides',
+        icon: HelpCircle,
     },
 ];

@@ -3,8 +3,15 @@
 import React from 'react';
 import type { EssayRubricCriterion } from '@sentinel/shared';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Badge } from '../ui/badge';
+
+const PERFORMANCE_LEVELS = [
+    { score: 4, label: 'Excellent' },
+    { score: 3, label: 'Good' },
+    { score: 2, label: 'Average' },
+    { score: 1, label: 'Poor' },
+    { score: 0, label: 'Zero' },
+];
 
 export interface EssayRubricTableProps {
     /**
@@ -34,109 +41,89 @@ export function EssayRubricTable({
     title = 'Essay Grading Rubric',
     description,
 }: EssayRubricTableProps) {
+    const totalWeightPercentage = Math.round(
+        criteria.reduce((sum, criterion) => sum + criterion.weight, 0) * 100,
+    );
+
     return (
-        <Card className="border border-slate-200/80 shadow-sm dark:border-slate-800/80">
-            <CardHeader className="bg-slate-50/50 pb-4 dark:bg-slate-900/30">
-                <CardTitle className="text-xl font-semibold text-slate-900 dark:text-slate-50">
-                    {title}
-                </CardTitle>
-                {description && (
-                    <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
-                        {description}
-                    </CardDescription>
-                )}
+        <Card className="gap-0 overflow-hidden border border-slate-200/80 py-0 shadow-sm dark:border-slate-800/80">
+            <CardHeader className="gap-3 bg-slate-50/50 px-5 py-4 dark:bg-slate-900/30">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="space-y-1">
+                        <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">
+                            {title}
+                        </CardTitle>
+                        {description && (
+                            <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
+                                {description}
+                            </CardDescription>
+                        )}
+                    </div>
+                    <Badge className="bg-primary text-primary-foreground hover:bg-primary w-fit rounded-md px-3 py-1">
+                        Total {totalWeightPercentage}%
+                    </Badge>
+                </div>
             </CardHeader>
-            <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                    <Table>
-                        <TableHeader>
-                            <TableRow className="border-b border-slate-100 bg-slate-50/30 hover:bg-slate-50/30 dark:border-slate-800/50 dark:bg-slate-900/10">
-                                <TableHead className="w-[200px] font-medium text-slate-600 dark:text-slate-400">
-                                    Criterion
-                                </TableHead>
-                                <TableHead className="w-[100px] text-center font-medium text-slate-600 dark:text-slate-400">
-                                    Weight
-                                </TableHead>
-                                <TableHead className="font-medium text-slate-600 dark:text-slate-400">
-                                    Description & Scoring Levels
-                                </TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {criteria.length === 0 ? (
-                                <TableRow>
-                                    <TableCell
-                                        colSpan={3}
-                                        className="h-24 text-center text-slate-500 dark:text-slate-400"
-                                    >
-                                        No criteria defined for this rubric.
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                criteria.map((criterion) => (
-                                    <TableRow
-                                        key={criterion.key}
-                                        className="border-b border-slate-100/80 hover:bg-slate-50/10 dark:border-slate-800/80"
-                                    >
-                                        <TableCell className="align-top font-semibold text-slate-800 dark:text-slate-200">
-                                            {criterion.name}
-                                        </TableCell>
-                                        <TableCell className="text-center align-top">
+            <CardContent className="p-3 sm:p-4">
+                {criteria.length === 0 ? (
+                    <div className="flex min-h-32 items-center justify-center rounded-lg border border-dashed border-slate-200 text-center text-sm text-slate-500 dark:border-slate-800 dark:text-slate-400">
+                        No criteria defined for this rubric.
+                    </div>
+                ) : (
+                    <div className="grid gap-4">
+                        {criteria.map((criterion) => (
+                            <section
+                                key={criterion.key}
+                                className="bg-background rounded-lg border border-slate-200/80 p-3 dark:border-slate-800/80"
+                            >
+                                <div className="flex flex-col gap-2 border-b border-slate-100 pb-3 sm:flex-row sm:items-start sm:justify-between dark:border-slate-800">
+                                    <div className="min-w-0 space-y-1">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+                                                {criterion.name}
+                                            </h3>
                                             <Badge
                                                 variant="secondary"
-                                                className="bg-slate-100 text-slate-700 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300"
+                                                className="bg-primary/10 text-primary hover:bg-primary/10"
                                             >
                                                 {Math.round(criterion.weight * 100)}%
                                             </Badge>
-                                        </TableCell>
-                                        <TableCell className="space-y-4 py-4 align-top">
-                                            <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                                                {criterion.description}
-                                            </p>
-                                            <div className="grid gap-2 border-t border-slate-100/50 pt-3 dark:border-slate-800/30">
-                                                <h4 className="text-xs font-semibold tracking-wider text-slate-400 uppercase dark:text-slate-500">
-                                                    Performance Levels
-                                                </h4>
-                                                <div className="grid gap-2 sm:grid-cols-5">
-                                                    {[4, 3, 2, 1, 0].map((score) => {
-                                                        const levelDesc = criterion.levels[score];
-                                                        if (!levelDesc) return null;
-                                                        return (
-                                                            <div
-                                                                key={score}
-                                                                className="rounded-lg border border-slate-100/50 bg-slate-50/40 p-2.5 dark:border-slate-800/50 dark:bg-slate-900/20"
-                                                            >
-                                                                <div className="mb-1 flex items-center gap-1.5">
-                                                                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-                                                                        {score}
-                                                                    </span>
-                                                                    <span className="text-[10px] font-semibold tracking-wide text-slate-400 uppercase">
-                                                                        {score === 4
-                                                                            ? 'Excellent'
-                                                                            : score === 3
-                                                                              ? 'Good'
-                                                                              : score === 2
-                                                                                ? 'Average'
-                                                                                : score === 1
-                                                                                  ? 'Poor'
-                                                                                  : 'Zero'}
-                                                                    </span>
-                                                                </div>
-                                                                <p className="line-clamp-4 text-[11px] leading-normal text-slate-500 transition-all duration-200 hover:line-clamp-none dark:text-slate-400">
-                                                                    {levelDesc}
-                                                                </p>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
+                                        </div>
+                                        <p className="text-sm leading-normal break-words text-slate-600 dark:text-slate-300">
+                                            {criterion.description}
+                                        </p>
+                                    </div>
+                                    <p className="font-mono text-xs break-all text-slate-400 sm:text-right">
+                                        {criterion.key}
+                                    </p>
+                                </div>
+
+                                <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+                                    {PERFORMANCE_LEVELS.map((level) => (
+                                        <div
+                                            key={level.score}
+                                            className="rounded-md border border-slate-100 bg-slate-50/70 p-2.5 dark:border-slate-800 dark:bg-slate-900/30"
+                                        >
+                                            <div className="mb-2 flex items-center gap-2">
+                                                <span className="bg-primary/10 text-primary flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold">
+                                                    {level.score}
+                                                </span>
+                                                <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                                                    {level.label}
+                                                </span>
                                             </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
+                                            <p className="text-sm leading-normal break-words text-slate-600 dark:text-slate-300">
+                                                {criterion.levels[level.score] || (
+                                                    <span className="text-slate-400">Not set</span>
+                                                )}
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        ))}
+                    </div>
+                )}
             </CardContent>
         </Card>
     );

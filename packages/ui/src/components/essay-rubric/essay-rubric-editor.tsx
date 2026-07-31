@@ -9,6 +9,8 @@ import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { cn } from '../../lib/utils';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -31,6 +33,7 @@ import {
     AlertTriangle,
     ShieldAlert,
     Undo,
+    Pencil,
 } from 'lucide-react';
 
 export interface EssayRubricEditorProps {
@@ -75,6 +78,19 @@ export interface EssayRubricEditorProps {
      * Optional callback triggered when the dirty state changes.
      */
     onDirtyChange?: (isDirty: boolean) => void;
+    /**
+     * Optional controlled open state for the rubric builder dialog.
+     */
+    builderOpen?: boolean;
+    /**
+     * Optional controlled open state handler for the rubric builder dialog.
+     */
+    onBuilderOpenChange?: (isOpen: boolean) => void;
+    /**
+     * Renders the inline builder trigger above the readable rubric.
+     * @default true
+     */
+    showBuilderTrigger?: boolean;
 }
 
 /**
@@ -83,6 +99,34 @@ export interface EssayRubricEditorProps {
 function generateStableKey(): string {
     return `criterion_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 }
+
+const PERFORMANCE_LEVELS = [
+    {
+        score: 4,
+        label: 'Excellent',
+        placeholder: 'Describe criteria for a perfect score of 4...',
+    },
+    {
+        score: 3,
+        label: 'Good',
+        placeholder: 'Describe criteria for a score of 3...',
+    },
+    {
+        score: 2,
+        label: 'Average',
+        placeholder: 'Describe criteria for a score of 2...',
+    },
+    {
+        score: 1,
+        label: 'Poor',
+        placeholder: 'Describe criteria for a score of 1...',
+    },
+    {
+        score: 0,
+        label: 'Zero',
+        placeholder: 'Describe criteria for a score of 0...',
+    },
+];
 
 /**
  * EssayRubricEditor provides a complete interactive workspace for editing
@@ -101,10 +145,16 @@ export function EssayRubricEditor({
     canOverride = true,
     isSupport = false,
     onDirtyChange,
+    builderOpen,
+    onBuilderOpenChange,
+    showBuilderTrigger = true,
 }: EssayRubricEditorProps) {
     const [localCriteria, setLocalCriteria] = useState<EssayRubricCriterion[]>([]);
     const [selectedKey, setSelectedKey] = useState<string | null>(null);
     const [resetDialogOpen, setResetDialogOpen] = useState(false);
+    const [internalBuilderOpen, setInternalBuilderOpen] = useState(false);
+    const isBuilderOpen = builderOpen ?? internalBuilderOpen;
+    const setIsBuilderOpen = onBuilderOpenChange ?? setInternalBuilderOpen;
 
     // Initialize local state when initialCriteria changes
     useEffect(() => {
@@ -261,11 +311,13 @@ export function EssayRubricEditor({
         if (initialCriteria.length > 0) {
             setSelectedKey(initialCriteria[0].key);
         }
+        setIsBuilderOpen(false);
     };
 
     const handleSave = async () => {
         if (!isValid || isSaving) return;
         await onSave(localCriteria);
+        setIsBuilderOpen(false);
     };
 
     // Render read-only table if the user lacks override permission
@@ -290,361 +342,486 @@ export function EssayRubricEditor({
     }
 
     return (
-        <div className="grid items-start gap-6 lg:grid-cols-12">
-            {/* Left Column: Criteria Selector & Reorder list */}
-            <div className="space-y-4 lg:col-span-5">
-                <Card className="border border-slate-200/80 shadow-sm dark:border-slate-800/80">
-                    <CardHeader className="bg-slate-50/50 pb-4 dark:bg-slate-900/30">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-50">
-                                    Rubric Criteria List
-                                </CardTitle>
-                                <CardDescription className="text-xs text-slate-500">
-                                    Manage criteria order, weights, and list count.
-                                </CardDescription>
+        <div className="space-y-4">
+            {showBuilderTrigger && (
+                <div className="border-primary/20 bg-primary/5 flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="space-y-1">
+                        <h3 className="text-base font-semibold text-slate-900 dark:text-slate-50">
+                            Essay Rubric Criteria
+                        </h3>
+                        <p className="text-sm text-slate-600 dark:text-slate-400">
+                            Review the active criteria, weights, and score-level descriptions
+                            students and graders will read.
+                        </p>
+                    </div>
+                    <Button
+                        type="button"
+                        onClick={() => setIsBuilderOpen(true)}
+                        className="w-full gap-1.5 sm:w-auto"
+                    >
+                        <Pencil className="h-4 w-4" />
+                        Open Rubric Builder
+                    </Button>
+                </div>
+            )}
+
+            <EssayRubricTable criteria={localCriteria} />
+
+            <Dialog open={isBuilderOpen} onOpenChange={setIsBuilderOpen}>
+                <DialogContent
+                    showCloseButton={false}
+                    className="flex h-[calc(100vh-2rem)] w-[calc(100vw-2rem)] max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-w-none"
+                    onInteractOutside={(event) => event.preventDefault()}
+                    onEscapeKeyDown={(event) => event.preventDefault()}
+                >
+                    <DialogHeader className="border-b border-slate-200/80 px-5 py-4 pr-12 dark:border-slate-800/80">
+                        <DialogTitle>Rubric Builder</DialogTitle>
+                        <DialogDescription>
+                            Update criteria, weights, and scoring descriptions, then save to return
+                            to the readable rubric view.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                        <div className="grid items-start gap-4 xl:grid-cols-12">
+                            <div className="border-primary/20 bg-primary/5 rounded-lg border p-4 xl:col-span-12">
+                                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                                    <div className="space-y-1">
+                                        <h3 className="text-base font-semibold text-slate-900 dark:text-slate-50">
+                                            Rubric Builder
+                                        </h3>
+                                        <p className="text-sm text-slate-600 dark:text-slate-400">
+                                            Select a criterion, adjust its details, then review
+                                            total weight before saving.
+                                        </p>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2 text-center">
+                                        <div className="border-primary/15 bg-background rounded-md border px-3 py-2">
+                                            <p className="text-lg font-semibold text-slate-900 dark:text-slate-50">
+                                                {localCriteria.length}
+                                            </p>
+                                            <p className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
+                                                Criteria
+                                            </p>
+                                        </div>
+                                        <div className="border-primary/15 bg-background rounded-md border px-3 py-2">
+                                            <p
+                                                className={cn(
+                                                    'text-lg font-semibold',
+                                                    totalWeightPercentage === 100
+                                                        ? 'text-primary'
+                                                        : 'text-amber-600',
+                                                )}
+                                            >
+                                                {totalWeightPercentage}%
+                                            </p>
+                                            <p className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
+                                                Weight
+                                            </p>
+                                        </div>
+                                        <div className="border-primary/15 bg-background rounded-md border px-3 py-2">
+                                            <p
+                                                className={cn(
+                                                    'text-lg font-semibold',
+                                                    isDirty ? 'text-primary' : 'text-slate-500',
+                                                )}
+                                            >
+                                                {isDirty ? 'Edited' : 'Saved'}
+                                            </p>
+                                            <p className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
+                                                Status
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={handleAddCriterion}
-                                disabled={localCriteria.length >= 10}
-                                className="h-8 gap-1 text-xs"
+                            {/* Left Column: Criteria Selector & Reorder list */}
+                            <div className="space-y-4 xl:col-span-5">
+                                <Card className="border border-slate-200/80 shadow-sm dark:border-slate-800/80">
+                                    <CardHeader className="bg-slate-50/50 pb-4 dark:bg-slate-900/30">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-50">
+                                                    Rubric Criteria List
+                                                </CardTitle>
+                                                <CardDescription className="text-xs text-slate-500">
+                                                    Manage criteria order, weights, and list count.
+                                                </CardDescription>
+                                            </div>
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={handleAddCriterion}
+                                                disabled={localCriteria.length >= 10}
+                                                className="h-8 gap-1 text-xs"
+                                            >
+                                                <Plus className="h-3.5 w-3.5" />
+                                                Add
+                                            </Button>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="space-y-1 p-2">
+                                        {localCriteria.map((criterion, idx) => {
+                                            const isSelected = criterion.key === selectedKey;
+                                            return (
+                                                <div
+                                                    key={criterion.key}
+                                                    onClick={() => setSelectedKey(criterion.key)}
+                                                    className={cn(
+                                                        'flex cursor-pointer items-center justify-between rounded-lg border p-3 transition-all duration-200',
+                                                        isSelected
+                                                            ? 'border-primary bg-primary/5 shadow-sm'
+                                                            : 'border-slate-100 bg-transparent hover:bg-slate-50/50 dark:border-slate-800/50 dark:hover:bg-slate-900/20',
+                                                    )}
+                                                >
+                                                    <div className="flex min-w-0 flex-col gap-1 pr-2">
+                                                        <span
+                                                            className={cn(
+                                                                'text-xs font-semibold tracking-wider uppercase',
+                                                                isSelected
+                                                                    ? 'text-primary'
+                                                                    : 'text-slate-400',
+                                                            )}
+                                                        >
+                                                            Criterion #{idx + 1}
+                                                        </span>
+                                                        <span className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">
+                                                            {criterion.name || (
+                                                                <em className="text-slate-400">
+                                                                    Untitled
+                                                                </em>
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                    <div
+                                                        className="flex shrink-0 items-center gap-1.5"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        <Badge
+                                                            variant="secondary"
+                                                            className={cn(
+                                                                'text-xs',
+                                                                isSelected
+                                                                    ? 'bg-primary/10 text-primary hover:bg-primary/10'
+                                                                    : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
+                                                            )}
+                                                        >
+                                                            {Math.round(
+                                                                (criterion.weight || 0) * 100,
+                                                            )}
+                                                            %
+                                                        </Badge>
+                                                        <div className="flex items-center rounded border border-slate-200/50 dark:border-slate-800">
+                                                            <Button
+                                                                size="icon"
+                                                                variant="ghost"
+                                                                disabled={idx === 0}
+                                                                onClick={() =>
+                                                                    handleMoveCriterion(idx, 'up')
+                                                                }
+                                                                className="h-7 w-7 rounded-none border-r border-slate-200/50 dark:border-slate-800"
+                                                                aria-label="Move Up"
+                                                            >
+                                                                <ArrowUp className="h-3 w-3" />
+                                                            </Button>
+                                                            <Button
+                                                                size="icon"
+                                                                variant="ghost"
+                                                                disabled={
+                                                                    idx === localCriteria.length - 1
+                                                                }
+                                                                onClick={() =>
+                                                                    handleMoveCriterion(idx, 'down')
+                                                                }
+                                                                className="h-7 w-7 rounded-none"
+                                                                aria-label="Move Down"
+                                                            >
+                                                                <ArrowDown className="h-3 w-3" />
+                                                            </Button>
+                                                        </div>
+                                                        <Button
+                                                            size="icon"
+                                                            variant="ghost"
+                                                            disabled={localCriteria.length <= 1}
+                                                            onClick={() =>
+                                                                handleRemoveCriterion(criterion.key)
+                                                            }
+                                                            className="h-7 w-7 text-rose-500 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/20"
+                                                            aria-label="Delete Criterion"
+                                                        >
+                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </CardContent>
+                                </Card>
+
+                                {/* Validation Warnings */}
+                                {validationErrors.length > 0 && (
+                                    <Alert
+                                        variant="destructive"
+                                        className="border-red-200 bg-red-50/50 text-red-900 dark:border-red-900/30 dark:bg-red-950/20 dark:text-red-200"
+                                    >
+                                        <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                                        <AlertTitle className="font-semibold">
+                                            Validation Errors
+                                        </AlertTitle>
+                                        <AlertDescription className="mt-1.5 space-y-1 text-xs">
+                                            {validationErrors.map((err, idx) => (
+                                                <p key={idx}>• {err}</p>
+                                            ))}
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
+                            </div>
+
+                            {/* Right Column: Active Criterion Detail Editor */}
+                            <div className="xl:col-span-7">
+                                {activeCriterion ? (
+                                    <Card className="border border-slate-200/80 shadow-sm dark:border-slate-800/80">
+                                        <CardHeader className="bg-slate-50/50 pb-4 dark:bg-slate-900/30">
+                                            <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-50">
+                                                Edit Criterion Details
+                                            </CardTitle>
+                                            <CardDescription className="text-xs text-slate-500">
+                                                Configure name, weight, and five performance levels.
+                                            </CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="space-y-5 p-6">
+                                            <div className="grid gap-4 sm:grid-cols-2">
+                                                <div className="space-y-1.5">
+                                                    <Label
+                                                        htmlFor="criterion-name"
+                                                        className="text-xs font-semibold text-slate-600 dark:text-slate-400"
+                                                    >
+                                                        Criterion Name
+                                                    </Label>
+                                                    <Input
+                                                        id="criterion-name"
+                                                        type="text"
+                                                        value={activeCriterion.name}
+                                                        onChange={(e) =>
+                                                            handleUpdateActiveField(
+                                                                'name',
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        placeholder="e.g. Grammar & Spelling"
+                                                        className="h-9 text-sm"
+                                                    />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <Label
+                                                        htmlFor="criterion-weight"
+                                                        className="text-xs font-semibold text-slate-600 dark:text-slate-400"
+                                                    >
+                                                        Weight Allocation (%)
+                                                    </Label>
+                                                    <div className="relative">
+                                                        <Input
+                                                            id="criterion-weight"
+                                                            type="number"
+                                                            min="0"
+                                                            max="100"
+                                                            value={Math.round(
+                                                                (activeCriterion.weight || 0) * 100,
+                                                            )}
+                                                            onChange={(e) => {
+                                                                const pct =
+                                                                    parseInt(e.target.value, 10) ||
+                                                                    0;
+                                                                handleUpdateActiveField(
+                                                                    'weight',
+                                                                    pct / 100,
+                                                                );
+                                                            }}
+                                                            className="h-9 pr-8 text-sm"
+                                                        />
+                                                        <span className="absolute top-2 right-3 text-xs font-semibold text-slate-400">
+                                                            %
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-1.5">
+                                                <Label
+                                                    htmlFor="criterion-desc"
+                                                    className="text-xs font-semibold text-slate-600 dark:text-slate-400"
+                                                >
+                                                    General Description
+                                                </Label>
+                                                <Textarea
+                                                    id="criterion-desc"
+                                                    rows={2}
+                                                    value={activeCriterion.description}
+                                                    onChange={(e) =>
+                                                        handleUpdateActiveField(
+                                                            'description',
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    placeholder="Explain the scope and criteria of this evaluation block..."
+                                                    className="resize-none text-sm"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-3 border-t border-slate-100/80 pt-4 dark:border-slate-800/80">
+                                                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                                                    <h4 className="text-xs font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
+                                                        Performance Level Matrix
+                                                    </h4>
+                                                    <span className="text-xs text-slate-500">
+                                                        Scores run from strongest to weakest.
+                                                    </span>
+                                                </div>
+                                                <div className="grid gap-3 rounded-lg border border-slate-200 p-3 dark:border-slate-800">
+                                                    {PERFORMANCE_LEVELS.map(
+                                                        ({ score, label, placeholder }) => (
+                                                            <div
+                                                                key={score}
+                                                                className="grid gap-3 rounded-md border border-slate-100 bg-slate-50/70 p-3 md:grid-cols-[112px_minmax(0,1fr)] dark:border-slate-800 dark:bg-slate-900/30"
+                                                            >
+                                                                <Label
+                                                                    htmlFor={`level-${score}`}
+                                                                    className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300"
+                                                                >
+                                                                    <Badge className="bg-primary/10 text-primary hover:bg-primary/10 flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold">
+                                                                        {score}
+                                                                    </Badge>
+                                                                    {label}
+                                                                </Label>
+                                                                <Textarea
+                                                                    id={`level-${score}`}
+                                                                    rows={2}
+                                                                    value={
+                                                                        activeCriterion.levels[
+                                                                            score
+                                                                        ] || ''
+                                                                    }
+                                                                    onChange={(e) =>
+                                                                        handleUpdateActiveLevel(
+                                                                            score,
+                                                                            e.target.value,
+                                                                        )
+                                                                    }
+                                                                    placeholder={placeholder}
+                                                                    className="min-h-[72px] resize-y text-sm"
+                                                                />
+                                                            </div>
+                                                        ),
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                ) : (
+                                    <Card className="border border-dashed border-slate-300 bg-slate-50/50 p-12 text-center dark:border-slate-800 dark:bg-slate-900/10">
+                                        <p className="text-sm text-slate-500">
+                                            Select or add a criterion on the left to start editing
+                                            details.
+                                        </p>
+                                    </Card>
+                                )}
+                            </div>
+
+                            {/* Bottom Controls / Action Bar */}
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col items-center justify-between gap-4 border-t border-slate-200/80 bg-slate-50/95 p-4 sm:flex-row dark:border-slate-800/80 dark:bg-slate-900/95">
+                        <div className="flex items-center gap-3">
+                            <span className="text-sm font-semibold text-slate-600 dark:text-slate-400">
+                                Total Rubric Weight:
+                            </span>
+                            <Badge
+                                variant={totalWeightPercentage === 100 ? 'default' : 'destructive'}
+                                className={`px-3 py-1 text-sm ${
+                                    totalWeightPercentage === 100
+                                        ? 'bg-emerald-500 text-white hover:bg-emerald-500 dark:bg-emerald-600'
+                                        : 'bg-amber-500 text-white hover:bg-amber-500 dark:bg-amber-600'
+                                }`}
                             >
-                                <Plus className="h-3.5 w-3.5" />
-                                Add
+                                {totalWeightPercentage}%
+                            </Badge>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                            {/* Reset to Baseline Confirmation (Exam Overrides only) */}
+                            {onReset && !isSupport && (
+                                <AlertDialog
+                                    open={resetDialogOpen}
+                                    onOpenChange={setResetDialogOpen}
+                                >
+                                    <AlertDialogTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            type="button"
+                                            disabled={isResetting || isSaving}
+                                            className="border-amber-200 text-amber-700 hover:bg-amber-50 hover:text-amber-800 dark:border-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-950/20"
+                                        >
+                                            <RotateCcw className="mr-1.5 h-4 w-4" />
+                                            Reset to Baseline
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>
+                                                Reset Essay Rubric to Baseline?
+                                            </AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                This action will delete your exam-specific override.
+                                                Future student attempts for this exam will inherit
+                                                the global Support baseline rubric. Existing
+                                                attempts already started will remain snapshot-frozen
+                                                and unaffected.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction
+                                                variant="default"
+                                                onClick={async () => {
+                                                    setResetDialogOpen(false);
+                                                    await onReset();
+                                                }}
+                                                className="bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-700 dark:hover:bg-amber-800"
+                                            >
+                                                Confirm Reset
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            )}
+
+                            {/* Discard Changes */}
+                            <Button
+                                variant="outline"
+                                type="button"
+                                onClick={handleDiscardChanges}
+                                disabled={isSaving || isResetting}
+                                className="gap-1.5"
+                            >
+                                <Undo className="h-4 w-4" />
+                                {isDirty ? 'Discard' : 'Back to Criteria'}
+                            </Button>
+
+                            {/* Save Button */}
+                            <Button
+                                variant="default"
+                                type="button"
+                                onClick={handleSave}
+                                disabled={!isValid || !isDirty || isSaving || isResetting}
+                                className="bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5"
+                            >
+                                <Save className="h-4 w-4" />
+                                {isSaving ? 'Saving...' : 'Save Changes'}
                             </Button>
                         </div>
-                    </CardHeader>
-                    <CardContent className="space-y-1 p-2">
-                        {localCriteria.map((criterion, idx) => {
-                            const isSelected = criterion.key === selectedKey;
-                            return (
-                                <div
-                                    key={criterion.key}
-                                    onClick={() => setSelectedKey(criterion.key)}
-                                    className={`flex cursor-pointer items-center justify-between rounded-lg border p-3 transition-all duration-200 ${
-                                        isSelected
-                                            ? 'border-violet-500 bg-violet-50/50 shadow-sm dark:border-violet-600 dark:bg-violet-950/20'
-                                            : 'border-slate-100 bg-transparent hover:bg-slate-50/50 dark:border-slate-800/50 dark:hover:bg-slate-900/20'
-                                    }`}
-                                >
-                                    <div className="flex min-w-0 flex-col gap-1 pr-2">
-                                        <span
-                                            className={`text-xs font-semibold tracking-wider uppercase ${isSelected ? 'text-violet-500' : 'text-slate-400'}`}
-                                        >
-                                            Criterion #{idx + 1}
-                                        </span>
-                                        <span className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">
-                                            {criterion.name || (
-                                                <em className="text-slate-400">Untitled</em>
-                                            )}
-                                        </span>
-                                    </div>
-                                    <div
-                                        className="flex shrink-0 items-center gap-1.5"
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                        <Badge
-                                            variant="secondary"
-                                            className={`text-xs ${
-                                                isSelected
-                                                    ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300'
-                                                    : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
-                                            }`}
-                                        >
-                                            {Math.round((criterion.weight || 0) * 100)}%
-                                        </Badge>
-                                        <div className="flex items-center rounded border border-slate-200/50 dark:border-slate-800">
-                                            <Button
-                                                size="icon"
-                                                variant="ghost"
-                                                disabled={idx === 0}
-                                                onClick={() => handleMoveCriterion(idx, 'up')}
-                                                className="h-7 w-7 rounded-none border-r border-slate-200/50 dark:border-slate-800"
-                                                aria-label="Move Up"
-                                            >
-                                                <ArrowUp className="h-3 w-3" />
-                                            </Button>
-                                            <Button
-                                                size="icon"
-                                                variant="ghost"
-                                                disabled={idx === localCriteria.length - 1}
-                                                onClick={() => handleMoveCriterion(idx, 'down')}
-                                                className="h-7 w-7 rounded-none"
-                                                aria-label="Move Down"
-                                            >
-                                                <ArrowDown className="h-3 w-3" />
-                                            </Button>
-                                        </div>
-                                        <Button
-                                            size="icon"
-                                            variant="ghost"
-                                            disabled={localCriteria.length <= 1}
-                                            onClick={() => handleRemoveCriterion(criterion.key)}
-                                            className="h-7 w-7 text-rose-500 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/20"
-                                            aria-label="Delete Criterion"
-                                        >
-                                            <Trash2 className="h-3.5 w-3.5" />
-                                        </Button>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </CardContent>
-                </Card>
-
-                {/* Validation Warnings */}
-                {validationErrors.length > 0 && (
-                    <Alert
-                        variant="destructive"
-                        className="border-red-200 bg-red-50/50 text-red-900 dark:border-red-900/30 dark:bg-red-950/20 dark:text-red-200"
-                    >
-                        <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
-                        <AlertTitle className="font-semibold">Validation Errors</AlertTitle>
-                        <AlertDescription className="mt-1.5 space-y-1 text-xs">
-                            {validationErrors.map((err, idx) => (
-                                <p key={idx}>• {err}</p>
-                            ))}
-                        </AlertDescription>
-                    </Alert>
-                )}
-            </div>
-
-            {/* Right Column: Active Criterion Detail Editor */}
-            <div className="lg:col-span-7">
-                {activeCriterion ? (
-                    <Card className="border border-slate-200/80 shadow-sm dark:border-slate-800/80">
-                        <CardHeader className="bg-slate-50/50 pb-4 dark:bg-slate-900/30">
-                            <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-50">
-                                Edit Criterion Details
-                            </CardTitle>
-                            <CardDescription className="text-xs text-slate-500">
-                                Configure name, weight, and five performance levels.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-5 p-6">
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                <div className="space-y-1.5">
-                                    <Label
-                                        htmlFor="criterion-name"
-                                        className="text-xs font-semibold text-slate-600 dark:text-slate-400"
-                                    >
-                                        Criterion Name
-                                    </Label>
-                                    <Input
-                                        id="criterion-name"
-                                        type="text"
-                                        value={activeCriterion.name}
-                                        onChange={(e) =>
-                                            handleUpdateActiveField('name', e.target.value)
-                                        }
-                                        placeholder="e.g. Grammar & Spelling"
-                                        className="h-9 text-sm"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <Label
-                                        htmlFor="criterion-weight"
-                                        className="text-xs font-semibold text-slate-600 dark:text-slate-400"
-                                    >
-                                        Weight Allocation (%)
-                                    </Label>
-                                    <div className="relative">
-                                        <Input
-                                            id="criterion-weight"
-                                            type="number"
-                                            min="0"
-                                            max="100"
-                                            value={Math.round((activeCriterion.weight || 0) * 100)}
-                                            onChange={(e) => {
-                                                const pct = parseInt(e.target.value, 10) || 0;
-                                                handleUpdateActiveField('weight', pct / 100);
-                                            }}
-                                            className="h-9 pr-8 text-sm"
-                                        />
-                                        <span className="absolute top-2 right-3 text-xs font-semibold text-slate-400">
-                                            %
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <Label
-                                    htmlFor="criterion-desc"
-                                    className="text-xs font-semibold text-slate-600 dark:text-slate-400"
-                                >
-                                    General Description
-                                </Label>
-                                <Textarea
-                                    id="criterion-desc"
-                                    rows={2}
-                                    value={activeCriterion.description}
-                                    onChange={(e) =>
-                                        handleUpdateActiveField('description', e.target.value)
-                                    }
-                                    placeholder="Explain the scope and criteria of this evaluation block..."
-                                    className="resize-none text-sm"
-                                />
-                            </div>
-
-                            <div className="space-y-4 border-t border-slate-100/80 pt-4 dark:border-slate-800/80">
-                                <h4 className="text-xs font-semibold tracking-wider text-slate-400 uppercase dark:text-slate-500">
-                                    Performance Level Descriptions (Score 0-4)
-                                </h4>
-                                <div className="space-y-4">
-                                    {[
-                                        {
-                                            score: 4,
-                                            label: 'Excellent',
-                                            placeholder:
-                                                'Describe criteria for a perfect score of 4...',
-                                        },
-                                        {
-                                            score: 3,
-                                            label: 'Good',
-                                            placeholder: 'Describe criteria for a score of 3...',
-                                        },
-                                        {
-                                            score: 2,
-                                            label: 'Average',
-                                            placeholder: 'Describe criteria for a score of 2...',
-                                        },
-                                        {
-                                            score: 1,
-                                            label: 'Poor',
-                                            placeholder: 'Describe criteria for a score of 1...',
-                                        },
-                                        {
-                                            score: 0,
-                                            label: 'Zero',
-                                            placeholder: 'Describe criteria for a score of 0...',
-                                        },
-                                    ].map(({ score, label, placeholder }) => (
-                                        <div key={score} className="space-y-1.5">
-                                            <div className="flex items-center gap-1.5">
-                                                <Badge className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-700 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300">
-                                                    {score}
-                                                </Badge>
-                                                <Label
-                                                    htmlFor={`level-${score}`}
-                                                    className="text-xs font-semibold text-slate-500 dark:text-slate-400"
-                                                >
-                                                    {label}
-                                                </Label>
-                                            </div>
-                                            <Textarea
-                                                id={`level-${score}`}
-                                                rows={2}
-                                                value={activeCriterion.levels[score] || ''}
-                                                onChange={(e) =>
-                                                    handleUpdateActiveLevel(score, e.target.value)
-                                                }
-                                                placeholder={placeholder}
-                                                className="resize-none text-xs"
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                ) : (
-                    <Card className="border border-dashed border-slate-300 bg-slate-50/50 p-12 text-center dark:border-slate-800 dark:bg-slate-900/10">
-                        <p className="text-sm text-slate-500">
-                            Select or add a criterion on the left to start editing details.
-                        </p>
-                    </Card>
-                )}
-            </div>
-
-            {/* Bottom Controls / Action Bar */}
-            <div className="flex flex-col items-center justify-between gap-4 rounded-xl border border-slate-200/80 bg-slate-50/50 p-4 sm:flex-row lg:col-span-12 dark:border-slate-800/80 dark:bg-slate-900/30">
-                <div className="flex items-center gap-3">
-                    <span className="text-sm font-semibold text-slate-600 dark:text-slate-400">
-                        Total Rubric Weight:
-                    </span>
-                    <Badge
-                        variant={totalWeightPercentage === 100 ? 'default' : 'destructive'}
-                        className={`px-3 py-1 text-sm ${
-                            totalWeightPercentage === 100
-                                ? 'bg-emerald-500 text-white hover:bg-emerald-500 dark:bg-emerald-600'
-                                : 'bg-amber-500 text-white hover:bg-amber-500 dark:bg-amber-600'
-                        }`}
-                    >
-                        {totalWeightPercentage}%
-                    </Badge>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                    {/* Reset to Baseline Confirmation (Exam Overrides only) */}
-                    {onReset && !isSupport && (
-                        <AlertDialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
-                            <AlertDialogTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    type="button"
-                                    disabled={isResetting || isSaving}
-                                    className="border-amber-200 text-amber-700 hover:bg-amber-50 hover:text-amber-800 dark:border-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-950/20"
-                                >
-                                    <RotateCcw className="mr-1.5 h-4 w-4" />
-                                    Reset to Baseline
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>
-                                        Reset Essay Rubric to Baseline?
-                                    </AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        This action will delete your exam-specific override. Future
-                                        student attempts for this exam will inherit the global
-                                        Support baseline rubric. Existing attempts already started
-                                        will remain snapshot-frozen and unaffected.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction
-                                        variant="default"
-                                        onClick={async () => {
-                                            setResetDialogOpen(false);
-                                            await onReset();
-                                        }}
-                                        className="bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-700 dark:hover:bg-amber-800"
-                                    >
-                                        Confirm Reset
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    )}
-
-                    {/* Discard Changes */}
-                    <Button
-                        variant="outline"
-                        type="button"
-                        onClick={handleDiscardChanges}
-                        disabled={!isDirty || isSaving || isResetting}
-                        className="gap-1.5"
-                    >
-                        <Undo className="h-4 w-4" />
-                        Discard
-                    </Button>
-
-                    {/* Save Button */}
-                    <Button
-                        variant="default"
-                        type="button"
-                        onClick={handleSave}
-                        disabled={!isValid || !isDirty || isSaving || isResetting}
-                        className="gap-1.5 bg-violet-600 text-white hover:bg-violet-700 dark:bg-violet-700 dark:hover:bg-violet-800"
-                    >
-                        <Save className="h-4 w-4" />
-                        {isSaving ? 'Saving...' : 'Save Changes'}
-                    </Button>
-                </div>
-            </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

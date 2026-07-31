@@ -1219,6 +1219,7 @@ export const SYSTEM_ROLE_BLUEPRINTS: Record<string, SystemRoleBlueprint> = {
             'examinations:delete',
             'examinations:assign',
             'examinations:bypass_publish_lock',
+            'examinations:override_essay_rubric',
             'assessments:view',
             'assessments:manage',
             'ai:generate_questions',

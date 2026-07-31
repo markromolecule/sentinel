@@ -14,6 +14,7 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue,
+    Button,
 } from '@sentinel/ui';
 import {
     useExamsQuery,
@@ -22,7 +23,7 @@ import {
     useResetExamEssayRubricMutation,
 } from '@sentinel/hooks';
 import { EssayRubricEditor } from '@sentinel/ui';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 
 /**
@@ -35,6 +36,7 @@ export default function ProctorGuideRubricPage() {
 
     const [selectedExamId, setSelectedExamId] = useState<string | null>(null);
     const [editorDirty, setEditorDirty] = useState(false);
+    const [builderOpen, setBuilderOpen] = useState(false);
 
     // Default to the first exam
     useEffect(() => {
@@ -108,6 +110,7 @@ export default function ProctorGuideRubricPage() {
         }
         setSelectedExamId(examId);
         setEditorDirty(false);
+        setBuilderOpen(false);
     };
 
     const handleSave = async (criteria: any) => {
@@ -126,7 +129,7 @@ export default function ProctorGuideRubricPage() {
     if (isLoadingExams) {
         return (
             <div className="flex h-64 items-center justify-center">
-                <Spinner className="h-8 w-8 text-[#323d8f]" />
+                <Spinner className="text-primary h-8 w-8" />
                 <span className="ml-3 text-sm font-medium text-slate-500">
                     Loading exams list...
                 </span>
@@ -172,13 +175,20 @@ export default function ProctorGuideRubricPage() {
             <PageHeader
                 title="Custom Essay Rubrics"
                 description="Manage and customize the essay grading criteria and scoring levels for your exams."
-            />
+            >
+                {rubric && !isLoadingRubric && (rubric.canOverride ?? false) && (
+                    <Button type="button" onClick={() => setBuilderOpen(true)} className="gap-1.5">
+                        <Pencil className="h-4 w-4" />
+                        Open Rubric Builder
+                    </Button>
+                )}
+            </PageHeader>
             <Separator />
 
             {/* Exam Selector Panel */}
-            <Card className="rounded-lg border shadow-xs">
-                <CardContent className="p-6">
-                    <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+            <Card className="rounded-lg border py-0 shadow-xs">
+                <CardContent className="p-4">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex-1 space-y-1.5">
                             <span className="text-muted-foreground/80 text-[12px] font-semibold tracking-wider uppercase">
                                 Active Selection
@@ -188,7 +198,7 @@ export default function ProctorGuideRubricPage() {
                                     value={selectedExamId || undefined}
                                     onValueChange={handleSelectExam}
                                 >
-                                    <SelectTrigger className="border-border/60 bg-background h-10 transition-all focus:border-[#323d8f] focus:ring-2 focus:ring-[#323d8f]/20">
+                                    <SelectTrigger className="border-border/60 bg-background focus:border-primary focus:ring-primary/20 h-10 transition-all focus:ring-2">
                                         <SelectValue placeholder="Select an exam to customize..." />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -222,7 +232,7 @@ export default function ProctorGuideRubricPage() {
             {/* Rubric Editor Workspace */}
             {isLoadingRubric ? (
                 <div className="flex h-64 items-center justify-center">
-                    <Spinner className="h-8 w-8 text-[#323d8f]" />
+                    <Spinner className="text-primary h-8 w-8" />
                     <span className="ml-3 text-sm font-medium text-slate-500">
                         Loading exam rubric details...
                     </span>
@@ -244,6 +254,9 @@ export default function ProctorGuideRubricPage() {
                     isResetting={resetMutation.isPending}
                     canOverride={rubric.canOverride ?? false}
                     onDirtyChange={setEditorDirty}
+                    builderOpen={builderOpen}
+                    onBuilderOpenChange={setBuilderOpen}
+                    showBuilderTrigger={false}
                 />
             )}
         </div>
