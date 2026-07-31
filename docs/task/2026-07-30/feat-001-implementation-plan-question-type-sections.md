@@ -64,16 +64,16 @@ The builder currently stores a section as a free-text `title` plus an optional m
 
 The final copy must live in the question-type catalog and be returned with each `QuestionTypeDefinition`:
 
-| Question type | Generated section title | Generated instruction |
-| --- | --- | --- |
-| `MULTIPLE_CHOICE` | Multiple Choice | Select the best answer from the choices provided. |
-| `MULTIPLE_RESPONSE` | Multiple Response | Select all answers that apply for each question. |
-| `TRUE_FALSE` | True or False | Determine whether each statement is true or false. |
-| `IDENTIFICATION` | Identification | Write the correct term, concept, or short answer. |
-| `MATCHING` | Matching Type | Match each item with its correct corresponding answer. |
-| `ESSAY` | Essay | Answer each question clearly and completely. |
-| `FILL_BLANK` | Fill in the Blank | Complete each statement with the correct word or phrase. |
-| `ENUMERATION` | Enumeration | List all required answers for each question. |
+| Question type       | Generated section title | Generated instruction                                    |
+| ------------------- | ----------------------- | -------------------------------------------------------- |
+| `MULTIPLE_CHOICE`   | Multiple Choice         | Select the best answer from the choices provided.        |
+| `MULTIPLE_RESPONSE` | Multiple Response       | Select all answers that apply for each question.         |
+| `TRUE_FALSE`        | True or False           | Determine whether each statement is true or false.       |
+| `IDENTIFICATION`    | Identification          | Write the correct term, concept, or short answer.        |
+| `MATCHING`          | Matching Type           | Match each item with its correct corresponding answer.   |
+| `ESSAY`             | Essay                   | Answer each question clearly and completely.             |
+| `FILL_BLANK`        | Fill in the Blank       | Complete each statement with the correct word or phrase. |
+| `ENUMERATION`       | Enumeration             | List all required answers for each question.             |
 
 Copy changes after release affect newly selected or reselected sections only; previously saved exams retain their stored title and instruction snapshot.
 

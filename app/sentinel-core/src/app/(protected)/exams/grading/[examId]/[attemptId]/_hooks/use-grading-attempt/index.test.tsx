@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
 import { useGradingAttempt } from './index';
 import { getGradingAttemptDetail, updateGradingAttempt } from '@sentinel/services';
+import { LEGACY_ESSAY_RUBRIC } from '@sentinel/shared';
 
 const { mockApiClient } = vi.hoisted(() => ({
     mockApiClient: vi.fn(),
@@ -42,6 +43,14 @@ function createWrapper() {
     };
 }
 
+const mockLegacyRubric = {
+    id: 'legacy-standard-v1',
+    versionNumber: 1,
+    source: 'LEGACY' as const,
+    definition: LEGACY_ESSAY_RUBRIC,
+    updatedAt: null,
+};
+
 describe('useGradingAttempt', () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -63,6 +72,7 @@ describe('useGradingAttempt', () => {
                     'q-1': 'essay answer text',
                 },
                 evaluations: {},
+                rubric: mockLegacyRubric,
             },
             questions: [
                 {
@@ -125,6 +135,7 @@ describe('useGradingAttempt', () => {
                     'q-1': 'essay answer text',
                 },
                 evaluations: {},
+                rubric: mockLegacyRubric,
             },
             questions: [
                 {
@@ -159,9 +170,6 @@ describe('useGradingAttempt', () => {
         });
 
         // contentSubstance score drops to 2 from 4.
-        // Weighted calculation:
-        // contentSubstance has a weight of 0.30 in ESSAY_RUBRIC_CRITERIA.
-        // Let's verify that the essay score updates correctly.
         expect(result.current.evaluations['q-1'].scores.contentSubstance).toBe(2);
 
         // Update feedback
@@ -190,6 +198,7 @@ describe('useGradingAttempt', () => {
                     'q-1': 'essay answer text',
                 },
                 evaluations: {},
+                rubric: mockLegacyRubric,
             },
             questions: [
                 {
@@ -244,5 +253,102 @@ describe('useGradingAttempt', () => {
                 feedback: null,
             });
         });
+    });
+
+    it('initializes grading states and calculates scores correctly with a custom rubric', async () => {
+        const customRubric = {
+            id: 'custom-rubric-v2',
+            versionNumber: 2,
+            source: 'EXAM_OVERRIDE' as const,
+            definition: {
+                criteria: [
+                    {
+                        key: 'creativity',
+                        name: 'Creativity & Originality',
+                        weight: 0.6,
+                        description: 'How creative is the essay?',
+                        levels: {
+                            '0': 'L0',
+                            '1': 'L1',
+                            '2': 'L2',
+                            '3': 'L3',
+                            '4': 'L4',
+                        },
+                    },
+                    {
+                        key: 'depth',
+                        name: 'Technical Depth',
+                        weight: 0.4,
+                        description: 'Technical accuracy and depth.',
+                        levels: {
+                            '0': 'L0',
+                            '1': 'L1',
+                            '2': 'L2',
+                            '3': 'L3',
+                            '4': 'L4',
+                        },
+                    },
+                ],
+            },
+            updatedAt: null,
+        };
+
+        const attemptDetail = {
+            attempt: {
+                id: 'attempt-id',
+                examId: 'exam-id',
+                studentName: 'Alice Student',
+                studentNumber: '2026-0001',
+                examTitle: 'Final Exam',
+                subjectTitle: 'Computer Science',
+                totalScore: 100,
+                status: 'SUBMITTED',
+                completedAt: '2026-06-13T00:00:00Z',
+                answers: {
+                    'q-1': 'essay answer text',
+                },
+                evaluations: {},
+                rubric: customRubric,
+            },
+            questions: [
+                {
+                    id: 'q-1',
+                    examId: 'exam-id',
+                    type: 'ESSAY',
+                    points: 20,
+                    orderIndex: 0,
+                    content: {
+                        prompt: 'Explain polymorphism.',
+                    },
+                },
+            ],
+        };
+
+        vi.mocked(getGradingAttemptDetail).mockResolvedValue(attemptDetail);
+
+        const { result } = renderHook(
+            () => useGradingAttempt({ examId: 'exam-id', attemptId: 'attempt-id' }),
+            {
+                wrapper: createWrapper(),
+            },
+        );
+
+        await waitFor(() => {
+            expect(result.current.isLoading).toBe(false);
+        });
+
+        // Verify initial evaluations setup uses custom criteria keys
+        expect(result.current.evaluations['q-1'].scores).toEqual({
+            creativity: 4,
+            depth: 4,
+        });
+
+        // creativity: 2 (2 * 0.6 = 1.2), depth: 4 (4 * 0.4 = 1.6) -> weightedSum = 2.8.
+        // rawScore = (2.8 / 4) * 20 = 14 pts
+        act(() => {
+            result.current.handleScoreChange('q-1', 'creativity', 2);
+        });
+
+        expect(result.current.scoreSummary.essayScore).toBe(14);
     });
 });

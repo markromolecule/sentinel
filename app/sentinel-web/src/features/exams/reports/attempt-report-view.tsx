@@ -67,6 +67,7 @@ export function AttemptReportView({
                     reportCards={reportCards}
                     editable={isEditable}
                     onRowClick={setSelectedReport}
+                    rubric={attempt.rubric}
                 />
             ) : null}
 

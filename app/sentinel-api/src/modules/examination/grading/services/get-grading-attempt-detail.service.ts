@@ -16,6 +16,7 @@ import {
     mapQuestionRowToExamQuestion,
     normalizeQuestionReports,
     parseAttemptSnapshots,
+    resolveParsedAssessmentRubric,
 } from './get-grading-attempt-detail/get-grading-attempt-detail.snapshot';
 
 export type GetGradingAttemptDetailArgs = {
@@ -53,6 +54,7 @@ export async function getGradingAttemptDetail({
         assessmentSnapshot: attemptRow.assessmentSnapshot,
         scoreSnapshot: attemptRow.scoreSnapshot,
     });
+    const rubric = resolveParsedAssessmentRubric(assessmentSnapshot);
 
     let finalQuestions = buildQuestionsFromAssessmentSnapshot(assessmentSnapshot);
 
@@ -108,6 +110,7 @@ export async function getGradingAttemptDetail({
         attemptRow,
         questions: finalQuestions,
         questionReports,
+        rubric,
         snapshotMetadata,
     });
 }

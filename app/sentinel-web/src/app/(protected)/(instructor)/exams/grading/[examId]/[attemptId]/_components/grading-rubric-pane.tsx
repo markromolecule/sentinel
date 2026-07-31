@@ -8,16 +8,11 @@ import {
     Label,
     Textarea,
 } from '@sentinel/ui';
-import {
-    ESSAY_RUBRIC_CRITERIA,
-    ESSAY_RUBRIC_LEVELS,
-    calculateEssayWeightedScore,
-} from '@sentinel/shared';
+import { calculateEssayWeightedScore, LEGACY_ESSAY_RUBRIC } from '@sentinel/shared';
 import type { GradingRubricPaneProps } from './_types';
-import type { CriteriaScores } from '../_types';
 
 /**
- * Displays the criteria scoring sliders for the standardized essay rubric
+ * Displays the criteria scoring sliders for the standardized or custom essay rubric
  * alongside the overall feedback form.
  */
 function GradingRubricPane({
@@ -26,16 +21,35 @@ function GradingRubricPane({
     onScoreChange,
     overallFeedback,
     onOverallFeedbackChange,
+    rubric,
 }: GradingRubricPaneProps) {
+    const effectiveRubric = rubric?.definition ?? LEGACY_ESSAY_RUBRIC;
+    const versionLabel = rubric
+        ? `${rubric.source === 'EXAM_OVERRIDE' ? 'Exam Override' : rubric.source} (v${rubric.versionNumber})`
+        : 'Legacy Rubric';
+
     return (
         <div className="space-y-6 lg:col-span-6">
             {activeQuestion && activeEval && (
                 <Card className="shadow-md">
                     <CardHeader className="bg-muted/10 border-b p-4">
                         <div className="flex items-center justify-between">
-                            <CardTitle className="text-base font-bold">
-                                Rubric Evaluation Sliders
-                            </CardTitle>
+                            <div className="space-y-1">
+                                <CardTitle className="text-base font-bold">
+                                    Rubric Evaluation Sliders
+                                </CardTitle>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase">
+                                        Rubric:
+                                    </span>
+                                    <Badge
+                                        variant="outline"
+                                        className="px-1.5 py-0 text-[10px] font-semibold uppercase"
+                                    >
+                                        {versionLabel}
+                                    </Badge>
+                                </div>
+                            </div>
                             <div className="text-right">
                                 <div className="text-muted-foreground text-xs font-medium">
                                     Weighted Score
@@ -44,6 +58,7 @@ function GradingRubricPane({
                                     {calculateEssayWeightedScore(
                                         activeEval.scores,
                                         activeQuestion.points,
+                                        effectiveRubric,
                                     ).toFixed(2)}{' '}
                                     / {activeQuestion.points} pts
                                 </div>
@@ -51,9 +66,8 @@ function GradingRubricPane({
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-6 p-5">
-                        {ESSAY_RUBRIC_CRITERIA.map((criterion) => {
-                            const score =
-                                activeEval.scores[criterion.key as keyof CriteriaScores] ?? 4;
+                        {effectiveRubric.criteria.map((criterion) => {
+                            const score = activeEval.scores[criterion.key] ?? 4;
                             return (
                                 <div
                                     key={criterion.key}
@@ -61,9 +75,14 @@ function GradingRubricPane({
                                 >
                                     <div className="flex items-center justify-between">
                                         <div className="space-y-0.5">
-                                            <Label className="text-foreground text-sm font-semibold">
-                                                {criterion.name}
-                                            </Label>
+                                            <div className="flex items-center gap-2">
+                                                <Label className="text-foreground text-sm font-semibold">
+                                                    {criterion.name}
+                                                </Label>
+                                                <span className="text-muted-foreground text-[11px] font-semibold">
+                                                    ({Math.round(criterion.weight * 100)}%)
+                                                </span>
+                                            </div>
                                             <p className="text-muted-foreground text-xs leading-snug">
                                                 {criterion.description}
                                             </p>
@@ -78,7 +97,7 @@ function GradingRubricPane({
                                             onValueChange={(val) =>
                                                 onScoreChange(
                                                     activeQuestion.id,
-                                                    criterion.key as keyof CriteriaScores,
+                                                    criterion.key,
                                                     val[0],
                                                 )
                                             }
@@ -91,7 +110,7 @@ function GradingRubricPane({
                                         <span className="text-foreground mb-0.5 block font-bold not-italic">
                                             Level {score} Description:
                                         </span>
-                                        {ESSAY_RUBRIC_LEVELS[score]}
+                                        {(criterion.levels as Record<string, string>)[score] || ''}
                                     </p>
                                 </div>
                             );

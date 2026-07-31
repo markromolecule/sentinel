@@ -39,7 +39,7 @@ export default function AdminGuideLayout({ children }: { children: ReactNode }) 
                     </h1>
                 </div>
                 <Separator className="bg-border/40 shrink-0" />
-                <div className="flex-1 overflow-y-auto py-3">
+                <div className="flex-1 overflow-y-auto py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                     <nav className="mt-1 flex flex-col gap-0.5">
                         {GUIDE_NAV_ITEMS.map((item) => {
                             const isActive = activeSection === item.id;
@@ -51,7 +51,7 @@ export default function AdminGuideLayout({ children }: { children: ReactNode }) 
                                     className={cn(
                                         'group flex items-center gap-3 px-4 py-2 text-left text-sm transition-colors',
                                         isActive
-                                            ? 'bg-accent/50 border-r-2 border-[#323d8f] font-semibold text-[#323d8f]'
+                                            ? 'bg-accent/50 border-primary text-primary border-r-2 font-semibold'
                                             : 'text-muted-foreground hover:bg-accent/30 hover:text-foreground',
                                     )}
                                 >
@@ -77,7 +77,7 @@ export default function AdminGuideLayout({ children }: { children: ReactNode }) 
                                     className={cn(
                                         'flex-1 rounded-lg px-3 py-1.5 text-center text-xs font-medium transition-colors',
                                         isActive
-                                            ? 'bg-accent/50 font-semibold text-[#323d8f]'
+                                            ? 'text-primary bg-accent/50 font-semibold'
                                             : 'text-muted-foreground hover:bg-accent/30 hover:text-foreground',
                                     )}
                                 >
@@ -90,7 +90,9 @@ export default function AdminGuideLayout({ children }: { children: ReactNode }) 
             </div>
 
             {/* Main Content */}
-            <main className="min-w-0 flex-1 space-y-8 p-6 pb-10">{children}</main>
+            <main className="min-w-0 flex-1 space-y-8 overflow-y-auto p-6 pb-10 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {children}
+            </main>
         </div>
     );
 }

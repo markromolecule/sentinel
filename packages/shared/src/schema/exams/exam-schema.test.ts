@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { createExamBodySchema, updateExamBodySchema, examSectionSchema, examSectionInputSchema } from './exam-schema';
+import {
+    createExamBodySchema,
+    updateExamBodySchema,
+    examSectionSchema,
+    examSectionInputSchema,
+} from './exam-schema';
 
 describe('exam-schema inheritance contracts', () => {
     const validCreateBody = {

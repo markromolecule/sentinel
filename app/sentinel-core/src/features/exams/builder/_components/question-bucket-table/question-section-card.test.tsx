@@ -65,7 +65,7 @@ describe('QuestionSectionCard', () => {
                 'Read each question carefully. Choose the one best answer from the options provided.',
             ),
         ).toBeTruthy();
-        
+
         // Assert there is no edit button/pencil or manual title textbox
         expect(screen.queryByRole('textbox')).toBeNull();
         expect(screen.queryByRole('button', { name: /add instruction/i })).toBeNull();

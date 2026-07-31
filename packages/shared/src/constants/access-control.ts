@@ -5,6 +5,7 @@ export const ACCESS_CONTROL_QUERY_KEYS = {
     permissions: () => [...ACCESS_CONTROL_QUERY_KEYS.all, 'permissions'] as const,
     assignments: () => [...ACCESS_CONTROL_QUERY_KEYS.all, 'assignments'] as const,
     examinationSettings: () => [...ACCESS_CONTROL_QUERY_KEYS.all, 'examination-settings'] as const,
+    baselineEssayRubric: () => [...ACCESS_CONTROL_QUERY_KEYS.all, 'baseline-essay-rubric'] as const,
 };
 
 /** @deprecated For backward compatibility with static roles */

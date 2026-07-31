@@ -12,6 +12,7 @@ import { GeneralSettingsView } from './examination-views/general-settings-view';
 import { BehaviorSettingsView } from './examination-views/behavior-settings-view';
 import { SafeguardsView } from './examination-views/safeguards-view';
 import { MonitoringView } from './examination-views/monitoring-view';
+import { EssayRubricSettingsView } from './examination-views/essay-rubric-settings-view';
 
 function createDefaultSettingsDraft(): ExaminationGlobalSettings {
     return {
@@ -31,7 +32,7 @@ type ExaminationSettingsFormProps = {
 type NestedRuleSection = 'defaultAiRules' | 'defaultWebSecurity' | 'defaultMobileSecurity';
 
 export type ExaminationSettingsSection =
-    'overview' | 'general' | 'behavior' | 'safeguards' | 'monitoring';
+    'overview' | 'general' | 'behavior' | 'safeguards' | 'monitoring' | 'rubric';
 
 export function ExaminationSettingsForm({
     record,
@@ -179,6 +180,8 @@ export function ExaminationSettingsForm({
                         updateNestedField={updateNestedField}
                     />
                 );
+            case 'rubric':
+                return <EssayRubricSettingsView />;
             default:
                 return null;
         }
@@ -222,6 +225,12 @@ export function ExaminationSettingsForm({
                     >
                         AI Monitoring
                     </TabsTrigger>
+                    <TabsTrigger
+                        value="rubric"
+                        className="text-muted-foreground/60 hover:text-foreground rounded-none border-x-0 border-t-0 border-b-2 border-transparent px-0 py-4 text-[13px] font-semibold shadow-none transition-all outline-none focus-visible:ring-0 focus-visible:ring-offset-0 data-[state=active]:border-b-[#323d8f] data-[state=active]:bg-transparent data-[state=active]:text-[#323d8f] data-[state=active]:shadow-none"
+                    >
+                        Essay Rubric
+                    </TabsTrigger>
                 </TabsList>
             </Tabs>
 
@@ -229,39 +238,41 @@ export function ExaminationSettingsForm({
                 {renderContent()}
 
                 {/* Footer Actions */}
-                <div className="bg-background/95 sticky bottom-0 z-10 mt-20 border-t py-6 backdrop-blur-sm">
-                    <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-                        <div className="space-y-1">
-                            <div className="text-foreground text-[13px] font-semibold">
-                                {isDirty ? 'Baseline modified' : 'Governance baseline synced'}
+                {activeSection !== 'rubric' && (
+                    <div className="bg-background/95 sticky bottom-0 z-10 mt-20 border-t py-6 backdrop-blur-sm">
+                        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+                            <div className="space-y-1">
+                                <div className="text-foreground text-[13px] font-semibold">
+                                    {isDirty ? 'Baseline modified' : 'Governance baseline synced'}
+                                </div>
+                                <div className="text-muted-foreground text-[12px] font-medium opacity-60">
+                                    {record?.updatedAt
+                                        ? `Registry updated ${new Date(record.updatedAt).toLocaleDateString()}`
+                                        : 'Awaiting baseline sync.'}
+                                </div>
                             </div>
-                            <div className="text-muted-foreground text-[12px] font-medium opacity-60">
-                                {record?.updatedAt
-                                    ? `Registry updated ${new Date(record.updatedAt).toLocaleDateString()}`
-                                    : 'Awaiting baseline sync.'}
+                            <div className="flex items-center gap-3">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setDraft(null)}
+                                    disabled={isPending || !isDirty}
+                                    className="h-10 rounded-none px-6 text-[12px] font-bold"
+                                >
+                                    Discard Changes
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    onClick={() => onSubmit(currentDraft)}
+                                    disabled={isPending || !isDirty}
+                                    className="h-10 rounded-none bg-[#323d8f] px-6 text-[12px] font-bold hover:bg-[#323d8f]/90"
+                                >
+                                    {isPending ? 'Syncing...' : 'Update Baseline'}
+                                </Button>
                             </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setDraft(null)}
-                                disabled={isPending || !isDirty}
-                                className="h-10 rounded-none px-6 text-[12px] font-bold"
-                            >
-                                Discard Changes
-                            </Button>
-                            <Button
-                                size="sm"
-                                onClick={() => onSubmit(currentDraft)}
-                                disabled={isPending || !isDirty}
-                                className="h-10 rounded-none bg-[#323d8f] px-6 text-[12px] font-bold hover:bg-[#323d8f]/90"
-                            >
-                                {isPending ? 'Syncing...' : 'Update Baseline'}
-                            </Button>
                         </div>
                     </div>
-                </div>
+                )}
             </div>
         </div>
     );

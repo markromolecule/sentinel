@@ -1,11 +1,15 @@
 import { createHash } from 'node:crypto';
 import {
     ATTEMPT_ASSESSMENT_SNAPSHOT_VERSION,
+    LEGACY_ESSAY_RUBRIC_VERSION_ID,
     ATTEMPT_SCORE_SNAPSHOT_VERSION,
     buildExamAttemptQuestionReports,
+    LEGACY_ESSAY_RUBRIC,
+    type EssayRubricDefinition,
     randomizeQuestionChoices,
     scoreExamAttempt,
     shuffleExamQuestions,
+    type AttemptEssayRubricSnapshot,
     type ExamAttemptAnswers,
     type ExamQuestion,
     Schema,
@@ -22,6 +26,7 @@ type BuildAssessmentSnapshotArgs = {
     examId: string;
     configurationState: ExamConfigurationState;
     questions: ExamQuestionDataRow[];
+    rubric?: AttemptEssayRubricSnapshot;
 };
 
 type BuildScoreSnapshotArgs = {
@@ -30,6 +35,7 @@ type BuildScoreSnapshotArgs = {
     answerChecksum: string;
     evaluations?: Record<string, any>;
     itemOverrides?: Record<string, any>;
+    rubric?: AttemptEssayRubricSnapshot;
 };
 
 type ExamQuestionDataRow = Awaited<ReturnType<typeof getExamQuestionsData>>[number];
@@ -75,6 +81,53 @@ export function normalizeAssessmentSnapshotQuestions(
     questions: AttemptAssessmentSnapshot['questions'],
 ): ExamQuestion[] {
     return questions.map(normalizeAssessmentSnapshotQuestion);
+}
+
+/**
+ * Builds the legacy rubric snapshot used for pre-feature attempts and any
+ * temporary fallback path that cannot load a persisted rubric version yet.
+ */
+export function buildLegacyEssayRubricSnapshot(): AttemptEssayRubricSnapshot {
+    return {
+        id: LEGACY_ESSAY_RUBRIC_VERSION_ID,
+        versionNumber: 1,
+        source: 'LEGACY',
+        definition: LEGACY_ESSAY_RUBRIC,
+        updatedAt: null,
+    };
+}
+
+/**
+ * Normalizes persisted rubric-version rows into the attempt snapshot contract.
+ */
+export function buildAttemptEssayRubricSnapshot(args: {
+    id: string;
+    versionNumber: number;
+    source: 'BASELINE' | 'EXAM_OVERRIDE' | 'LEGACY';
+    definition: EssayRubricDefinition;
+    updatedAt?: string | null;
+}): AttemptEssayRubricSnapshot {
+    return Schema.attemptEssayRubricSnapshotSchema.parse({
+        id: args.id,
+        versionNumber: args.versionNumber,
+        source: args.source,
+        definition: args.definition,
+        updatedAt: args.updatedAt ?? null,
+    });
+}
+
+/**
+ * Reads the rubric captured on an attempt snapshot, falling back to the legacy
+ * definition for v1 snapshots that predate rubric version support.
+ */
+export function resolveAssessmentSnapshotRubric(
+    snapshot: AttemptAssessmentSnapshot | null | undefined,
+): AttemptEssayRubricSnapshot {
+    if (snapshot && 'rubric' in snapshot && snapshot.rubric) {
+        return snapshot.rubric;
+    }
+
+    return buildLegacyEssayRubricSnapshot();
 }
 
 function buildOptionTokens(attemptId: string, questionId: string, options: string[]) {
@@ -151,6 +204,7 @@ export function buildAssessmentSnapshot(
         attemptId: args.attemptId,
         configurationState: args.configurationState,
     });
+    const rubric = args.rubric ?? buildLegacyEssayRubricSnapshot();
 
     return Schema.attemptAssessmentSnapshotSchema.parse({
         version: ATTEMPT_ASSESSMENT_SNAPSHOT_VERSION,
@@ -161,6 +215,7 @@ export function buildAssessmentSnapshot(
         configuration: args.configurationState.configuration,
         questions: presentedQuestions,
         totalScore: presentedQuestions.reduce((sum, question) => sum + question.points, 0),
+        rubric,
     });
 }
 
@@ -174,6 +229,7 @@ export function buildScoreSnapshot(args: BuildScoreSnapshotArgs): AttemptScoreSn
         questions: args.questions,
         answers: args.answers,
     });
+    const rubric = args.rubric ?? buildLegacyEssayRubricSnapshot();
 
     const questionReports = buildExamAttemptQuestionReports({
         questions: args.questions,
@@ -200,6 +256,11 @@ export function buildScoreSnapshot(args: BuildScoreSnapshotArgs): AttemptScoreSn
         autoGradableQuestionCount: baseSummary.autoGradableQuestionCount,
         manualReviewQuestionCount: baseSummary.manualReviewQuestionCount,
         requiresManualReview: baseSummary.requiresManualReview,
+        rubric: {
+            id: rubric.id,
+            versionNumber: rubric.versionNumber,
+            source: rubric.source,
+        },
         questionReports,
     });
 }

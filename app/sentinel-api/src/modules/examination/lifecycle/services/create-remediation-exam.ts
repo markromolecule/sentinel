@@ -232,7 +232,7 @@ export async function createRemediationExam(args: {
                 source_exam_id: sourceExamId,
                 remediation_exam_id: newExamId,
                 // Remediation access is scoped by auth user ID in the persisted schema.
-                student_id: remediationStudent.user_id,
+                student_id: remediationStudent.user_id!,
                 source_attempt_id: sourceAttemptId,
                 remediation_type: remediationType,
                 scheduled_date: new Date(scheduledDate),

@@ -1,4 +1,4 @@
-import type { GradingQuestionType } from '@sentinel/shared';
+import type { GradingQuestionType, AttemptEssayRubricSnapshot } from '@sentinel/shared';
 import {
     Badge,
     Card,
@@ -35,7 +35,23 @@ type AttemptReportQuestionCardProps = {
     editable: boolean;
     overrideDraft?: AttemptReportOverrideDrafts[string];
     onOverrideChange: (questionId: string, field: 'awardedScore' | 'reason', value: string) => void;
+    rubric?: AttemptEssayRubricSnapshot;
 };
+
+/**
+ * Humanizes a criterion key or returns its configured rubric name when available.
+ */
+function getCriterionLabel(key: string, rubric?: AttemptEssayRubricSnapshot): string {
+    const criterion = rubric?.definition.criteria.find((c) => c.key === key);
+    if (criterion) {
+        return criterion.name;
+    }
+    const humanized = key
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/_/g, ' ')
+        .trim();
+    return humanized.charAt(0).toUpperCase() + humanized.slice(1);
+}
 
 export function AttemptReportQuestionCard({
     report,
@@ -43,6 +59,7 @@ export function AttemptReportQuestionCard({
     editable,
     overrideDraft,
     onOverrideChange,
+    rubric,
 }: AttemptReportQuestionCardProps) {
     const renderedPassage = getQuestionPassage(report.question);
 
@@ -94,7 +111,7 @@ export function AttemptReportQuestionCard({
                 </div>
 
                 {report.evaluation ? (
-                    <AttemptReportEvaluation evaluation={report.evaluation} />
+                    <AttemptReportEvaluation evaluation={report.evaluation} rubric={rubric} />
                 ) : null}
 
                 {editable ? (
@@ -126,7 +143,7 @@ function AttemptReportPassage({ question, renderedPassage }: AttemptReportPassag
                     <span>{question?.sourceFileName ?? 'No linked document'}</span>
                     <span>
                         {question?.sourcePageNumber !== null &&
-                        question?.sourcePageNumber !== undefined
+                            question?.sourcePageNumber !== undefined
                             ? `Referenced page ${question.sourcePageNumber}`
                             : 'No page reference'}
                     </span>
@@ -146,14 +163,17 @@ type AttemptReportEvaluationProps = {
     evaluation: {
         scores?: Record<string, unknown> | null;
     };
+    rubric?: AttemptEssayRubricSnapshot;
 };
 
-function AttemptReportEvaluation({ evaluation }: AttemptReportEvaluationProps) {
+function AttemptReportEvaluation({ evaluation, rubric }: AttemptReportEvaluationProps) {
     return (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
             {Object.entries(evaluation.scores ?? {}).map(([criterion, value]) => (
                 <div key={criterion} className="rounded-lg border bg-white p-3 text-sm">
-                    <p className="text-muted-foreground text-xs uppercase">{criterion}</p>
+                    <p className="text-muted-foreground text-xs uppercase">
+                        {getCriterionLabel(criterion, rubric)}
+                    </p>
                     <p className="mt-2 text-lg font-semibold">{formatAnswerValue(value)}</p>
                 </div>
             ))}

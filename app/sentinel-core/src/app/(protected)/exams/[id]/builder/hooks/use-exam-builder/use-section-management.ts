@@ -1,6 +1,9 @@
 import { toast } from 'sonner';
 import { type ExamQuestion, type ExamQuestionSection } from '@sentinel/shared/types';
-import { useExamStore, buildQuestionSectionCopy } from '@/features/exams/builder/_stores/use-exam-store';
+import {
+    useExamStore,
+    buildQuestionSectionCopy,
+} from '@/features/exams/builder/_stores/use-exam-store';
 
 interface UseSectionManagementProps {
     questionSections: ExamQuestionSection[];
@@ -19,14 +22,18 @@ interface UseSectionManagementProps {
 export function isSectionTypeCompatible(
     sectionId: string,
     targetType: string | null,
-    questions: Array<{ sectionId?: string | null; type: string }>
+    questions: Array<{ sectionId?: string | null; type: string }>,
 ): boolean {
     if (!targetType) return true;
     const sectionQuestions = questions.filter((q) => q.sectionId === sectionId);
     return sectionQuestions.every((q) => q.type === targetType);
 }
 
-export function useSectionManagement({ questionSections, questions, questionTypes }: UseSectionManagementProps) {
+export function useSectionManagement({
+    questionSections,
+    questions,
+    questionTypes,
+}: UseSectionManagementProps) {
     const {
         addQuestionSection,
         updateQuestionSection,
@@ -48,7 +55,9 @@ export function useSectionManagement({ questionSections, questions, questionType
             const newType = updates.questionType;
             if (newType !== undefined) {
                 if (!isSectionTypeCompatible(sectionId, newType, questions)) {
-                    toast.error('Cannot change section type. Existing questions in this section do not match the selected type.');
+                    toast.error(
+                        'Cannot change section type. Existing questions in this section do not match the selected type.',
+                    );
                     return;
                 }
 

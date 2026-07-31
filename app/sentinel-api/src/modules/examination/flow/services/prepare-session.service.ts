@@ -12,6 +12,7 @@ import {
     buildScoreSnapshot,
     normalizeAssessmentSnapshotQuestions,
     parseAssessmentSnapshot,
+    resolveAssessmentSnapshotRubric,
 } from './attempt-snapshot.service';
 import { logScoreIntegrityCheck } from '../../shared/services/score-integrity-observability.service';
 
@@ -111,6 +112,7 @@ export async function prepareSessionService({
     }
 
     const normalizedQuestions = normalizeAssessmentSnapshotQuestions(assessmentSnapshot.questions);
+    const rubric = resolveAssessmentSnapshotRubric(assessmentSnapshot);
 
     const answerChecksum = buildAnswerPayloadChecksum({
         attemptId: body.sessionId,
@@ -122,6 +124,7 @@ export async function prepareSessionService({
         questions: normalizedQuestions,
         answers: body.answers as ExamAttemptAnswers,
         answerChecksum,
+        rubric,
     });
 
     logScoreIntegrityCheck({

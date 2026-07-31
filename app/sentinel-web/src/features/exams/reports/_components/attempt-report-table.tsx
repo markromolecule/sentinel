@@ -10,12 +10,29 @@ import {
 } from '@sentinel/ui';
 import { formatAnswerValue, formatCorrectAnswer } from '../attempt-report-utils';
 import type { ReportCardType } from '../_hooks/use-attempt-report/_types';
+import type { AttemptEssayRubricSnapshot } from '@sentinel/shared';
 
 export type AttemptReportTableProps = {
     reportCards: ReportCardType[];
     editable?: boolean;
     onRowClick?: (report: ReportCardType) => void;
+    rubric?: AttemptEssayRubricSnapshot;
 };
+
+/**
+ * Humanizes a criterion key or returns its configured rubric name when available.
+ */
+function getCriterionLabel(key: string, rubric?: AttemptEssayRubricSnapshot): string {
+    const criterion = rubric?.definition.criteria.find((c) => c.key === key);
+    if (criterion) {
+        return criterion.name;
+    }
+    const humanized = key
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/_/g, ' ')
+        .trim();
+    return humanized.charAt(0).toUpperCase() + humanized.slice(1);
+}
 
 /**
  * Renders a tabular list of question reports including student answers, correct answers, and scores.
@@ -27,6 +44,7 @@ export function AttemptReportTable({
     reportCards,
     editable = false,
     onRowClick,
+    rubric,
 }: AttemptReportTableProps) {
     return (
         <Table>
@@ -94,7 +112,8 @@ export function AttemptReportTable({
                                                     variant="outline"
                                                     className="bg-slate-50 text-[10px] font-normal text-slate-600"
                                                 >
-                                                    {criterion}: {formatAnswerValue(val)}
+                                                    {getCriterionLabel(criterion, rubric)}:{' '}
+                                                    {formatAnswerValue(val)}
                                                 </Badge>
                                             ),
                                         )}

@@ -1,10 +1,4 @@
-type CriteriaScores = {
-    contentSubstance: number;
-    structureOrganization: number;
-    argumentationSupport: number;
-    styleTone: number;
-    grammarConventions: number;
-};
+type CriteriaScores = Record<string, number>;
 
 type QuestionEvaluationState = {
     scores: CriteriaScores;

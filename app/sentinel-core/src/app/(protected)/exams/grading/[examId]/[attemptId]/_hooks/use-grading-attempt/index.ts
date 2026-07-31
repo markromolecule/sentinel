@@ -45,21 +45,18 @@ function useGradingAttempt({ examId, attemptId }: UseGradingAttemptProps): UseGr
     useEffect(() => {
         if (data && !isInitialized) {
             const initial: EvaluationsState = {};
+            const criteria = data.attempt.rubric.definition.criteria;
             for (const q of essayQuestions) {
                 const existing = data.attempt.evaluations[q.id] || {};
                 const existingScores = existing.scores || {};
 
+                const scores: CriteriaScores = {};
+                for (const criterion of criteria) {
+                    scores[criterion.key] = existingScores[criterion.key] ?? DEFAULT_RUBRIC_SCORE;
+                }
+
                 initial[q.id] = {
-                    scores: {
-                        contentSubstance: existingScores.contentSubstance ?? DEFAULT_RUBRIC_SCORE,
-                        structureOrganization:
-                            existingScores.structureOrganization ?? DEFAULT_RUBRIC_SCORE,
-                        argumentationSupport:
-                            existingScores.argumentationSupport ?? DEFAULT_RUBRIC_SCORE,
-                        styleTone: existingScores.styleTone ?? DEFAULT_RUBRIC_SCORE,
-                        grammarConventions:
-                            existingScores.grammarConventions ?? DEFAULT_RUBRIC_SCORE,
-                    },
+                    scores,
                     feedback: existing.feedback ?? '',
                 };
             }
@@ -99,7 +96,11 @@ function useGradingAttempt({ examId, attemptId }: UseGradingAttemptProps): UseGr
         for (const q of essayQuestions) {
             const evaluation = evaluations[q.id];
             if (evaluation) {
-                essayScore += calculateEssayWeightedScore(evaluation.scores, q.points);
+                essayScore += calculateEssayWeightedScore(
+                    evaluation.scores,
+                    q.points,
+                    data.attempt.rubric.definition,
+                );
             }
         }
 

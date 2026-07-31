@@ -30,6 +30,7 @@ describe('syncSystemPermissions', () => {
             'pdf_templates:manage',
             'institution_branding:manage',
             'examinations:export_answer_key',
+            'examinations:override_essay_rubric',
         ];
 
         const activeKeys = ALL_PERMISSIONS.map((p) => p.id);
@@ -198,6 +199,27 @@ describe('syncSystemPermissions', () => {
         );
         expect(SYSTEM_ROLE_BLUEPRINTS.student.permissionKeys).not.toContain(
             'examinations:monitor_live_video',
+        );
+    });
+
+    it('should define override essay rubric permission and assign it to instructor, admin, superadmin, and support blueprints', () => {
+        const activeKeys = ALL_PERMISSIONS.map((p) => p.id);
+        expect(activeKeys).toContain('examinations:override_essay_rubric');
+
+        expect(SYSTEM_ROLE_BLUEPRINTS.superadmin.permissionKeys).toContain(
+            'examinations:override_essay_rubric',
+        );
+        expect(SYSTEM_ROLE_BLUEPRINTS.admin.permissionKeys).toContain(
+            'examinations:override_essay_rubric',
+        );
+        expect(SYSTEM_ROLE_BLUEPRINTS.instructor.permissionKeys).toContain(
+            'examinations:override_essay_rubric',
+        );
+        expect(SYSTEM_ROLE_BLUEPRINTS.support.permissionKeys).toContain(
+            'examinations:override_essay_rubric',
+        );
+        expect(SYSTEM_ROLE_BLUEPRINTS.student.permissionKeys).not.toContain(
+            'examinations:override_essay_rubric',
         );
     });
 

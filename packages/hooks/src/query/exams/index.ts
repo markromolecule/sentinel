@@ -20,3 +20,6 @@ export * from './use-update-exam-incidents-mutation';
 export * from './use-exam-reports-list-query';
 export * from './use-exam-attempt-lifecycle-mutation';
 export * from './live-inspection';
+export * from './use-essay-rubric-query';
+export * from './use-update-exam-essay-rubric-mutation';
+export * from './use-reset-exam-essay-rubric-mutation';

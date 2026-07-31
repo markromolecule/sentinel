@@ -1,11 +1,15 @@
 import { type DbClient } from '@sentinel/db';
-import { type ExamAttemptAnswers } from '@sentinel/shared';
+import { Schema, type AttemptEssayRubricSnapshot, type ExamAttemptAnswers } from '@sentinel/shared';
 import { AccessGatekeeperService } from '../../access/access.service';
 import { getExamConfigurationState } from '../../configuration/configuration.service';
 import type { ExamConfigurationState } from '../../configuration/configuration.dto';
 import { SessionRepository } from '../data/session.repository';
 import { getExamQuestionsData } from '../../exams/data/get-exam-questions';
-import { buildAssessmentSnapshot } from './attempt-snapshot.service';
+import {
+    buildAssessmentSnapshot,
+    buildAttemptEssayRubricSnapshot,
+    buildLegacyEssayRubricSnapshot,
+} from './attempt-snapshot.service';
 import { LogsService } from '../../../general/logs/logs.service';
 import { ActivityNotificationService } from '../../../general/notification/services/activity-notification.service';
 
@@ -29,6 +33,42 @@ export type StartSessionResult = {
     errorCode?:
         'ATTEMPT_ALREADY_COMPLETED' | 'ATTEMPT_LOCKED' | 'ATTEMPT_CLOSED' | 'ATTEMPT_SUPERSEDED';
 };
+
+async function resolveAttemptStartRubric(
+    dbClient: DbClient,
+    examId: string,
+): Promise<AttemptEssayRubricSnapshot> {
+    const examOverride = await dbClient
+        .selectFrom('essay_rubric_versions')
+        .select(['rubric_version_id', 'version_number', 'scope', 'definition', 'updated_at'])
+        .where('scope', '=', 'EXAM_OVERRIDE')
+        .where('exam_id', '=', examId)
+        .where('is_active', '=', true)
+        .executeTakeFirst();
+
+    const baseline = examOverride
+        ? null
+        : await dbClient
+              .selectFrom('essay_rubric_versions')
+              .select(['rubric_version_id', 'version_number', 'scope', 'definition', 'updated_at'])
+              .where('scope', '=', 'BASELINE')
+              .where('is_active', '=', true)
+              .executeTakeFirst();
+
+    const activeRubric = examOverride ?? baseline;
+
+    if (!activeRubric) {
+        return buildLegacyEssayRubricSnapshot();
+    }
+
+    return buildAttemptEssayRubricSnapshot({
+        id: activeRubric.rubric_version_id,
+        versionNumber: activeRubric.version_number,
+        source: activeRubric.scope,
+        definition: Schema.essayRubricDefinitionSchema.parse(activeRubric.definition),
+        updatedAt: activeRubric.updated_at?.toISOString() ?? null,
+    });
+}
 
 /**
  * Attempts to start a student exam session.
@@ -89,11 +129,13 @@ export async function startSessionService({
 
     if (!session.isResumed) {
         const questions = await getExamQuestionsData({ dbClient, examId });
+        const rubric = await resolveAttemptStartRubric(dbClient, examId);
         const snapshot = buildAssessmentSnapshot({
             attemptId: session.sessionId,
             examId,
             configurationState: configSnapshot,
             questions: questions ?? [],
+            rubric,
         });
 
         await SessionRepository.persistAssessmentSnapshot(dbClient, {

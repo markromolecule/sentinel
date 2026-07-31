@@ -350,4 +350,95 @@ describe('AttemptReportView', () => {
             'Server Reason',
         );
     });
+
+    it('renders custom rubric badges and maps custom criterion keys to names', () => {
+        const customRubric = {
+            id: 'custom-rubric-1',
+            versionNumber: 2,
+            source: 'EXAM_OVERRIDE' as const,
+            definition: {
+                criteria: [
+                    {
+                        key: 'creativity',
+                        name: 'Creativity & Originality',
+                        weight: 0.6,
+                        description: 'Creative aspect',
+                        levels: { '0': 'L0', '1': 'L1', '2': 'L2', '3': 'L3', '4': 'L4' },
+                    },
+                    {
+                        key: 'depth',
+                        name: 'Technical Depth',
+                        weight: 0.4,
+                        description: 'Technical aspect',
+                        levels: { '0': 'L0', '1': 'L1', '2': 'L2', '3': 'L3', '4': 'L4' },
+                    },
+                ],
+            },
+            updatedAt: null,
+        };
+
+        render(
+            <AttemptReportView
+                attempt={{
+                    attemptId: 'attempt-3',
+                    examId: 'exam-3',
+                    examTitle: 'Custom Rubric Exam',
+                    subjectTitle: 'Computer Science',
+                    studentId: 'student-3',
+                    studentName: 'Ana Santos',
+                    studentNumber: '2024-0001',
+                    completedAt: '2026-06-26T09:00:00.000Z',
+                    score: 18,
+                    totalScore: 20,
+                    status: 'COMPLETED',
+                    answers: {
+                        'question-1': 'Essay response',
+                    },
+                    evaluations: {},
+                    feedback: 'Nice work.',
+                    itemOverrides: {},
+                    grading: {
+                        finalizedAt: '2026-06-26T10:00:00.000Z',
+                        finalizedBy: 'user-1',
+                    },
+                    questionReports: [
+                        {
+                            questionId: 'question-1',
+                            questionType: 'ESSAY',
+                            prompt: 'Question prompt',
+                            answer: 'Essay response',
+                            correctAnswer: null,
+                            isCorrect: null,
+                            awardedScore: 18,
+                            maxScore: 20,
+                            evaluation: {
+                                scores: {
+                                    creativity: 4,
+                                    depth: 3,
+                                },
+                            },
+                            override: null,
+                        },
+                    ],
+                    rubric: customRubric,
+                }}
+                questions={[
+                    {
+                        id: 'question-1',
+                        examId: 'exam-3',
+                        type: 'ESSAY',
+                        content: {
+                            prompt: 'Question prompt',
+                        },
+                        points: 20,
+                        orderIndex: 0,
+                    } as unknown as GradingQuestionType,
+                ]}
+            />,
+        );
+
+        // Verify that custom criterion names are displayed in the badges instead of raw keys
+        expect(screen.getByText('Creativity & Originality: 4')).toBeTruthy();
+        expect(screen.getByText('Technical Depth: 3')).toBeTruthy();
+    });
 });

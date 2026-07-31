@@ -210,13 +210,10 @@ export const questionInputSchema = z
 export type BloomCognitiveLevel = z.infer<typeof bloomCognitiveLevelSchema>;
 export type QuestionBankStatus = z.infer<typeof questionBankStatusSchema>;
 
-export const essayRubricCriterionEvaluationSchema = z.object({
-    contentSubstance: z.number().int().min(0).max(4),
-    structureOrganization: z.number().int().min(0).max(4),
-    argumentationSupport: z.number().int().min(0).max(4),
-    styleTone: z.number().int().min(0).max(4),
-    grammarConventions: z.number().int().min(0).max(4),
-});
+export const essayRubricCriterionEvaluationSchema = z.record(
+    z.string(),
+    z.number().int().min(0).max(4),
+);
 
 export const essayQuestionEvaluationSchema = z.object({
     scores: essayRubricCriterionEvaluationSchema,

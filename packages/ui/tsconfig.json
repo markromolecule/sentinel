@@ -14,7 +14,9 @@
         "noEmit": true,
         "baseUrl": ".",
         "paths": {
-            "@/*": ["./src/*"]
+            "@/*": ["./src/*"],
+            "@sentinel/shared": ["../shared/src"],
+            "@sentinel/shared/*": ["../shared/src/*"]
         }
     },
     "include": ["src"],

@@ -225,3 +225,50 @@ export async function updateAccessControlExaminationSettings(
 
     return response.data;
 }
+
+import type { ResolvedEssayRubric, UpdateExamEssayRubricResponse } from './exams/essay-rubric';
+
+/**
+ * Fetches the active baseline essay rubric managed by support.
+ *
+ * @param apiClient - The authenticated API client instance.
+ * @returns A promise resolving to the resolved essay rubric details.
+ */
+export async function getBaselineEssayRubric(
+    apiClient: ApiClientType,
+): Promise<ResolvedEssayRubric> {
+    const response: ApiResponse<ResolvedEssayRubric> = await apiClient(
+        '/access-control/essay-rubric',
+    );
+    return response.data;
+}
+
+/**
+ * Updates the active baseline essay rubric managed by support.
+ *
+ * @param apiClient - The authenticated API client instance.
+ * @param payload - The new criteria definition payload.
+ * @returns A promise resolving to the updated baseline rubric version details.
+ */
+export async function updateBaselineEssayRubric(
+    apiClient: ApiClientType,
+    payload: {
+        criteria: Array<{
+            key: string;
+            name: string;
+            weight: number;
+            description: string;
+            levels: Record<number, string>;
+        }>;
+    },
+): Promise<UpdateExamEssayRubricResponse> {
+    const response: ApiResponse<UpdateExamEssayRubricResponse> = await apiClient(
+        '/access-control/essay-rubric',
+        {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        },
+    );
+    return response.data;
+}
