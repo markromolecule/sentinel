@@ -266,6 +266,7 @@ Each repair request includes the original invalid item, validator/critic reasons
 ## Phase 4: Stop Treating Provenance as Passage Content
 
 **Goal:** Ensure every passage surface and editor uses explicit `passageContent`, while provenance remains visible only as labeled - [x] Add an explicit `fallbackToSourceEvidence?: boolean` option to `renderPassage()` in `packages/shared/src/utils/passage-rendering.ts`, retain `true` as the temporary compatibility default, and document the option with JSDoc.
+
 - [x] Extend `passage-rendering.test.ts` to cover explicit fallback enabled, explicit fallback disabled, preferred passage behavior, empty passage behavior, plain escaping, and sanitized HTML behavior.
 - [x] Remove `questionSourceEvidence` from `getRuntimePassageDetails()` and its call in `useStudentExamAttempt()` so a live student attempt cannot render provenance as a passage.
 - [x] Update `getExamContextDetails()` in both `sentinel-web` and `sentinel-core` to call `renderPassage({ fallbackToSourceEvidence: false })`; preserve exam-description fallback without relabeling provenance as passage text.

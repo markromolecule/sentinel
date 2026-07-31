@@ -69,10 +69,10 @@ export function buildPrompt(args: {
         sourceFiles.length === 1
             ? sourceFiles[0].fileName
             : sourceFiles.length > 1
-                ? `${sourceFiles.length} files: ${sourceFiles.map((file) => file.fileName).join(', ')}`
-                : sourceDocuments.length === 1
-                    ? sourceDocuments[0].fileName
-                    : `${sourceDocuments.length} files: ${sourceDocuments.map((document) => document.fileName).join(', ')}`;
+              ? `${sourceFiles.length} files: ${sourceFiles.map((file) => file.fileName).join(', ')}`
+              : sourceDocuments.length === 1
+                ? sourceDocuments[0].fileName
+                : `${sourceDocuments.length} files: ${sourceDocuments.map((document) => document.fileName).join(', ')}`;
 
     return [
         hasExtractedSourceText

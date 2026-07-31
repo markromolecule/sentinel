@@ -952,3 +952,5 @@ export * from './proctor/students';
 export * from './messages';
 
 export * from '../schema/pdf-documents';
+export * from '../exams/essay-rubric';
+export * from '../schema/exams/essay-rubric-schema';

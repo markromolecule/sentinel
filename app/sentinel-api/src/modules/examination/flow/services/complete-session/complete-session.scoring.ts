@@ -10,6 +10,7 @@ import {
     normalizeAssessmentSnapshotQuestions,
     parseAssessmentSnapshot,
     parseScoreSnapshot,
+    resolveAssessmentSnapshotRubric,
 } from '../attempt-snapshot.service';
 import { buildPreparationToken } from '../prepare-session.service';
 import { logScoreIntegrityCheck } from '../../../shared/services/score-integrity-observability.service';
@@ -64,6 +65,7 @@ export async function buildCompleteSessionScoringContext(args: {
     }
 
     const normalizedQuestions = normalizeAssessmentSnapshotQuestions(assessmentSnapshot.questions);
+    const rubric = resolveAssessmentSnapshotRubric(assessmentSnapshot);
 
     const answerChecksum = buildAnswerPayloadChecksum({
         attemptId: body.sessionId,
@@ -91,6 +93,7 @@ export async function buildCompleteSessionScoringContext(args: {
         questions: normalizedQuestions,
         answers: body.answers as ExamAttemptAnswers,
         answerChecksum,
+        rubric,
     });
 
     logScoreIntegrityCheck({

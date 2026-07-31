@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { buildAssessmentSnapshot } from './attempt-snapshot.service';
+import {
+    buildAssessmentSnapshot,
+    buildLegacyEssayRubricSnapshot,
+    parseAssessmentSnapshot,
+    resolveAssessmentSnapshotRubric,
+} from './attempt-snapshot.service';
 
 describe('buildAssessmentSnapshot', () => {
     const configurationState = {
@@ -76,6 +81,7 @@ describe('buildAssessmentSnapshot', () => {
         expect(snapshot.questions[0]?.content.optionTokens).toEqual(
             expect.arrayContaining([expect.any(String)]),
         );
+        expect('rubric' in snapshot && snapshot.rubric.id).toBe('legacy-standard-v1');
     });
 
     it('generates different option tokens for different attempts even when options match', () => {
@@ -97,6 +103,30 @@ describe('buildAssessmentSnapshot', () => {
         );
         expect([...(snapshotA.questions[0]?.content.options ?? [])].sort()).toEqual(
             [...(snapshotB.questions[0]?.content.options ?? [])].sort(),
+        );
+    });
+
+    it('parses v1 snapshots and resolves the legacy rubric fallback', () => {
+        const currentSnapshot = buildAssessmentSnapshot({
+            attemptId: 'attempt-v1',
+            examId: 'exam-1',
+            configurationState: configurationState as any,
+            questions: questions as any,
+        });
+        const parsedSnapshot = parseAssessmentSnapshot({
+            version: 'attempt-assessment.v1',
+            attemptId: currentSnapshot.attemptId,
+            examId: currentSnapshot.examId,
+            seed: currentSnapshot.seed,
+            settings: currentSnapshot.settings,
+            configuration: currentSnapshot.configuration,
+            questions: currentSnapshot.questions,
+            totalScore: currentSnapshot.totalScore,
+        });
+
+        expect(parsedSnapshot).not.toBeNull();
+        expect(resolveAssessmentSnapshotRubric(parsedSnapshot)).toEqual(
+            buildLegacyEssayRubricSnapshot(),
         );
     });
 });

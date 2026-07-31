@@ -43,6 +43,7 @@ export function buildGradingAttemptDetailResponse(
             status: attemptRow.status,
             answers: snapshotMetadata.answers,
             evaluations: snapshotMetadata.evaluations,
+            rubric: args.rubric,
             feedback: snapshotMetadata.overallFeedback,
             itemOverrides: snapshotMetadata.itemOverrides,
             grading: {

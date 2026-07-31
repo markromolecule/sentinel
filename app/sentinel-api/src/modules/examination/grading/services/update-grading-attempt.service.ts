@@ -1,6 +1,7 @@
 import { type DbClient } from '@sentinel/db';
 import {
     calculateEssayWeightedScore,
+    type AttemptEssayRubricSnapshot,
     type ExamAttemptItemOverride,
     type ExamQuestion,
 } from '@sentinel/shared';
@@ -22,13 +23,7 @@ export type UpdateGradingAttemptArgs = {
     evaluations?: Record<
         string,
         {
-            scores: {
-                contentSubstance: number;
-                structureOrganization: number;
-                argumentationSupport: number;
-                styleTone: number;
-                grammarConventions: number;
-            };
+            scores: Record<string, number>;
             feedback?: string | null;
         }
     >;
@@ -78,6 +73,39 @@ function mapGradingQuestionToExamQuestion(question: {
     };
 }
 
+function assertEvaluationMatchesRubric(args: {
+    questionId: string;
+    scores: Record<string, number>;
+    rubric: AttemptEssayRubricSnapshot;
+}) {
+    const expectedKeys = new Set(args.rubric.definition.criteria.map((criterion) => criterion.key));
+    const submittedKeys = Object.keys(args.scores);
+
+    if (submittedKeys.length !== expectedKeys.size) {
+        throw new HTTPException(400, {
+            message: `Essay evaluation must match the captured rubric for question: ${args.questionId}`,
+        });
+    }
+
+    for (const key of submittedKeys) {
+        if (!expectedKeys.has(key)) {
+            throw new HTTPException(400, {
+                message: `Essay evaluation includes an unknown rubric criterion for question: ${args.questionId}`,
+            });
+        }
+    }
+
+    for (const key of expectedKeys) {
+        const value = args.scores[key];
+
+        if (!Number.isInteger(value) || value < 0 || value > 4) {
+            throw new HTTPException(400, {
+                message: `Essay evaluation contains an invalid score for question: ${args.questionId}`,
+            });
+        }
+    }
+}
+
 /**
  * Updates a student's exam attempt with manually scored essay questions,
  * recalculating the overall score and storing criteria breakdowns.
@@ -103,6 +131,7 @@ export async function updateGradingAttempt({
     });
 
     const { attempt, questions } = detail;
+    const capturedRubric = attempt.rubric;
 
     if (attempt.scoreState === 'FINALIZED') {
         throw new HTTPException(400, {
@@ -137,7 +166,17 @@ export async function updateGradingAttempt({
                 continue;
             }
 
-            const essayScore = calculateEssayWeightedScore(evaluation.scores, question.points);
+            assertEvaluationMatchesRubric({
+                questionId: question.id,
+                scores: evaluation.scores,
+                rubric: capturedRubric,
+            });
+
+            const essayScore = calculateEssayWeightedScore(
+                evaluation.scores,
+                question.points,
+                capturedRubric.definition,
+            );
 
             updatedEvaluations[question.id] = {
                 scores: evaluation.scores,
@@ -185,6 +224,7 @@ export async function updateGradingAttempt({
         }),
         evaluations: updatedEvaluations,
         itemOverrides: persistedOverrides,
+        rubric: capturedRubric,
     });
 
     logScoreIntegrityCheck({

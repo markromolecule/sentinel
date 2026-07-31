@@ -415,6 +415,11 @@ export const telemetry_incident_evidence_deletion_reason = {
 } as const;
 export type telemetry_incident_evidence_deletion_reason =
     (typeof telemetry_incident_evidence_deletion_reason)[keyof typeof telemetry_incident_evidence_deletion_reason];
+export const essay_rubric_scope = {
+    BASELINE: 'BASELINE',
+    EXAM_OVERRIDE: 'EXAM_OVERRIDE',
+} as const;
+export type essay_rubric_scope = (typeof essay_rubric_scope)[keyof typeof essay_rubric_scope];
 export type analytics_reports = {
     report_id: Generated<string>;
     title: string;
@@ -612,6 +617,18 @@ export type enrollments = {
     class_group_id: string | null;
     student_id: string | null;
     enrolled_at: Generated<Timestamp | null>;
+};
+export type essay_rubric_versions = {
+    rubric_version_id: Generated<string>;
+    scope: essay_rubric_scope;
+    exam_id: string | null;
+    version_number: number;
+    definition: unknown;
+    is_active: Generated<boolean>;
+    supersedes_version_id: string | null;
+    created_by: string | null;
+    created_at: Generated<Timestamp | null>;
+    updated_at: Timestamp | null;
 };
 export type exam_answer_key_exports = {
     export_id: Generated<string>;
@@ -1606,6 +1623,7 @@ export type DB = {
     departments: departments;
     enrollment_requests: enrollment_requests;
     enrollments: enrollments;
+    essay_rubric_versions: essay_rubric_versions;
     exam_answer_key_exports: exam_answer_key_exports;
     exam_assigned_sections: exam_assigned_sections;
     exam_attempt_lifecycle_events: exam_attempt_lifecycle_events;

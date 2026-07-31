@@ -199,8 +199,10 @@ describe('useExamStore', () => {
 
     it('setting a section questionType updates questionType, title, and description atomically', () => {
         useExamStore.getState().hydrateExam(createExam());
-        
-        useExamStore.getState().updateQuestionSection('section-1', { questionType: 'MULTIPLE_CHOICE' });
+
+        useExamStore
+            .getState()
+            .updateQuestionSection('section-1', { questionType: 'MULTIPLE_CHOICE' });
 
         expect(useExamStore.getState().questionSections[0]?.questionType).toBe('MULTIPLE_CHOICE');
         expect(useExamStore.getState().questionSections[0]?.title).toBe('Multiple Choice');

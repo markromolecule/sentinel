@@ -90,7 +90,9 @@ describe('QuestionsPanel', () => {
             />,
         );
 
-        const trigger = screen.getByRole('button', { name: /Type: Multiple Choice/i }) as HTMLButtonElement;
+        const trigger = screen.getByRole('button', {
+            name: /Type: Multiple Choice/i,
+        }) as HTMLButtonElement;
         expect(trigger.disabled).toBe(true);
         expect(screen.getByText(/Section locked to:/i)).toBeTruthy();
     });

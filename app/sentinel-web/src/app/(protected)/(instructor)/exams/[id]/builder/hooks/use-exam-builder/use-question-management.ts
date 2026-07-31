@@ -73,7 +73,12 @@ export function useQuestionManagement({
 
     const handleCreateQuestion = async (payload: QuestionBuilderPayload, sectionId?: string) => {
         const targetSectionId = resolveTargetSectionId(sectionId);
-        const check = verifyQuestionAddition(targetSectionId, payload.type, questionSections, questions);
+        const check = verifyQuestionAddition(
+            targetSectionId,
+            payload.type,
+            questionSections,
+            questions,
+        );
         if (!check.valid) {
             toast.error(check.message);
             return;
@@ -104,7 +109,12 @@ export function useQuestionManagement({
 
     const handleDuplicateQuestion = async (payload: QuestionBuilderPayload, sectionId?: string) => {
         const targetSectionId = resolveTargetSectionId(sectionId);
-        const check = verifyQuestionAddition(targetSectionId, payload.type, questionSections, questions);
+        const check = verifyQuestionAddition(
+            targetSectionId,
+            payload.type,
+            questionSections,
+            questions,
+        );
         if (!check.valid) {
             toast.error(check.message);
             return;
@@ -201,7 +211,12 @@ export function useQuestionManagement({
 
         // Pre-validate all imported questions before performing any mutations
         for (const q of newQuestions) {
-            const check = verifyQuestionAddition(targetSectionId, q.type, questionSections, questions);
+            const check = verifyQuestionAddition(
+                targetSectionId,
+                q.type,
+                questionSections,
+                questions,
+            );
             if (!check.valid) {
                 toast.error(check.message);
                 return;

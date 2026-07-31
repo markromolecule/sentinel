@@ -14,6 +14,81 @@ vi.mock('../../lifecycle/services/lifecycle-event.service', () => ({
 
 describe('updateGradingAttempt', () => {
     let mockDb: any;
+    const capturedRubric = {
+        id: 'legacy-standard-v1',
+        versionNumber: 1,
+        source: 'LEGACY',
+        definition: {
+            criteria: [
+                {
+                    key: 'contentSubstance',
+                    name: 'Content & Substance',
+                    weight: 0.3,
+                    description: 'Depth of analysis.',
+                    levels: {
+                        0: 'Missing',
+                        1: 'Weak',
+                        2: 'Developing',
+                        3: 'Strong',
+                        4: 'Excellent',
+                    },
+                },
+                {
+                    key: 'structureOrganization',
+                    name: 'Structure & Organization',
+                    weight: 0.2,
+                    description: 'Logical organization.',
+                    levels: {
+                        0: 'Missing',
+                        1: 'Weak',
+                        2: 'Developing',
+                        3: 'Strong',
+                        4: 'Excellent',
+                    },
+                },
+                {
+                    key: 'argumentationSupport',
+                    name: 'Argumentation & Support',
+                    weight: 0.2,
+                    description: 'Support and reasoning.',
+                    levels: {
+                        0: 'Missing',
+                        1: 'Weak',
+                        2: 'Developing',
+                        3: 'Strong',
+                        4: 'Excellent',
+                    },
+                },
+                {
+                    key: 'styleTone',
+                    name: 'Style & Tone',
+                    weight: 0.15,
+                    description: 'Tone and voice.',
+                    levels: {
+                        0: 'Missing',
+                        1: 'Weak',
+                        2: 'Developing',
+                        3: 'Strong',
+                        4: 'Excellent',
+                    },
+                },
+                {
+                    key: 'grammarConventions',
+                    name: 'Grammar & Conventions',
+                    weight: 0.15,
+                    description: 'Grammar and mechanics.',
+                    levels: {
+                        0: 'Missing',
+                        1: 'Weak',
+                        2: 'Developing',
+                        3: 'Strong',
+                        4: 'Excellent',
+                    },
+                },
+            ],
+        },
+        updatedAt: null,
+    } as const;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -45,6 +120,7 @@ describe('updateGradingAttempt', () => {
                 status: 'COMPLETED',
                 answers: {},
                 evaluations: {},
+                rubric: capturedRubric,
                 feedback: null,
                 itemOverrides: {},
                 grading: {
@@ -88,6 +164,7 @@ describe('updateGradingAttempt', () => {
                 status: 'COMPLETED',
                 answers: { 'q-1': 'Option A' },
                 evaluations: {},
+                rubric: capturedRubric,
                 feedback: null,
                 itemOverrides: {},
                 grading: {
@@ -139,6 +216,7 @@ describe('updateGradingAttempt', () => {
                 status: 'IN_PROGRESS',
                 answers: { 'q-1': 'Option A' },
                 evaluations: {},
+                rubric: capturedRubric,
                 feedback: null,
                 itemOverrides: {},
                 grading: {
@@ -194,6 +272,7 @@ describe('updateGradingAttempt', () => {
                 status: 'COMPLETED',
                 answers: {},
                 evaluations: {},
+                rubric: capturedRubric,
                 feedback: null,
                 itemOverrides: {},
                 grading: {
@@ -214,5 +293,67 @@ describe('updateGradingAttempt', () => {
         });
 
         expect(result.scoreState).toBe('REVISION_REQUIRED');
+    });
+
+    it('rejects essay evaluations that do not match the captured rubric keys', async () => {
+        vi.mocked(getGradingAttemptDetail).mockResolvedValueOnce({
+            attempt: {
+                attemptId: 'attempt-essay',
+                examId: 'exam-1',
+                examTitle: 'Final Exam',
+                subjectTitle: 'Math',
+                studentId: 'student-1',
+                studentName: 'John Doe',
+                studentNumber: '12345',
+                completedAt: null,
+                score: null,
+                totalScore: 5,
+                initialScore: null,
+                status: 'IN_PROGRESS',
+                answers: { 'essay-1': 'Response' },
+                evaluations: {},
+                rubric: capturedRubric,
+                feedback: null,
+                itemOverrides: {},
+                grading: {
+                    finalizedAt: null,
+                    finalizedBy: null,
+                },
+                lifecycleState: 'SUBMITTED',
+                scoreState: 'DRAFT',
+                questionReports: [],
+            },
+            questions: [
+                {
+                    id: 'essay-1',
+                    examId: 'exam-1',
+                    type: 'ESSAY',
+                    points: 5,
+                    orderIndex: 0,
+                    content: { prompt: 'Essay prompt' },
+                },
+            ],
+        } as any);
+
+        await expect(
+            updateGradingAttempt({
+                dbClient: mockDb,
+                attemptId: 'attempt-essay',
+                evaluations: {
+                    'essay-1': {
+                        scores: {
+                            contentSubstance: 4,
+                            structureOrganization: 4,
+                            argumentationSupport: 4,
+                            styleTone: 4,
+                        },
+                    },
+                },
+            }),
+        ).rejects.toThrow(
+            new HTTPException(400, {
+                message: 'Essay evaluation must match the captured rubric for question: essay-1',
+            }),
+        );
     });
 });

@@ -31,7 +31,8 @@ export const QuestionRow = memo(function QuestionRow({
                     ? 'border-primary/20 bg-primary/[0.03]'
                     : 'bg-background hover:border-border hover:bg-muted/20',
                 isAlreadyAdded && 'cursor-default',
-                disabled && 'opacity-40 cursor-not-allowed hover:bg-background hover:border-zinc-200',
+                disabled &&
+                    'hover:bg-background cursor-not-allowed opacity-40 hover:border-zinc-200',
                 !isInteractionDisabled && 'cursor-pointer',
             )}
             onClick={() => {

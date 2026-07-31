@@ -27,6 +27,14 @@ import {
     updateAccessControlExaminationSettingsRoute,
     updateAccessControlExaminationSettingsRouteHandler,
 } from './controllers/update-access-control-examination-settings.controller';
+import {
+    getBaselineEssayRubricRoute,
+    getBaselineEssayRubricRouteHandler,
+} from './controllers/get-access-control-essay-rubric.controller';
+import {
+    updateBaselineEssayRubricRoute,
+    updateBaselineEssayRubricRouteHandler,
+} from './controllers/update-access-control-essay-rubric.controller';
 import { ensureAccessControlSchemaReady } from './services/access-control-schema.service';
 import { assertAccessControlAccess } from './services/access-control-authorization.service';
 
@@ -53,6 +61,8 @@ accessControlRoutes
     .openapi(
         updateAccessControlExaminationSettingsRoute,
         updateAccessControlExaminationSettingsRouteHandler,
-    );
+    )
+    .openapi(getBaselineEssayRubricRoute, getBaselineEssayRubricRouteHandler)
+    .openapi(updateBaselineEssayRubricRoute, updateBaselineEssayRubricRouteHandler);
 
 export default accessControlRoutes;

@@ -3,17 +3,28 @@ import { examConfigurationSchema, examSettingsSchema } from './assessment-schema
 import { examQuestionSchema } from './exam-schema';
 import { essayQuestionEvaluationSchema } from './assessment-schema';
 import { examAttemptAnswerValueSchema } from './attempt-answer-schema';
+import { essayRubricDefinitionSchema, essayRubricSourceSchema } from './essay-rubric-schema';
 
-export const ATTEMPT_ASSESSMENT_SNAPSHOT_VERSION = 'attempt-assessment.v1' as const;
+export const ATTEMPT_ASSESSMENT_SNAPSHOT_VERSION_V1 = 'attempt-assessment.v1' as const;
+export const ATTEMPT_ASSESSMENT_SNAPSHOT_VERSION = 'attempt-assessment.v2' as const;
 export const ATTEMPT_SCORE_SNAPSHOT_VERSION = 'attempt-score.v1' as const;
+export const LEGACY_ESSAY_RUBRIC_VERSION_ID = 'legacy-standard-v1' as const;
 
 const attemptSnapshotQuestionSchema = examQuestionSchema.extend({
     id: z.string(),
     examId: z.string(),
 });
 
-export const attemptAssessmentSnapshotSchema = z.object({
-    version: z.literal(ATTEMPT_ASSESSMENT_SNAPSHOT_VERSION),
+export const attemptEssayRubricSnapshotSchema = z.object({
+    id: z.string().min(1),
+    versionNumber: z.number().int().positive(),
+    source: essayRubricSourceSchema,
+    definition: essayRubricDefinitionSchema,
+    updatedAt: z.string().nullable().optional(),
+});
+
+const attemptAssessmentSnapshotV1Schema = z.object({
+    version: z.literal(ATTEMPT_ASSESSMENT_SNAPSHOT_VERSION_V1),
     attemptId: z.string(),
     examId: z.string(),
     seed: z.string().min(1),
@@ -22,6 +33,23 @@ export const attemptAssessmentSnapshotSchema = z.object({
     questions: z.array(attemptSnapshotQuestionSchema),
     totalScore: z.number().int().min(0),
 });
+
+const attemptAssessmentSnapshotV2Schema = z.object({
+    version: z.literal(ATTEMPT_ASSESSMENT_SNAPSHOT_VERSION),
+    attemptId: z.string(),
+    examId: z.string(),
+    seed: z.string().min(1),
+    settings: examSettingsSchema,
+    configuration: examConfigurationSchema,
+    questions: z.array(attemptSnapshotQuestionSchema),
+    totalScore: z.number().int().min(0),
+    rubric: attemptEssayRubricSnapshotSchema,
+});
+
+export const attemptAssessmentSnapshotSchema = z.union([
+    attemptAssessmentSnapshotV1Schema,
+    attemptAssessmentSnapshotV2Schema,
+]);
 
 export const attemptItemOverrideSchema = z.object({
     awardedScore: z.number().min(0),
@@ -48,6 +76,12 @@ export const attemptQuestionReportSnapshotSchema = z.object({
     override: attemptItemOverrideSchema.nullable(),
 });
 
+export const attemptScoreSnapshotRubricMetadataSchema = z.object({
+    id: z.string().min(1),
+    versionNumber: z.number().int().positive(),
+    source: essayRubricSourceSchema,
+});
+
 export const attemptScoreSnapshotSchema = z.object({
     version: z.literal(ATTEMPT_SCORE_SNAPSHOT_VERSION),
     scoringVersion: z.string().min(1),
@@ -60,10 +94,17 @@ export const attemptScoreSnapshotSchema = z.object({
     autoGradableQuestionCount: z.number().int().min(0),
     manualReviewQuestionCount: z.number().int().min(0),
     requiresManualReview: z.boolean(),
+    rubric: attemptScoreSnapshotRubricMetadataSchema.nullable().optional(),
     questionReports: z.array(attemptQuestionReportSnapshotSchema),
 });
 
 export type AttemptAssessmentSnapshot = z.infer<typeof attemptAssessmentSnapshotSchema>;
+export type AttemptAssessmentSnapshotV1 = z.infer<typeof attemptAssessmentSnapshotV1Schema>;
+export type AttemptAssessmentSnapshotV2 = z.infer<typeof attemptAssessmentSnapshotV2Schema>;
+export type AttemptEssayRubricSnapshot = z.infer<typeof attemptEssayRubricSnapshotSchema>;
 export type AttemptItemOverrideSnapshot = z.infer<typeof attemptItemOverrideSchema>;
 export type AttemptQuestionReportSnapshot = z.infer<typeof attemptQuestionReportSnapshotSchema>;
+export type AttemptScoreSnapshotRubricMetadata = z.infer<
+    typeof attemptScoreSnapshotRubricMetadataSchema
+>;
 export type AttemptScoreSnapshot = z.infer<typeof attemptScoreSnapshotSchema>;

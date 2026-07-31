@@ -95,6 +95,7 @@ function AttemptGradingPage({ params }: AttemptGradingPageProps) {
                         onScoreChange={handleScoreChange}
                         overallFeedback={overallFeedback}
                         onOverallFeedbackChange={setOverallFeedback}
+                        rubric={attemptDetail?.attempt.rubric}
                     />
                 </div>
             )}

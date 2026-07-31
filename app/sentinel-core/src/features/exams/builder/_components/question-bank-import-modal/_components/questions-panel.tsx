@@ -154,9 +154,9 @@ export function QuestionsPanel({
                         />
                     </div>
 
-                    <div className="shrink-0 flex items-center gap-2">
+                    <div className="flex shrink-0 items-center gap-2">
                         {allowedQuestionType && (
-                            <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 select-none">
+                            <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-700 select-none dark:bg-amber-950/30 dark:text-amber-400">
                                 Section locked to:
                             </span>
                         )}
@@ -168,7 +168,7 @@ export function QuestionsPanel({
                                     <button
                                         type="button"
                                         disabled={Boolean(allowedQuestionType)}
-                                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800/80 disabled:opacity-80 disabled:cursor-not-allowed disabled:bg-zinc-50"
+                                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:bg-zinc-50 disabled:opacity-80 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800/80"
                                     >
                                         <span>Type: {activeFacetLabel}</span>{' '}
                                         <span className="rounded-full bg-zinc-100 px-1.5 py-0.25 text-[10px] font-bold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">

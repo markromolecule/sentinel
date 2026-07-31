@@ -1,4 +1,5 @@
 import {
+    LEGACY_ESSAY_RUBRIC,
     Schema,
     type AttemptAssessmentSnapshot,
     type AttemptScoreSnapshot,
@@ -46,6 +47,22 @@ export function parseAttemptSnapshots(args: {
         assessmentSnapshot: parsedAssessment.success ? parsedAssessment.data : null,
         scoreSnapshot: parsedScore.success ? parsedScore.data : null,
     };
+}
+
+export function resolveParsedAssessmentRubric(
+    assessmentSnapshot: AttemptAssessmentSnapshot | null,
+) {
+    if (assessmentSnapshot && 'rubric' in assessmentSnapshot && assessmentSnapshot.rubric) {
+        return assessmentSnapshot.rubric;
+    }
+
+    return Schema.attemptEssayRubricSnapshotSchema.parse({
+        id: Schema.LEGACY_ESSAY_RUBRIC_VERSION_ID,
+        versionNumber: 1,
+        source: 'LEGACY',
+        definition: LEGACY_ESSAY_RUBRIC,
+        updatedAt: null,
+    });
 }
 
 export function normalizeSnapshotQuestion(

@@ -112,7 +112,9 @@ export function QuestionSectionCard({
                                     <input
                                         aria-label={`${section.title} title`}
                                         value={section.title}
-                                        onChange={(event) => onSectionTitleChange?.(event.target.value)}
+                                        onChange={(event) =>
+                                            onSectionTitleChange?.(event.target.value)
+                                        }
                                         className="focus:bg-background max-w-[240px] min-w-[120px] truncate rounded-md border-transparent bg-transparent px-1.5 py-0.5 text-sm font-semibold shadow-none transition hover:bg-zinc-100/50 focus:border-zinc-200 focus:ring-0 focus:outline-none"
                                     />
                                 )}
@@ -234,7 +236,9 @@ export function QuestionSectionCard({
                                     <Textarea
                                         aria-label={`${section.title} instructions`}
                                         value={section.description ?? ''}
-                                        onChange={(event) => onSectionDescriptionChange?.(event.target.value)}
+                                        onChange={(event) =>
+                                            onSectionDescriptionChange?.(event.target.value)
+                                        }
                                         placeholder="Section instruction (optional)"
                                         className="bg-background focus-visible:ring-primary min-h-16 resize-y rounded-md border-zinc-200 text-xs shadow-none focus-visible:ring-1"
                                     />

@@ -73,4 +73,47 @@ describe('Essay Rubric Weighted Score Calculation', () => {
         const totalWeight = ESSAY_RUBRIC_CRITERIA.reduce((sum, c) => sum + c.weight, 0);
         expect(totalWeight).toBeCloseTo(1.0);
     });
+
+    it('calculates score with custom rubric criteria', () => {
+        const customRubric = {
+            criteria: [
+                {
+                    key: 'creativity',
+                    name: 'Creativity',
+                    weight: 0.6,
+                    description: 'Creative elements.',
+                    levels: { 0: 'a', 1: 'b', 2: 'c', 3: 'd', 4: 'e' },
+                },
+                {
+                    key: 'logic',
+                    name: 'Logic',
+                    weight: 0.4,
+                    description: 'Logical arguments.',
+                    levels: { 0: 'a', 1: 'b', 2: 'c', 3: 'd', 4: 'e' },
+                },
+            ],
+        };
+
+        const scores = { creativity: 3, logic: 4 };
+        const result = calculateEssayWeightedScore(scores, 20, customRubric);
+        expect(result).toBe(17);
+    });
+
+    it('ignores unknown score keys and uses 0 for missing rubric keys', () => {
+        const customRubric = {
+            criteria: [
+                {
+                    key: 'creativity',
+                    name: 'Creativity',
+                    weight: 1.0,
+                    description: 'Creative elements.',
+                    levels: { 0: 'a', 1: 'b', 2: 'c', 3: 'd', 4: 'e' },
+                },
+            ],
+        };
+
+        const scores = { unknownKey: 4 };
+        const result = calculateEssayWeightedScore(scores, 10, customRubric);
+        expect(result).toBe(0);
+    });
 });

@@ -93,7 +93,7 @@ export const QUESTION_TYPE_DEFINITIONS: Record<QuestionType, QuestionTypeDefinit
     ESSAY: {
         label: 'essay',
         instructions:
-            'Each question should have a realistic maxLength. Note that evaluations will follow the standardized institutional rubric covering: Content & Substance (30%), Structure & Organization (20%), Argumentation & Support (20%), Style & Tone (15%), and Grammar & Conventions (15%). Do not write a custom rubric.',
+            "Each question should have a realistic maxLength. Note that evaluations will follow the exam's active effective rubric containing custom weights and performance levels. Do not write a custom rubric.",
         schema: {
             type: 'object',
             properties: {

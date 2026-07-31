@@ -1,4 +1,8 @@
-import type { ExamAttemptAnswers, GradingQuestionType } from '@sentinel/shared';
+import type {
+    ExamAttemptAnswers,
+    GradingQuestionType,
+    AttemptEssayRubricSnapshot,
+} from '@sentinel/shared';
 import type { ScoreSummary, CriteriaScores, QuestionEvaluationState } from '../_types';
 
 type GradingErrorProps = {
@@ -37,6 +41,7 @@ type GradingRubricPaneProps = {
     onScoreChange: (qId: string, criterionKey: keyof CriteriaScores, value: number) => void;
     overallFeedback: string;
     onOverallFeedbackChange: (text: string) => void;
+    rubric?: AttemptEssayRubricSnapshot;
 };
 
 export type {

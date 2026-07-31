@@ -8,10 +8,7 @@ describe('QuestionTypeService', () => {
 
         expect(types).toHaveLength(8);
 
-        const expectedMetadata: Record<
-            QuestionType,
-            { label: string; instruction: string }
-        > = {
+        const expectedMetadata: Record<QuestionType, { label: string; instruction: string }> = {
             MULTIPLE_CHOICE: {
                 label: 'Multiple Choice',
                 instruction:

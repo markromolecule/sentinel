@@ -9,7 +9,12 @@ import {
     DEFAULT_EXAM_CONFIGURATION,
     DEFAULT_EXAM_STORE_STATE,
 } from './constants';
-import { createQuestionSection, getEndDateTime, normalizeExamStructure, QUESTION_TYPE_INSTRUCTIONS } from './helpers';
+import {
+    createQuestionSection,
+    getEndDateTime,
+    normalizeExamStructure,
+    QUESTION_TYPE_INSTRUCTIONS,
+} from './helpers';
 
 export * from './types';
 export * from './constants';

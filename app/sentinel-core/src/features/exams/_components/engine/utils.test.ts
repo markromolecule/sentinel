@@ -25,7 +25,9 @@ describe('engine utils', () => {
 
     describe('getQuestionPrompt', () => {
         it('returns prompt if present', () => {
-            expect(getQuestionPrompt({ content: { prompt: 'What is 1+1?' } } as any)).toBe('What is 1+1?');
+            expect(getQuestionPrompt({ content: { prompt: 'What is 1+1?' } } as any)).toBe(
+                'What is 1+1?',
+            );
         });
 
         it('returns fallback string if prompt is missing', () => {

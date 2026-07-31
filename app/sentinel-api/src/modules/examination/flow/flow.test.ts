@@ -94,6 +94,12 @@ describe('Examination Flow Integration', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        const rubricQuery = {
+            select: vi.fn().mockReturnThis(),
+            where: vi.fn().mockReturnThis(),
+            executeTakeFirst: vi.fn().mockResolvedValue(undefined),
+        };
+        (mockDb as any).selectFrom = vi.fn().mockReturnValue(rubricQuery);
         vi.mocked(getExamConfigurationState).mockResolvedValue(configSnapshot);
         vi.mocked(LogsService.createLog).mockResolvedValue({} as never);
         vi.mocked(ActivityNotificationService.notifyInstitutionActivityCreated).mockResolvedValue(
@@ -166,6 +172,28 @@ describe('Examination Flow Integration', () => {
             sessionId: mockSessionId,
             isResumed: false,
         });
+        vi.mocked(getExamQuestionsData).mockResolvedValue([
+            {
+                question_id: 'question-1',
+                exam_id: examId,
+                exam_section_id: null,
+                source_question_bank_question_id: null,
+                source_collection_id: null,
+                source_origin: 'MANUAL',
+                source_file_name: null,
+                source_page_number: null,
+                source_evidence: null,
+                passage_content: null,
+                passage_type: null,
+                question_type: 'TRUE_FALSE',
+                points: 5,
+                order_index: 0,
+                content: {
+                    prompt: 'Sentinel supports browser-based proctoring.',
+                    correctAnswer: true,
+                },
+            },
+        ] as never);
 
         const result = await SessionManagerService.startSession(mockDb, studentId, examId);
 
@@ -188,6 +216,19 @@ describe('Examination Flow Integration', () => {
             accessOverride: null,
             updatedBy: studentId,
         });
+        expect(SessionRepository.persistAssessmentSnapshot).toHaveBeenCalledWith(
+            mockDb,
+            expect.objectContaining({
+                attemptId: mockSessionId,
+                snapshot: expect.objectContaining({
+                    version: 'attempt-assessment.v2',
+                    rubric: expect.objectContaining({
+                        id: 'legacy-standard-v1',
+                        source: 'LEGACY',
+                    }),
+                }),
+            }),
+        );
     });
 
     it('does not block session startup on telemetry delivery', async () => {

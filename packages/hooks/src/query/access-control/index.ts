@@ -7,3 +7,5 @@ export * from './use-access-control-role-mutations';
 export * from './use-access-control-permission-mutations';
 export * from './use-access-control-assignment-mutations';
 export * from './use-access-control-examination-settings-mutation';
+export * from './use-access-control-essay-rubric-query';
+export * from './use-access-control-essay-rubric-mutation';

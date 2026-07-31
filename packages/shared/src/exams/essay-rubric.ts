@@ -10,6 +10,34 @@ export interface EssayRubricCriterion {
 }
 
 /**
+ * Metadata representing the definition of an essay grading rubric containing multiple criteria.
+ */
+export interface EssayRubricDefinition {
+    criteria: EssayRubricCriterion[];
+}
+
+/**
+ * Represents the source/scope of the essay rubric definition.
+ */
+export type EssayRubricSource = 'BASELINE' | 'EXAM_OVERRIDE' | 'LEGACY';
+
+/**
+ * Metadata representing an audited version of a persisted essay grading rubric.
+ */
+export interface EssayRubricVersion {
+    id: string;
+    scope: EssayRubricSource;
+    examId?: string | null;
+    versionNumber: number;
+    definition: EssayRubricDefinition;
+    isActive: boolean;
+    supersedesVersionId?: string | null;
+    createdBy?: string | null;
+    createdAt?: string | Date | null;
+    updatedAt?: string | Date | null;
+}
+
+/**
  * Standard performance level descriptions applied across all rubric criteria.
  */
 export const ESSAY_RUBRIC_LEVELS: Record<number, string> = {
@@ -62,20 +90,32 @@ export const ESSAY_RUBRIC_CRITERIA: EssayRubricCriterion[] = [
 ];
 
 /**
+ * The legacy/default standard rubric definition matching today's 5 fixed criteria.
+ */
+export const LEGACY_ESSAY_RUBRIC: EssayRubricDefinition = {
+    criteria: ESSAY_RUBRIC_CRITERIA,
+};
+
+export const DEFAULT_ESSAY_RUBRIC: EssayRubricDefinition = LEGACY_ESSAY_RUBRIC;
+
+/**
  * Calculates the overall weighted score for an essay question normalized to the question's total points.
  * Formula: (Sum of (criterion_score * weight) / 4) * maxPoints
  *
- * @param scores - A record of the 5 criteria keys mapped to their scores (0 to 4).
+ * @param scores - A record of the criteria keys mapped to their scores (0 to 4).
  * @param maxPoints - The maximum points assigned to the essay question.
+ * @param rubric - The rubric definition to use for criteria and weights (optional, falls back to LEGACY_ESSAY_RUBRIC).
  * @returns The weighted score rounded to the nearest two decimal places.
  */
 export function calculateEssayWeightedScore(
     scores: Record<string, number>,
     maxPoints: number,
+    rubric?: EssayRubricDefinition,
 ): number {
+    const activeRubric = rubric ?? LEGACY_ESSAY_RUBRIC;
     let weightedSum = 0;
 
-    for (const criterion of ESSAY_RUBRIC_CRITERIA) {
+    for (const criterion of activeRubric.criteria) {
         const score = scores[criterion.key] ?? 0;
         weightedSum += score * criterion.weight;
     }

@@ -479,6 +479,7 @@ model users {
   live_inspection_leases_student_user                                 live_inspection_leases[]           @relation("live_inspection_leases_student_user")
   live_inspection_leases_viewer_user                                  live_inspection_leases[]           @relation("live_inspection_leases_viewer_user")
   telemetry_incident_evidence_deleted                                 telemetry_incident_evidence[]      @relation("evidence_deleted_byTousers")
+  essay_rubric_versions                                               essay_rubric_versions[]
 
   @@index([instance_id])
   @@index([is_anonymous])
@@ -1331,6 +1332,7 @@ model exams {
   exam_remediations               exam_remediation_schedules[] @relation("exam_remediations")
   exam_answer_key_exports         exam_answer_key_exports[]
   live_inspection_leases          live_inspection_leases[]
+  essay_rubric_versions           essay_rubric_versions[]
 
   @@index([class_group_id])
   @@index([institution_id, status], map: "exams_institution_status_idx")
@@ -2604,3 +2606,39 @@ model telemetry_incident_evidence {
   @@index([attempt_id, event_type, created_at])
   @@schema("public")
 }
+
+enum essay_rubric_scope {
+  BASELINE
+  EXAM_OVERRIDE
+
+  @@schema("public")
+}
+
+model essay_rubric_versions {
+  rubric_version_id     String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  scope                 essay_rubric_scope
+  exam_id               String?            @db.Uuid
+  version_number        Int
+  definition            Json               @db.Json
+  is_active             Boolean            @default(true)
+  supersedes_version_id String?            @db.Uuid
+  created_by            String?            @db.Uuid
+  created_at            DateTime?          @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime?          @db.Timestamptz(6)
+
+  // Relations
+  exams                 exams?             @relation(fields: [exam_id], references: [exam_id], onDelete: Cascade, onUpdate: NoAction)
+  users                 users?             @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  superseded_by         essay_rubric_versions? @relation("RubricSuperseded", fields: [supersedes_version_id], references: [rubric_version_id], onDelete: NoAction, onUpdate: NoAction)
+  supersedes            essay_rubric_versions[] @relation("RubricSuperseded")
+
+  @@unique([version_number], map: "baseline_version_uniq_idx", where: raw("scope = 'BASELINE'"))
+  @@unique([exam_id, version_number], map: "exam_override_version_uniq_idx", where: raw("scope = 'EXAM_OVERRIDE'"))
+  @@unique([scope], map: "active_baseline_idx", where: raw("scope = 'BASELINE' AND is_active = true"))
+  @@unique([exam_id], map: "active_exam_override_idx", where: raw("scope = 'EXAM_OVERRIDE' AND is_active = true"))
+  @@index([exam_id])
+  @@index([scope])
+  @@index([is_active])
+  @@schema("public")
+}
+

@@ -56,7 +56,11 @@ describe('useQuestionBankImportSelection', () => {
 
         // Add some selected questions of different types
         act(() => {
-            result.current.toggleQuestion({ id: 'q1', type: 'MULTIPLE_CHOICE', content: {} } as any);
+            result.current.toggleQuestion({
+                id: 'q1',
+                type: 'MULTIPLE_CHOICE',
+                content: {},
+            } as any);
             result.current.toggleQuestion({ id: 'q2', type: 'TRUE_FALSE', content: {} } as any);
         });
 

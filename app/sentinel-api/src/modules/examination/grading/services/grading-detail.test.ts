@@ -326,6 +326,7 @@ describe('Grading attempt details and update services', () => {
             expect(calculateEssayWeightedScore).toHaveBeenCalledWith(
                 evaluationsInput['q-essay-1'].scores,
                 5,
+                expect.any(Object),
             );
             expect(setSpy).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -1040,6 +1041,162 @@ describe('Grading attempt details and update services', () => {
                     finalize: false,
                 }),
             ).rejects.toThrow('Cannot edit grading for a finalized attempt score.');
+        });
+
+        it('calculates attempt scores against their respective rubric snapshots (rubric v1 vs rubric v2)', async () => {
+            const rubricV1 = {
+                id: 'rubric-v1',
+                versionNumber: 1,
+                source: 'BASELINE' as const,
+                definition: {
+                    criteria: [
+                        {
+                            key: 'content',
+                            name: 'Content',
+                            weight: 1.0,
+                            description: 'v1 desc',
+                            levels: { '0': 'L0', '1': 'L1', '2': 'L2', '3': 'L3', '4': 'L4' },
+                        },
+                    ],
+                },
+                updatedAt: null,
+            };
+
+            const rubricV2 = {
+                id: 'rubric-v2',
+                versionNumber: 2,
+                source: 'EXAM_OVERRIDE' as const,
+                definition: {
+                    criteria: [
+                        {
+                            key: 'creativity',
+                            name: 'Creativity',
+                            weight: 1.0,
+                            description: 'v2 desc',
+                            levels: { '0': 'L0', '1': 'L1', '2': 'L2', '3': 'L3', '4': 'L4' },
+                        },
+                    ],
+                },
+                updatedAt: null,
+            };
+
+            const questionId = '44444444-4444-4444-4444-444444444444';
+            const examId = '33333333-3333-3333-3333-333333333333';
+
+            const questions = [
+                {
+                    id: questionId,
+                    examId: examId,
+                    type: 'ESSAY' as const,
+                    content: { prompt: 'Q1' },
+                    points: 10,
+                    orderIndex: 0,
+                    sourceFileName: null,
+                    sourcePageNumber: null,
+                    sourceEvidence: null,
+                    passageContent: null,
+                    passageType: null,
+                },
+            ];
+
+            const attemptA = {
+                attemptId: '11111111-1111-1111-1111-111111111111',
+                examId: examId,
+                studentName: 'Alice',
+                studentNumber: '1',
+                completedAt: new Date('2026-04-18T09:30:00.000Z'),
+                score: 0,
+                totalScore: 10,
+                status: 'COMPLETED',
+                answerSnapshot: {},
+                assessmentSnapshot: {
+                    version: 'attempt-assessment.v2' as const,
+                    attemptId: '11111111-1111-1111-1111-111111111111',
+                    examId: examId,
+                    seed: 'some-seed',
+                    settings: {},
+                    configuration: {},
+                    questions,
+                    totalScore: 10,
+                    rubric: rubricV1,
+                },
+            };
+
+            mockDb.executeTakeFirst.mockResolvedValueOnce(attemptA);
+            mockDb.execute.mockResolvedValueOnce([]);
+
+            vi.mocked(calculateEssayWeightedScore).mockReturnValue(8);
+            vi.mocked(scoreExamAttempt).mockReturnValue({
+                score: 0,
+                totalScore: 10,
+                percentage: 0,
+                answeredCount: 1,
+                autoGradableQuestionCount: 0,
+                manualReviewQuestionCount: 1,
+                requiresManualReview: true,
+            });
+
+            await updateGradingAttempt({
+                dbClient: mockDb as DbClient,
+                attemptId: '11111111-1111-1111-1111-111111111111',
+                evaluations: {
+                    [questionId]: {
+                        scores: { content: 4 },
+                        feedback: null,
+                    },
+                },
+                finalize: false,
+            });
+
+            expect(calculateEssayWeightedScore).toHaveBeenCalledWith(
+                { content: 4 },
+                10,
+                rubricV1.definition,
+            );
+
+            const attemptB = {
+                attemptId: '22222222-2222-2222-2222-222222222222',
+                examId: examId,
+                studentName: 'Bob',
+                studentNumber: '2',
+                completedAt: new Date('2026-04-18T09:30:00.000Z'),
+                score: 0,
+                totalScore: 10,
+                status: 'COMPLETED',
+                answerSnapshot: {},
+                assessmentSnapshot: {
+                    version: 'attempt-assessment.v2' as const,
+                    attemptId: '22222222-2222-2222-2222-222222222222',
+                    examId: examId,
+                    seed: 'some-seed',
+                    settings: {},
+                    configuration: {},
+                    questions,
+                    totalScore: 10,
+                    rubric: rubricV2,
+                },
+            };
+
+            mockDb.executeTakeFirst.mockResolvedValueOnce(attemptB);
+            mockDb.execute.mockResolvedValueOnce([]);
+
+            await updateGradingAttempt({
+                dbClient: mockDb as DbClient,
+                attemptId: '22222222-2222-2222-2222-222222222222',
+                evaluations: {
+                    [questionId]: {
+                        scores: { creativity: 4 },
+                        feedback: null,
+                    },
+                },
+                finalize: false,
+            });
+
+            expect(calculateEssayWeightedScore).toHaveBeenCalledWith(
+                { creativity: 4 },
+                10,
+                rubricV2.definition,
+            );
         });
     });
 });

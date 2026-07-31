@@ -1,5 +1,6 @@
 import type {
     AttemptAssessmentSnapshot,
+    AttemptEssayRubricSnapshot,
     AttemptGradingDetailType,
     AttemptScoreSnapshot,
     ExamAttemptQuestionReport,
@@ -60,6 +61,7 @@ export type BuildGradingAttemptDetailArgs = {
     attemptRow: GradingAttemptDetailRow;
     questions: ExamQuestion[];
     questionReports: ExamAttemptQuestionReport[];
+    rubric: AttemptEssayRubricSnapshot;
     snapshotMetadata: GradingAttemptSnapshotMetadata;
 };
 
