@@ -8,7 +8,7 @@ type PublishPdfTemplateResponse = Awaited<ReturnType<typeof publishPdfTemplate>>
 export interface PublishPdfTemplateVariables {
     templateId: string;
     institutionId?: string | null;
-    documentKind?: 'ANALYTICS_OVERALL' | 'EXAM_ANSWER_KEY';
+    documentKind?: 'ANALYTICS_OVERALL' | 'EXAM_ANSWER_KEY' | 'EXAM_RESULTS_REPORT';
 }
 
 export type UsePublishPdfTemplateMutationArgs = UseMutationOptions<

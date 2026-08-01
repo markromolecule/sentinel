@@ -135,4 +135,19 @@ describe('ReportTemplateEditor', () => {
 
         expect(baseProps.onResetOverride).toHaveBeenCalled();
     });
+
+    it('displays scope loading state, errors, and hints correctly', () => {
+        render(
+            <ReportTemplateEditor
+                {...baseProps}
+                isScopeLoading
+                scopeError="Scope error message"
+                scopeHint="Scope hint message"
+            />,
+        );
+
+        expect(screen.getByText('Loading parent institutions…')).toBeTruthy();
+        expect(screen.getByText('Scope error message')).toBeTruthy();
+        expect(screen.getByText('Scope hint message')).toBeTruthy();
+    });
 });

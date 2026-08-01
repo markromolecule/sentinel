@@ -3,7 +3,9 @@ import { type AppRouteHandler } from '../../../../../types/hono';
 import { previewPdfTemplateBodySchema } from '../../pdf-documents.dto';
 import { renderAnalyticsOverallPdf } from '../../rendering/analytics-overall-renderer';
 import { renderExamAnswerKeyPdf } from '../../rendering/exam-answer-key-renderer';
+import { renderExamResultsReportPdf } from '../../rendering/exam-results-report-renderer';
 import { mockExamAnswerKeyFixture } from '../../rendering/fixtures/exam-answer-key';
+import { mockExamResultsReportFixture } from '../../rendering/fixtures/exam-results-report';
 import { InstitutionBrandingService } from '../../services/institution-branding.service';
 import { HTTPException } from 'hono/http-exception';
 import {
@@ -91,7 +93,8 @@ export const previewPdfTemplateHandler: AppRouteHandler<typeof previewPdfTemplat
 
         if (!(await canAccessPdfInstitutionScope(dbClient, userInstitutionId, institution_id))) {
             throw new HTTPException(403, {
-                message: "Forbidden. You cannot preview another institution's answer key template.",
+                message:
+                    "Forbidden. You cannot preview another institution's PDF template override.",
             });
         }
     }
@@ -168,13 +171,70 @@ export const previewPdfTemplateHandler: AppRouteHandler<typeof previewPdfTemplat
                 logoBuffer,
                 mockAnalyticsData,
             );
-        } else {
+        } else if (document_kind === 'EXAM_ANSWER_KEY') {
             // EXAM_ANSWER_KEY
             const mockData = {
                 ...mockExamAnswerKeyFixture,
                 generatedBy: user.email || 'Dr. Evelyn Martinez',
             };
             pdfBuffer = await renderExamAnswerKeyPdf(
+                header_config,
+                footer_config,
+                logoBuffer,
+                mockData,
+            );
+        } else {
+            const mockData = {
+                examId: 'preview-exam-results-report',
+                institutionId: institution_id ?? 'preview-global-scope',
+                examTitle: `${mockExamResultsReportFixture.examTitle} (Sample Preview)`,
+                subjectCode: mockExamResultsReportFixture.subjectCode,
+                subjectName: mockExamResultsReportFixture.subjectName,
+                durationMinutes: mockExamResultsReportFixture.durationMinutes,
+                passingScore: mockExamResultsReportFixture.passingScore,
+                scheduledDate: mockExamResultsReportFixture.scheduledDate,
+                endDateTime: mockExamResultsReportFixture.endDateTime,
+                institutionName: `${mockExamResultsReportFixture.institutionName} (Sample Preview)`,
+                generatedBy: user.email || 'Sentinel Support Preview',
+                report: {
+                    summary: {
+                        totalAssignedStudents: mockExamResultsReportFixture.summary.totalStudents,
+                        averageScore: mockExamResultsReportFixture.summary.averageScore,
+                        passRate: mockExamResultsReportFixture.summary.passRate,
+                        totalSubmitted: mockExamResultsReportFixture.summary.totalCompletions,
+                        totalAbsent: mockExamResultsReportFixture.summary.totalAbsent,
+                        incidentBreakdownByType: mockExamResultsReportFixture.incidentTypes.map(
+                            (incident) => ({
+                                type: `${incident.type} (Sample)`,
+                                count: incident.count,
+                            }),
+                        ),
+                    },
+                    students: mockExamResultsReportFixture.students.map((student) => ({
+                        studentId: student.studentId,
+                        studentNo: `SAMPLE-${student.studentNo}`,
+                        firstName: `${student.firstName} Sample`,
+                        lastName: student.lastName,
+                        sectionName: `${student.sectionName} (Sample)`,
+                        score: student.score,
+                        status: student.status.toLowerCase(),
+                        attemptKind: student.attemptKind,
+                        activeOverrideType: student.activeOverrideType,
+                        incidentOutcomes: {
+                            pending: student.incidentsPending,
+                            reviewed: student.incidentsReviewed,
+                            confirmed: student.incidentsConfirmed,
+                            dismissed: student.incidentsDismissed,
+                        },
+                        needsReview:
+                            student.incidentsPending > 0 || student.incidentsConfirmed > 0,
+                        needsMakeup: student.attemptKind === 'makeup',
+                        needsRetake: student.attemptKind === 'retake',
+                        isFlagged: student.status === 'FLAGGED',
+                    })),
+                },
+            };
+            pdfBuffer = await renderExamResultsReportPdf(
                 header_config,
                 footer_config,
                 logoBuffer,

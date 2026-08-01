@@ -81,6 +81,21 @@ const permissionFixtures = [
         createdAt: null,
         updatedAt: null,
     },
+    {
+        id: 'perm-results-report-export',
+        key: 'examinations:export_results_report',
+        moduleKey: 'examinations',
+        actionKey: 'export_results_report',
+        category: 'EXAM',
+        scope: 'institution',
+        name: 'Export Examination Results Report',
+        description: 'Export examination results report PDFs.',
+        isSystem: true,
+        roleCount: 1,
+        overrideCount: 0,
+        createdAt: null,
+        updatedAt: null,
+    },
 ];
 
 vi.mock('@sentinel/hooks', () => ({
@@ -193,6 +208,7 @@ describe('PermissionRegistryView', () => {
         expect(screen.getByText('Manage PDF Templates')).toBeTruthy();
         expect(screen.getByText('Manage Institution Branding')).toBeTruthy();
         expect(screen.getByText('Export Exam Answer Key')).toBeTruthy();
+        expect(screen.getByText('Export Examination Results Report')).toBeTruthy();
     });
 
     it('lets support search narrow the registry to a new PDF template permission', () => {

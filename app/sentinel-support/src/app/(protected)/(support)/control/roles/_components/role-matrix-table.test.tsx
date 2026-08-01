@@ -80,6 +80,28 @@ const groupedPermissions = [
                     },
                 ],
             },
+            {
+                moduleKey: 'examinations',
+                moduleLabel: 'Examinations',
+                helperText: 'Manage examination document exports.',
+                permissions: [
+                    {
+                        id: 'perm-exam-results-report',
+                        key: 'examinations:export_results_report',
+                        moduleKey: 'examinations',
+                        actionKey: 'export_results_report',
+                        category: 'EXAM',
+                        scope: 'institution',
+                        name: 'Export Examination Results Report',
+                        description: 'Export examination results report PDFs.',
+                        isSystem: true,
+                        roleCount: 1,
+                        overrideCount: 0,
+                        createdAt: null,
+                        updatedAt: null,
+                    },
+                ],
+            },
         ],
     },
 ];
@@ -118,9 +140,15 @@ describe('RoleMatrixTable', () => {
         expect(screen.getByText('BLUEPRINT')).toBeDefined();
         expect(screen.getByText('CUSTOM')).toBeDefined();
         expect(screen.getByText('Manage PDF Templates')).toBeTruthy();
+        expect(screen.getByText('Export Examination Results Report')).toBeTruthy();
         expect(
             screen.getByRole('checkbox', {
                 name: 'Manage PDF Templates for Support',
+            }),
+        ).toBeTruthy();
+        expect(
+            screen.getByRole('checkbox', {
+                name: 'Export Examination Results Report for Support',
             }),
         ).toBeTruthy();
         expect(screen.queryByText('Reset')).toBeTruthy();

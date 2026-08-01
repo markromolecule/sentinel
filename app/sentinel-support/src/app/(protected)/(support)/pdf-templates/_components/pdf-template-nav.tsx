@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { cn, Separator } from '@sentinel/ui';
 
-export type PdfTemplateSection = 'reports' | 'examinations' | 'branding';
+export type PdfTemplateSection = 'reports' | 'examinations' | 'examination-reports' | 'branding';
 
 type PdfTemplateNavProps = {
     activeSection: PdfTemplateSection;
@@ -17,13 +17,18 @@ const NAV_ITEMS = [
     },
     {
         id: 'reports' as const,
-        title: 'Report Template',
+        title: 'Overall Report',
         href: '/pdf-templates/reports',
     },
     {
         id: 'examinations' as const,
-        title: 'Examination Template',
+        title: 'Examination Answer Key',
         href: '/pdf-templates/examinations',
+    },
+    {
+        id: 'examination-reports' as const,
+        title: 'Examination Report',
+        href: '/pdf-templates/examination-reports',
     },
 ];
 
