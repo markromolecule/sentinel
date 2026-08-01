@@ -1,10 +1,12 @@
 import { AnalyticsOverallDocumentProcessor } from './analytics-overall.processor';
 import { ExamAnswerKeyDocumentProcessor } from './exam-answer-key.processor';
+import { ExamResultsReportDocumentProcessor } from './exam-results-report.processor';
 import type { PdfDocumentProcessor } from './pdf-document-processor.interface';
 
 const processors: Record<string, PdfDocumentProcessor> = {
     ANALYTICS_OVERALL: new AnalyticsOverallDocumentProcessor(),
     EXAM_ANSWER_KEY: new ExamAnswerKeyDocumentProcessor(),
+    EXAM_RESULTS_REPORT: new ExamResultsReportDocumentProcessor(),
 };
 
 /**
@@ -16,9 +18,6 @@ const processors: Record<string, PdfDocumentProcessor> = {
 export function getPdfProcessor(
     documentKind: 'ANALYTICS_OVERALL' | 'EXAM_ANSWER_KEY' | 'EXAM_RESULTS_REPORT',
 ): PdfDocumentProcessor {
-    if (documentKind === 'EXAM_RESULTS_REPORT') {
-        throw new Error(`Unsupported document kind for PDF generation: EXAM_RESULTS_REPORT (unsupported processor)`);
-    }
     const processor = processors[documentKind];
     if (!processor) {
         throw new Error(`Unsupported document kind for PDF generation: ${documentKind}`);

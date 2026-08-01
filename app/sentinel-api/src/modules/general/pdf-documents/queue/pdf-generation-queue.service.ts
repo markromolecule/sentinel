@@ -35,7 +35,7 @@ export class PdfGenerationQueueService {
      */
     async submitPdfJob(
         exportId: string,
-        documentKind: 'ANALYTICS_OVERALL' | 'EXAM_ANSWER_KEY',
+        documentKind: 'ANALYTICS_OVERALL' | 'EXAM_ANSWER_KEY' | 'EXAM_RESULTS_REPORT',
     ): Promise<void> {
         const mode = getPdfGenerationMode();
 
