@@ -1,14 +1,19 @@
 import { renderHook } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import type { ProctorExam } from '@sentinel/shared/types';
+import { toast } from 'sonner';
 import { useExamCard } from './index';
+
+const { mockHasPermission } = vi.hoisted(() => ({
+    mockHasPermission: vi.fn(),
+}));
 
 vi.mock('@sentinel/hooks', () => ({
     useAuth: () => ({
         user: { id: 'user-1' },
     }),
     useActivePermissions: () => ({
-        hasPermission: vi.fn().mockReturnValue(false),
+        hasPermission: mockHasPermission,
     }),
     useDeleteExamMutation: () => ({
         mutate: vi.fn(),
@@ -44,39 +49,66 @@ const baseExam: ProctorExam = {
     assignedInstructorIds: [],
 };
 
+function renderActions(status: ProctorExam['status'], canExportAnswerKey: boolean) {
+    mockHasPermission.mockImplementation((permission: string) => {
+        if (permission === 'examinations:export_answer_key') {
+            return canExportAnswerKey;
+        }
+
+        return false;
+    });
+
+    const { result } = renderHook(() =>
+        useExamCard({
+            exam: {
+                ...baseExam,
+                status,
+            },
+        }),
+    );
+
+    return result.current.primaryActions;
+}
+
 describe('useExamCard', () => {
-    it('adds a PDF export action without replacing the existing published exam actions', () => {
-        const { result } = renderHook(() => useExamCard({ exam: baseExam }));
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
 
-        expect(result.current.primaryActions.map((action) => action.label)).toEqual([
-            'Unpublish',
-            'Export PDF',
-            'Monitor',
-        ]);
-        expect(result.current.primaryActions[1]).toMatchObject({
-            href: `/exams/${baseExam.id}/export`,
-            variant: 'outline',
+    it.each(['draft', 'published', 'active', 'archived', 'scheduled'] as ProctorExam['status'][])(
+        'shows the canonical answer-key export action for %s exams when permission is granted',
+        (status) => {
+            const actions = renderActions(status, true);
+            const exportAction = actions.find((action) => action.href?.endsWith('/export'));
+
+            expect(exportAction).toMatchObject({
+                label: 'Export Answer Key PDF',
+                href: `/exams/${baseExam.id}/export`,
+                variant: 'outline',
+            });
+            expect(exportAction?.onClick).toBeUndefined();
+            expect(toast.success).not.toHaveBeenCalledWith('Preparing PDF export.');
+        },
+    );
+
+    it.each(['draft', 'published', 'active', 'archived', 'scheduled'] as ProctorExam['status'][])(
+        'hides the answer-key export action for %s exams when permission is revoked',
+        (status) => {
+            const actions = renderActions(status, false);
+
+            expect(actions.some((action) => action.href === `/exams/${baseExam.id}/export`)).toBe(
+                false,
+            );
+            expect(actions.map((action) => action.label)).not.toContain('Export PDF');
+            expect(actions.map((action) => action.label)).not.toContain('Export Answer Key PDF');
+        },
+    );
+
+    it('keeps management visibility separate from answer-key export permission', () => {
+        mockHasPermission.mockImplementation((permission: string) => {
+            return permission === 'examinations:export_answer_key';
         });
-    });
 
-    it('keeps the draft builder and publish actions while adding PDF export', () => {
-        const { result } = renderHook(() =>
-            useExamCard({
-                exam: {
-                    ...baseExam,
-                    status: 'draft',
-                },
-            }),
-        );
-
-        expect(result.current.primaryActions.map((action) => action.label)).toEqual([
-            'Builder',
-            'Export PDF',
-            'Publish',
-        ]);
-    });
-
-    it('hides management actions for instructors who are neither the creator nor assigned', () => {
         const { result } = renderHook(() =>
             useExamCard({
                 exam: {
@@ -89,6 +121,8 @@ describe('useExamCard', () => {
         );
 
         expect(result.current.canManageExam).toBe(false);
-        expect(result.current.primaryActions.map((action) => action.label)).toEqual(['Export PDF']);
+        expect(result.current.primaryActions.map((action) => action.label)).toEqual([
+            'Export Answer Key PDF',
+        ]);
     });
 });
