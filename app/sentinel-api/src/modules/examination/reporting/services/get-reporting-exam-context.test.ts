@@ -9,7 +9,7 @@ vi.mock('../../configuration/configuration.service', () => ({
     resolveExaminationGlobalSettings: vi.fn(),
 }));
 
-vi.mock('../../assign/services/exam-access', () => ({
+vi.mock('../../assign/services/exam-access.service', () => ({
     buildAssignedInstructorExamVisibilityPredicates: vi.fn(),
 }));
 

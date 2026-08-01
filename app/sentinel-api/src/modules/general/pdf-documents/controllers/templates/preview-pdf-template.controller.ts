@@ -226,8 +226,7 @@ export const previewPdfTemplateHandler: AppRouteHandler<typeof previewPdfTemplat
                             confirmed: student.incidentsConfirmed,
                             dismissed: student.incidentsDismissed,
                         },
-                        needsReview:
-                            student.incidentsPending > 0 || student.incidentsConfirmed > 0,
+                        needsReview: student.incidentsPending > 0 || student.incidentsConfirmed > 0,
                         needsMakeup: student.attemptKind === 'makeup',
                         needsRetake: student.attemptKind === 'retake',
                         isFlagged: student.status === 'FLAGGED',

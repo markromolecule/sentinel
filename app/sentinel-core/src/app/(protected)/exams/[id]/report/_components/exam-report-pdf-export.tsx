@@ -64,7 +64,7 @@ export function ExamReportPdfExport({ examId }: { examId: string }) {
     });
     const queryPermissionDenied = Boolean(
         (exportsQuery.error && isPermissionDeniedError(exportsQuery.error, EXPORT_PERMISSION)) ||
-            (statusQuery.error && isPermissionDeniedError(statusQuery.error, EXPORT_PERMISSION)),
+        (statusQuery.error && isPermissionDeniedError(statusQuery.error, EXPORT_PERMISSION)),
     );
 
     const activeExport = useMemo<ExamResultsReportExportRecord | null>(() => {

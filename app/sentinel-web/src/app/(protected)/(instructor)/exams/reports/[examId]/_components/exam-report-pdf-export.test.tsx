@@ -162,10 +162,7 @@ describe('ExamReportPdfExport', () => {
 
         fireEvent.click(screen.getByRole('button', { name: 'Export Results PDF' }));
 
-        expect(mockCreateMutate).toHaveBeenCalledWith(
-            { exam_id: 'exam-1' },
-            expect.any(Object),
-        );
+        expect(mockCreateMutate).toHaveBeenCalledWith({ exam_id: 'exam-1' }, expect.any(Object));
     });
 
     it('renders pending and generating statuses from the latest export record', () => {
@@ -325,5 +322,4 @@ describe('ExamReportPdfExport', () => {
             expect.any(Object),
         );
     });
-
 });

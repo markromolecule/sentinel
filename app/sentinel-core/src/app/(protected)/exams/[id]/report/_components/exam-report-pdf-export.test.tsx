@@ -162,10 +162,7 @@ describe('ExamReportPdfExport', () => {
 
         fireEvent.click(screen.getByRole('button', { name: 'Export Results PDF' }));
 
-        expect(mockCreateMutate).toHaveBeenCalledWith(
-            { exam_id: 'exam-1' },
-            expect.any(Object),
-        );
+        expect(mockCreateMutate).toHaveBeenCalledWith({ exam_id: 'exam-1' }, expect.any(Object));
     });
 
     it('renders ready, failed, and expired terminal states', () => {
@@ -308,5 +305,4 @@ describe('ExamReportPdfExport', () => {
             expect.stringContaining('https://signed.example'),
         );
     });
-
 });

@@ -60,9 +60,11 @@ describe('previewPdfTemplateHandler', () => {
                                               }
                                             : undefined,
                                 ),
-                                execute: vi.fn().mockResolvedValue(
-                                    value === PARENT_UUID ? [{ id: INST_UUID }] : [],
-                                ),
+                                execute: vi
+                                    .fn()
+                                    .mockResolvedValue(
+                                        value === PARENT_UUID ? [{ id: INST_UUID }] : [],
+                                    ),
                             })),
                         })),
                     };

@@ -230,7 +230,7 @@ to `sentinel-web`, including passage editing through the dedicated builder page.
       `app/sentinel-core/src/app/(protected)/question/bank/import/preview/_hooks/use-preview-manager/index.ts`
       covering redirect, back, and missing-preview-data behavior.
       <!-- NOTE: No inline edit branching remained to delete; the preview flow already
-                                                              used the dedicated builder route and matched the web reference. -->
+                                                                      used the dedicated builder route and matched the web reference. -->
       **Migration required:** No — frontend route parity only.
 
 ### Phase 5: Verification and Cleanup

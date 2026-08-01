@@ -179,7 +179,9 @@ describe('PdfTemplateExaminationReportsPage', () => {
             ]);
         });
 
-        expect(screen.getByText(/choose your parent institution or one of its branches/i)).toBeTruthy();
+        expect(
+            screen.getByText(/choose your parent institution or one of its branches/i),
+        ).toBeTruthy();
     });
 
     it('uses the assigned institution only for non-parent academic scope', async () => {
