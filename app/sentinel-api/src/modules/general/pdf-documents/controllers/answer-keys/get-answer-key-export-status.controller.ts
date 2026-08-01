@@ -5,6 +5,7 @@ import {
     canAccessPdfInstitutionScope,
     requirePdfDocumentAccess,
 } from '../../services/pdf-document-authorization.service';
+import { assertInstructorExamAccess } from '../../../../examination/assign/services/exam-access.service';
 
 export const getAnswerKeyExportStatusRoute = createRoute({
     method: 'get',
@@ -13,7 +14,7 @@ export const getAnswerKeyExportStatusRoute = createRoute({
     summary: 'Get answer key export status',
     description:
         'Retrieves the current processing status of an exam answer-key export. ' +
-        'Requires support role and pdf_templates:view or reports:view permission.',
+        'Requires examinations:export_answer_key permission.',
     request: {
         params: z.object({ exportId: z.string().uuid() }),
     },
@@ -39,10 +40,13 @@ export const getAnswerKeyExportStatusHandler: AppRouteHandler<
     typeof getAnswerKeyExportStatusRoute
 > = async (c) => {
     const dbClient = c.get('dbClient');
+    const user = c.get('user');
+    const supabaseUser = c.get('supabaseUser') as any;
+    const role = c.get('role') || supabaseUser?.user_metadata?.role;
 
     requirePdfDocumentAccess({
         activePermissionKeys: c.get('activePermissionKeys'),
-        requiredPermissions: ['pdf_templates:view', 'reports:view'],
+        requiredPermissions: 'examinations:export_answer_key',
         missingPermissionMessage: 'Forbidden. Insufficient privileges.',
     });
 
@@ -64,13 +68,20 @@ export const getAnswerKeyExportStatusHandler: AppRouteHandler<
         if (
             !(await canAccessPdfInstitutionScope(dbClient, userInstitutionId, row.institution_id))
         ) {
-            return c.json(
-                {
-                    success: false,
-                    error: "Forbidden: Access denied to this institution's exports.",
-                },
-                403 as any,
-            );
+            return c.json({ success: false, error: 'Export record not found.' }, 404 as any);
+        }
+
+        // Instructor scope check
+        if (role === 'instructor') {
+            try {
+                await assertInstructorExamAccess({
+                    dbClient,
+                    examId: row.exam_id,
+                    userId: user.id,
+                });
+            } catch {
+                return c.json({ success: false, error: 'Export record not found.' }, 404 as any);
+            }
         }
 
         const data: z.infer<typeof answerKeyExportRecordSchema> = {
@@ -82,8 +93,6 @@ export const getAnswerKeyExportStatusHandler: AppRouteHandler<
             failureCode: row.failure_code ?? null,
             failureMessage: row.failure_message ?? null,
             retryCount: row.retry_count,
-            storageBucket: row.storage_bucket ?? null,
-            storagePath: row.storage_path ?? null,
             createdBy: row.created_by ?? null,
             createdAt:
                 row.created_at instanceof Date

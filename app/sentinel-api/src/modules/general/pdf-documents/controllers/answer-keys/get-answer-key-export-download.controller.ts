@@ -6,6 +6,7 @@ import {
     canAccessPdfInstitutionScope,
     requirePdfDocumentAccess,
 } from '../../services/pdf-document-authorization.service';
+import { assertInstructorExamAccess } from '../../../../examination/assign/services/exam-access.service';
 
 export const getAnswerKeyExportDownloadRoute = createRoute({
     method: 'get',
@@ -14,8 +15,7 @@ export const getAnswerKeyExportDownloadRoute = createRoute({
     summary: 'Get signed download URL for an answer key export',
     description:
         'Generates a short-lived (5-minute) signed URL to download the requested private answer-key PDF. ' +
-        'Requires support role and pdf_templates:view or reports:export permission. ' +
-        'Answer keys do not expire automatically.',
+        'Requires examinations:export_answer_key permission.',
     request: {
         params: z.object({ exportId: z.string().uuid() }),
     },
@@ -31,7 +31,7 @@ export const getAnswerKeyExportDownloadRoute = createRoute({
                 },
             },
         },
-        400: { description: 'Export is not READY' },
+        400: { description: 'Export is not READY, coordinates missing or expired' },
         403: { description: 'Forbidden' },
         404: { description: 'Export not found' },
         500: { description: 'Internal server error' },
@@ -43,10 +43,12 @@ export const getAnswerKeyExportDownloadHandler: AppRouteHandler<
 > = async (c) => {
     const user = c.get('user');
     const dbClient = c.get('dbClient');
+    const supabaseUser = c.get('supabaseUser') as any;
+    const role = c.get('role') || supabaseUser?.user_metadata?.role;
 
     requirePdfDocumentAccess({
         activePermissionKeys: c.get('activePermissionKeys'),
-        requiredPermissions: ['pdf_templates:view', 'reports:export'],
+        requiredPermissions: 'examinations:export_answer_key',
         missingPermissionMessage: 'Forbidden. Insufficient privileges.',
     });
 
@@ -68,18 +70,40 @@ export const getAnswerKeyExportDownloadHandler: AppRouteHandler<
         if (
             !(await canAccessPdfInstitutionScope(dbClient, userInstitutionId, row.institution_id))
         ) {
+            return c.json({ success: false, error: 'Export record not found.' }, 404 as any);
+        }
+
+        // Instructor scope check
+        if (role === 'instructor') {
+            try {
+                await assertInstructorExamAccess({
+                    dbClient,
+                    examId: row.exam_id,
+                    userId: user.id,
+                });
+            } catch {
+                return c.json({ success: false, error: 'Export record not found.' }, 404 as any);
+            }
+        }
+
+        // Validate state transitions & coordinates
+        if (row.status !== 'READY') {
             return c.json(
-                {
-                    success: false,
-                    error: "Forbidden: Access denied to this institution's exports.",
-                },
-                403 as any,
+                { success: false, error: `Lifecycle conflict: export status is ${row.status}, expected READY.` },
+                400 as any,
             );
         }
 
-        if (row.status !== 'READY' || !row.storage_path || !row.storage_bucket) {
+        if (!row.storage_path || !row.storage_bucket) {
             return c.json(
-                { success: false, error: 'Answer key PDF is not ready for download.' },
+                { success: false, error: 'Lifecycle conflict: missing PDF storage coordinates.' },
+                400 as any,
+            );
+        }
+
+        if (row.expires_at && new Date() > new Date(row.expires_at)) {
+            return c.json(
+                { success: false, error: 'Lifecycle conflict: answer key download has expired.' },
                 400 as any,
             );
         }

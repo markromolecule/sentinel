@@ -15,6 +15,7 @@ export function useExamCard({ exam }: UseExamCardProps): UseExamCardReturn {
     const { user } = useAuth();
     const { hasPermission } = useActivePermissions();
     const canBypassLock = hasPermission('examinations:bypass_publish_lock');
+    const canExportAnswerKey = hasPermission('examinations:export_answer_key');
     const currentUserId = user?.id ?? null;
     const isCreator = currentUserId != null && exam.createdBy === currentUserId;
     const isAssignedInstructor =
@@ -80,13 +81,14 @@ export function useExamCard({ exam }: UseExamCardProps): UseExamCardReturn {
         const monitorStatuses = new Set(['published', 'active', 'in-progress']);
         const actions: ExamPrimaryAction[] = [];
         const isStatusUpdating = updateExamStatusMutation.isPending;
-        const exportAction: ExamPrimaryAction = {
-            label: 'Export PDF',
-            href: `/exams/${exam.id}/export`,
-            onClick: () => toast.success('Preparing PDF export.'),
-            icon: FileDown,
-            variant: 'outline',
-        };
+        const exportAction: ExamPrimaryAction | null = canExportAnswerKey
+            ? {
+                  label: 'Export Answer Key PDF',
+                  href: `/exams/${exam.id}/export`,
+                  icon: FileDown,
+                  variant: 'outline',
+              }
+            : null;
 
         if (exam.status === 'draft') {
             if (canManageExam) {
@@ -97,7 +99,9 @@ export function useExamCard({ exam }: UseExamCardProps): UseExamCardReturn {
                     variant: 'outline',
                 });
             }
-            actions.push(exportAction);
+            if (exportAction) {
+                actions.push(exportAction);
+            }
             if (canManageExam) {
                 actions.push({
                     label: 'Publish',
@@ -124,7 +128,9 @@ export function useExamCard({ exam }: UseExamCardProps): UseExamCardReturn {
                     isLoading: isStatusUpdating && pendingAction === 'unpublish',
                 });
             }
-            actions.push(exportAction);
+            if (exportAction) {
+                actions.push(exportAction);
+            }
             actions.push({
                 label: 'Monitor',
                 href: `/exams/${exam.id}/lobby`,
@@ -141,7 +147,9 @@ export function useExamCard({ exam }: UseExamCardProps): UseExamCardReturn {
                 icon: Eye,
                 variant: 'outline',
             });
-            actions.push(exportAction);
+            if (exportAction) {
+                actions.push(exportAction);
+            }
 
             if (canManageExam && isScheduleExpired) {
                 if (canBypassLock) {
@@ -173,10 +181,13 @@ export function useExamCard({ exam }: UseExamCardProps): UseExamCardReturn {
             icon: Eye,
             variant: 'outline',
         });
-        actions.push(exportAction);
+        if (exportAction) {
+            actions.push(exportAction);
+        }
         return actions;
     }, [
         canBypassLock,
+        canExportAnswerKey,
         canManageExam,
         exam.id,
         exam.status,

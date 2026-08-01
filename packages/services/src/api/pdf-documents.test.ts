@@ -2,8 +2,11 @@ import { describe, expect, it, vi } from 'vitest';
 import {
     createAnswerKeyExport,
     createExamReportExport,
+    deleteAnswerKeyExport,
     deleteExamReportExport,
     deleteInstitutionPdfBranding,
+    getAnswerKeyExportDownload,
+    getAnswerKeyExportStatus,
     getAnswerKeyExports,
     getExamReportExportDownload,
     getExamReportExportStatus,
@@ -12,6 +15,7 @@ import {
     getPdfTemplates,
     previewPdfTemplate,
     publishPdfTemplate,
+    retryAnswerKeyExport,
     retryExamReportExport,
     retryPdfExport,
     uploadInstitutionPdfBranding,
@@ -89,6 +93,44 @@ describe('pdf documents api', () => {
             }),
         );
         expect(result).toBe(previewBlob);
+    });
+
+    it('passes optional selected exam id through preview payloads unchanged', async () => {
+        const previewBlob = new Blob(['%PDF-1.7']);
+        const apiClient = vi.fn().mockResolvedValue(previewBlob);
+
+        await previewPdfTemplate(apiClient as any, {
+            institution_id: '11111111-1111-1111-1111-111111111111',
+            exam_id: '22222222-2222-4222-8222-222222222222',
+            document_kind: 'EXAM_ANSWER_KEY',
+            header_config: {
+                logo_visible: true,
+                logo_placement: 'LEFT',
+                logo_max_size_px: 120,
+                title_text: 'Preview',
+                title_alignment: 'LEFT',
+                subtitle_alignment: 'LEFT',
+                divider_visible: true,
+                divider_color: '#D1D5DB',
+                accent_color: '#3B82F6',
+                sentinel_logo_visible: true,
+            },
+            footer_config: {
+                text: 'Footer',
+                divider_visible: true,
+                divider_color: '#E5E7EB',
+                page_number_visible: true,
+                page_number_format: 'PAGE_X_OF_Y',
+            },
+        });
+
+        const [, options] = apiClient.mock.calls[0];
+
+        expect(JSON.parse(options.body)).toMatchObject({
+            institution_id: '11111111-1111-1111-1111-111111111111',
+            exam_id: '22222222-2222-4222-8222-222222222222',
+            document_kind: 'EXAM_ANSWER_KEY',
+        });
     });
 
     it('uploads branding through multipart form data', async () => {
@@ -298,5 +340,61 @@ describe('pdf documents api', () => {
         await expect(getExamReportExportDownload(apiClient as any, 'export-1')).rejects.toThrow(
             'download failed',
         );
+    });
+
+    it('requests exact answer-key lifecycle routes', async () => {
+        const apiClient = vi
+            .fn()
+            .mockResolvedValueOnce({
+                success: true,
+                data: {
+                    exportId: 'export-1',
+                    examId: 'exam-1',
+                    institutionId: 'inst-1',
+                    templateId: null,
+                    status: 'READY',
+                    failureCode: null,
+                    failureMessage: null,
+                    retryCount: 0,
+                    createdBy: null,
+                    createdAt: '2026-08-01T00:00:00.000Z',
+                    updatedAt: '2026-08-01T00:00:00.000Z',
+                    completedAt: '2026-08-01T00:01:00.000Z',
+                },
+            })
+            .mockResolvedValueOnce({
+                success: true,
+                downloadUrl: 'https://signed.example/answer-key.pdf',
+            })
+            .mockResolvedValueOnce({ success: true, message: 'queued' })
+            .mockResolvedValueOnce({ success: true, message: 'deleted' });
+
+        const status = await getAnswerKeyExportStatus(apiClient as any, 'export-1');
+        const download = await getAnswerKeyExportDownload(apiClient as any, 'export-1');
+        const retry = await retryAnswerKeyExport(apiClient as any, 'export-1');
+        const remove = await deleteAnswerKeyExport(apiClient as any, 'export-1');
+
+        expect(apiClient).toHaveBeenNthCalledWith(1, '/pdf-documents/answer-keys/export-1/status');
+        expect(apiClient).toHaveBeenNthCalledWith(
+            2,
+            '/pdf-documents/answer-keys/export-1/download',
+        );
+        expect(apiClient).toHaveBeenNthCalledWith(
+            3,
+            '/pdf-documents/answer-keys/export-1/retry',
+            expect.objectContaining({ method: 'POST' }),
+        );
+        expect(apiClient).toHaveBeenNthCalledWith(
+            4,
+            '/pdf-documents/answer-keys/export-1',
+            expect.objectContaining({ method: 'DELETE' }),
+        );
+        expect(status).toMatchObject({
+            exportId: 'export-1',
+            status: 'READY',
+        });
+        expect(download.downloadUrl).toContain('signed.example');
+        expect(retry.message).toBe('queued');
+        expect(remove.message).toBe('deleted');
     });
 });

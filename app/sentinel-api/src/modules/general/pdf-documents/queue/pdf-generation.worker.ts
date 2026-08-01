@@ -11,6 +11,7 @@ import {
     getPdfWorkerStalledIntervalMs,
 } from './pdf-generation-queue.config';
 import { PdfGenerationJobProcessor } from './pdf-generation-job-processor.service';
+import { getPdfGenerationLogErrorMessage } from './pdf-generation-log-redaction';
 
 let worker: Worker | null = null;
 let workerConnection: any = null;
@@ -54,7 +55,10 @@ export async function startPdfGenerationWorker(): Promise<Worker | null> {
                 await PdfGenerationJobProcessor.processJob(dbClient, exportId, documentKind);
                 console.log(`[PDFWorker] Successfully completed export ${exportId}`);
             } catch (err: any) {
-                console.error(`[PDFWorker] Failed processing export ${exportId}:`, err.message);
+                console.error(
+                    `[PDFWorker] Failed processing export ${exportId}:`,
+                    getPdfGenerationLogErrorMessage(documentKind, err),
+                );
                 throw err;
             }
         },
@@ -68,7 +72,10 @@ export async function startPdfGenerationWorker(): Promise<Worker | null> {
     );
 
     worker.on('failed', (job, err) => {
-        console.error(`[PDFWorker] Job ${job?.id} failed with error:`, err.message);
+        console.error(
+            `[PDFWorker] Job ${job?.id} failed with error:`,
+            getPdfGenerationLogErrorMessage(job?.data.documentKind, err),
+        );
     });
 
     console.log(

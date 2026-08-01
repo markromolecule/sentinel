@@ -7,9 +7,10 @@ import {
     answerKeyExportRecordSchema,
 } from '../../pdf-documents.dto';
 import {
-    canAccessPdfInstitutionScope,
+    resolvePdfAccessibleInstitutionIds,
     requirePdfDocumentAccess,
 } from '../../services/pdf-document-authorization.service';
+import { buildInstructorExamVisibilityPredicates } from '../../../../examination/assign/services/exam-access.service';
 
 export const getAnswerKeyExportsRoute = createRoute({
     method: 'get',
@@ -18,7 +19,7 @@ export const getAnswerKeyExportsRoute = createRoute({
     summary: 'List answer key exports',
     description:
         'Returns a paginated list of exam answer-key export records. ' +
-        'Requires support role and pdf_templates:view or reports:view permission.',
+        'Requires examinations:export_answer_key permission.',
     request: {
         query: listAnswerKeyExportsQuerySchema,
     },
@@ -36,27 +37,39 @@ export const getAnswerKeyExportsHandler: AppRouteHandler<typeof getAnswerKeyExpo
     c,
 ) => {
     const dbClient = c.get('dbClient');
+    const user = c.get('user');
+    const supabaseUser = c.get('supabaseUser') as any;
+    const role = c.get('role') || supabaseUser?.user_metadata?.role;
+    const activePermissionKeys = c.get('activePermissionKeys') || [];
+    const hasCrossTenant = activePermissionKeys.includes('institutions:cross-tenant-view');
 
     requirePdfDocumentAccess({
-        activePermissionKeys: c.get('activePermissionKeys'),
-        requiredPermissions: ['pdf_templates:view', 'reports:view'],
+        activePermissionKeys,
+        requiredPermissions: 'examinations:export_answer_key',
         missingPermissionMessage: 'Forbidden. Insufficient privileges.',
     });
 
     const { examId, institutionId, limit = 10, page = 1 } = c.req.valid('query');
     const userInstitutionId = c.get('institutionId');
 
-    if (
-        institutionId &&
-        !(await canAccessPdfInstitutionScope(dbClient, userInstitutionId, institutionId))
-    ) {
-        return c.json(
-            {
-                success: false,
-                error: "Forbidden. Cannot list another institution's answer key exports.",
-            },
-            403 as any,
-        );
+    const accessibleInstitutionIds = await resolvePdfAccessibleInstitutionIds(dbClient, userInstitutionId);
+
+    // If target institutionId is queried, validate access
+    if (institutionId) {
+        if (accessibleInstitutionIds) {
+            if (!accessibleInstitutionIds.includes(institutionId)) {
+                return c.json({ success: false, error: 'Forbidden. Cannot access this institution.' }, 403 as any);
+            }
+        } else {
+            if (!hasCrossTenant) {
+                return c.json({ success: false, error: 'Forbidden. Mismatched tenant access.' }, 403 as any);
+            }
+        }
+    } else {
+        // No filter, check if user is allowed to list
+        if (!userInstitutionId && !hasCrossTenant) {
+            return c.json({ success: false, error: 'Forbidden. Global listing not permitted.' }, 403 as any);
+        }
     }
 
     try {
@@ -77,8 +90,6 @@ export const getAnswerKeyExportsHandler: AppRouteHandler<typeof getAnswerKeyExpo
                 'ake.failure_code',
                 'ake.failure_message',
                 'ake.retry_count',
-                'ake.storage_bucket',
-                'ake.storage_path',
                 'ake.created_by',
                 'ake.created_at',
                 'ake.updated_at',
@@ -92,12 +103,26 @@ export const getAnswerKeyExportsHandler: AppRouteHandler<typeof getAnswerKeyExpo
             countQuery = countQuery.where('ake.exam_id', '=', examId);
             listQuery = listQuery.where('ake.exam_id', '=', examId);
         }
+
         if (institutionId) {
             countQuery = countQuery.where('ake.institution_id', '=', institutionId);
             listQuery = listQuery.where('ake.institution_id', '=', institutionId);
-        } else if (userInstitutionId) {
-            countQuery = countQuery.where('ake.institution_id', '=', userInstitutionId);
-            listQuery = listQuery.where('ake.institution_id', '=', userInstitutionId);
+        } else if (accessibleInstitutionIds) {
+            countQuery = countQuery.where('ake.institution_id', 'in', accessibleInstitutionIds);
+            listQuery = listQuery.where('ake.institution_id', 'in', accessibleInstitutionIds);
+        }
+
+        if (role === 'instructor') {
+            const visibilityPredicates = await buildInstructorExamVisibilityPredicates({
+                dbClient,
+                userId: user.id,
+            });
+            countQuery = (countQuery as any)
+                .innerJoin('exams as e', 'e.exam_id', 'ake.exam_id')
+                .where(sql<boolean>`(${sql.join(visibilityPredicates, sql` or `)})`);
+            listQuery = (listQuery as any)
+                .innerJoin('exams as e', 'e.exam_id', 'ake.exam_id')
+                .where(sql<boolean>`(${sql.join(visibilityPredicates, sql` or `)})`);
         }
 
         const [countRow, rows] = await Promise.all([
@@ -115,8 +140,6 @@ export const getAnswerKeyExportsHandler: AppRouteHandler<typeof getAnswerKeyExpo
             failureCode: r.failure_code ?? null,
             failureMessage: r.failure_message ?? null,
             retryCount: r.retry_count,
-            storageBucket: r.storage_bucket ?? null,
-            storagePath: r.storage_path ?? null,
             createdBy: r.created_by ?? null,
             createdAt:
                 r.created_at instanceof Date ? r.created_at.toISOString() : String(r.created_at),

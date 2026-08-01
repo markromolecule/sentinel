@@ -12,19 +12,25 @@ export function sanitizeQuestionForStudentAttempt(question: ExamQuestion): ExamQ
 
     const originalAcceptedAnswers = question.content.acceptedAnswers;
     const originalBlanks = question.content.blanks;
+    const originalPairs = question.content.pairs;
 
     // Remove direct correct answer fields
     delete sanitizedContent.correctAnswer;
     delete sanitizedContent.correctBoolean;
     delete sanitizedContent.acceptedAnswers;
+    delete sanitizedContent.blanks;
+    delete sanitizedContent.pairs;
+    delete sanitizedContent.rubric;
+    delete sanitizedContent.answerGuidance;
+    delete sanitizedContent.guidance;
 
     if (question.type === 'FILL_BLANK') {
         if (Array.isArray(originalBlanks)) {
             sanitizedContent.blanks = originalBlanks.map(() => '');
         }
     } else if (question.type === 'MATCHING') {
-        if (Array.isArray(sanitizedContent.pairs)) {
-            sanitizedContent.pairs = sanitizedContent.pairs.map((pair) => ({
+        if (Array.isArray(originalPairs)) {
+            sanitizedContent.pairs = originalPairs.map((pair) => ({
                 left: pair.left,
                 right: '',
             }));

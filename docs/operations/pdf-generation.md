@@ -139,6 +139,29 @@ Before retrying at scale:
 - verify the selected template is still usable
 - avoid bulk retries during a queue backlog unless capacity is known
 
+## Examination answer-key diagnostics
+
+Canonical answer-key generation is API-backed. Support selected-exam previews and completed
+Support, Core, and Web exports must all use `/pdf-documents/templates/preview` or
+`/pdf-documents/answer-keys` flows with the selected examination ID. The legacy browser print
+renderer is removed, so investigate any fixture-only or client-rendered output as a regression.
+
+For selected-exam preview mismatches:
+
+- confirm the preview request includes the intended `exam_id`
+- confirm the caller has both template-preview access and `examinations:export_answer_key`
+- compare the preview source with `exam_questions.content` and persisted `passage_content`
+- do not use `source_evidence` as a passage fallback
+- confirm the template snapshot, branding, header, footer, and selected institution scope match the completed export
+
+When investigating private answer-key lifecycle issues:
+
+- downloads must be signed on explicit request through the answer-key download endpoint
+- export rows must not expose public object URLs
+- retry must be limited to failed answer-key exports after the source/template issue is resolved
+- delete must remove only the matching private artifact and metadata in the caller's allowed scope
+- wrong-institution, guessed export ID, revoked-role, and stale signed URL cases should deny access without leaking answer-key text or object paths
+
 ## Retention policy
 
 Analytics reports:

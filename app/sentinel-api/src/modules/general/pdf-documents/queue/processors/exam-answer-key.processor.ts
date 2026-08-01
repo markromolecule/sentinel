@@ -84,7 +84,9 @@ export class ExamAnswerKeyDocumentProcessor implements PdfDocumentProcessor {
         return {
             status: 'FAILED',
             failure_code: isUnrecoverable ? 'UNRECOVERABLE_ERROR' : 'TRANSIENT_ERROR',
-            failure_message: error.message || 'Unknown processing failure.',
+            failure_message: isUnrecoverable
+                ? 'Answer key export failed because the source data could not be processed.'
+                : 'Answer key export failed because of a transient processing error.',
             updated_at: new Date(),
         };
     }

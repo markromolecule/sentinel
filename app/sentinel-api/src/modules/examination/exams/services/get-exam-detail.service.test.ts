@@ -190,6 +190,71 @@ describe('getExamDetail service', () => {
         expect(result.questions[0].content.correctAnswer).toBeUndefined();
     });
 
+    it('proves that student view does not return correctAnswer, acceptedAnswers, blanks, pairs, or rubric answer guidance', async () => {
+        const sensitiveQuestions = [
+            {
+                ...mockQuestion,
+                question_id: 'q-sensitive-1',
+                question_type: 'MATCHING',
+                content: {
+                    prompt: 'Match tools',
+                    pairs: [{ left: 'Hammer', right: 'Nail' }],
+                    correctAnswer: { Hammer: 'Nail' },
+                    rubric: 'Rubric text',
+                    answerGuidance: 'Guidance text',
+                    guidance: 'Secret guidance',
+                },
+            },
+            {
+                ...mockQuestion,
+                question_id: 'q-sensitive-2',
+                question_type: 'FILL_BLANK',
+                content: {
+                    prompt: 'Roses are [blank1]',
+                    blanks: ['red'],
+                    correctAnswer: 'red',
+                },
+            },
+        ];
+
+        vi.mocked(getExamByIdData).mockResolvedValue({
+            ...mockExamRecord,
+            attempt_id: 'attempt-1',
+        });
+        vi.mocked(getExamSectionsData).mockResolvedValue([]);
+        vi.mocked(getExamQuestionsData).mockResolvedValue(sensitiveQuestions);
+        vi.mocked(getExamConfigurationState).mockResolvedValue(mockConfigState as any);
+        vi.mocked(resolveExaminationGlobalSettings).mockResolvedValue({} as any);
+        vi.mocked(TelemetrySettingsService.getTelemetrySettings).mockResolvedValue(
+            mockTelemetrySettings as any,
+        );
+        vi.mocked(AccessGatekeeperService.verifyStudentExamEligibility).mockResolvedValue({
+            runtimeAccess: {
+                state: 'open',
+                canStart: true,
+                canResume: false,
+                hasActiveAttempt: false,
+            },
+        } as any);
+
+        const result = await getExamDetail(mockDb, 'exam-1', undefined, 'student-1');
+
+        // Check MATCHING sanitization
+        const matchingQ = result.questions.find((q) => q.id === 'q-sensitive-1');
+        expect(matchingQ).toBeDefined();
+        expect(matchingQ!.content.correctAnswer).toBeUndefined();
+        expect(matchingQ!.content.rubric).toBeUndefined();
+        expect(matchingQ!.content.answerGuidance).toBeUndefined();
+        expect(matchingQ!.content.guidance).toBeUndefined();
+        expect(matchingQ!.content.pairs).toEqual([{ left: 'Hammer', right: '' }]);
+
+        // Check FILL_BLANK sanitization
+        const fillBlankQ = result.questions.find((q) => q.id === 'q-sensitive-2');
+        expect(fillBlankQ).toBeDefined();
+        expect(fillBlankQ!.content.correctAnswer).toBeUndefined();
+        expect(fillBlankQ!.content.blanks).toEqual(['']);
+    });
+
     it('reuses the persisted attempt assessment snapshot for student view even if current settings differ', async () => {
         vi.mocked(getExamByIdData).mockResolvedValue({
             ...mockExamRecord,

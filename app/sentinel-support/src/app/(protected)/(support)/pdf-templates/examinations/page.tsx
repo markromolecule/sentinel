@@ -64,6 +64,10 @@ const DEFAULT_FOOTER_CONFIG: FooterConfig = {
     page_number_format: 'PAGE_X_OF_Y',
 };
 
+function getErrorMessage(error: unknown, fallback: string): string {
+    return error instanceof Error ? error.message : fallback;
+}
+
 export default function PdfTemplateExaminationsPage() {
     const { hasAnyPermission, hasPermission } = useActivePermissions();
     const { institutionId: scopedInstitutionId, isLoading: isAcademicScopeLoading } =
@@ -195,7 +199,13 @@ export default function PdfTemplateExaminationsPage() {
     React.useEffect(() => {
         setHeaderConfig(workingTemplate?.header_config ?? DEFAULT_HEADER_CONFIG);
         setFooterConfig(workingTemplate?.footer_config ?? DEFAULT_FOOTER_CONFIG);
-    }, [workingTemplate?.template_id, workingTemplate?.updated_at, selectedInstitutionId]);
+    }, [
+        selectedInstitutionId,
+        workingTemplate?.footer_config,
+        workingTemplate?.header_config,
+        workingTemplate?.template_id,
+        workingTemplate?.updated_at,
+    ]);
 
     React.useEffect(() => {
         if (!selectedExamId) {
@@ -243,8 +253,8 @@ export default function PdfTemplateExaminationsPage() {
                                     footer_config: footerConfig,
                                 });
                                 toast.success('Draft saved');
-                            } catch (error: any) {
-                                toast.error(error?.message || 'Failed to save the draft.');
+                            } catch (error: unknown) {
+                                toast.error(getErrorMessage(error, 'Failed to save the draft.'));
                             }
                         }}
                     >
@@ -268,8 +278,10 @@ export default function PdfTemplateExaminationsPage() {
                                     documentKind: 'EXAM_ANSWER_KEY',
                                 });
                                 toast.success('Template published');
-                            } catch (error: any) {
-                                toast.error(error?.message || 'Failed to publish the template.');
+                            } catch (error: unknown) {
+                                toast.error(
+                                    getErrorMessage(error, 'Failed to publish the template.'),
+                                );
                             }
                         }}
                     >
@@ -378,10 +390,12 @@ export default function PdfTemplateExaminationsPage() {
                                                 institution_id: selectedInstitutionId,
                                             });
                                             toast.success('Answer key export queued');
-                                        } catch (error: any) {
+                                        } catch (error: unknown) {
                                             toast.error(
-                                                error?.message ||
+                                                getErrorMessage(
+                                                    error,
                                                     'Failed to queue the answer key export.',
+                                                ),
                                             );
                                         }
                                     }}
@@ -400,17 +414,35 @@ export default function PdfTemplateExaminationsPage() {
                             <div className="space-y-1">
                                 <h3 className="text-sm font-semibold">Open PDF in a new tab</h3>
                                 <p className="text-muted-foreground text-xs">
-                                    Check the rendered output without leaving this page.
+                                    Check the selected exam answer key with the unsaved template
+                                    settings.
                                 </p>
                             </div>
                             <Button
                                 size="sm"
                                 className="mt-auto w-full"
-                                disabled={previewMutation.isPending}
+                                disabled={
+                                    !selectedInstitutionId ||
+                                    !selectedExamId ||
+                                    !canExportAnswerKey ||
+                                    previewMutation.isPending
+                                }
                                 onClick={async () => {
                                     if (!selectedInstitutionId) {
                                         toast.error(
                                             'Choose an institution before generating a preview.',
+                                        );
+                                        return;
+                                    }
+
+                                    if (!selectedExamId) {
+                                        toast.error('Choose an exam before generating a preview.');
+                                        return;
+                                    }
+
+                                    if (!canExportAnswerKey) {
+                                        toast.error(
+                                            'You need answer-key export permission to preview correct answers.',
                                         );
                                         return;
                                     }
@@ -427,6 +459,7 @@ export default function PdfTemplateExaminationsPage() {
                                     try {
                                         const previewBlob = await previewMutation.mutateAsync({
                                             institution_id: selectedInstitutionId,
+                                            exam_id: selectedExamId,
                                             document_kind: 'EXAM_ANSWER_KEY',
                                             header_config: headerConfig,
                                             footer_config: footerConfig,
@@ -436,10 +469,10 @@ export default function PdfTemplateExaminationsPage() {
                                         window.setTimeout(() => {
                                             URL.revokeObjectURL(previewUrl);
                                         }, 60_000);
-                                    } catch (error: any) {
+                                    } catch (error: unknown) {
                                         previewWindow.close();
                                         toast.error(
-                                            error?.message || 'Failed to render the preview.',
+                                            getErrorMessage(error, 'Failed to render the preview.'),
                                         );
                                     }
                                 }}
@@ -494,8 +527,8 @@ export default function PdfTemplateExaminationsPage() {
                         <TabsContent value="answer-key" className="mt-4">
                             <AnswerKeyExportsPanel
                                 exports={answerKeyExportsQuery.data?.records ?? []}
-                                canExport={canView}
-                                canManage={canManageTemplate}
+                                canExport={canExportAnswerKey}
+                                canManage={canExportAnswerKey}
                                 activeDownloadId={activeDownloadId}
                                 activeRetryId={activeRetryId}
                                 activeDeleteId={activeDeleteId}
@@ -509,10 +542,12 @@ export default function PdfTemplateExaminationsPage() {
                                             '_blank',
                                             'noopener,noreferrer',
                                         );
-                                    } catch (error: any) {
+                                    } catch (error: unknown) {
                                         toast.error(
-                                            error?.message ||
+                                            getErrorMessage(
+                                                error,
                                                 'Failed to prepare the answer key download.',
+                                            ),
                                         );
                                     } finally {
                                         setActiveDownloadId(null);
@@ -527,10 +562,12 @@ export default function PdfTemplateExaminationsPage() {
                                             examId: selectedExamId || undefined,
                                         });
                                         toast.success('Answer key retry queued');
-                                    } catch (error: any) {
+                                    } catch (error: unknown) {
                                         toast.error(
-                                            error?.message ||
+                                            getErrorMessage(
+                                                error,
                                                 'Failed to retry the answer key export.',
+                                            ),
                                         );
                                     } finally {
                                         setActiveRetryId(null);
@@ -545,10 +582,12 @@ export default function PdfTemplateExaminationsPage() {
                                             examId: selectedExamId || undefined,
                                         });
                                         toast.success('Answer key export deleted');
-                                    } catch (error: any) {
+                                    } catch (error: unknown) {
                                         toast.error(
-                                            error?.message ||
+                                            getErrorMessage(
+                                                error,
                                                 'Failed to delete the answer key export.',
+                                            ),
                                         );
                                     } finally {
                                         setActiveDeleteId(null);

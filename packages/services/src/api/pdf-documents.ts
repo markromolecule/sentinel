@@ -41,7 +41,9 @@ export interface UpsertPdfTemplateDraftBody {
     footer_config: FooterConfig;
 }
 
-export interface PreviewPdfTemplateBody extends UpsertPdfTemplateDraftBody {}
+export interface PreviewPdfTemplateBody extends UpsertPdfTemplateDraftBody {
+    exam_id?: string | null;
+}
 
 export interface ListAnswerKeyExportsParams {
     examId?: string;
@@ -52,7 +54,7 @@ export interface ListAnswerKeyExportsParams {
 
 export interface CreateAnswerKeyExportBody {
     exam_id: string;
-    institution_id: string;
+    institution_id?: string;
     title?: string;
 }
 
@@ -84,8 +86,6 @@ export interface ExamAnswerKeyExportRecord {
     failureCode: string | null;
     failureMessage: string | null;
     retryCount: number;
-    storageBucket: string | null;
-    storagePath: string | null;
     createdBy: string | null;
     createdAt: string;
     updatedAt: string;

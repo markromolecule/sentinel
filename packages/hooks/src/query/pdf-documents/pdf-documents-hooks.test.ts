@@ -4,6 +4,10 @@ import { useGenerateAnalyticsReportMutation } from '../analytics/use-generate-an
 import { useAnalyticsReportDownloadMutation } from '../analytics/use-analytics-report-download-mutation';
 import { useRetryAnalyticsReportMutation } from '../analytics/use-retry-analytics-report-mutation';
 import { useAnswerKeyExportsQuery } from './use-answer-key-exports-query';
+import { useCreateAnswerKeyExportMutation } from './use-create-answer-key-export-mutation';
+import { useAnswerKeyExportStatusQuery } from './use-answer-key-export-status-query';
+import { useAnswerKeyExportDownloadMutation } from './use-answer-key-export-download-mutation';
+import { useRetryAnswerKeyExportMutation } from './use-retry-answer-key-export-mutation';
 import { useCreateExamReportExportMutation } from './use-create-exam-report-export-mutation';
 import { useDeleteAnswerKeyExportMutation } from './use-delete-answer-key-export-mutation';
 import { useDeleteExamReportExportMutation } from './use-delete-exam-report-export-mutation';
@@ -11,19 +15,25 @@ import { useExamReportExportDownloadMutation } from './use-exam-report-export-do
 import { useExamReportExportStatusQuery } from './use-exam-report-export-status-query';
 import { useExamReportExportsQuery } from './use-exam-report-exports-query';
 import { usePdfTemplatesQuery } from './use-pdf-templates-query';
+import { usePreviewPdfTemplateMutation } from './use-preview-pdf-template-mutation';
 import { useRetryExamReportExportMutation } from './use-retry-exam-report-export-mutation';
 import {
+    createAnswerKeyExport,
     createExamReportExport,
     deleteAnswerKeyExport,
     deleteExamReportExport,
     generateAnalyticsReport,
     getAnalyticsReportDownload,
     getAnalyticsReports,
+    getAnswerKeyExportDownload,
+    getAnswerKeyExportStatus,
     getAnswerKeyExports,
     getExamReportExportDownload,
     getExamReportExports,
     getPdfTemplates,
+    previewPdfTemplate,
     retryAnalyticsReport,
+    retryAnswerKeyExport,
     retryExamReportExport,
 } from '@sentinel/services';
 import { ANALYTICS_QUERY_KEYS } from '@sentinel/shared/constants';
@@ -79,6 +89,11 @@ vi.mock('@sentinel/services', () => ({
     deleteExamReportExport: vi.fn(),
     getExamReportExportDownload: vi.fn(),
     getExamReportExportStatus: vi.fn(),
+    previewPdfTemplate: vi.fn(),
+    createAnswerKeyExport: vi.fn(),
+    getAnswerKeyExportStatus: vi.fn(),
+    getAnswerKeyExportDownload: vi.fn(),
+    retryAnswerKeyExport: vi.fn(),
 }));
 
 vi.mock('@sentinel/shared/constants', () => ({
@@ -130,6 +145,7 @@ vi.mock('@sentinel/shared/constants', () => ({
         exportExamReport: () => ['analytics', 'exportExamReport'],
         retryExamReportExport: () => ['analytics', 'retryExamReportExport'],
         deleteExamReportExport: () => ['analytics', 'deleteExamReportExport'],
+        exportAnswerKey: () => ['analytics', 'exportAnswerKey'],
     },
 }));
 
@@ -203,6 +219,9 @@ describe('pdf document hooks', () => {
             success: true,
             downloadUrl: 'https://signed.example/exam-report-1',
         });
+        (previewPdfTemplate as any).mockResolvedValue(
+            new Blob(['pdf'], { type: 'application/pdf' }),
+        );
     });
 
     it('keeps institution-specific template queries isolated in the query key', () => {
@@ -493,5 +512,116 @@ describe('pdf document hooks', () => {
         await expect((mutation as any).mutateAsync('export-1')).rejects.toThrow(
             'signed url failed',
         );
+    });
+
+    it('passes selected exam id unchanged through preview mutations', async () => {
+        const mutation = usePreviewPdfTemplateMutation();
+        const payload = {
+            institution_id: 'institution-1',
+            exam_id: 'exam-1',
+            document_kind: 'EXAM_ANSWER_KEY',
+            header_config: {
+                logo_visible: true,
+                logo_placement: 'LEFT',
+                logo_max_size_px: 120,
+                title_text: 'Preview',
+                title_alignment: 'LEFT',
+                subtitle_alignment: 'LEFT',
+                divider_visible: true,
+                divider_color: '#D1D5DB',
+                accent_color: '#3B82F6',
+                sentinel_logo_visible: true,
+            },
+            footer_config: {
+                text: 'Footer',
+                divider_visible: true,
+                divider_color: '#E5E7EB',
+                page_number_visible: true,
+                page_number_format: 'PAGE_X_OF_Y',
+            },
+        };
+
+        await (mutation as any).mutateAsync(payload);
+
+        expect(previewPdfTemplate).toHaveBeenCalledWith({ mockClient: true }, payload);
+    });
+
+    it('invalidates only the targeted answer-key lifecycle caches for create, retry, and delete', async () => {
+        (createAnswerKeyExport as any).mockResolvedValueOnce({
+            exportId: 'export-1',
+            examId: 'exam-1',
+            institutionId: 'institution-1',
+            status: 'PENDING',
+        });
+        (retryAnswerKeyExport as any).mockResolvedValueOnce({
+            success: true,
+            message: 'queued',
+        });
+
+        const createMutation = useCreateAnswerKeyExportMutation();
+        const retryMutation = useRetryAnswerKeyExportMutation();
+        const deleteMutation = useDeleteAnswerKeyExportMutation();
+
+        await (createMutation as any).mutateAsync({
+            exam_id: 'exam-1',
+            title: 'Answer Key',
+            institution_id: 'institution-1',
+        });
+        await (retryMutation as any).mutateAsync({
+            exportId: 'export-1',
+            examId: 'exam-1',
+            institutionId: 'institution-1',
+        });
+        await (deleteMutation as any).mutateAsync({
+            exportId: 'export-1',
+            examId: 'exam-1',
+            institutionId: 'institution-1',
+        });
+
+        expect(mockInvalidateQueries).toHaveBeenCalledWith({
+            queryKey: ANALYTICS_QUERY_KEYS.answerKeyExports('institution-1', 'exam-1'),
+        });
+        expect(mockInvalidateQueries).toHaveBeenCalledWith({
+            queryKey: ANALYTICS_QUERY_KEYS.answerKeyExportStatus('export-1'),
+        });
+        expect(mockRemoveQueries).toHaveBeenCalledWith({
+            queryKey: ANALYTICS_QUERY_KEYS.answerKeyExportStatus('export-1'),
+        });
+    });
+
+    it('requests a fresh signed answer-key download URL on each click', async () => {
+        (getAnswerKeyExportDownload as any).mockResolvedValue({
+            success: true,
+            downloadUrl: 'https://signed.example/answer-key-1.pdf',
+        });
+
+        const mutation = useAnswerKeyExportDownloadMutation();
+
+        await (mutation as any).mutateAsync('export-1');
+        await (mutation as any).mutateAsync('export-1');
+
+        expect(getAnswerKeyExportDownload).toHaveBeenCalledTimes(2);
+        expect(getAnswerKeyExportDownload).toHaveBeenNthCalledWith(
+            1,
+            { mockClient: true },
+            'export-1',
+        );
+    });
+
+    it('polls answer-key status only while pending or generating', () => {
+        const pendingQuery = useAnswerKeyExportStatusQuery('export-1', {
+            mockQueryData: {
+                status: 'PENDING',
+            } as any,
+        } as any) as any;
+
+        const readyQuery = useAnswerKeyExportStatusQuery('export-1', {
+            mockQueryData: {
+                status: 'READY',
+            } as any,
+        } as any) as any;
+
+        expect(pendingQuery.refetchIntervalValue).toBe(5000);
+        expect(readyQuery.refetchIntervalValue).toBe(false);
     });
 });

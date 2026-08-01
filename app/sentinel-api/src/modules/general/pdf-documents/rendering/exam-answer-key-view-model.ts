@@ -75,8 +75,8 @@ export function normalizeExamAnswerKeyData(data: Partial<ExamAnswerKeyData>): Ex
             text: q.text || 'Missing question text.',
             passageText: q.passageText || null,
             imageUrl: q.imageUrl || null,
-            options: q.options?.map((opt) => ({
-                optionId: opt.optionId || `opt-${Math.random()}`,
+            options: q.options?.map((opt, optIdx) => ({
+                optionId: opt.optionId || `option-${optIdx + 1}`,
                 optionText: opt.optionText || '',
                 isCorrect: opt.isCorrect,
             })),

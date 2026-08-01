@@ -7,6 +7,7 @@ import {
 } from './pdf-generation-queue.config';
 import { PdfGenerationJobProcessor } from './pdf-generation-job-processor.service';
 import { dbClient, transactionStorage } from '@sentinel/db';
+import { getPdfGenerationLogErrorMessage } from './pdf-generation-log-redaction';
 
 export class PdfGenerationQueueService {
     private queue: Queue | null = null;
@@ -55,7 +56,7 @@ export class PdfGenerationQueueService {
                     .catch((err) => {
                         console.error(
                             `[PdfGenerationQueueService] Direct job ${exportId} failed:`,
-                            err,
+                            getPdfGenerationLogErrorMessage(documentKind, err),
                         );
                     });
 

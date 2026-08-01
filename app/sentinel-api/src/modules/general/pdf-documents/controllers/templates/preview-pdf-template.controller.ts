@@ -1,5 +1,10 @@
 import { createRoute, z } from '@hono/zod-openapi';
+import { type DbClient } from '@sentinel/db';
 import { type AppRouteHandler } from '../../../../../types/hono';
+import {
+    getAnswerKeySource,
+    mapAnswerKeySourceToViewModel,
+} from '../../data/answer-keys/get-answer-key-source';
 import { previewPdfTemplateBodySchema } from '../../pdf-documents.dto';
 import { renderAnalyticsOverallPdf } from '../../rendering/analytics-overall-renderer';
 import { renderExamAnswerKeyPdf } from '../../rendering/exam-answer-key-renderer';
@@ -11,6 +16,7 @@ import { HTTPException } from 'hono/http-exception';
 import {
     assertOverallReportTemplateScope,
     canAccessPdfInstitutionScope,
+    requireAllPdfDocumentPermissions,
     requirePdfDocumentAccess,
 } from '../../services/pdf-document-authorization.service';
 
@@ -50,6 +56,32 @@ export const previewPdfTemplateRoute = createRoute({
         'Generates a PDF on the fly using the supplied header and footer configurations. Requires support role and pdf_templates:view permission.',
 });
 
+function resolveUserDisplayIdentity(user: { email?: string | null; name?: string | null }): string {
+    return user.name || user.email || 'Sentinel Support Preview';
+}
+
+async function getExamInstitutionId(dbClient: DbClient, examId: string): Promise<string> {
+    const exam = await dbClient
+        .selectFrom('exams')
+        .select(['exam_id', 'institution_id'])
+        .where('exam_id', '=', examId)
+        .executeTakeFirst();
+
+    if (!exam) {
+        throw new HTTPException(400, {
+            message: `Exam ${examId} does not exist.`,
+        });
+    }
+
+    if (!exam.institution_id) {
+        throw new HTTPException(400, {
+            message: `Exam ${examId} is missing an institution.`,
+        });
+    }
+
+    return exam.institution_id;
+}
+
 export const previewPdfTemplateHandler: AppRouteHandler<typeof previewPdfTemplateRoute> = async (
     c,
 ) => {
@@ -62,8 +94,11 @@ export const previewPdfTemplateHandler: AppRouteHandler<typeof previewPdfTemplat
         missingPermissionMessage: 'Forbidden: Insufficient privileges.',
     });
 
-    const { document_kind, header_config, footer_config, institution_id } = c.req.valid('json');
+    const { document_kind, header_config, footer_config, institution_id, exam_id } =
+        c.req.valid('json');
     const userInstitutionId = c.get('institutionId');
+    const activePermissionKeys = c.get('activePermissionKeys');
+    let previewInstitutionId = institution_id;
 
     // 2. Lay constraints validation
     if (document_kind === 'ANALYTICS_OVERALL') {
@@ -78,6 +113,56 @@ export const previewPdfTemplateHandler: AppRouteHandler<typeof previewPdfTemplat
         }
 
         await assertOverallReportTemplateScope(dbClient, institution_id);
+    } else if (document_kind === 'EXAM_ANSWER_KEY') {
+        requireAllPdfDocumentPermissions({
+            activePermissionKeys,
+            requiredPermissions: ['examinations:export_answer_key'],
+            missingPermissionMessage: 'Forbidden: Insufficient answer-key export privileges.',
+        });
+
+        if (exam_id) {
+            const examInstitutionId = await getExamInstitutionId(dbClient, exam_id);
+            previewInstitutionId = examInstitutionId;
+
+            if (institution_id && examInstitutionId !== institution_id) {
+                throw new HTTPException(400, {
+                    message: `Exam ${exam_id} does not belong to institution ${institution_id}.`,
+                });
+            }
+
+            if (
+                !(await canAccessPdfInstitutionScope(
+                    dbClient,
+                    userInstitutionId,
+                    examInstitutionId,
+                ))
+            ) {
+                throw new HTTPException(403, {
+                    message: "Forbidden. You cannot preview another institution's answer key.",
+                });
+            }
+        } else if (institution_id) {
+            const institution = await dbClient
+                .selectFrom('institutions')
+                .select(['id'])
+                .where('id', '=', institution_id)
+                .executeTakeFirst();
+
+            if (!institution) {
+                throw new HTTPException(400, {
+                    message: `Institution ${institution_id} does not exist.`,
+                });
+            }
+
+            if (
+                !(await canAccessPdfInstitutionScope(dbClient, userInstitutionId, institution_id))
+            ) {
+                throw new HTTPException(403, {
+                    message:
+                        "Forbidden. You cannot preview another institution's PDF template override.",
+                });
+            }
+        }
     } else if (institution_id) {
         const institution = await dbClient
             .selectFrom('institutions')
@@ -102,8 +187,11 @@ export const previewPdfTemplateHandler: AppRouteHandler<typeof previewPdfTemplat
     try {
         // 3. Resolve branding logo if institution ID supplied
         let logoBuffer: Buffer | null = null;
-        if (institution_id) {
-            const branding = await InstitutionBrandingService.getBranding(dbClient, institution_id);
+        if (previewInstitutionId) {
+            const branding = await InstitutionBrandingService.getBranding(
+                dbClient,
+                previewInstitutionId,
+            );
             if (branding && branding.logo_storage_bucket && branding.logo_storage_path) {
                 try {
                     logoBuffer = await InstitutionBrandingService.downloadBrandingLogo(
@@ -172,11 +260,28 @@ export const previewPdfTemplateHandler: AppRouteHandler<typeof previewPdfTemplat
                 mockAnalyticsData,
             );
         } else if (document_kind === 'EXAM_ANSWER_KEY') {
-            // EXAM_ANSWER_KEY
-            const mockData = {
-                ...mockExamAnswerKeyFixture,
-                generatedBy: user.email || 'Dr. Evelyn Martinez',
-            };
+            const mockData = exam_id
+                ? mapAnswerKeySourceToViewModel(
+                    await getAnswerKeySource(
+                        dbClient,
+                        exam_id,
+                        previewInstitutionId ?? (await getExamInstitutionId(dbClient, exam_id)),
+                    ),
+                    resolveUserDisplayIdentity(user),
+                )
+                : {
+                    ...mockExamAnswerKeyFixture,
+                    examId: 'sample-preview-exam-answer-key',
+                    title: `${mockExamAnswerKeyFixture.title} (Sample Preview)`,
+                    subjectName: `${mockExamAnswerKeyFixture.subjectName} (Sample Data)`,
+                    institutionName: `${mockExamAnswerKeyFixture.institutionName} (Sample Preview)`,
+                    generatedBy: resolveUserDisplayIdentity(user),
+                    questions: mockExamAnswerKeyFixture.questions.map((question) => ({
+                        ...question,
+                        questionId: `sample-${question.questionId}`,
+                        text: `${question.text} (Sample question)`,
+                    })),
+                };
             pdfBuffer = await renderExamAnswerKeyPdf(
                 header_config,
                 footer_config,

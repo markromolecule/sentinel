@@ -11,6 +11,8 @@ import {
     createAnswerKeyExportBodySchema,
     createAnswerKeyExportResponseSchema,
 } from '../../pdf-documents.dto';
+import { assertInstructorExamAccess } from '../../../../examination/assign/services/exam-access.service';
+import { HTTPException } from 'hono/http-exception';
 
 export const postCreateAnswerKeyExportRoute = createRoute({
     method: 'post',
@@ -19,7 +21,7 @@ export const postCreateAnswerKeyExportRoute = createRoute({
     summary: 'Generate an examination answer key PDF',
     description:
         'Creates a PENDING answer-key export record and enqueues PDF generation. ' +
-        'Requires support role and examinations:export_answer_key permission.',
+        'Requires examinations:export_answer_key permission.',
     request: {
         body: {
             content: { 'application/json': { schema: createAnswerKeyExportBodySchema } },
@@ -31,7 +33,7 @@ export const postCreateAnswerKeyExportRoute = createRoute({
             content: { 'application/json': { schema: createAnswerKeyExportResponseSchema } },
         },
         400: { description: 'Validation error or exam not found in institution' },
-        403: { description: 'Forbidden — support role or permission missing' },
+        403: { description: 'Forbidden — permission missing' },
         404: { description: 'Exam or institution not found' },
         500: { description: 'Internal server error' },
     },
@@ -42,6 +44,8 @@ export const postCreateAnswerKeyExportHandler: AppRouteHandler<
 > = async (c) => {
     const user = c.get('user');
     const dbClient = c.get('dbClient');
+    const supabaseUser = c.get('supabaseUser') as any;
+    const role = c.get('role') || supabaseUser?.user_metadata?.role;
 
     requirePdfDocumentAccess({
         activePermissionKeys: c.get('activePermissionKeys'),
@@ -52,28 +56,8 @@ export const postCreateAnswerKeyExportHandler: AppRouteHandler<
     const body = c.req.valid('json');
     const userInstitutionId = c.get('institutionId');
 
-    if (!(await canAccessPdfInstitutionScope(dbClient, userInstitutionId, body.institution_id))) {
-        return c.json(
-            {
-                success: false,
-                error: 'Forbidden. Cannot create an answer key export for another institution.',
-            },
-            403 as any,
-        );
-    }
-
     try {
-        // Validate institution exists
-        const institution = await dbClient
-            .selectFrom('institutions')
-            .select('id')
-            .where('id', '=', body.institution_id)
-            .executeTakeFirst();
-        if (!institution) {
-            return c.json({ success: false, error: 'Institution not found.' }, 404 as any);
-        }
-
-        // Validate exam belongs to institution
+        // Validate exam exists
         const exam = await dbClient
             .selectFrom('exams')
             .select(['exam_id', 'title', 'institution_id'])
@@ -82,28 +66,62 @@ export const postCreateAnswerKeyExportHandler: AppRouteHandler<
         if (!exam) {
             return c.json({ success: false, error: 'Exam not found.' }, 404 as any);
         }
-        if (exam.institution_id !== body.institution_id) {
+
+        const examInstitutionId = exam.institution_id;
+        if (!examInstitutionId) {
+            return c.json({ success: false, error: 'Exam is missing an institution.' }, 400 as any);
+        }
+
+        if (body.institution_id && body.institution_id !== examInstitutionId) {
             return c.json(
                 { success: false, error: 'Exam does not belong to the specified institution.' },
                 400 as any,
             );
         }
 
+        // Validate institution exists
+        const institution = await dbClient
+            .selectFrom('institutions')
+            .select('id')
+            .where('id', '=', examInstitutionId)
+            .executeTakeFirst();
+        if (!institution) {
+            return c.json({ success: false, error: 'Institution not found.' }, 404 as any);
+        }
+
+        if (!(await canAccessPdfInstitutionScope(dbClient, userInstitutionId, examInstitutionId))) {
+            return c.json(
+                {
+                    success: false,
+                    error: 'Forbidden. Cannot create an answer key export for another institution.',
+                },
+                403 as any,
+            );
+        }
+
+        // Enforce instructor scope check
+        if (role === 'instructor') {
+            await assertInstructorExamAccess({
+                dbClient,
+                examId: exam.exam_id,
+                userId: user.id,
+            });
+        }
+
         // Resolve and snapshot the template at request time
         const resolvedTemplate = await resolvePdfTemplate(
             dbClient,
-            body.institution_id,
+            examInstitutionId,
             'EXAM_ANSWER_KEY',
             { persistBuiltInFallback: true },
         );
 
         // Insert PENDING record
-        const exportTitle = body.title ?? `Answer Key — ${exam.title}`;
         const insertedRow = await dbClient
             .insertInto('exam_answer_key_exports')
             .values({
                 exam_id: body.exam_id,
-                institution_id: body.institution_id,
+                institution_id: examInstitutionId,
                 template_id: resolvedTemplate.templateId as any,
                 template_snapshot: JSON.stringify(resolvedTemplate) as any,
                 status: 'PENDING',
@@ -121,7 +139,7 @@ export const postCreateAnswerKeyExportHandler: AppRouteHandler<
             await LogsService.createLog(dbClient, {
                 userId: user.id,
                 action: 'ANSWER_KEY_EXPORT_REQUESTED',
-                activeInstitutionId: body.institution_id,
+                activeInstitutionId: examInstitutionId,
                 details: {
                     exportId: insertedRow.export_id,
                     examId: body.exam_id,
@@ -140,8 +158,6 @@ export const postCreateAnswerKeyExportHandler: AppRouteHandler<
             failureCode: insertedRow.failure_code ?? null,
             failureMessage: insertedRow.failure_message ?? null,
             retryCount: insertedRow.retry_count,
-            storageBucket: insertedRow.storage_bucket ?? null,
-            storagePath: insertedRow.storage_path ?? null,
             createdBy: insertedRow.created_by ?? null,
             createdAt: insertedRow.created_at.toISOString(),
             updatedAt: insertedRow.updated_at.toISOString(),
@@ -157,6 +173,9 @@ export const postCreateAnswerKeyExportHandler: AppRouteHandler<
             202 as any,
         );
     } catch (e: any) {
+        if (e instanceof HTTPException) {
+            return c.json({ success: false, error: e.message }, e.status as any);
+        }
         return c.json(
             { success: false, error: e.message || 'Failed to create answer key export.' },
             500 as any,

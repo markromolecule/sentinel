@@ -134,4 +134,30 @@ describe('student-question-sanitizer.service', () => {
         const sanitized = sanitizeQuestionForStudentAttempt(question);
         expect(sanitized.content.correctAnswer).toBeUndefined();
     });
+
+    it('removes answer guidance fields from unauthorized/student payloads', () => {
+        const question: ExamQuestion = {
+            ...baseQuestion,
+            type: 'ESSAY',
+            content: {
+                prompt: 'Explain the release gate.',
+                correctAnswer: 'Mention private downloads.',
+                acceptedAnswers: ['Private artifacts'],
+                blanks: ['Private artifacts'],
+                pairs: [{ left: 'READY', right: 'Download' }],
+                rubric: 'Award points for naming private storage.',
+                answerGuidance: 'Look for retry/delete lifecycle.',
+                guidance: 'Do not leak this guidance.',
+            },
+        };
+        const sanitized = sanitizeQuestionForStudentAttempt(question);
+
+        expect(sanitized.content.correctAnswer).toBeUndefined();
+        expect(sanitized.content.acceptedAnswers).toBeUndefined();
+        expect(sanitized.content.rubric).toBeUndefined();
+        expect(sanitized.content.answerGuidance).toBeUndefined();
+        expect(sanitized.content.guidance).toBeUndefined();
+        expect(JSON.stringify(sanitized)).not.toContain('private storage');
+        expect(JSON.stringify(sanitized)).not.toContain('retry/delete lifecycle');
+    });
 });

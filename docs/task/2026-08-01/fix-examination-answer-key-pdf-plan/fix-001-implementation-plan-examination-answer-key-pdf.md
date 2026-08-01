@@ -100,6 +100,12 @@ permissions that can expose export metadata or downloads beyond the dedicated an
 Do not begin a later phase until the current phase's validation commands and exit criteria pass or
 the failure is recorded and explicitly accepted.
 
+**Current status, 2026-08-01:** Phase 1 is implemented. Current question content normalization,
+selected-exam Support preview, optional preview `exam_id`, answer-key preview permission
+composition, deterministic option IDs, and focused service/hook/API/Support tests are complete.
+Manual browser inspection of two structurally different real exams remains the only unchecked Phase
+1 validation item.
+
 ## Files, services, and tables in scope
 
 - Source/renderer: `app/sentinel-api/src/modules/general/pdf-documents/data/answer-keys/` and
