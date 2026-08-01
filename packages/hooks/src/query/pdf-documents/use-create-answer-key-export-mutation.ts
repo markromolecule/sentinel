@@ -24,7 +24,7 @@ export function useCreateAnswerKeyExportMutation(args: UseCreateAnswerKeyExportM
         onSuccess: async (data, variables, onMutateResult, context) => {
             await queryClient.invalidateQueries({
                 queryKey: ANALYTICS_QUERY_KEYS.answerKeyExports(
-                    variables.institution_id,
+                    data.institutionId || variables.institution_id,
                     variables.exam_id,
                 ),
             });

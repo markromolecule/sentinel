@@ -2,8 +2,11 @@ import { describe, expect, it, vi } from 'vitest';
 import {
     createAnswerKeyExport,
     createExamReportExport,
+    deleteAnswerKeyExport,
     deleteExamReportExport,
     deleteInstitutionPdfBranding,
+    getAnswerKeyExportDownload,
+    getAnswerKeyExportStatus,
     getAnswerKeyExports,
     getExamReportExportDownload,
     getExamReportExportStatus,
@@ -12,6 +15,7 @@ import {
     getPdfTemplates,
     previewPdfTemplate,
     publishPdfTemplate,
+    retryAnswerKeyExport,
     retryExamReportExport,
     retryPdfExport,
     uploadInstitutionPdfBranding,
@@ -336,5 +340,61 @@ describe('pdf documents api', () => {
         await expect(getExamReportExportDownload(apiClient as any, 'export-1')).rejects.toThrow(
             'download failed',
         );
+    });
+
+    it('requests exact answer-key lifecycle routes', async () => {
+        const apiClient = vi
+            .fn()
+            .mockResolvedValueOnce({
+                success: true,
+                data: {
+                    exportId: 'export-1',
+                    examId: 'exam-1',
+                    institutionId: 'inst-1',
+                    templateId: null,
+                    status: 'READY',
+                    failureCode: null,
+                    failureMessage: null,
+                    retryCount: 0,
+                    createdBy: null,
+                    createdAt: '2026-08-01T00:00:00.000Z',
+                    updatedAt: '2026-08-01T00:00:00.000Z',
+                    completedAt: '2026-08-01T00:01:00.000Z',
+                },
+            })
+            .mockResolvedValueOnce({
+                success: true,
+                downloadUrl: 'https://signed.example/answer-key.pdf',
+            })
+            .mockResolvedValueOnce({ success: true, message: 'queued' })
+            .mockResolvedValueOnce({ success: true, message: 'deleted' });
+
+        const status = await getAnswerKeyExportStatus(apiClient as any, 'export-1');
+        const download = await getAnswerKeyExportDownload(apiClient as any, 'export-1');
+        const retry = await retryAnswerKeyExport(apiClient as any, 'export-1');
+        const remove = await deleteAnswerKeyExport(apiClient as any, 'export-1');
+
+        expect(apiClient).toHaveBeenNthCalledWith(1, '/pdf-documents/answer-keys/export-1/status');
+        expect(apiClient).toHaveBeenNthCalledWith(
+            2,
+            '/pdf-documents/answer-keys/export-1/download',
+        );
+        expect(apiClient).toHaveBeenNthCalledWith(
+            3,
+            '/pdf-documents/answer-keys/export-1/retry',
+            expect.objectContaining({ method: 'POST' }),
+        );
+        expect(apiClient).toHaveBeenNthCalledWith(
+            4,
+            '/pdf-documents/answer-keys/export-1',
+            expect.objectContaining({ method: 'DELETE' }),
+        );
+        expect(status).toMatchObject({
+            exportId: 'export-1',
+            status: 'READY',
+        });
+        expect(download.downloadUrl).toContain('signed.example');
+        expect(retry.message).toBe('queued');
+        expect(remove.message).toBe('deleted');
     });
 });

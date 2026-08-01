@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { ALL_PERMISSIONS, SYSTEM_ROLE_BLUEPRINTS } from '@sentinel/shared/constants';
 import { syncSystemPermissions } from './sync-system-permissions';
 import { testWithDbClient } from '../../../../lib/test-with-db-client';
+import { syncSystemRoles } from '../../roles/data/sync-system-roles';
+import { syncSystemRolePermissions } from '../../roles/data/sync-system-role-permissions';
 
 describe('syncSystemPermissions', () => {
     it('should have all expected permission keys in the sync catalogue', () => {
@@ -263,4 +265,96 @@ describe('syncSystemPermissions', () => {
             expect(dbKeys).toContain(key);
         }
     });
+
+    testWithDbClient(
+        'should prove default-role membership, custom-role grant/revoke behavior, and Role Matrix catalog visibility for examinations:export_answer_key',
+        async ({ dbClient }) => {
+            // 1. Role Matrix catalog visibility
+            await dbClient
+                .updateTable('roles')
+                .set({ permission_sync_mode: 'BLUEPRINT' })
+                .execute();
+
+            await syncSystemPermissions(dbClient);
+            await syncSystemRoles(dbClient);
+            await syncSystemRolePermissions(dbClient);
+
+            const dbPermissions = await dbClient
+                .selectFrom('rbac_permissions')
+                .selectAll()
+                .where('permission_key', '=', 'examinations:export_answer_key')
+                .execute();
+
+            expect(dbPermissions.length).toBe(1);
+            const exportAnswerKeyPerm = dbPermissions[0];
+            expect(exportAnswerKeyPerm.module_key).toBe('examinations');
+            expect(exportAnswerKeyPerm.action_key).toBe('export_answer_key');
+            expect(exportAnswerKeyPerm.scope).toBe('institution');
+
+            // 2. Default-role membership
+            const rolesWithPerm = await dbClient
+                .selectFrom('roles as r')
+                .innerJoin('rbac_role_permissions as rrp', 'rrp.role_id', 'r.role_id')
+                .select('r.role_name')
+                .where('rrp.permission_id', '=', exportAnswerKeyPerm.permission_id)
+                .execute();
+
+            const roleNamesWithPerm = rolesWithPerm.map((r) => r.role_name);
+            expect(roleNamesWithPerm).toContain('support');
+            expect(roleNamesWithPerm).toContain('superadmin');
+            expect(roleNamesWithPerm).toContain('admin');
+            expect(roleNamesWithPerm).toContain('instructor');
+            expect(roleNamesWithPerm).not.toContain('student');
+
+            // 3. Custom-role grant/revoke behavior
+            const customRoleInsert = await dbClient
+                .insertInto('roles')
+                .values({
+                    role_name: 'test-custom-role-export-key',
+                    description: 'A test custom role for export key',
+                    is_system: false,
+                    permission_sync_mode: 'CUSTOM',
+                })
+                .returningAll()
+                .executeTakeFirstOrThrow();
+
+            // Grant permission
+            await dbClient
+                .insertInto('rbac_role_permissions')
+                .values({
+                    role_id: customRoleInsert.role_id,
+                    permission_id: exportAnswerKeyPerm.permission_id,
+                })
+                .execute();
+
+            let hasMapping = await dbClient
+                .selectFrom('rbac_role_permissions')
+                .selectAll()
+                .where('role_id', '=', customRoleInsert.role_id)
+                .where('permission_id', '=', exportAnswerKeyPerm.permission_id)
+                .executeTakeFirst();
+            expect(hasMapping).toBeTruthy();
+
+            // Revoke permission
+            await dbClient
+                .deleteFrom('rbac_role_permissions')
+                .where('role_id', '=', customRoleInsert.role_id)
+                .where('permission_id', '=', exportAnswerKeyPerm.permission_id)
+                .execute();
+
+            hasMapping = await dbClient
+                .selectFrom('rbac_role_permissions')
+                .selectAll()
+                .where('role_id', '=', customRoleInsert.role_id)
+                .where('permission_id', '=', exportAnswerKeyPerm.permission_id)
+                .executeTakeFirst();
+            expect(hasMapping).toBeUndefined();
+
+            // Cleanup
+            await dbClient
+                .deleteFrom('roles')
+                .where('role_id', '=', customRoleInsert.role_id)
+                .execute();
+        },
+    );
 });

@@ -7,6 +7,7 @@ import {
     canAccessPdfInstitutionScope,
     requirePdfDocumentAccess,
 } from '../../services/pdf-document-authorization.service';
+import { assertInstructorExamAccess } from '../../../../examination/assign/services/exam-access.service';
 
 export const postAnswerKeyExportRetryRoute = createRoute({
     method: 'post',
@@ -15,7 +16,7 @@ export const postAnswerKeyExportRetryRoute = createRoute({
     summary: 'Retry a failed answer key export',
     description:
         'Resets a FAILED answer-key export to PENDING and requeues the generation job. ' +
-        'Requires support role and pdf_templates:manage or reports:generate permission.',
+        'Requires examinations:export_answer_key permission.',
     request: {
         params: z.object({ exportId: z.string().uuid() }),
     },
@@ -40,10 +41,12 @@ export const postAnswerKeyExportRetryHandler: AppRouteHandler<
 > = async (c) => {
     const user = c.get('user');
     const dbClient = c.get('dbClient');
+    const supabaseUser = c.get('supabaseUser') as any;
+    const role = c.get('role') || supabaseUser?.user_metadata?.role;
 
     requirePdfDocumentAccess({
         activePermissionKeys: c.get('activePermissionKeys'),
-        requiredPermissions: ['pdf_templates:manage', 'reports:generate'],
+        requiredPermissions: 'examinations:export_answer_key',
         missingPermissionMessage: 'Forbidden. Insufficient privileges.',
     });
 
@@ -65,23 +68,32 @@ export const postAnswerKeyExportRetryHandler: AppRouteHandler<
             const userInstitutionId = c.get('institutionId');
             if (
                 !(await canAccessPdfInstitutionScope(
-                    dbClient,
+                    trx,
                     userInstitutionId,
                     row.institution_id,
                 ))
             ) {
-                return {
-                    success: false,
-                    status: 403,
-                    error: "Forbidden. Cannot retry another institution's answer key export.",
-                };
+                return { success: false, status: 404, error: 'Export record not found.' };
+            }
+
+            // Instructor scope check
+            if (role === 'instructor') {
+                try {
+                    await assertInstructorExamAccess({
+                        dbClient: trx,
+                        examId: row.exam_id,
+                        userId: user.id,
+                    });
+                } catch {
+                    return { success: false, status: 404, error: 'Export record not found.' };
+                }
             }
 
             if (row.status !== 'FAILED') {
                 return {
                     success: false,
                     status: 400,
-                    error: `Cannot retry export in status: ${row.status}. Only FAILED exports can be retried.`,
+                    error: `Lifecycle conflict: export status is ${row.status}, expected FAILED.`,
                 };
             }
 

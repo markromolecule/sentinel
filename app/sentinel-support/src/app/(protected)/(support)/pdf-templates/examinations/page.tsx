@@ -527,8 +527,8 @@ export default function PdfTemplateExaminationsPage() {
                         <TabsContent value="answer-key" className="mt-4">
                             <AnswerKeyExportsPanel
                                 exports={answerKeyExportsQuery.data?.records ?? []}
-                                canExport={canView}
-                                canManage={canManageTemplate}
+                                canExport={canExportAnswerKey}
+                                canManage={canExportAnswerKey}
                                 activeDownloadId={activeDownloadId}
                                 activeRetryId={activeRetryId}
                                 activeDeleteId={activeDeleteId}

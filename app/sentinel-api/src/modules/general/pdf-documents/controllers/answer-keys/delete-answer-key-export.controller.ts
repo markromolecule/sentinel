@@ -6,6 +6,7 @@ import {
     canAccessPdfInstitutionScope,
     requirePdfDocumentAccess,
 } from '../../services/pdf-document-authorization.service';
+import { assertInstructorExamAccess } from '../../../../examination/assign/services/exam-access.service';
 
 export const deleteAnswerKeyExportRoute = createRoute({
     method: 'delete',
@@ -14,7 +15,7 @@ export const deleteAnswerKeyExportRoute = createRoute({
     summary: 'Delete an answer key export',
     description:
         'Removes the export record and purges the private storage object. ' +
-        'Requires support role and pdf_templates:manage permission.',
+        'Requires examinations:export_answer_key permission.',
     request: {
         params: z.object({ exportId: z.string().uuid() }),
     },
@@ -38,11 +39,13 @@ export const deleteAnswerKeyExportHandler: AppRouteHandler<
 > = async (c) => {
     const user = c.get('user');
     const dbClient = c.get('dbClient');
+    const supabaseUser = c.get('supabaseUser') as any;
+    const role = c.get('role') || supabaseUser?.user_metadata?.role;
 
     requirePdfDocumentAccess({
         activePermissionKeys: c.get('activePermissionKeys'),
-        requiredPermissions: 'pdf_templates:manage',
-        missingPermissionMessage: 'Forbidden. Missing pdf_templates:manage permission.',
+        requiredPermissions: 'examinations:export_answer_key',
+        missingPermissionMessage: 'Forbidden. Missing examinations:export_answer_key permission.',
     });
 
     const { exportId } = c.req.valid('param');
@@ -63,13 +66,20 @@ export const deleteAnswerKeyExportHandler: AppRouteHandler<
         if (
             !(await canAccessPdfInstitutionScope(dbClient, userInstitutionId, row.institution_id))
         ) {
-            return c.json(
-                {
-                    success: false,
-                    error: "Forbidden: Access denied to this institution's exports.",
-                },
-                403 as any,
-            );
+            return c.json({ success: false, error: 'Export record not found.' }, 404 as any);
+        }
+
+        // Instructor scope check
+        if (role === 'instructor') {
+            try {
+                await assertInstructorExamAccess({
+                    dbClient,
+                    examId: row.exam_id,
+                    userId: user.id,
+                });
+            } catch {
+                return c.json({ success: false, error: 'Export record not found.' }, 404 as any);
+            }
         }
 
         // Delete private storage object first (if present)

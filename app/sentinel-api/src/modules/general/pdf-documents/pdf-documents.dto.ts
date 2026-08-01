@@ -118,6 +118,7 @@ export const createAnswerKeyExportBodySchema = z
         institution_id: z
             .string()
             .uuid()
+            .optional()
             .openapi({ description: 'Institution that owns the exam' }),
         title: z
             .string()
@@ -140,8 +141,6 @@ export const answerKeyExportRecordSchema = z
         failureCode: z.string().nullable(),
         failureMessage: z.string().nullable(),
         retryCount: z.number().int(),
-        storageBucket: z.string().nullable(),
-        storagePath: z.string().nullable(),
         createdBy: z.string().uuid().nullable(),
         createdAt: z.string(),
         updatedAt: z.string(),
