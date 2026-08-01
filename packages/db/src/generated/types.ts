@@ -790,6 +790,26 @@ export type exam_remediation_schedules = {
     created_at: Generated<Timestamp>;
     notes: string | null;
 };
+export type exam_report_exports = {
+    export_id: Generated<string>;
+    exam_id: string;
+    institution_id: string;
+    template_id: string;
+    template_snapshot: unknown;
+    storage_bucket: string | null;
+    storage_path: string | null;
+    status: Generated<string>;
+    failure_code: string | null;
+    failure_message: string | null;
+    retry_count: Generated<number>;
+    request_snapshot: unknown | null;
+    created_by: string | null;
+    started_at: Timestamp | null;
+    completed_at: Timestamp | null;
+    expires_at: Timestamp | null;
+    created_at: Generated<Timestamp>;
+    updated_at: Generated<Timestamp>;
+};
 export type exam_section_assignments = {
     id: Generated<string>;
     exam_id: string;
@@ -1633,6 +1653,7 @@ export type DB = {
     exam_lobby_admissions: exam_lobby_admissions;
     exam_questions: exam_questions;
     exam_remediation_schedules: exam_remediation_schedules;
+    exam_report_exports: exam_report_exports;
     exam_section_assignments: exam_section_assignments;
     exam_sections: exam_sections;
     exam_shares: exam_shares;

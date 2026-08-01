@@ -66,6 +66,30 @@ import {
     deleteAnswerKeyExportRoute,
     deleteAnswerKeyExportHandler,
 } from './controllers/answer-keys/delete-answer-key-export.controller';
+import {
+    postCreateExamReportExportRoute,
+    postCreateExamReportExportHandler,
+} from './controllers/exam-reports/post-create-exam-report-export.controller';
+import {
+    getExamReportExportsRoute,
+    getExamReportExportsHandler,
+} from './controllers/exam-reports/get-exam-report-exports.controller';
+import {
+    getExamReportExportStatusRoute,
+    getExamReportExportStatusHandler,
+} from './controllers/exam-reports/get-exam-report-export-status.controller';
+import {
+    postExamReportExportRetryRoute,
+    postExamReportExportRetryHandler,
+} from './controllers/exam-reports/post-exam-report-export-retry.controller';
+import {
+    getExamReportExportDownloadRoute,
+    getExamReportExportDownloadHandler,
+} from './controllers/exam-reports/get-exam-report-export-download.controller';
+import {
+    deleteExamReportExportRoute,
+    deleteExamReportExportHandler,
+} from './controllers/exam-reports/delete-exam-report-export.controller';
 
 const pdfDocumentsRoutes = new OpenAPIHono<HonoEnv>();
 
@@ -88,6 +112,13 @@ pdfDocumentsRoutes
     .openapi(getAnswerKeyExportStatusRoute, getAnswerKeyExportStatusHandler)
     .openapi(postAnswerKeyExportRetryRoute, postAnswerKeyExportRetryHandler)
     .openapi(getAnswerKeyExportDownloadRoute, getAnswerKeyExportDownloadHandler)
-    .openapi(deleteAnswerKeyExportRoute, deleteAnswerKeyExportHandler);
+    .openapi(deleteAnswerKeyExportRoute, deleteAnswerKeyExportHandler)
+    // Exam Report export routes
+    .openapi(postCreateExamReportExportRoute, postCreateExamReportExportHandler)
+    .openapi(getExamReportExportsRoute, getExamReportExportsHandler)
+    .openapi(getExamReportExportStatusRoute, getExamReportExportStatusHandler)
+    .openapi(postExamReportExportRetryRoute, postExamReportExportRetryHandler)
+    .openapi(getExamReportExportDownloadRoute, getExamReportExportDownloadHandler)
+    .openapi(deleteExamReportExportRoute, deleteExamReportExportHandler);
 
 export default pdfDocumentsRoutes;

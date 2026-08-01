@@ -23,17 +23,26 @@ type GetExamReportArgs = {
     pageSize: number;
 };
 
-export async function getExamReport({
+type BuildCompleteExamReportArgs = {
+    dbClient: DbClient;
+    examId: string;
+    institutionId?: string;
+    viewerRole: AssessmentAllowedRole;
+    userId?: string | null;
+};
+
+/**
+ * Builds the complete, unpaginated, unfiltered examination report dataset.
+ *
+ * @param args details for the dbClient, exam, viewer and institution context
+ */
+export async function buildCompleteExamReport({
     dbClient,
     examId,
     institutionId,
     viewerRole,
     userId,
-    search,
-    sectionId,
-    page,
-    pageSize,
-}: GetExamReportArgs): Promise<ExamReport> {
+}: BuildCompleteExamReportArgs): Promise<Omit<ExamReport, 'studentsPagination'>> {
     const exam = await getReportingExamContext({
         dbClient,
         examId,
@@ -82,13 +91,38 @@ export async function getExamReport({
         incidentBreakdownBySeverity: incidentSeverityBreakdown,
     });
 
-    const filteredStudents = filterReportStudents(baseReport.students, search, sectionId);
-    const paginatedStudents = getStudentsPage(filteredStudents, page, pageSize);
     const sections = buildSections(baseReport.students);
 
     return {
         ...baseReport,
         sections,
+    };
+}
+
+export async function getExamReport({
+    dbClient,
+    examId,
+    institutionId,
+    viewerRole,
+    userId,
+    search,
+    sectionId,
+    page,
+    pageSize,
+}: GetExamReportArgs): Promise<ExamReport> {
+    const completeReport = await buildCompleteExamReport({
+        dbClient,
+        examId,
+        institutionId,
+        viewerRole,
+        userId,
+    });
+
+    const filteredStudents = filterReportStudents(completeReport.students, search, sectionId);
+    const paginatedStudents = getStudentsPage(filteredStudents, page, pageSize);
+
+    return {
+        ...completeReport,
         students: paginatedStudents.items,
         studentsPagination: paginatedStudents.pagination,
     };

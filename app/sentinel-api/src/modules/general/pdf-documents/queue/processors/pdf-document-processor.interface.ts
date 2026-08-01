@@ -9,7 +9,7 @@ export interface PdfDocumentProcessor {
     /**
      * Unique identifier for the document type.
      */
-    readonly documentKind: 'ANALYTICS_OVERALL' | 'EXAM_ANSWER_KEY';
+    readonly documentKind: 'ANALYTICS_OVERALL' | 'EXAM_ANSWER_KEY' | 'EXAM_RESULTS_REPORT';
 
     /**
      * Database table where export requests are stored.

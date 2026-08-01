@@ -476,6 +476,7 @@ model users {
   pdf_templates_pdf_templates_published_byTousers                     pdf_templates[]                    @relation("pdf_templates_published_byTousers")
   institution_pdf_branding_institution_pdf_branding_updated_byTousers institution_pdf_branding[]         @relation("institution_pdf_branding_updated_byTousers")
   exam_answer_key_exports_exam_answer_key_exports_created_byTousers   exam_answer_key_exports[]          @relation("exam_answer_key_exports_created_byTousers")
+  exam_report_exports_exam_report_exports_created_byTousers           exam_report_exports[]              @relation("exam_report_exports_created_byTousers")
   live_inspection_leases_student_user                                 live_inspection_leases[]           @relation("live_inspection_leases_student_user")
   live_inspection_leases_viewer_user                                  live_inspection_leases[]           @relation("live_inspection_leases_viewer_user")
   telemetry_incident_evidence_deleted                                 telemetry_incident_evidence[]      @relation("evidence_deleted_byTousers")
@@ -937,6 +938,7 @@ model institutions {
   institution_pdf_branding             institution_pdf_branding?
   analytics_reports                    analytics_reports[]
   exam_answer_key_exports              exam_answer_key_exports[]
+  exam_report_exports                  exam_report_exports[]
   live_inspection_leases               live_inspection_leases[]
 
   @@index([institution_kind])
@@ -1331,6 +1333,7 @@ model exams {
   source_remediations             exam_remediation_schedules[] @relation("source_remediations")
   exam_remediations               exam_remediation_schedules[] @relation("exam_remediations")
   exam_answer_key_exports         exam_answer_key_exports[]
+  exam_report_exports             exam_report_exports[]
   live_inspection_leases          live_inspection_leases[]
   essay_rubric_versions           essay_rubric_versions[]
 
@@ -2488,6 +2491,7 @@ model pdf_templates {
 
   analytics_reports        analytics_reports[]
   exam_answer_key_exports  exam_answer_key_exports[]
+  exam_report_exports      exam_report_exports[]
 
   @@index([institution_id])
   @@index([document_kind])
@@ -2541,6 +2545,39 @@ model exam_answer_key_exports {
   @@index([exam_id])
   @@index([institution_id])
   @@index([template_id])
+  @@schema("public")
+}
+
+model exam_report_exports {
+  export_id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  exam_id             String    @db.Uuid
+  institution_id      String    @db.Uuid
+  template_id         String    @db.Uuid
+  template_snapshot   Json      @db.Json
+  storage_bucket      String?   @db.VarChar(100)
+  storage_path        String?   @db.VarChar(255)
+  status              String    @default("PENDING") @db.VarChar(20) // PENDING, GENERATING, READY, FAILED, EXPIRED
+  failure_code        String?   @db.VarChar(50)
+  failure_message     String?
+  retry_count         Int       @default(0)
+  request_snapshot    Json?     @db.Json
+  created_by          String?   @db.Uuid
+  started_at          DateTime? @db.Timestamptz(6)
+  completed_at        DateTime? @db.Timestamptz(6)
+  expires_at          DateTime? @db.Timestamptz(6)
+  created_at          DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime  @default(now()) @db.Timestamptz(6)
+
+  exam                exams         @relation(fields: [exam_id], references: [exam_id], onDelete: Cascade, onUpdate: NoAction)
+  institution         institutions  @relation(fields: [institution_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  template            pdf_templates @relation(fields: [template_id], references: [template_id], onDelete: Restrict, onUpdate: NoAction)
+  creator             users?        @relation("exam_report_exports_created_byTousers", fields: [created_by], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@index([exam_id])
+  @@index([institution_id])
+  @@index([template_id])
+  @@index([status])
+  @@index([expires_at])
   @@schema("public")
 }
 

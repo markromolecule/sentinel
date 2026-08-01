@@ -30,6 +30,7 @@ describe('syncSystemPermissions', () => {
             'pdf_templates:manage',
             'institution_branding:manage',
             'examinations:export_answer_key',
+            'examinations:export_results_report',
             'examinations:override_essay_rubric',
         ];
 
@@ -38,6 +39,27 @@ describe('syncSystemPermissions', () => {
         for (const key of expectedKeys) {
             expect(activeKeys).toContain(key);
         }
+    });
+
+    it('should define export results report permission and assign it to support, superadmin, admin, and instructor blueprints but not student', () => {
+        const activeKeys = ALL_PERMISSIONS.map((p) => p.id);
+        expect(activeKeys).toContain('examinations:export_results_report');
+
+        expect(SYSTEM_ROLE_BLUEPRINTS.support.permissionKeys).toContain(
+            'examinations:export_results_report',
+        );
+        expect(SYSTEM_ROLE_BLUEPRINTS.superadmin.permissionKeys).toContain(
+            'examinations:export_results_report',
+        );
+        expect(SYSTEM_ROLE_BLUEPRINTS.admin.permissionKeys).toContain(
+            'examinations:export_results_report',
+        );
+        expect(SYSTEM_ROLE_BLUEPRINTS.instructor.permissionKeys).toContain(
+            'examinations:export_results_report',
+        );
+        expect(SYSTEM_ROLE_BLUEPRINTS.student.permissionKeys).not.toContain(
+            'examinations:export_results_report',
+        );
     });
 
     it('should grant the generate questions permission to the support blueprint', () => {

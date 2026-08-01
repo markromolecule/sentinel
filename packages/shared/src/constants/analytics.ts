@@ -40,6 +40,18 @@ export const ANALYTICS_QUERY_KEYS = {
         ] as const,
     answerKeyExportStatus: (exportId?: string | null) =>
         [...ANALYTICS_QUERY_KEYS.all, 'answerKeyExportStatus', exportId ?? ''] as const,
+    examReportExports: (examId?: string, page?: number, limit?: number, institutionId?: string) =>
+        [
+            ...ANALYTICS_QUERY_KEYS.all,
+            'examReportExports',
+            { examId: examId ?? '', page, limit, institutionId: institutionId ?? '' },
+        ] as const,
+    examReportExportStatus: (examId?: string, exportId?: string | null) =>
+        [
+            ...ANALYTICS_QUERY_KEYS.all,
+            'examReportExportStatus',
+            { examId: examId ?? '', exportId: exportId ?? '' },
+        ] as const,
 } as const;
 
 export const ANALYTICS_MUTATION_KEYS = {
@@ -51,4 +63,7 @@ export const ANALYTICS_MUTATION_KEYS = {
     deleteBrandingLogo: () => [...ANALYTICS_QUERY_KEYS.all, 'deleteBrandingLogo'] as const,
     exportAnswerKey: () => [...ANALYTICS_QUERY_KEYS.all, 'exportAnswerKey'] as const,
     deleteAnswerKey: () => [...ANALYTICS_QUERY_KEYS.all, 'deleteAnswerKey'] as const,
+    exportExamReport: () => [...ANALYTICS_QUERY_KEYS.all, 'exportExamReport'] as const,
+    retryExamReportExport: () => [...ANALYTICS_QUERY_KEYS.all, 'retryExamReportExport'] as const,
+    deleteExamReportExport: () => [...ANALYTICS_QUERY_KEYS.all, 'deleteExamReportExport'] as const,
 } as const;

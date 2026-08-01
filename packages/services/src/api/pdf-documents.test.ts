@@ -1,12 +1,18 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
     createAnswerKeyExport,
+    createExamReportExport,
+    deleteExamReportExport,
     deleteInstitutionPdfBranding,
     getAnswerKeyExports,
+    getExamReportExportDownload,
+    getExamReportExportStatus,
+    getExamReportExports,
     getPdfExportDownload,
     getPdfTemplates,
     previewPdfTemplate,
     publishPdfTemplate,
+    retryExamReportExport,
     retryPdfExport,
     uploadInstitutionPdfBranding,
 } from './pdf-documents';
@@ -26,6 +32,24 @@ describe('pdf documents api', () => {
 
         expect(apiClient).toHaveBeenCalledWith(
             '/pdf-documents/templates?institutionId=inst-1&documentKind=ANALYTICS_OVERALL&status=PUBLISHED',
+        );
+    });
+
+    it('omits undefined, null, and empty query filters', async () => {
+        const apiClient = vi.fn().mockResolvedValue({
+            success: true,
+            data: { records: [], total_records: 0, page: 1, limit: 10 },
+        });
+
+        await getExamReportExports(apiClient as any, {
+            institutionId: 'inst-1',
+            examId: undefined,
+            page: 1,
+            limit: undefined,
+        });
+
+        expect(apiClient).toHaveBeenCalledWith(
+            '/pdf-documents/exam-reports?institutionId=inst-1&page=1',
         );
     });
 
@@ -103,6 +127,24 @@ describe('pdf documents api', () => {
         );
     });
 
+    it('targets exam-report list filters and pagination correctly', async () => {
+        const apiClient = vi.fn().mockResolvedValue({
+            success: true,
+            data: { records: [], total_records: 0, limit: 25, page: 3 },
+        });
+
+        await getExamReportExports(apiClient as any, {
+            institutionId: 'inst-1',
+            examId: 'exam-1',
+            page: 3,
+            limit: 25,
+        });
+
+        expect(apiClient).toHaveBeenCalledWith(
+            '/pdf-documents/exam-reports?institutionId=inst-1&examId=exam-1&page=3&limit=25',
+        );
+    });
+
     it('posts answer-key creation payloads with json bodies', async () => {
         const apiClient = vi.fn().mockResolvedValue({
             success: true,
@@ -120,11 +162,98 @@ describe('pdf documents api', () => {
             expect.objectContaining({
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    exam_id: 'exam-1',
+                    institution_id: 'inst-1',
+                    title: 'Answer Key',
+                }),
             }),
         );
     });
 
-    it('requests fresh signed download URLs and retry endpoints', async () => {
+    it('posts exam-report creation payloads with json bodies', async () => {
+        const apiClient = vi.fn().mockResolvedValue({
+            success: true,
+            data: { exportId: 'export-2' },
+        });
+
+        await createExamReportExport(apiClient as any, {
+            exam_id: 'exam-1',
+            title: 'Exam Results Report',
+        });
+
+        expect(apiClient).toHaveBeenCalledWith(
+            '/pdf-documents/exam-reports',
+            expect.objectContaining({
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    exam_id: 'exam-1',
+                    title: 'Exam Results Report',
+                }),
+            }),
+        );
+    });
+
+    it('requests exact exam-report lifecycle routes', async () => {
+        const apiClient = vi
+            .fn()
+            .mockResolvedValueOnce({
+                success: true,
+                data: {
+                    exportId: 'export-1',
+                    examId: 'exam-1',
+                    institutionId: 'inst-1',
+                    templateId: null,
+                    status: 'READY',
+                    failureCode: null,
+                    failureMessage: null,
+                    retryCount: 0,
+                    createdBy: null,
+                    createdAt: '2026-08-01T00:00:00.000Z',
+                    updatedAt: '2026-08-01T00:00:00.000Z',
+                    completedAt: '2026-08-01T00:01:00.000Z',
+                    expiresAt: '2026-08-08T00:01:00.000Z',
+                },
+            })
+            .mockResolvedValueOnce({
+                success: true,
+                downloadUrl: 'https://signed.example/exam-report.pdf',
+            })
+            .mockResolvedValueOnce({ success: true, message: 'queued' })
+            .mockResolvedValueOnce({ success: true, message: 'deleted' });
+
+        const status = await getExamReportExportStatus(apiClient as any, 'export-1');
+        const download = await getExamReportExportDownload(apiClient as any, 'export-1');
+        const retry = await retryExamReportExport(apiClient as any, 'export-1');
+        const remove = await deleteExamReportExport(apiClient as any, 'export-1');
+
+        expect(apiClient).toHaveBeenNthCalledWith(1, '/pdf-documents/exam-reports/export-1/status');
+        expect(apiClient).toHaveBeenNthCalledWith(
+            2,
+            '/pdf-documents/exam-reports/export-1/download',
+        );
+        expect(apiClient).toHaveBeenNthCalledWith(
+            3,
+            '/pdf-documents/exam-reports/export-1/retry',
+            expect.objectContaining({ method: 'POST' }),
+        );
+        expect(apiClient).toHaveBeenNthCalledWith(
+            4,
+            '/pdf-documents/exam-reports/export-1',
+            expect.objectContaining({ method: 'DELETE' }),
+        );
+        expect(status).toMatchObject({
+            exportId: 'export-1',
+            status: 'READY',
+            expiresAt: '2026-08-08T00:01:00.000Z',
+        });
+        expect(download.downloadUrl).toContain('signed.example');
+        expect(retry.message).toBe('queued');
+        expect(remove.message).toBe('deleted');
+    });
+
+    it('requests fresh signed download URLs and retry endpoints for generic pdf exports', async () => {
         const apiClient = vi
             .fn()
             .mockResolvedValueOnce({
@@ -160,5 +289,14 @@ describe('pdf documents api', () => {
         expect(retry.message).toBe('queued');
         expect(publish.version).toBe(2);
         expect(removeBranding.message).toBe('deleted');
+    });
+
+    it('preserves api client errors for exam-report requests', async () => {
+        const error = new Error('download failed');
+        const apiClient = vi.fn().mockRejectedValue(error);
+
+        await expect(getExamReportExportDownload(apiClient as any, 'export-1')).rejects.toThrow(
+            'download failed',
+        );
     });
 });

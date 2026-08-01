@@ -43,36 +43,36 @@ The PDF is an **examination-results report**, not an examination paper and not a
 minimum content is:
 
 1. **Report and examination identity**
-   - Examination title.
-   - Subject/course and section or assigned scope when available.
-   - Scheduled examination window, duration, passing score, and report-generation timestamp.
-   - Institution identity and the authorized user who generated the report when appropriate.
+    - Examination title.
+    - Subject/course and section or assigned scope when available.
+    - Scheduled examination window, duration, passing score, and report-generation timestamp.
+    - Institution identity and the authorized user who generated the report when appropriate.
 
 2. **Overall examination summary**
-   - Assigned, started, submitted, and absent student counts.
-   - Average score and pass rate.
-   - Total flagged students and the number of students requiring action.
-   - Incident breakdowns by type and severity.
-   - Action-queue totals, including review, makeup, and retake counts when available.
+    - Assigned, started, submitted, and absent student counts.
+    - Average score and pass rate.
+    - Total flagged students and the number of students requiring action.
+    - Incident breakdowns by type and severity.
+    - Action-queue totals, including review, makeup, and retake counts when available.
 
 3. **Detailed student-results section**
-   - One row or grouped block per assigned student, including identity, section, attempt state,
-     score/percentage, time spent, and relevant attempt/finalization information.
-   - A visible indication of whether the student was flagged.
-   - Flag totals and the highest incident type/severity when present.
-   - A breakdown of flag-review state, at minimum distinguishing incidents that still need review
-     from those already reviewed or confirmed. Include dismissed/pending/open counts when the
-     report data supports them.
-   - Relevant remediation or action state, such as review required, makeup, retake, reopened,
-     finalized, or superseded attempt, when available.
+    - One row or grouped block per assigned student, including identity, section, attempt state,
+      score/percentage, time spent, and relevant attempt/finalization information.
+    - A visible indication of whether the student was flagged.
+    - Flag totals and the highest incident type/severity when present.
+    - A breakdown of flag-review state, at minimum distinguishing incidents that still need review
+      from those already reviewed or confirmed. Include dismissed/pending/open counts when the
+      report data supports them.
+    - Relevant remediation or action state, such as review required, makeup, retake, reopened,
+      finalized, or superseded attempt, when available.
 
 4. **Additional report details on subsequent pages**
-   - After the primary student-results section, begin a deliberate new page for other useful
-     examination insights that can be derived from the existing report data.
-   - Candidate content includes incident distributions, severity summaries, outcome/performance
-     summaries, section-level breakdowns, action-queue summaries, and examination-window details.
-   - The implementation plan must confirm which of these values already exist in the reporting
-     response and which require a new server-side aggregation. Do not fabricate unavailable data.
+    - After the primary student-results section, begin a deliberate new page for other useful
+      examination insights that can be derived from the existing report data.
+    - Candidate content includes incident distributions, severity summaries, outcome/performance
+      summaries, section-level breakdowns, action-queue summaries, and examination-window details.
+    - The implementation plan must confirm which of these values already exist in the reporting
+      response and which require a new server-side aggregation. Do not fabricate unavailable data.
 
 ### Layout and presentation expectations
 
@@ -155,34 +155,34 @@ answer-key PDF generation pipeline where the action is intended to export an ans
 ### Expected behavior
 
 1. **Selected-examination preview in Support**
-   - When Support selects an institution and examination in the Examination Answer Key template
-     area, generating the preview must render that selected examination's title, metadata,
-     questions, passages, options, and correct-answer details.
-   - Previewing real answer-key data must require the answer-key export permission in addition to
-     the appropriate PDF-template viewing/managing permission.
-   - Mock data may remain only for an explicit, clearly labelled template-only sample preview when
-     no examination is selected. It must never be presented as the selected examination.
+    - When Support selects an institution and examination in the Examination Answer Key template
+      area, generating the preview must render that selected examination's title, metadata,
+      questions, passages, options, and correct-answer details.
+    - Previewing real answer-key data must require the answer-key export permission in addition to
+      the appropriate PDF-template viewing/managing permission.
+    - Mock data may remain only for an explicit, clearly labelled template-only sample preview when
+      no examination is selected. It must never be presented as the selected examination.
 
 2. **One canonical answer-key generator**
-   - Reuse the centralized server-side answer-key source mapper, renderer, template resolver,
-     private storage, status, retry, and download flow.
-   - Core and Web must not maintain a second answer-key renderer or reconstruct correct answers
-     from their normal exam-read responses.
-   - Correct answers must be obtained only through the protected server-side answer-key pipeline;
-     they must never be added to student-facing or ordinary sanitized exam endpoints.
+    - Reuse the centralized server-side answer-key source mapper, renderer, template resolver,
+      private storage, status, retry, and download flow.
+    - Core and Web must not maintain a second answer-key renderer or reconstruct correct answers
+      from their normal exam-read responses.
+    - Correct answers must be obtained only through the protected server-side answer-key pipeline;
+      they must never be added to student-facing or ordinary sanitized exam endpoints.
 
 3. **Core/Web export action alignment**
-   - Where the current **Export PDF** action is intended to mean **Export Answer Key**, route it to
-     the centralized answer-key generation workflow and label it unambiguously (for example,
-     **Export Answer Key PDF**).
-   - Remove the redundant `ExamPrintExport` implementation from Core/Web only after all remaining
-     callers and use cases are audited.
-   - If an answer-free printable examination paper is still a real product requirement, retain it
-     as a separately named feature (for example, **Print Examination Copy**) rather than silently
-     replacing or conflating it with the answer-key export. The later plan must resolve this product
-     decision before deleting the current print view.
-   - `sentinel-core` and `sentinel-web` should consume shared hooks/services and present consistent
-     pending, completed, failed, retry, and download behavior.
+    - Where the current **Export PDF** action is intended to mean **Export Answer Key**, route it to
+      the centralized answer-key generation workflow and label it unambiguously (for example,
+      **Export Answer Key PDF**).
+    - Remove the redundant `ExamPrintExport` implementation from Core/Web only after all remaining
+      callers and use cases are audited.
+    - If an answer-free printable examination paper is still a real product requirement, retain it
+      as a separately named feature (for example, **Print Examination Copy**) rather than silently
+      replacing or conflating it with the answer-key export. The later plan must resolve this product
+      decision before deleting the current print view.
+    - `sentinel-core` and `sentinel-web` should consume shared hooks/services and present consistent
+      pending, completed, failed, retry, and download behavior.
 
 ### Answer-key content expectations
 

@@ -84,6 +84,16 @@ describe('PdfGenerationQueueService', () => {
         );
     });
 
+    it('submits EXAM_RESULTS_REPORT jobs using the export id as jobId', async () => {
+        await service.submitPdfJob('export-456', 'EXAM_RESULTS_REPORT');
+
+        expect(addMock).toHaveBeenCalledWith(
+            'generate-pdf',
+            { exportId: 'export-456', documentKind: 'EXAM_RESULTS_REPORT' },
+            { jobId: 'export-456' },
+        );
+    });
+
     it('submits jobs synchronously in-process when mode is sync', async () => {
         process.env.PDF_GENERATION_MODE = 'sync';
 

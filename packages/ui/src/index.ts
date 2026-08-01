@@ -63,6 +63,7 @@ export * from './components/ui/faceted-filter';
 export * from './components/ui/visually-hidden';
 export * from './components/passage-editor';
 export * from './components/live-video-monitor';
+export * from './components/pdf-export-lifecycle-panel';
 export * from './components/essay-rubric/essay-rubric-table';
 export * from './components/essay-rubric/essay-rubric-editor';
 

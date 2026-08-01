@@ -22,6 +22,32 @@ export function requirePdfDocumentAccess({
     }
 }
 
+type RequireAllPdfDocumentPermissionsArgs = {
+    activePermissionKeys?: string[];
+    requiredPermissions: string[];
+    missingPermissionMessage?: string;
+};
+
+/**
+ * Enforces that all required active permissions are held for a PDF document route.
+ * Throws an HTTPException(403) if any of the required permissions are missing.
+ *
+ * @param args - Object containing active permissions and required permissions
+ * @throws HTTPException 403 if any required permission is missing
+ */
+export function requireAllPdfDocumentPermissions({
+    activePermissionKeys = [],
+    requiredPermissions,
+    missingPermissionMessage = 'Forbidden. Missing required PDF document permissions.',
+}: RequireAllPdfDocumentPermissionsArgs): void {
+    const hasAll = requiredPermissions.every((permission) =>
+        activePermissionKeys.includes(permission),
+    );
+    if (!hasAll) {
+        throw new HTTPException(403, { message: missingPermissionMessage });
+    }
+}
+
 /**
  * Validates that overall report templates use either the global scope or a parent institution.
  */

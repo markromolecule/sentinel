@@ -12,11 +12,13 @@ type PdfTemplateWorkspaceShellProps = {
 export function PdfTemplateWorkspaceShell({ children }: PdfTemplateWorkspaceShellProps) {
     const pathname = usePathname() || '';
 
-    const activeSection: PdfTemplateSection = pathname.includes('/examinations')
-        ? 'examinations'
-        : pathname.includes('/branding')
-          ? 'branding'
-          : 'reports';
+    const activeSection: PdfTemplateSection = pathname.includes('/examination-reports')
+        ? 'examination-reports'
+        : pathname.includes('/examinations')
+          ? 'examinations'
+          : pathname.includes('/branding')
+            ? 'branding'
+            : 'reports';
 
     return (
         <div className="relative flex min-h-[calc(100vh-64px)] flex-col lg:-m-6 lg:h-[calc(100vh-64px)] lg:min-h-[calc(100vh-64px)] lg:flex-row lg:items-stretch">

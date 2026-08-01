@@ -8,6 +8,7 @@ const {
     mockApiClient,
     mockRefetch,
     mockUseExamReportQuery,
+    mockUseExamQuery,
     mockSearchParamsGet,
     mockPathname,
     mockRouterPush,
@@ -15,6 +16,7 @@ const {
     mockApiClient: vi.fn(),
     mockRefetch: vi.fn(),
     mockUseExamReportQuery: vi.fn(),
+    mockUseExamQuery: vi.fn(),
     mockSearchParamsGet: vi.fn().mockReturnValue(null),
     mockPathname: vi.fn().mockReturnValue('/exams/reports/exam-1'),
     mockRouterPush: vi.fn(),
@@ -51,6 +53,7 @@ vi.mock('next/link', () => ({
 vi.mock('@sentinel/hooks', () => ({
     useApi: () => mockApiClient,
     useExamReportQuery: mockUseExamReportQuery,
+    useExamQuery: mockUseExamQuery,
 }));
 
 vi.mock('@sentinel/services', () => ({
@@ -60,6 +63,14 @@ vi.mock('@sentinel/services', () => ({
 vi.mock('@/features/exams/logs', () => ({
     IncidentLogsView: ({ examId }: { examId: string }) => (
         <div data-testid="incident-logs-view">Incident Logs for {examId}</div>
+    ),
+}));
+
+vi.mock('./_components/exam-report-pdf-export', () => ({
+    ExamReportPdfExport: ({ examId }: { examId: string }) => (
+        <button type="button" data-testid="exam-report-pdf-export">
+            Export Results PDF for {examId}
+        </button>
     ),
 }));
 
@@ -334,6 +345,12 @@ describe('ExamReportPage', () => {
             refetch: mockRefetch,
             isFetching: false,
         });
+        mockUseExamQuery.mockReturnValue({
+            data: {
+                id: 'exam-1',
+                title: 'Final Exam',
+            },
+        });
     });
 
     it('passes the selected section filter into the report query', async () => {
@@ -503,5 +520,24 @@ describe('ExamReportPage', () => {
         );
         viewResult.unmount();
         mockSearchParamsGet.mockReturnValue(null);
+    });
+
+    it('renders the export action on the overview without refetching the attempts table source', async () => {
+        const params = Promise.resolve({ examId: 'exam-1' });
+
+        await act(async () => {
+            render(
+                <Suspense fallback={<div>Loading...</div>}>
+                    <ExamReportPage params={params} />
+                </Suspense>,
+            );
+            await params;
+        });
+
+        expect(screen.getByTestId('exam-report-pdf-export').textContent).toContain(
+            'Export Results PDF for exam-1',
+        );
+        expect(mockUseExamReportQuery).toHaveBeenCalledTimes(1);
+        expect(mockRefetch).not.toHaveBeenCalled();
     });
 });

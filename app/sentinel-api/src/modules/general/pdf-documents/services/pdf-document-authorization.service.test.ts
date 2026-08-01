@@ -3,6 +3,7 @@ import {
     assertOverallReportTemplateScope,
     canAccessPdfInstitutionScope,
     requirePdfDocumentAccess,
+    requireAllPdfDocumentPermissions,
     resolvePdfAccessibleInstitutionIds,
 } from './pdf-document-authorization.service';
 
@@ -73,6 +74,26 @@ describe('pdf-document-authorization.service', () => {
                 requiredPermissions: 'pdf_templates:manage',
             }),
         ).toThrowError(/Missing required PDF document permission/);
+    });
+
+    describe('requireAllPdfDocumentPermissions', () => {
+        it('allows callers that have all required permissions', () => {
+            expect(() =>
+                requireAllPdfDocumentPermissions({
+                    activePermissionKeys: ['perm:one', 'perm:two', 'perm:three'],
+                    requiredPermissions: ['perm:one', 'perm:two'],
+                }),
+            ).not.toThrow();
+        });
+
+        it('rejects callers that are missing any required permission', () => {
+            expect(() =>
+                requireAllPdfDocumentPermissions({
+                    activePermissionKeys: ['perm:one'],
+                    requiredPermissions: ['perm:one', 'perm:two'],
+                }),
+            ).toThrowError(/Forbidden. Missing required PDF document permissions/);
+        });
     });
 
     it('allows the global overall-report scope', async () => {

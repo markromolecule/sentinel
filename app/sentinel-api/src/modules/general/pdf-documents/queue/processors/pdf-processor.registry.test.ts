@@ -3,6 +3,7 @@ import { UnrecoverableError } from 'bullmq';
 import { getPdfProcessor } from './pdf-processor.registry';
 import { AnalyticsOverallDocumentProcessor } from './analytics-overall.processor';
 import { ExamAnswerKeyDocumentProcessor } from './exam-answer-key.processor';
+import { ExamResultsReportDocumentProcessor } from './exam-results-report.processor';
 
 describe('pdf-processor.registry and processors', () => {
     it('should retrieve correct processor for ANALYTICS_OVERALL', () => {
@@ -19,6 +20,15 @@ describe('pdf-processor.registry and processors', () => {
         expect(processor).toBeInstanceOf(ExamAnswerKeyDocumentProcessor);
         expect(processor.documentKind).toBe('EXAM_ANSWER_KEY');
         expect(processor.tableName).toBe('exam_answer_key_exports');
+        expect(processor.idCol).toBe('export_id');
+        expect(processor.resolveOptions.persistBuiltInFallback).toBe(true);
+    });
+
+    it('should retrieve correct processor for EXAM_RESULTS_REPORT', () => {
+        const processor = getPdfProcessor('EXAM_RESULTS_REPORT');
+        expect(processor).toBeInstanceOf(ExamResultsReportDocumentProcessor);
+        expect(processor.documentKind).toBe('EXAM_RESULTS_REPORT');
+        expect(processor.tableName).toBe('exam_report_exports');
         expect(processor.idCol).toBe('export_id');
         expect(processor.resolveOptions.persistBuiltInFallback).toBe(true);
     });

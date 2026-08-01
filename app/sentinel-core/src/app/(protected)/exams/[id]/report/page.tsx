@@ -19,6 +19,7 @@ import {
     grantLifecycleOverride,
 } from './_helpers/report-helpers';
 import { RemediationGrantDialog } from './_components/remediation-grant-dialog';
+import { ExamReportPdfExport } from './_components/exam-report-pdf-export';
 
 export default function ExamReportPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
@@ -131,16 +132,19 @@ export default function ExamReportPage({ params }: { params: Promise<{ id: strin
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                    <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
-                        {isFetching ? 'Refreshing...' : 'Refresh Report'}
-                    </Button>
-                    <Button variant="outline" asChild>
-                        <Link href="/exams">
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Exams
-                        </Link>
-                    </Button>
+                <div className="flex flex-col items-stretch gap-3 xl:items-end">
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
+                            {isFetching ? 'Refreshing...' : 'Refresh Report'}
+                        </Button>
+                        <Button variant="outline" asChild>
+                            <Link href="/exams">
+                                <ArrowLeft className="mr-2 h-4 w-4" />
+                                Back to Exams
+                            </Link>
+                        </Button>
+                    </div>
+                    <ExamReportPdfExport examId={id} />
                 </div>
             </div>
 

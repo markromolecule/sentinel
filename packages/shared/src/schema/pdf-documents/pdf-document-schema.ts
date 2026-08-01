@@ -3,7 +3,11 @@ import { z } from 'zod';
 /**
  * Supported PDF Document kinds.
  */
-export const DocumentKindSchema = z.enum(['ANALYTICS_OVERALL', 'EXAM_ANSWER_KEY']);
+export const DocumentKindSchema = z.enum([
+    'ANALYTICS_OVERALL',
+    'EXAM_ANSWER_KEY',
+    'EXAM_RESULTS_REPORT',
+]);
 export type DocumentKind = z.infer<typeof DocumentKindSchema>;
 
 /**
@@ -224,3 +228,27 @@ export const ExamAnswerKeyExportSchema = z.object({
     updated_at: z.string().optional(),
 });
 export type ExamAnswerKeyExport = z.infer<typeof ExamAnswerKeyExportSchema>;
+
+/**
+ * Lifecycle export record for an Examination Results Report PDF (client-facing).
+ * Excludes raw storage coordinates and report-body/student data from client responses.
+ */
+export const ExamResultsReportExportSchema = z.object({
+    export_id: z.string().uuid().optional(),
+    exam_id: z.string().uuid(),
+    institution_id: z.string().uuid(),
+    template_id: z.string().uuid().optional().nullable(),
+    template_snapshot: z.record(z.string(), z.any()).optional().nullable(),
+    status: LifecycleStatusSchema.default('PENDING'),
+    failure_code: z.string().max(50).optional().nullable(),
+    failure_message: z.string().optional().nullable(),
+    retry_count: z.number().int().nonnegative().default(0),
+    request_snapshot: z.record(z.string(), z.any()).optional().nullable(),
+    created_by: z.string().uuid().optional().nullable(),
+    started_at: z.string().optional().nullable(),
+    completed_at: z.string().optional().nullable(),
+    expires_at: z.string().optional().nullable(),
+    created_at: z.string().optional(),
+    updated_at: z.string().optional(),
+});
+export type ExamResultsReportExport = z.infer<typeof ExamResultsReportExportSchema>;

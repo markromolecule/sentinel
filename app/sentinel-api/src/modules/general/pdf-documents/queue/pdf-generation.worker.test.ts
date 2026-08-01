@@ -98,6 +98,30 @@ describe('pdf-generation.worker', () => {
         await stopPdfGenerationWorker();
     });
 
+    it('invokes the job processor with export id and EXAM_RESULTS_REPORT kind', async () => {
+        const { startPdfGenerationWorker, stopPdfGenerationWorker } =
+            await import('./pdf-generation.worker');
+
+        await startPdfGenerationWorker();
+        const processor = workerCtorMock.mock.calls[0][1];
+
+        await processor({
+            id: 'job-1',
+            data: {
+                exportId: 'export-789',
+                documentKind: 'EXAM_RESULTS_REPORT',
+            },
+        });
+
+        expect(processJobMock).toHaveBeenCalledWith(
+            expect.anything(),
+            'export-789',
+            'EXAM_RESULTS_REPORT',
+        );
+
+        await stopPdfGenerationWorker();
+    });
+
     it('rethrows processor failures so BullMQ can mark the job failed', async () => {
         processJobMock.mockRejectedValueOnce(new Error('render failed'));
 

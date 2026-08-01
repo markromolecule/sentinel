@@ -42,7 +42,10 @@ export async function startPdfGenerationWorker(): Promise<Worker | null> {
     worker = new Worker(
         queueName,
         async (
-            job: Job<{ exportId: string; documentKind: 'ANALYTICS_OVERALL' | 'EXAM_ANSWER_KEY' }>,
+            job: Job<{
+                exportId: string;
+                documentKind: 'ANALYTICS_OVERALL' | 'EXAM_ANSWER_KEY' | 'EXAM_RESULTS_REPORT';
+            }>,
         ) => {
             const { exportId, documentKind } = job.data;
             console.log(`[PDFWorker] Processing job ${job.id} for export ${exportId}`);
