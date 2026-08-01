@@ -14,8 +14,11 @@ const processors: Record<string, PdfDocumentProcessor> = {
  * @throws Error if the document kind is not registered
  */
 export function getPdfProcessor(
-    documentKind: 'ANALYTICS_OVERALL' | 'EXAM_ANSWER_KEY',
+    documentKind: 'ANALYTICS_OVERALL' | 'EXAM_ANSWER_KEY' | 'EXAM_RESULTS_REPORT',
 ): PdfDocumentProcessor {
+    if (documentKind === 'EXAM_RESULTS_REPORT') {
+        throw new Error(`Unsupported document kind for PDF generation: EXAM_RESULTS_REPORT (unsupported processor)`);
+    }
     const processor = processors[documentKind];
     if (!processor) {
         throw new Error(`Unsupported document kind for PDF generation: ${documentKind}`);

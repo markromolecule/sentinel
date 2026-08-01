@@ -21,7 +21,7 @@ export class PdfGenerationJobProcessor {
     static async processJob(
         dbClient: DbClient,
         exportId: string,
-        documentKind: 'ANALYTICS_OVERALL' | 'EXAM_ANSWER_KEY',
+        documentKind: 'ANALYTICS_OVERALL' | 'EXAM_ANSWER_KEY' | 'EXAM_RESULTS_REPORT',
     ): Promise<void> {
         const processor = getPdfProcessor(documentKind);
         const { tableName, idCol, resolveOptions } = processor;

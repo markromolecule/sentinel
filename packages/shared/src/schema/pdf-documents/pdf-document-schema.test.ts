@@ -3,6 +3,7 @@ import {
     PdfTemplateSchema,
     ReportPeriodSchema,
     PdfReportGenerationRequestSchema,
+    ExamResultsReportExportSchema,
 } from './pdf-document-schema';
 
 describe('PdfTemplateSchema', () => {
@@ -164,6 +165,62 @@ describe('PdfReportGenerationRequestSchema', () => {
             },
             timezone: 'Asia/Manila',
             format: 'csv',
+        });
+        expect(result.success).toBe(false);
+    });
+});
+
+describe('ExamResultsReportExportSchema', () => {
+    const validHeader = {
+        logo_visible: true,
+        logo_placement: 'LEFT' as const,
+        logo_max_size_px: 120,
+        title_text: 'Test Title',
+        title_alignment: 'LEFT' as const,
+        divider_visible: true,
+        divider_color: '#D1D5DB',
+        accent_color: '#3B82F6',
+        sentinel_logo_visible: false, // Allowed for exam results reports
+    };
+
+    const validFooter = {
+        text: 'Test Footer',
+        confidentiality_label: 'CONFIDENTIAL',
+        divider_visible: true,
+        divider_color: '#E5E7EB',
+        page_number_visible: true,
+        page_number_format: 'PAGE_X_OF_Y' as const,
+    };
+
+    it('should validate a correct EXAM_RESULTS_REPORT template with sentinel_logo_visible false', () => {
+        const result = PdfTemplateSchema.safeParse({
+            document_kind: 'EXAM_RESULTS_REPORT',
+            status: 'PUBLISHED',
+            header_config: {
+                ...validHeader,
+                sentinel_logo_visible: false,
+            },
+            footer_config: validFooter,
+        });
+        expect(result.success).toBe(true);
+    });
+
+    it('should validate a correct ExamResultsReportExport record', () => {
+        const result = ExamResultsReportExportSchema.safeParse({
+            export_id: '12345678-1234-4234-8234-1234567890ab',
+            exam_id: '12345678-1234-4234-8234-1234567890ac',
+            institution_id: '12345678-1234-4234-8234-1234567890ad',
+            status: 'PENDING',
+            retry_count: 0,
+        });
+        expect(result.success).toBe(true);
+    });
+
+    it('should reject invalid lifecycle status', () => {
+        const result = ExamResultsReportExportSchema.safeParse({
+            exam_id: '12345678-1234-4234-8234-1234567890ac',
+            institution_id: '12345678-1234-4234-8234-1234567890ad',
+            status: 'INVALID_STATUS',
         });
         expect(result.success).toBe(false);
     });

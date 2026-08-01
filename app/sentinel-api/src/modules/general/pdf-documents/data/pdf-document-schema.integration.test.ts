@@ -273,4 +273,89 @@ describe('PDF Document Schema Integration', () => {
             expect(updatedReport2.status).toBe('EXPIRED');
         },
     );
+
+    testWithDbClient(
+        'should successfully insert and read exam results report exports with relations',
+        async ({ dbClient }) => {
+            const suffix = randomUUID();
+
+            // 1. Create Institution
+            const inst = await dbClient
+                .insertInto('institutions')
+                .values({
+                    name: `Export Inst - ${suffix}`,
+                    institution_kind: 'STANDALONE',
+                })
+                .returningAll()
+                .executeTakeFirstOrThrow();
+
+            // 2. Create User (Creator)
+            const userId = randomUUID();
+            await dbClient
+                .insertInto('auth.users' as any)
+                .values({
+                    id: userId,
+                    email: `export-${suffix}@test.local`,
+                    role: 'authenticated',
+                })
+                .execute();
+
+            // 3. Create PDF Template
+            const templateId = randomUUID();
+            await dbClient
+                .insertInto('pdf_templates')
+                .values({
+                    template_id: templateId,
+                    institution_id: inst.id,
+                    document_kind: 'EXAM_RESULTS_REPORT',
+                    status: 'PUBLISHED',
+                    header_config: JSON.stringify({ title_text: 'Test Report' }),
+                    footer_config: JSON.stringify({ text: 'Footer Text' }),
+                })
+                .execute();
+
+            // 4. Create Exam
+            const exam = await dbClient
+                .insertInto('exams')
+                .values({
+                    title: `Export Exam - ${suffix}`,
+                    institution_id: inst.id,
+                    duration_minutes: 60,
+                    scheduled_date: new Date('2026-08-01T06:00:00.000Z'),
+                    end_date_time: new Date('2026-08-01T07:00:00.000Z'),
+                    published_at: new Date('2026-08-01T06:00:00.000Z'),
+                })
+                .returningAll()
+                .executeTakeFirstOrThrow();
+
+            // 5. Create Exam Report Export
+            const exportId = randomUUID();
+            await dbClient
+                .insertInto('exam_report_exports' as any)
+                .values({
+                    export_id: exportId,
+                    exam_id: exam.exam_id,
+                    institution_id: inst.id,
+                    template_id: templateId,
+                    template_snapshot: JSON.stringify({ title_text: 'Test Report' }),
+                    status: 'PENDING',
+                    retry_count: 0,
+                    created_by: userId,
+                })
+                .execute();
+
+            // 6. Read and assert
+            const record = await dbClient
+                .selectFrom('exam_report_exports' as any)
+                .selectAll()
+                .where('export_id', '=', exportId)
+                .executeTakeFirstOrThrow();
+
+            expect(record.status).toBe('PENDING');
+            expect(record.exam_id).toBe(exam.exam_id);
+            expect(record.institution_id).toBe(inst.id);
+            expect(record.template_id).toBe(templateId);
+            expect(record.created_by).toBe(userId);
+        },
+    );
 });

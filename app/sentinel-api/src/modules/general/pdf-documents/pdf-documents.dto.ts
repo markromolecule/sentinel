@@ -1,6 +1,6 @@
 import { z } from '@hono/zod-openapi';
 
-export const documentKindEnum = z.enum(['ANALYTICS_OVERALL', 'EXAM_ANSWER_KEY']);
+export const documentKindEnum = z.enum(['ANALYTICS_OVERALL', 'EXAM_ANSWER_KEY', 'EXAM_RESULTS_REPORT']);
 export const templateStatusEnum = z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']);
 
 // --- Header/Footer config schemas using hono zod-openapi ---
@@ -173,3 +173,80 @@ export const createAnswerKeyExportResponseSchema = z.object({
 
 export type CreateAnswerKeyExportBody = z.infer<typeof createAnswerKeyExportBodySchema>;
 export type AnswerKeyExportRecord = z.infer<typeof answerKeyExportRecordSchema>;
+
+// --- Exam Results Report Export DTO schemas ---
+
+export const createExamResultsReportExportBodySchema = z
+    .object({
+        exam_id: z
+            .string()
+            .uuid()
+            .openapi({ description: 'UUID of the exam to generate a results report for' }),
+        title: z
+            .string()
+            .min(1)
+            .max(255)
+            .optional()
+            .openapi({ description: 'Optional label for the export record' }),
+    })
+    .openapi('CreateExamResultsReportExportBody');
+
+export const examResultsReportExportStatusEnum = z.enum([
+    'PENDING',
+    'GENERATING',
+    'READY',
+    'FAILED',
+    'EXPIRED',
+]);
+
+export const examResultsReportExportRecordSchema = z
+    .object({
+        exportId: z.string().uuid(),
+        examId: z.string().uuid(),
+        institutionId: z.string().uuid(),
+        templateId: z.string().uuid().nullable(),
+        status: examResultsReportExportStatusEnum,
+        failureCode: z.string().nullable(),
+        failureMessage: z.string().nullable(),
+        retryCount: z.number().int(),
+        createdBy: z.string().uuid().nullable(),
+        createdAt: z.string(),
+        updatedAt: z.string(),
+        completedAt: z.string().nullable(),
+        expiresAt: z.string().nullable(),
+    })
+    .openapi('ExamResultsReportExportRecord');
+
+export const listExamResultsReportExportsQuerySchema = z.object({
+    examId: z.string().uuid().optional().openapi({ description: 'Filter exports by exam UUID' }),
+    institutionId: z
+        .string()
+        .uuid()
+        .optional()
+        .openapi({ description: 'Filter exports by institution UUID' }),
+    limit: z.coerce.number().int().min(1).max(100).optional(),
+    page: z.coerce.number().int().min(1).optional(),
+});
+
+export const examResultsReportExportListResponseSchema = z.object({
+    success: z.boolean(),
+    data: z.object({
+        records: z.array(examResultsReportExportRecordSchema),
+        total_records: z.number().int().nonnegative(),
+        limit: z.number().int().positive(),
+        page: z.number().int().positive(),
+    }),
+});
+
+export const createExamResultsReportExportResponseSchema = z.object({
+    success: z.boolean(),
+    message: z.string(),
+    data: examResultsReportExportRecordSchema,
+});
+
+export type CreateExamResultsReportExportBody = z.infer<
+    typeof createExamResultsReportExportBodySchema
+>;
+export type ExamResultsReportExportRecord = z.infer<
+    typeof examResultsReportExportRecordSchema
+>;
