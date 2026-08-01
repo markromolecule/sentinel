@@ -103,6 +103,7 @@ export const previewPdfTemplateBodySchema = z
         header_config: headerConfigSchema,
         footer_config: footerConfigSchema,
         institution_id: z.string().uuid().optional().nullable(),
+        exam_id: z.string().uuid().optional().nullable(),
     })
     .openapi('PreviewPdfTemplateBody');
 

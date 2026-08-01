@@ -91,6 +91,44 @@ describe('pdf documents api', () => {
         expect(result).toBe(previewBlob);
     });
 
+    it('passes optional selected exam id through preview payloads unchanged', async () => {
+        const previewBlob = new Blob(['%PDF-1.7']);
+        const apiClient = vi.fn().mockResolvedValue(previewBlob);
+
+        await previewPdfTemplate(apiClient as any, {
+            institution_id: '11111111-1111-1111-1111-111111111111',
+            exam_id: '22222222-2222-4222-8222-222222222222',
+            document_kind: 'EXAM_ANSWER_KEY',
+            header_config: {
+                logo_visible: true,
+                logo_placement: 'LEFT',
+                logo_max_size_px: 120,
+                title_text: 'Preview',
+                title_alignment: 'LEFT',
+                subtitle_alignment: 'LEFT',
+                divider_visible: true,
+                divider_color: '#D1D5DB',
+                accent_color: '#3B82F6',
+                sentinel_logo_visible: true,
+            },
+            footer_config: {
+                text: 'Footer',
+                divider_visible: true,
+                divider_color: '#E5E7EB',
+                page_number_visible: true,
+                page_number_format: 'PAGE_X_OF_Y',
+            },
+        });
+
+        const [, options] = apiClient.mock.calls[0];
+
+        expect(JSON.parse(options.body)).toMatchObject({
+            institution_id: '11111111-1111-1111-1111-111111111111',
+            exam_id: '22222222-2222-4222-8222-222222222222',
+            document_kind: 'EXAM_ANSWER_KEY',
+        });
+    });
+
     it('uploads branding through multipart form data', async () => {
         const apiClient = vi.fn().mockResolvedValue({
             message: 'ok',

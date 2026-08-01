@@ -11,6 +11,7 @@ import { useExamReportExportDownloadMutation } from './use-exam-report-export-do
 import { useExamReportExportStatusQuery } from './use-exam-report-export-status-query';
 import { useExamReportExportsQuery } from './use-exam-report-exports-query';
 import { usePdfTemplatesQuery } from './use-pdf-templates-query';
+import { usePreviewPdfTemplateMutation } from './use-preview-pdf-template-mutation';
 import { useRetryExamReportExportMutation } from './use-retry-exam-report-export-mutation';
 import {
     createExamReportExport,
@@ -23,6 +24,7 @@ import {
     getExamReportExportDownload,
     getExamReportExports,
     getPdfTemplates,
+    previewPdfTemplate,
     retryAnalyticsReport,
     retryExamReportExport,
 } from '@sentinel/services';
@@ -79,6 +81,7 @@ vi.mock('@sentinel/services', () => ({
     deleteExamReportExport: vi.fn(),
     getExamReportExportDownload: vi.fn(),
     getExamReportExportStatus: vi.fn(),
+    previewPdfTemplate: vi.fn(),
 }));
 
 vi.mock('@sentinel/shared/constants', () => ({
@@ -203,6 +206,9 @@ describe('pdf document hooks', () => {
             success: true,
             downloadUrl: 'https://signed.example/exam-report-1',
         });
+        (previewPdfTemplate as any).mockResolvedValue(
+            new Blob(['pdf'], { type: 'application/pdf' }),
+        );
     });
 
     it('keeps institution-specific template queries isolated in the query key', () => {
@@ -493,5 +499,37 @@ describe('pdf document hooks', () => {
         await expect((mutation as any).mutateAsync('export-1')).rejects.toThrow(
             'signed url failed',
         );
+    });
+
+    it('passes selected exam id unchanged through preview mutations', async () => {
+        const mutation = usePreviewPdfTemplateMutation();
+        const payload = {
+            institution_id: 'institution-1',
+            exam_id: 'exam-1',
+            document_kind: 'EXAM_ANSWER_KEY',
+            header_config: {
+                logo_visible: true,
+                logo_placement: 'LEFT',
+                logo_max_size_px: 120,
+                title_text: 'Preview',
+                title_alignment: 'LEFT',
+                subtitle_alignment: 'LEFT',
+                divider_visible: true,
+                divider_color: '#D1D5DB',
+                accent_color: '#3B82F6',
+                sentinel_logo_visible: true,
+            },
+            footer_config: {
+                text: 'Footer',
+                divider_visible: true,
+                divider_color: '#E5E7EB',
+                page_number_visible: true,
+                page_number_format: 'PAGE_X_OF_Y',
+            },
+        };
+
+        await (mutation as any).mutateAsync(payload);
+
+        expect(previewPdfTemplate).toHaveBeenCalledWith({ mockClient: true }, payload);
     });
 });

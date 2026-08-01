@@ -41,7 +41,9 @@ export interface UpsertPdfTemplateDraftBody {
     footer_config: FooterConfig;
 }
 
-export interface PreviewPdfTemplateBody extends UpsertPdfTemplateDraftBody {}
+export interface PreviewPdfTemplateBody extends UpsertPdfTemplateDraftBody {
+    exam_id?: string | null;
+}
 
 export interface ListAnswerKeyExportsParams {
     examId?: string;
