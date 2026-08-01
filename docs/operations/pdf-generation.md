@@ -4,6 +4,7 @@ This runbook covers the Support PDF worker, private storage behavior, retention,
 
 - overall analytics report PDFs
 - examination answer key PDFs
+- examination results report PDFs
 - published template assets
 - institution branding logos
 
@@ -86,6 +87,7 @@ Rules:
 - issue signed URLs on demand only
 - keep signed URL lifetime short; current default is 5 minutes
 - never log signed URLs, service keys, PDF body text, answer keys, or raw logo bytes
+- examination results report artifacts must stay under the `exam-reports/...` prefix only
 
 ## Queue metrics to watch
 
@@ -98,6 +100,7 @@ At minimum, monitor:
 - queue latency from `PENDING` to worker start
 - render duration per document kind
 - worker memory during report and answer-key generation
+- page count and artifact size for large examination results report cohorts
 
 Recommended alert cases:
 
@@ -127,6 +130,7 @@ Retry only exports in `FAILED`.
 
 - analytics reports: use the retry endpoint or Support UI
 - answer keys: use the retry endpoint or Support UI
+- examination results reports: use the retry endpoint or the Web/Core report page action
 
 Before retrying at scale:
 
@@ -143,6 +147,14 @@ Analytics reports:
 - metadata row remains for audit/history
 - cleanup moves the row to `EXPIRED`
 - expired analytics artifacts must no longer produce a signed download URL
+
+Examination results reports:
+
+- private PDF object retained for 7 days after successful generation
+- lifecycle states are `PENDING`, `GENERATING`, `READY`, `FAILED`, and `EXPIRED`
+- metadata row remains for audit/history even after cleanup
+- cleanup removes only `exam-reports/...` objects, clears storage coordinates, and marks the row `EXPIRED`
+- expired examination-report artifacts must no longer produce a signed download URL and should return `410`
 
 Answer keys:
 
@@ -162,12 +174,16 @@ Cleanup behavior:
 - deletes expired analytics PDF objects from private storage
 - marks the matching `analytics_reports` row as `EXPIRED`
 - clears persisted storage coordinates for the expired artifact
+- deletes expired examination results report PDF objects from private storage only when the path remains inside `exam-reports/...`
+- marks the matching `exam_report_exports` row as `EXPIRED`
+- clears persisted storage coordinates for the expired examination report artifact
 - does not delete answer keys, templates, or branding
 
 If cleanup partially fails:
 
 - leave the row visible for audit
 - re-run cleanup after storage or database issues are resolved
+- if a storage path falls outside its allowed prefix, do not delete it and investigate before any manual reconciliation
 
 ## Orphan-object reconciliation
 
@@ -175,13 +191,32 @@ If storage deletion fails or records are manually changed, reconcile by comparin
 
 - `analytics_reports.storage_bucket` + `storage_path`
 - `exam_answer_key_exports.storage_bucket` + `storage_path`
+- `exam_report_exports.storage_bucket` + `storage_path`
 - `institution_pdf_branding.logo_storage_bucket` + `logo_storage_path`
 
 Safe reconciliation rules:
 
 - never delete a storage object unless the owning record is confirmed missing or expired by policy
 - never purge answer-key objects through analytics retention cleanup
+- never purge examination-report objects unless the key is under `exam-reports/...`
 - record any manual reconciliation in operations notes
+
+## Authorization and scope checks
+
+When investigating examination results report access:
+
+- confirm the caller still has `examinations:export_results_report`
+- confirm the export belongs to the same institution scope as the viewer
+- confirm the viewer can still access the underlying exam through reporting scope rules
+- confirm the export row is still `READY`, not `FAILED` or `EXPIRED`
+- confirm the signed URL request was generated on explicit user action and not cached
+
+Representative authorization denials to verify before release:
+
+- unassigned instructors cannot download another instructor's exam report
+- revoked custom roles lose download access immediately after permission refresh
+- wrong-institution viewers and guessed export IDs resolve as denied/not found without leaking metadata
+- stale signed URLs and expired rows fail after cleanup
 
 ## Accessibility verification checklist
 
@@ -201,6 +236,7 @@ Measure at minimum:
 - representative 30-day analytics report
 - maximum 366-day analytics report
 - large mixed-question answer key
+- large examination results report with 250+ students, mixed submission states, incident outcomes, and remediation rows
 
 Record:
 
@@ -210,5 +246,11 @@ Record:
 - page count
 - peak worker memory
 - whether concurrency `2` remains safe
+
+Representative large-cohort target for this feature:
+
+- include absent, in-progress, ungraded essay, finalized, superseded, remediated, and mixed incident-outcome rows
+- verify the deliberate page break before additional insights still lands cleanly
+- confirm repeated headings, long names/sections, null scores, branding variants, and selectable text remain acceptable
 
 Use those results before increasing worker concurrency or artifact size limits.
