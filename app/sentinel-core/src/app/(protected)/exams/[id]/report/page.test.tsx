@@ -17,6 +17,14 @@ vi.mock('next/link', () => ({
     ),
 }));
 
+vi.mock('./_components/exam-report-pdf-export', () => ({
+    ExamReportPdfExport: ({ examId }: { examId: string }) => (
+        <button type="button" data-testid="exam-report-pdf-export">
+            Export Results PDF for {examId}
+        </button>
+    ),
+}));
+
 vi.mock('@sentinel/hooks', () => ({
     useApi: () => mockApiClient,
     useExamReportQuery: () => ({
@@ -347,5 +355,24 @@ describe('ExamReportPage', () => {
         );
         expect(toast.success).toHaveBeenCalled();
         expect(mockRefetch).toHaveBeenCalled();
+    });
+
+    it('renders the export action beside the report header controls without refetching the table', async () => {
+        const params = Promise.resolve({ id: 'exam-1' });
+
+        await act(async () => {
+            render(
+                <Suspense fallback={<div>Loading...</div>}>
+                    <ExamReportPage params={params} />
+                </Suspense>,
+            );
+
+            await params;
+        });
+
+        expect(screen.getByTestId('exam-report-pdf-export').textContent).toContain(
+            'Export Results PDF for exam-1',
+        );
+        expect(mockRefetch).not.toHaveBeenCalled();
     });
 });

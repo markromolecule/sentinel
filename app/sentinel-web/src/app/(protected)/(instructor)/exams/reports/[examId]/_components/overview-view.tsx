@@ -6,10 +6,12 @@ import Link from 'next/link';
 import { formatDateTime, formatPercent } from './helpers';
 import { SummaryMetric } from './summary-metric';
 import { DetailList } from './detail-list';
+import { ExamReportPdfExport } from './exam-report-pdf-export';
 
 type OverviewViewProps = {
     report: ExamReport;
-    refetch: () => Promise<any>;
+    examId: string;
+    refetch: () => Promise<unknown>;
     isFetching: boolean;
 };
 
@@ -18,7 +20,7 @@ type OverviewViewProps = {
  * Includes the exam details header, action buttons, high-level summary cards,
  * and breakdown lists for incidents, severities, and the scheduled exam window.
  */
-export function OverviewView({ report, refetch, isFetching }: OverviewViewProps) {
+export function OverviewView({ report, examId, refetch, isFetching }: OverviewViewProps) {
     return (
         <>
             <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
@@ -37,16 +39,19 @@ export function OverviewView({ report, refetch, isFetching }: OverviewViewProps)
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                    <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
-                        {isFetching ? 'Refreshing...' : 'Refresh Report'}
-                    </Button>
-                    <Button variant="outline" asChild>
-                        <Link href="/exams/reports">
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Reports
-                        </Link>
-                    </Button>
+                <div className="flex flex-col items-stretch gap-3 xl:items-end">
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
+                            {isFetching ? 'Refreshing...' : 'Refresh Report'}
+                        </Button>
+                        <Button variant="outline" asChild>
+                            <Link href="/exams/reports">
+                                <ArrowLeft className="mr-2 h-4 w-4" />
+                                Back to Reports
+                            </Link>
+                        </Button>
+                    </div>
+                    <ExamReportPdfExport examId={examId} />
                 </div>
             </div>
 

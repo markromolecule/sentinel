@@ -53,7 +53,12 @@ export function ExamReportPageContent({ params }: { params: Promise<{ examId: st
     return (
         <div className="space-y-6">
             {activeSection === 'overview' && (
-                <OverviewView report={report} refetch={refetch} isFetching={isFetching} />
+                <OverviewView
+                    report={report}
+                    examId={examId}
+                    refetch={refetch}
+                    isFetching={isFetching}
+                />
             )}
 
             {activeSection === 'attempts' && (
