@@ -127,12 +127,25 @@ describe('pdf-processor.registry and processors', () => {
             });
         });
 
-        it('returns correct update set for failure', () => {
+        it('returns correct update set for failure (transient)', () => {
             const error = new Error('Mock failure');
             const updateSet = processor.getFailedUpdateSet(error);
             expect(updateSet.status).toBe('FAILED');
             expect(updateSet.failure_code).toBe('TRANSIENT_ERROR');
-            expect(updateSet.failure_message).toBe('Mock failure');
+            expect(updateSet.failure_message).toBe(
+                'Answer key export failed because of a transient processing error.',
+            );
+            expect(updateSet.updated_at).toBeInstanceOf(Date);
+        });
+
+        it('returns correct update set for failure (unrecoverable)', () => {
+            const error = new UnrecoverableError('Mock fatal error');
+            const updateSet = processor.getFailedUpdateSet(error);
+            expect(updateSet.status).toBe('FAILED');
+            expect(updateSet.failure_code).toBe('UNRECOVERABLE_ERROR');
+            expect(updateSet.failure_message).toBe(
+                'Answer key export failed because the source data could not be processed.',
+            );
             expect(updateSet.updated_at).toBeInstanceOf(Date);
         });
     });

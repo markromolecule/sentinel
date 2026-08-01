@@ -3,6 +3,7 @@ import { PdfStorageService } from '../storage/pdf-storage.service';
 import { resolvePdfTemplate } from '../services/resolve-pdf-template.service';
 import { getPdfProcessor } from './processors/pdf-processor.registry';
 import { LogsService } from '../../logs/logs.service';
+import { getPdfGenerationLogErrorMessage } from './pdf-generation-log-redaction';
 
 /**
  * Service orchestrator that processes background PDF generation jobs.
@@ -166,6 +167,8 @@ export class PdfGenerationJobProcessor {
                 console.log(`[PDFWorker] PDF_EXPORT_COMPLETED for global export ${exportId}`);
             }
         } catch (error: any) {
+            const logErrorMessage = getPdfGenerationLogErrorMessage(documentKind, error);
+
             await executeTransaction(async (trx) => {
                 const updateSet = processor.getFailedUpdateSet(error);
 
@@ -187,7 +190,7 @@ export class PdfGenerationJobProcessor {
                         activeInstitutionId: exportRecord.institution_id,
                         details: {
                             exportId,
-                            error: error.message,
+                            error: logErrorMessage,
                         },
                     });
                 } catch (logErr: any) {
@@ -199,7 +202,7 @@ export class PdfGenerationJobProcessor {
             } else {
                 console.error(
                     `[PDFWorker] PDF_EXPORT_FAILED for global export ${exportId}:`,
-                    error.message,
+                    logErrorMessage,
                 );
             }
 

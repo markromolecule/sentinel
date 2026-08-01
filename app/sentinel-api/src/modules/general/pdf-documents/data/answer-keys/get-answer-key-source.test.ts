@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { UnrecoverableError } from 'bullmq';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import {
     getAnswerKeySource,
     mapAnswerKeySourceToViewModel,
@@ -53,17 +55,72 @@ describe('answer-key source normalization helpers', () => {
     });
 
     it('builds stable option IDs and marks correct current string options', () => {
-        expect(
-            normalizeAnswerKeyOptions({
-                prompt: 'Pick two',
-                options: ['Alpha', 'Beta', 'Gamma'],
-                correctAnswer: ['Alpha', 'Gamma'],
-            }),
-        ).toEqual([
+        const first = normalizeAnswerKeyOptions({
+            prompt: 'Pick two',
+            options: ['Alpha', 'Beta', 'Gamma'],
+            correctAnswer: ['Alpha', 'Gamma'],
+        });
+        const second = normalizeAnswerKeyOptions({
+            prompt: 'Pick two',
+            options: ['Alpha', 'Beta', 'Gamma'],
+            correctAnswer: ['Alpha', 'Gamma'],
+        });
+
+        expect(first).toEqual(second);
+        expect(first).toEqual([
             { optionId: 'option-1', optionText: 'Alpha', isCorrect: true },
             { optionId: 'option-2', optionText: 'Beta', isCorrect: false },
             { optionId: 'option-3', optionText: 'Gamma', isCorrect: true },
         ]);
+    });
+
+    it('does not use Math.random for deterministic output identifiers', () => {
+        const sourcePath = fileURLToPath(new URL('./get-answer-key-source.ts', import.meta.url));
+
+        expect(readFileSync(sourcePath, 'utf8')).not.toContain('Math.random');
+    });
+
+    it('uses persisted passage_content and never substitutes source_evidence', () => {
+        const question = normalizeAnswerKeyQuestion(
+            {
+                question_id: 'source-evidence-safety',
+                question_type: 'MULTIPLE_CHOICE',
+                content: {
+                    prompt: 'Which sentence summarizes the passage?',
+                    source_evidence: 'Do not render this extracted source evidence.',
+                    options: ['Stored passage summary', 'Source evidence summary'],
+                    correctAnswer: 'Stored passage summary',
+                },
+                passage_content: 'Render this persisted passage content.',
+                points: 1,
+            },
+            0,
+        );
+
+        expect(question.passageText).toBe('Render this persisted passage content.');
+        expect(question.passageText).not.toContain('extracted source evidence');
+    });
+
+    it('normalizes malformed and unsupported content to safe renderer defaults', () => {
+        const malformedQuestion = normalizeAnswerKeyQuestion(
+            {
+                question_id: 'malformed',
+                question_type: 'ALIEN_TYPE',
+                content: '{this is not json',
+                passage_content: null,
+                points: null,
+            },
+            0,
+        );
+
+        expect(malformedQuestion).toMatchObject({
+            questionId: 'malformed',
+            type: 'MULTIPLE_CHOICE',
+            points: 1,
+            text: '',
+            passageText: null,
+        });
+        expect(malformedQuestion.options).toBeUndefined();
     });
 
     it('keeps targeted legacy option compatibility', () => {
