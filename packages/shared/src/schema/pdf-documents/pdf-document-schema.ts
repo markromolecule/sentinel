@@ -3,7 +3,11 @@ import { z } from 'zod';
 /**
  * Supported PDF Document kinds.
  */
-export const DocumentKindSchema = z.enum(['ANALYTICS_OVERALL', 'EXAM_ANSWER_KEY', 'EXAM_RESULTS_REPORT']);
+export const DocumentKindSchema = z.enum([
+    'ANALYTICS_OVERALL',
+    'EXAM_ANSWER_KEY',
+    'EXAM_RESULTS_REPORT',
+]);
 export type DocumentKind = z.infer<typeof DocumentKindSchema>;
 
 /**

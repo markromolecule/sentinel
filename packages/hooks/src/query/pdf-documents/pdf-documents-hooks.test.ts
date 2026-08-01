@@ -4,16 +4,27 @@ import { useGenerateAnalyticsReportMutation } from '../analytics/use-generate-an
 import { useAnalyticsReportDownloadMutation } from '../analytics/use-analytics-report-download-mutation';
 import { useRetryAnalyticsReportMutation } from '../analytics/use-retry-analytics-report-mutation';
 import { useAnswerKeyExportsQuery } from './use-answer-key-exports-query';
+import { useCreateExamReportExportMutation } from './use-create-exam-report-export-mutation';
 import { useDeleteAnswerKeyExportMutation } from './use-delete-answer-key-export-mutation';
+import { useDeleteExamReportExportMutation } from './use-delete-exam-report-export-mutation';
+import { useExamReportExportDownloadMutation } from './use-exam-report-export-download-mutation';
+import { useExamReportExportStatusQuery } from './use-exam-report-export-status-query';
+import { useExamReportExportsQuery } from './use-exam-report-exports-query';
 import { usePdfTemplatesQuery } from './use-pdf-templates-query';
+import { useRetryExamReportExportMutation } from './use-retry-exam-report-export-mutation';
 import {
+    createExamReportExport,
     deleteAnswerKeyExport,
+    deleteExamReportExport,
     generateAnalyticsReport,
     getAnalyticsReportDownload,
     getAnalyticsReports,
     getAnswerKeyExports,
+    getExamReportExportDownload,
+    getExamReportExports,
     getPdfTemplates,
     retryAnalyticsReport,
+    retryExamReportExport,
 } from '@sentinel/services';
 import { ANALYTICS_QUERY_KEYS } from '@sentinel/shared/constants';
 
@@ -21,19 +32,17 @@ const { mockInvalidateQueries, mockRemoveQueries, mockUseQuery } = vi.hoisted(()
     mockInvalidateQueries: vi.fn(),
     mockRemoveQueries: vi.fn(),
     mockUseQuery: vi.fn((options: any) => {
-        if (options.queryFn) {
+        if (options.enabled !== false && options.queryFn) {
             void options.queryFn();
         }
 
         return {
-            queryKey: options.queryKey,
-            refetchInterval:
+            ...options,
+            refetchIntervalValue:
                 typeof options.refetchInterval === 'function'
                     ? options.refetchInterval({
                           state: {
-                              data: {
-                                  records: [{ status: 'PENDING' }],
-                              },
+                              data: options.mockQueryData,
                           },
                       })
                     : options.refetchInterval,
@@ -50,7 +59,7 @@ vi.mock('@tanstack/react-query', () => ({
     useMutation: vi.fn((options: any) => ({
         mutateAsync: async (variables: any) => {
             const data = await options.mutationFn(variables);
-            await options.onSuccess?.(data, variables, null);
+            await options.onSuccess?.(data, variables, null, null);
             return data;
         },
     })),
@@ -64,6 +73,12 @@ vi.mock('@sentinel/services', () => ({
     getAnalyticsReportDownload: vi.fn(),
     retryAnalyticsReport: vi.fn(),
     deleteAnswerKeyExport: vi.fn(),
+    getExamReportExports: vi.fn(),
+    createExamReportExport: vi.fn(),
+    retryExamReportExport: vi.fn(),
+    deleteExamReportExport: vi.fn(),
+    getExamReportExportDownload: vi.fn(),
+    getExamReportExportStatus: vi.fn(),
 }));
 
 vi.mock('@sentinel/shared/constants', () => ({
@@ -95,6 +110,26 @@ vi.mock('@sentinel/shared/constants', () => ({
             'answerKeyExportStatus',
             exportId ?? '',
         ],
+        examReportExports: (
+            examId?: string,
+            page?: number,
+            limit?: number,
+            institutionId?: string,
+        ) => [
+            'analytics',
+            'examReportExports',
+            { examId: examId ?? '', page, limit, institutionId: institutionId ?? '' },
+        ],
+        examReportExportStatus: (examId?: string, exportId?: string | null) => [
+            'analytics',
+            'examReportExportStatus',
+            { examId: examId ?? '', exportId: exportId ?? '' },
+        ],
+    },
+    ANALYTICS_MUTATION_KEYS: {
+        exportExamReport: () => ['analytics', 'exportExamReport'],
+        retryExamReportExport: () => ['analytics', 'retryExamReportExport'],
+        deleteExamReportExport: () => ['analytics', 'deleteExamReportExport'],
     },
 }));
 
@@ -135,6 +170,39 @@ describe('pdf document hooks', () => {
             success: true,
             message: 'deleted',
         });
+        (getExamReportExports as any).mockResolvedValue({
+            records: [],
+            total_records: 0,
+            page: 1,
+            limit: 10,
+        });
+        (createExamReportExport as any).mockResolvedValue({
+            exportId: 'export-1',
+            examId: 'exam-1',
+            institutionId: 'institution-1',
+            templateId: null,
+            status: 'PENDING',
+            failureCode: null,
+            failureMessage: null,
+            retryCount: 0,
+            createdBy: null,
+            createdAt: '2026-08-01T00:00:00.000Z',
+            updatedAt: '2026-08-01T00:00:00.000Z',
+            completedAt: null,
+            expiresAt: null,
+        });
+        (retryExamReportExport as any).mockResolvedValue({
+            success: true,
+            message: 'queued',
+        });
+        (deleteExamReportExport as any).mockResolvedValue({
+            success: true,
+            message: 'deleted',
+        });
+        (getExamReportExportDownload as any).mockResolvedValue({
+            success: true,
+            downloadUrl: 'https://signed.example/exam-report-1',
+        });
     });
 
     it('keeps institution-specific template queries isolated in the query key', () => {
@@ -174,6 +242,42 @@ describe('pdf document hooks', () => {
         );
     });
 
+    it('keeps exam-report lifecycle caches isolated by exam and export', () => {
+        const listQuery = useExamReportExportsQuery({
+            payload: {
+                institutionId: 'institution-1',
+                examId: 'exam-1',
+                page: 2,
+                limit: 20,
+            },
+        }) as any;
+        const statusQuery = useExamReportExportStatusQuery({
+            payload: {
+                institutionId: 'institution-1',
+                examId: 'exam-1',
+                exportId: 'export-1',
+                page: 2,
+                limit: 20,
+            },
+        }) as any;
+
+        expect(listQuery.queryKey).toEqual(
+            ANALYTICS_QUERY_KEYS.examReportExports('exam-1', 2, 20, 'institution-1'),
+        );
+        expect(statusQuery.queryKey).toEqual(
+            ANALYTICS_QUERY_KEYS.examReportExportStatus('exam-1', 'export-1'),
+        );
+        expect(getExamReportExports).toHaveBeenCalledWith(
+            { mockClient: true },
+            {
+                institutionId: 'institution-1',
+                examId: 'exam-1',
+                page: 2,
+                limit: 20,
+            },
+        );
+    });
+
     it('polls analytics reports only while the current page has active jobs', () => {
         const query = useAnalyticsReportsQuery({
             payload: {
@@ -181,12 +285,75 @@ describe('pdf document hooks', () => {
                 page: 1,
                 limit: 10,
             },
-        }) as any;
+            mockQueryData: {
+                records: [{ status: 'PENDING' }],
+            } as any,
+        } as any) as any;
 
         expect(query.queryKey).toEqual(
             ANALYTICS_QUERY_KEYS.reports('institution-1', 1, 10, undefined),
         );
-        expect(query.refetchInterval).toBe(5000);
+        expect(query.refetchIntervalValue).toBe(5000);
+    });
+
+    it('polls exam-report status only while pending or generating and stops on terminal states', () => {
+        const pendingQuery = useExamReportExportStatusQuery({
+            payload: {
+                institutionId: 'institution-1',
+                examId: 'exam-1',
+                exportId: 'export-1',
+            },
+            mockQueryData: {
+                status: 'PENDING',
+            } as any,
+        } as any) as any;
+
+        const readyQuery = useExamReportExportStatusQuery({
+            payload: {
+                institutionId: 'institution-1',
+                examId: 'exam-1',
+                exportId: 'export-1',
+            },
+            mockQueryData: {
+                status: 'READY',
+            } as any,
+        } as any) as any;
+
+        expect(pendingQuery.refetchIntervalValue).toBe(5000);
+        expect(readyQuery.refetchIntervalValue).toBe(false);
+        expect(mockInvalidateQueries).toHaveBeenCalledWith({
+            queryKey: ANALYTICS_QUERY_KEYS.examReportExports(
+                'exam-1',
+                undefined,
+                undefined,
+                'institution-1',
+            ),
+        });
+    });
+
+    it('does not poll or enable exam-report status queries without an export id', () => {
+        const query = useExamReportExportStatusQuery({
+            payload: {
+                institutionId: 'institution-1',
+                examId: 'exam-1',
+                exportId: null,
+            },
+        }) as any;
+
+        expect(query.enabled).toBe(false);
+        expect(query.refetchIntervalValue).toBe(false);
+    });
+
+    it('respects disabled query flags for exam-report lists', () => {
+        const query = useExamReportExportsQuery({
+            enabled: false,
+            payload: {
+                institutionId: 'institution-1',
+                examId: 'exam-1',
+            },
+        }) as any;
+
+        expect(query.enabled).toBe(false);
     });
 
     it('invalidates only the targeted analytics report list after queueing a report', async () => {
@@ -220,6 +387,25 @@ describe('pdf document hooks', () => {
             2,
             { mockClient: true },
             'report-1',
+        );
+    });
+
+    it('requests a fresh signed exam-report download URL on each click', async () => {
+        const mutation = useExamReportExportDownloadMutation();
+
+        await (mutation as any).mutateAsync('export-1');
+        await (mutation as any).mutateAsync('export-1');
+
+        expect(getExamReportExportDownload).toHaveBeenCalledTimes(2);
+        expect(getExamReportExportDownload).toHaveBeenNthCalledWith(
+            1,
+            { mockClient: true },
+            'export-1',
+        );
+        expect(getExamReportExportDownload).toHaveBeenNthCalledWith(
+            2,
+            { mockClient: true },
+            'export-1',
         );
     });
 
@@ -258,5 +444,54 @@ describe('pdf document hooks', () => {
         });
         expect(onRetrySuccess).toHaveBeenCalledOnce();
         expect(onDeleteSuccess).toHaveBeenCalledOnce();
+    });
+
+    it('invalidates only the targeted exam-report lifecycle caches for create retry and delete', async () => {
+        const createMutation = useCreateExamReportExportMutation();
+        const retryMutation = useRetryExamReportExportMutation();
+        const deleteMutation = useDeleteExamReportExportMutation();
+
+        await (createMutation as any).mutateAsync({
+            exam_id: 'exam-1',
+            title: 'Exam Report',
+            institutionId: 'institution-1',
+            page: 2,
+            limit: 25,
+        });
+        await (retryMutation as any).mutateAsync({
+            exportId: 'export-1',
+            examId: 'exam-1',
+            institutionId: 'institution-1',
+            page: 2,
+            limit: 25,
+        });
+        await (deleteMutation as any).mutateAsync({
+            exportId: 'export-1',
+            examId: 'exam-1',
+            institutionId: 'institution-1',
+            page: 2,
+            limit: 25,
+        });
+
+        expect(mockInvalidateQueries).toHaveBeenCalledWith({
+            queryKey: ANALYTICS_QUERY_KEYS.examReportExports('exam-1', 2, 25, 'institution-1'),
+        });
+        expect(mockInvalidateQueries).toHaveBeenCalledWith({
+            queryKey: ANALYTICS_QUERY_KEYS.examReportExportStatus('exam-1', 'export-1'),
+        });
+        expect(mockRemoveQueries).toHaveBeenCalledWith({
+            queryKey: ANALYTICS_QUERY_KEYS.examReportExportStatus('exam-1', 'export-1'),
+        });
+    });
+
+    it('preserves errors for exam-report download mutations', async () => {
+        const error = new Error('signed url failed');
+        (getExamReportExportDownload as any).mockRejectedValueOnce(error);
+
+        const mutation = useExamReportExportDownloadMutation();
+
+        await expect((mutation as any).mutateAsync('export-1')).rejects.toThrow(
+            'signed url failed',
+        );
     });
 });

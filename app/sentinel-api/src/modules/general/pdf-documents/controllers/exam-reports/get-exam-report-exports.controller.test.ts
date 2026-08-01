@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { OpenAPIHono } from '@hono/zod-openapi';
-import { getExamReportExportsRoute, getExamReportExportsHandler } from './get-exam-report-exports.controller';
+import {
+    getExamReportExportsRoute,
+    getExamReportExportsHandler,
+} from './get-exam-report-exports.controller';
 import { resolveAssessmentActorRole } from '../../../../examination/assessment/assessment-access';
 
 const EXAM_UUID = '123e4567-e89b-12d3-a456-426614174000';
@@ -22,7 +25,7 @@ vi.mock('../../../../examination/assessment/assessment-access', () => ({
 
 describe('getExamReportExportsHandler', () => {
     let mockDb: any;
-    
+
     beforeEach(() => {
         vi.clearAllMocks();
         mockDb = {
@@ -76,7 +79,7 @@ describe('getExamReportExportsHandler', () => {
 
     it('rejects with 403 if stand-alone institution queries other institution', async () => {
         vi.mocked(resolveAssessmentActorRole).mockResolvedValueOnce('instructor');
-        
+
         // Mock role mapping
         const app = createApp(['examinations:export_results_report'], INST_UUID, 'instructor');
         const res = await app.request(`/exam-reports?institutionId=${OTHER_INST_UUID}`);
@@ -86,7 +89,7 @@ describe('getExamReportExportsHandler', () => {
     it('lists exports successfully', async () => {
         const app = createApp(['examinations:export_results_report']);
         const res = await app.request(`/exam-reports?institutionId=${INST_UUID}`);
-        
+
         expect(res.status).toBe(200);
         const body = await res.json();
         expect(body.success).toBe(true);

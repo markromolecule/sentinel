@@ -3,9 +3,7 @@ import { type AppRouteHandler } from '../../../../../types/hono';
 import { pdfGenerationQueueService } from '../../queue/pdf-generation-queue.service';
 import { resolvePdfTemplate } from '../../services/resolve-pdf-template.service';
 import { LogsService } from '../../../logs/logs.service';
-import {
-    requireAllPdfDocumentPermissions,
-} from '../../services/pdf-document-authorization.service';
+import { requireAllPdfDocumentPermissions } from '../../services/pdf-document-authorization.service';
 import {
     type AssessmentAllowedRole,
     assertAssessmentAccess,
@@ -34,7 +32,9 @@ export const postCreateExamReportExportRoute = createRoute({
     responses: {
         202: {
             description: 'Exam report export accepted and queued',
-            content: { 'application/json': { schema: createExamResultsReportExportResponseSchema } },
+            content: {
+                'application/json': { schema: createExamResultsReportExportResponseSchema },
+            },
         },
         400: { description: 'Validation error or exam not found' },
         403: { description: 'Forbidden — permission missing' },
@@ -53,7 +53,8 @@ export const postCreateExamReportExportHandler: AppRouteHandler<
     requireAllPdfDocumentPermissions({
         activePermissionKeys: c.get('activePermissionKeys'),
         requiredPermissions: ['examinations:export_results_report'],
-        missingPermissionMessage: 'Forbidden. Missing examinations:export_results_report permission.',
+        missingPermissionMessage:
+            'Forbidden. Missing examinations:export_results_report permission.',
     });
 
     const body = c.req.valid('json');
@@ -72,10 +73,11 @@ export const postCreateExamReportExportHandler: AppRouteHandler<
     const exam = await getReportingExamContext({
         dbClient,
         examId: body.exam_id,
-        institutionId: resolveAssessmentInstitutionId({
-            role,
-            contextInstitutionId: c.get('institutionId'),
-        }) || undefined,
+        institutionId:
+            resolveAssessmentInstitutionId({
+                role,
+                contextInstitutionId: c.get('institutionId'),
+            }) || undefined,
         viewerRole: role,
         userId: user?.id,
     });

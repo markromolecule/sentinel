@@ -143,7 +143,7 @@ function AttemptReportPassage({ question, renderedPassage }: AttemptReportPassag
                     <span>{question?.sourceFileName ?? 'No linked document'}</span>
                     <span>
                         {question?.sourcePageNumber !== null &&
-                            question?.sourcePageNumber !== undefined
+                        question?.sourcePageNumber !== undefined
                             ? `Referenced page ${question.sourcePageNumber}`
                             : 'No page reference'}
                     </span>

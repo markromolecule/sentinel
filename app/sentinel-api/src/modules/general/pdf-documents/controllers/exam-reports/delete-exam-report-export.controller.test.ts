@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { OpenAPIHono } from '@hono/zod-openapi';
-import { deleteExamReportExportRoute, deleteExamReportExportHandler } from './delete-exam-report-export.controller';
+import {
+    deleteExamReportExportRoute,
+    deleteExamReportExportHandler,
+} from './delete-exam-report-export.controller';
 import { getReportingExamContext } from '../../../../examination/reporting/services/get-reporting-exam-context';
 import { PdfStorageService } from '../../storage/pdf-storage.service';
 import { LogsService } from '../../../logs/logs.service';
@@ -34,7 +37,7 @@ vi.mock('../../../logs/logs.service', () => ({
 
 describe('deleteExamReportExportHandler', () => {
     let mockDb: any;
-    
+
     beforeEach(() => {
         vi.clearAllMocks();
         mockDb = {
@@ -82,7 +85,7 @@ describe('deleteExamReportExportHandler', () => {
         expect(res.status).toBe(200);
         const body = await res.json();
         expect(body.success).toBe(true);
-        
+
         expect(PdfStorageService.deletePdf).toHaveBeenCalledWith('test-bucket', 'test-path');
         expect(mockDb.deleteFrom).toHaveBeenCalledWith('exam_report_exports');
         expect(LogsService.createLog).toHaveBeenCalled();

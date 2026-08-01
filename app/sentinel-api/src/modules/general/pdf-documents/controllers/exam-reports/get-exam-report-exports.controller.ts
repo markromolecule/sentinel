@@ -6,9 +6,7 @@ import {
     examResultsReportExportListResponseSchema,
     examResultsReportExportRecordSchema,
 } from '../../pdf-documents.dto';
-import {
-    requireAllPdfDocumentPermissions,
-} from '../../services/pdf-document-authorization.service';
+import { requireAllPdfDocumentPermissions } from '../../services/pdf-document-authorization.service';
 import {
     type AssessmentAllowedRole,
     assertAssessmentAccess,
@@ -39,9 +37,9 @@ export const getExamReportExportsRoute = createRoute({
     },
 });
 
-export const getExamReportExportsHandler: AppRouteHandler<typeof getExamReportExportsRoute> = async (
-    c,
-) => {
+export const getExamReportExportsHandler: AppRouteHandler<
+    typeof getExamReportExportsRoute
+> = async (c) => {
     const user = c.get('user');
     const dbClient = c.get('dbClient');
     const supabaseUser = c.get('supabaseUser') as any;
@@ -49,7 +47,8 @@ export const getExamReportExportsHandler: AppRouteHandler<typeof getExamReportEx
     requireAllPdfDocumentPermissions({
         activePermissionKeys: c.get('activePermissionKeys'),
         requiredPermissions: ['examinations:export_results_report'],
-        missingPermissionMessage: 'Forbidden. Missing examinations:export_results_report permission.',
+        missingPermissionMessage:
+            'Forbidden. Missing examinations:export_results_report permission.',
     });
 
     const { examId, institutionId, limit = 10, page = 1 } = c.req.valid('query');
@@ -152,31 +151,37 @@ export const getExamReportExportsHandler: AppRouteHandler<typeof getExamReportEx
         ]);
 
         const total_records = Number((countRow as any)?.count ?? 0);
-        const records: z.infer<typeof examResultsReportExportRecordSchema>[] = rows.map((r: any) => ({
-            exportId: r.export_id,
-            examId: r.exam_id,
-            institutionId: r.institution_id,
-            templateId: r.template_id ?? null,
-            status: r.status,
-            failureCode: r.failure_code ?? null,
-            failureMessage: r.failure_message ?? null,
-            retryCount: r.retry_count,
-            createdBy: r.created_by ?? null,
-            createdAt:
-                r.created_at instanceof Date ? r.created_at.toISOString() : String(r.created_at),
-            updatedAt:
-                r.updated_at instanceof Date ? r.updated_at.toISOString() : String(r.updated_at),
-            completedAt: r.completed_at
-                ? r.completed_at instanceof Date
-                    ? r.completed_at.toISOString()
-                    : String(r.completed_at)
-                : null,
-            expiresAt: r.expires_at
-                ? r.expires_at instanceof Date
-                    ? r.expires_at.toISOString()
-                    : String(r.expires_at)
-                : null,
-        }));
+        const records: z.infer<typeof examResultsReportExportRecordSchema>[] = rows.map(
+            (r: any) => ({
+                exportId: r.export_id,
+                examId: r.exam_id,
+                institutionId: r.institution_id,
+                templateId: r.template_id ?? null,
+                status: r.status,
+                failureCode: r.failure_code ?? null,
+                failureMessage: r.failure_message ?? null,
+                retryCount: r.retry_count,
+                createdBy: r.created_by ?? null,
+                createdAt:
+                    r.created_at instanceof Date
+                        ? r.created_at.toISOString()
+                        : String(r.created_at),
+                updatedAt:
+                    r.updated_at instanceof Date
+                        ? r.updated_at.toISOString()
+                        : String(r.updated_at),
+                completedAt: r.completed_at
+                    ? r.completed_at instanceof Date
+                        ? r.completed_at.toISOString()
+                        : String(r.completed_at)
+                    : null,
+                expiresAt: r.expires_at
+                    ? r.expires_at instanceof Date
+                        ? r.expires_at.toISOString()
+                        : String(r.expires_at)
+                    : null,
+            }),
+        );
 
         return c.json({ success: true, data: { records, total_records, limit, page } }) as any;
     } catch (e: any) {

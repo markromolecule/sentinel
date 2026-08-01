@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { OpenAPIHono } from '@hono/zod-openapi';
-import { postCreateExamReportExportRoute, postCreateExamReportExportHandler } from './post-create-exam-report-export.controller';
+import {
+    postCreateExamReportExportRoute,
+    postCreateExamReportExportHandler,
+} from './post-create-exam-report-export.controller';
 import { pdfGenerationQueueService } from '../../queue/pdf-generation-queue.service';
 import { resolvePdfTemplate } from '../../services/resolve-pdf-template.service';
 import { LogsService } from '../../../logs/logs.service';
@@ -19,7 +22,9 @@ vi.mock('../../queue/pdf-generation-queue.service', () => ({
 }));
 
 vi.mock('../../services/resolve-pdf-template.service', () => ({
-    resolvePdfTemplate: vi.fn().mockResolvedValue({ templateId: '123e4567-e89b-12d3-a456-426614174004' }),
+    resolvePdfTemplate: vi
+        .fn()
+        .mockResolvedValue({ templateId: '123e4567-e89b-12d3-a456-426614174004' }),
 }));
 
 vi.mock('../../../logs/logs.service', () => ({
@@ -40,7 +45,7 @@ vi.mock('../../../../examination/assessment/assessment-access', () => ({
 
 describe('postCreateExamReportExportHandler', () => {
     let mockDb: any;
-    
+
     beforeEach(() => {
         vi.clearAllMocks();
         mockDb = {
@@ -90,7 +95,7 @@ describe('postCreateExamReportExportHandler', () => {
 
     it('creates PENDING export and enqueues job successfully', async () => {
         const app = createApp(['examinations:export_results_report']);
-        
+
         vi.mocked(getReportingExamContext).mockResolvedValue({
             examId: EXAM_UUID,
             institutionId: INST_UUID,
@@ -104,7 +109,7 @@ describe('postCreateExamReportExportHandler', () => {
         });
 
         expect(res.status).toBe(202);
-        
+
         const body = await res.json();
         expect(body.success).toBe(true);
         expect(body.data.exportId).toBe(EXPORT_UUID);

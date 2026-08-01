@@ -75,9 +75,7 @@ function sanitizeRoundedNumber(
  * @param source - Raw loaded export source data
  * @returns Normalized and structured view model
  */
-export function mapSourceToViewModel(
-    source: ExamReportExportSource,
-): ExamResultsReportViewModel {
+export function mapSourceToViewModel(source: ExamReportExportSource): ExamResultsReportViewModel {
     const report = source.report;
     const studentsList: any[] = report.students || [];
 
@@ -99,7 +97,10 @@ export function mapSourceToViewModel(
     }));
 
     // 2. Map section summaries
-    const sectionMap = new Map<string, { total: number; sumScore: number; completionCount: number; passCount: number }>();
+    const sectionMap = new Map<
+        string,
+        { total: number; sumScore: number; completionCount: number; passCount: number }
+    >();
     students.forEach((s) => {
         const key = s.sectionName;
         if (!sectionMap.has(key)) {
@@ -116,29 +117,45 @@ export function mapSourceToViewModel(
         }
     });
 
-    const sections: SectionSummary[] = Array.from(sectionMap.entries()).map(([sectionName, stats]) => ({
-        sectionName,
-        totalStudents: stats.total,
-        averageScore: sanitizeRoundedNumber(stats.completionCount > 0 ? stats.sumScore / stats.completionCount : 0),
-        passRate: sanitizeRoundedNumber(stats.total > 0 ? (stats.passCount / stats.total) * 100 : 0),
-    })).sort((a, b) => a.sectionName.localeCompare(b.sectionName));
+    const sections: SectionSummary[] = Array.from(sectionMap.entries())
+        .map(([sectionName, stats]) => ({
+            sectionName,
+            totalStudents: stats.total,
+            averageScore: sanitizeRoundedNumber(
+                stats.completionCount > 0 ? stats.sumScore / stats.completionCount : 0,
+            ),
+            passRate: sanitizeRoundedNumber(
+                stats.total > 0 ? (stats.passCount / stats.total) * 100 : 0,
+            ),
+        }))
+        .sort((a, b) => a.sectionName.localeCompare(b.sectionName));
 
     // 3. Map incident type distributions
-    const totalIncidentCount = students.reduce((acc, s) =>
-        acc + s.incidentsPending + s.incidentsReviewed + s.incidentsConfirmed + s.incidentsDismissed, 0
+    const totalIncidentCount = students.reduce(
+        (acc, s) =>
+            acc +
+            s.incidentsPending +
+            s.incidentsReviewed +
+            s.incidentsConfirmed +
+            s.incidentsDismissed,
+        0,
     );
 
     const rawIncidents: any[] = report.summary?.incidentBreakdownByType || [];
-    const incidentTypes: IncidentTypeDistribution[] = rawIncidents.map((inc) => ({
-        type: inc.type || 'Other',
-        count: inc.count || 0,
-        percentage: sanitizeRoundedNumber(totalIncidentCount > 0 ? (inc.count / totalIncidentCount) * 100 : 0),
-    })).sort((a, b) => b.count - a.count);
+    const incidentTypes: IncidentTypeDistribution[] = rawIncidents
+        .map((inc) => ({
+            type: inc.type || 'Other',
+            count: inc.count || 0,
+            percentage: sanitizeRoundedNumber(
+                totalIncidentCount > 0 ? (inc.count / totalIncidentCount) * 100 : 0,
+            ),
+        }))
+        .sort((a, b) => b.count - a.count);
 
     // 4. Calculate total unique students in action items
     // Any student who is flagged, needs review, needs makeup, or needs retake is in the action queue
-    const actionQueueCount = studentsList.filter((s) =>
-        s.needsReview || s.needsMakeup || s.needsRetake || s.isFlagged
+    const actionQueueCount = studentsList.filter(
+        (s) => s.needsReview || s.needsMakeup || s.needsRetake || s.isFlagged,
     ).length;
 
     // In-progress count

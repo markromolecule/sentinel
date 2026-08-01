@@ -1,9 +1,7 @@
 import { createRoute, z } from '@hono/zod-openapi';
 import { type AppRouteHandler } from '../../../../../types/hono';
 import { examResultsReportExportRecordSchema } from '../../pdf-documents.dto';
-import {
-    requireAllPdfDocumentPermissions,
-} from '../../services/pdf-document-authorization.service';
+import { requireAllPdfDocumentPermissions } from '../../services/pdf-document-authorization.service';
 import {
     type AssessmentAllowedRole,
     assertAssessmentAccess,
@@ -51,7 +49,8 @@ export const getExamReportExportStatusHandler: AppRouteHandler<
     requireAllPdfDocumentPermissions({
         activePermissionKeys: c.get('activePermissionKeys'),
         requiredPermissions: ['examinations:export_results_report'],
-        missingPermissionMessage: 'Forbidden. Missing examinations:export_results_report permission.',
+        missingPermissionMessage:
+            'Forbidden. Missing examinations:export_results_report permission.',
     });
 
     const { exportId } = c.req.valid('param');

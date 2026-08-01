@@ -3,9 +3,7 @@ import { type AppRouteHandler } from '../../../../../types/hono';
 import { executeTransaction } from '@sentinel/db';
 import { pdfGenerationQueueService } from '../../queue/pdf-generation-queue.service';
 import { LogsService } from '../../../logs/logs.service';
-import {
-    requireAllPdfDocumentPermissions,
-} from '../../services/pdf-document-authorization.service';
+import { requireAllPdfDocumentPermissions } from '../../services/pdf-document-authorization.service';
 import {
     type AssessmentAllowedRole,
     assertAssessmentAccess,
@@ -51,7 +49,8 @@ export const postExamReportExportRetryHandler: AppRouteHandler<
     requireAllPdfDocumentPermissions({
         activePermissionKeys: c.get('activePermissionKeys'),
         requiredPermissions: ['examinations:export_results_report'],
-        missingPermissionMessage: 'Forbidden. Missing examinations:export_results_report permission.',
+        missingPermissionMessage:
+            'Forbidden. Missing examinations:export_results_report permission.',
     });
 
     const { exportId } = c.req.valid('param');

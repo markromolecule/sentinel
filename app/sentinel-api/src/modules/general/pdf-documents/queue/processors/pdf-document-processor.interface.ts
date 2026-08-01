@@ -64,7 +64,7 @@ export interface PdfDocumentProcessor {
         completedAt: Date,
         bucket: string,
         storagePath: string,
-        resolvedTemplate: { templateId: string | null;[key: string]: any },
+        resolvedTemplate: { templateId: string | null; [key: string]: any },
     ): Record<string, any>;
 
     /**

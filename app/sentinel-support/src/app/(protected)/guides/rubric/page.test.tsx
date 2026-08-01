@@ -7,7 +7,8 @@ const mockUseAccessControlEssayRubricMutation = vi.fn();
 
 vi.mock('@sentinel/hooks', () => ({
     useAccessControlEssayRubricQuery: () => mockUseAccessControlEssayRubricQuery(),
-    useAccessControlEssayRubricMutation: (args: any) => mockUseAccessControlEssayRubricMutation(args),
+    useAccessControlEssayRubricMutation: (args: any) =>
+        mockUseAccessControlEssayRubricMutation(args),
 }));
 
 vi.mock('@sentinel/ui', async (importOriginal) => {

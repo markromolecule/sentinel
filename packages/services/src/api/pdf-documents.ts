@@ -2,6 +2,7 @@ import type { ApiClientType } from '../api-client';
 import type {
     DocumentKind,
     ExamAnswerKeyExport,
+    ExamResultsReportExport,
     FooterConfig,
     HeaderConfig,
     InstitutionPdfBranding,
@@ -55,6 +56,18 @@ export interface CreateAnswerKeyExportBody {
     title?: string;
 }
 
+export interface ListExamReportExportsParams {
+    examId?: string;
+    institutionId?: string;
+    page?: number;
+    limit?: number;
+}
+
+export interface CreateExamReportExportBody {
+    exam_id: string;
+    title?: string;
+}
+
 export interface PaginatedAnswerKeyExports {
     records: ExamAnswerKeyExportRecord[];
     total_records: number;
@@ -77,6 +90,29 @@ export interface ExamAnswerKeyExportRecord {
     createdAt: string;
     updatedAt: string;
     completedAt: string | null;
+}
+
+export interface PaginatedExamReportExports {
+    records: ExamResultsReportExportRecord[];
+    total_records: number;
+    limit: number;
+    page: number;
+}
+
+export interface ExamResultsReportExportRecord {
+    exportId: string;
+    examId: string;
+    institutionId: string;
+    templateId: string | null;
+    status: LifecycleStatus;
+    failureCode: string | null;
+    failureMessage: string | null;
+    retryCount: number;
+    createdBy: string | null;
+    createdAt: string;
+    updatedAt: string;
+    completedAt: string | null;
+    expiresAt: string | null;
 }
 
 export interface PublishPdfTemplateResponse {
@@ -354,6 +390,104 @@ export async function deleteAnswerKeyExport(
 }
 
 /**
+ * Creates a queued exam results report export.
+ */
+export async function createExamReportExport(
+    apiClient: ApiClientType,
+    payload: CreateExamReportExportBody,
+): Promise<ExamResultsReportExportRecord> {
+    const response: ApiResponse<ExamResultsReportExportRecord> = await apiClient(
+        '/pdf-documents/exam-reports',
+        {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        },
+    );
+
+    return response.data;
+}
+
+/**
+ * Lists exam results report export records for an institution or exam.
+ */
+export async function getExamReportExports(
+    apiClient: ApiClientType,
+    params?: ListExamReportExportsParams,
+): Promise<PaginatedExamReportExports> {
+    const query = buildQueryString(params);
+    const response: ApiResponse<PaginatedExamReportExports> = await apiClient(
+        `/pdf-documents/exam-reports${query}`,
+    );
+
+    return response.data;
+}
+
+/**
+ * Fetches the latest status for a single exam results report export.
+ */
+export async function getExamReportExportStatus(
+    apiClient: ApiClientType,
+    exportId: string,
+): Promise<ExamResultsReportExportRecord> {
+    const response: ApiResponse<ExamResultsReportExportRecord> = await apiClient(
+        `/pdf-documents/exam-reports/${exportId}/status`,
+    );
+
+    return response.data;
+}
+
+/**
+ * Requests a fresh signed download URL for an exam results report export.
+ */
+export async function getExamReportExportDownload(
+    apiClient: ApiClientType,
+    exportId: string,
+): Promise<DownloadResponse> {
+    const response: DownloadResponse = await apiClient(
+        `/pdf-documents/exam-reports/${exportId}/download`,
+    );
+
+    return response;
+}
+
+/**
+ * Resets a failed exam results report export and requeues background generation.
+ */
+export async function retryExamReportExport(
+    apiClient: ApiClientType,
+    exportId: string,
+): Promise<SuccessMessageResponse> {
+    const response: SuccessMessageResponse = await apiClient(
+        `/pdf-documents/exam-reports/${exportId}/retry`,
+        {
+            method: 'POST',
+        },
+    );
+
+    return response;
+}
+
+/**
+ * Deletes an exam results report export record and any stored artifact.
+ */
+export async function deleteExamReportExport(
+    apiClient: ApiClientType,
+    exportId: string,
+): Promise<SuccessMessageResponse> {
+    const response: SuccessMessageResponse = await apiClient(
+        `/pdf-documents/exam-reports/${exportId}`,
+        {
+            method: 'DELETE',
+        },
+    );
+
+    return response;
+}
+
+/**
  * Requests a fresh signed URL for an analytics export artifact.
  */
 export async function getPdfExportDownload(
@@ -387,6 +521,7 @@ export async function retryPdfExport(
 export type {
     DocumentKind,
     ExamAnswerKeyExport,
+    ExamResultsReportExport,
     FooterConfig,
     HeaderConfig,
     InstitutionPdfBranding,

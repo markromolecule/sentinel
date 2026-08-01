@@ -2,9 +2,7 @@ import { createRoute, z } from '@hono/zod-openapi';
 import { type AppRouteHandler } from '../../../../../types/hono';
 import { PdfStorageService } from '../../storage/pdf-storage.service';
 import { LogsService } from '../../../logs/logs.service';
-import {
-    requireAllPdfDocumentPermissions,
-} from '../../services/pdf-document-authorization.service';
+import { requireAllPdfDocumentPermissions } from '../../services/pdf-document-authorization.service';
 import {
     type AssessmentAllowedRole,
     assertAssessmentAccess,
@@ -49,7 +47,8 @@ export const deleteExamReportExportHandler: AppRouteHandler<
     requireAllPdfDocumentPermissions({
         activePermissionKeys: c.get('activePermissionKeys'),
         requiredPermissions: ['examinations:export_results_report'],
-        missingPermissionMessage: 'Forbidden. Missing examinations:export_results_report permission.',
+        missingPermissionMessage:
+            'Forbidden. Missing examinations:export_results_report permission.',
     });
 
     const { exportId } = c.req.valid('param');
@@ -124,7 +123,10 @@ export const deleteExamReportExportHandler: AppRouteHandler<
             console.warn('[ExamReport] Audit log failed for delete:', logErr.message);
         }
 
-        return c.json({ success: true, message: 'Exam report export deleted successfully.' }) as any;
+        return c.json({
+            success: true,
+            message: 'Exam report export deleted successfully.',
+        }) as any;
     } catch (e: any) {
         return c.json(
             { success: false, error: e.message || 'Failed to delete exam report export.' },

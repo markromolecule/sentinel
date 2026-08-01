@@ -11,31 +11,31 @@ creation, polling, retry, download, deletion, and terminal states.
 
 ## Tasks
 
-- [ ] Add examination-report export request/record/list types and service functions to
+- [x] Add examination-report export request/record/list types and service functions to
       `packages/services/src/api/pdf-documents.ts` targeting the six Phase 3 routes; keep signed URLs
       confined to the download response and do not add storage coordinates to the record type.
-- [ ] Extend `packages/services/src/api/pdf-documents.test.ts` for exact create/list/status/retry/
+- [x] Extend `packages/services/src/api/pdf-documents.test.ts` for exact create/list/status/retry/
       download/delete paths, JSON bodies, pagination query strings, error propagation, and omission of
       undefined filters.
-- [ ] Add examination-report query and mutation keys to
+- [x] Add examination-report query and mutation keys to
       `packages/shared/src/constants/analytics.ts`, keyed by `examId`, `exportId`, page, and limit so two
       examination pages cannot share lifecycle cache entries.
-- [ ] Add and export hooks under `packages/hooks/src/query/pdf-documents/` for
+- [x] Add and export hooks under `packages/hooks/src/query/pdf-documents/` for
       `use-create-exam-report-export-mutation.ts`, `use-exam-report-exports-query.ts`,
       `use-exam-report-export-status-query.ts`, `use-retry-exam-report-export-mutation.ts`,
       `use-exam-report-export-download-mutation.ts`, and
       `use-delete-exam-report-export-mutation.ts`.
-- [ ] In `use-exam-report-export-status-query.ts`, poll only `PENDING`/`GENERATING`, stop on
+- [x] In `use-exam-report-export-status-query.ts`, poll only `PENDING`/`GENERATING`, stop on
       `READY`/`FAILED`/`EXPIRED`, honor authenticated/enabled guards, and invalidate the exam-scoped
       export list on terminal transitions without polling when `exportId` is absent.
-- [ ] Extend `packages/hooks/src/query/pdf-documents/pdf-documents-hooks.test.ts` for cache-key
+- [x] Extend `packages/hooks/src/query/pdf-documents/pdf-documents-hooks.test.ts` for cache-key
       isolation, polling stop rules, create/retry/delete invalidation, disabled queries, and error
       preservation.
-- [ ] Add a generic presentational component
+- [x] Add a generic presentational component
       `packages/ui/src/components/pdf-export-lifecycle-panel.tsx` with controlled props for create,
       status, retry, download, delete, disabled/permission copy, and accessible live-region updates;
       add JSDoc to its exported props/component and no API/hook imports.
-- [ ] Export the component from `packages/ui/src/index.ts` and add
+- [x] Export the component from `packages/ui/src/index.ts` and add
       `packages/ui/src/components/pdf-export-lifecycle-panel.test.tsx` for all lifecycle states,
       disabled permission state, retry availability only on `FAILED`, expired messaging, keyboard
       operation, and accessible button names.
@@ -45,12 +45,16 @@ presentational UI only.
 
 ## Validation
 
-- [ ] Run `pnpm --dir packages/services test -- src/api/pdf-documents.test.ts`.
-- [ ] Run `pnpm --dir packages/hooks test -- src/query/pdf-documents/pdf-documents-hooks.test.ts`.
-- [ ] Run the `packages/ui` Vitest command for
+- [x] Run `pnpm --dir packages/services test -- src/api/pdf-documents.test.ts`.
+- [x] Run `pnpm --dir packages/hooks test -- src/query/pdf-documents/pdf-documents-hooks.test.ts`.
+- [x] Run the `packages/ui` Vitest command for
       `src/components/pdf-export-lifecycle-panel.test.tsx` using the package's existing test script.
-- [ ] Run targeted lint/build commands for `packages/shared`, `packages/services`, `packages/hooks`,
+- [x] Run targeted lint/build commands for `packages/shared`, `packages/services`, `packages/hooks`,
       and `packages/ui`.
+
+Builds passed on August 1, 2026 via `pnpm --dir packages/shared build`, `pnpm --dir packages/services build`,
+`pnpm --dir packages/hooks build`, and `pnpm --dir packages/ui build`. Since no ESLint tasks exist for these
+packages, formatting and code style has been verified and fully resolved using Prettier (`pnpm format:check`).
 
 ## Exit criteria
 

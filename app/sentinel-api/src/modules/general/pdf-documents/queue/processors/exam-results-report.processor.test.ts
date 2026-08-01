@@ -54,7 +54,7 @@ describe('ExamResultsReportDocumentProcessor', () => {
         expect(updateSet.template_snapshot).toBe(JSON.stringify(template));
         expect(updateSet.completed_at).toBe(completedAt);
         expect(updateSet.updated_at).toBe(completedAt);
-        
+
         // Expiry should be exactly 7 days later
         const expectedExpiresAt = new Date(completedAt.getTime() + 7 * 24 * 3600 * 1000);
         expect(updateSet.expires_at.getTime()).toBe(expectedExpiresAt.getTime());

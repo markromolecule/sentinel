@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { OpenAPIHono } from '@hono/zod-openapi';
-import { postExamReportExportRetryRoute, postExamReportExportRetryHandler } from './post-exam-report-export-retry.controller';
+import {
+    postExamReportExportRetryRoute,
+    postExamReportExportRetryHandler,
+} from './post-exam-report-export-retry.controller';
 import { pdfGenerationQueueService } from '../../queue/pdf-generation-queue.service';
 import { getReportingExamContext } from '../../../../examination/reporting/services/get-reporting-exam-context';
 import { executeTransaction } from '@sentinel/db';
@@ -33,27 +36,29 @@ vi.mock('../../../logs/logs.service', () => ({
 }));
 
 vi.mock('@sentinel/db', () => ({
-    executeTransaction: vi.fn((cb) => cb({
-        selectFrom: vi.fn().mockReturnThis(),
-        selectAll: vi.fn().mockReturnThis(),
-        where: vi.fn().mockReturnThis(),
-        forUpdate: vi.fn().mockReturnThis(),
-        executeTakeFirst: vi.fn().mockResolvedValue({
-            export_id: EXPORT_UUID,
-            exam_id: EXAM_UUID,
-            institution_id: INST_UUID,
-            status: 'FAILED',
-            retry_count: 0,
-        }),
-        updateTable: vi.fn().mockReturnThis(),
-        set: vi.fn().mockReturnThis(),
-        execute: vi.fn().mockResolvedValue(undefined),
-    } as any)),
+    executeTransaction: vi.fn((cb) =>
+        cb({
+            selectFrom: vi.fn().mockReturnThis(),
+            selectAll: vi.fn().mockReturnThis(),
+            where: vi.fn().mockReturnThis(),
+            forUpdate: vi.fn().mockReturnThis(),
+            executeTakeFirst: vi.fn().mockResolvedValue({
+                export_id: EXPORT_UUID,
+                exam_id: EXAM_UUID,
+                institution_id: INST_UUID,
+                status: 'FAILED',
+                retry_count: 0,
+            }),
+            updateTable: vi.fn().mockReturnThis(),
+            set: vi.fn().mockReturnThis(),
+            execute: vi.fn().mockResolvedValue(undefined),
+        } as any),
+    ),
 }));
 
 describe('postExamReportExportRetryHandler', () => {
     let mockDb: any;
-    
+
     beforeEach(() => {
         vi.clearAllMocks();
         mockDb = {};
@@ -99,7 +104,7 @@ describe('postExamReportExportRetryHandler', () => {
 
         const app = createApp(['examinations:export_results_report']);
         const res = await app.request(`/exam-reports/${EXPORT_UUID}/retry`, { method: 'POST' });
-        
+
         expect(res.status).toBe(400);
         const body = await res.json();
         expect(body.error).toContain('Only FAILED exports can be retried');
@@ -114,7 +119,7 @@ describe('postExamReportExportRetryHandler', () => {
         expect(res.status).toBe(200);
         const body = await res.json();
         expect(body.success).toBe(true);
-        
+
         expect(pdfGenerationQueueService.submitPdfJob).toHaveBeenCalledWith(
             EXPORT_UUID,
             'EXAM_RESULTS_REPORT',

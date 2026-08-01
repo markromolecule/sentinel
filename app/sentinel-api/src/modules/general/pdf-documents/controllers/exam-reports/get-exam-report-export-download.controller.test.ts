@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { OpenAPIHono } from '@hono/zod-openapi';
-import { getExamReportExportDownloadRoute, getExamReportExportDownloadHandler } from './get-exam-report-export-download.controller';
+import {
+    getExamReportExportDownloadRoute,
+    getExamReportExportDownloadHandler,
+} from './get-exam-report-export-download.controller';
 import { getReportingExamContext } from '../../../../examination/reporting/services/get-reporting-exam-context';
 import { PdfStorageService } from '../../storage/pdf-storage.service';
 
@@ -33,7 +36,7 @@ vi.mock('../../../logs/logs.service', () => ({
 
 describe('getExamReportExportDownloadHandler', () => {
     let mockDb: any;
-    
+
     beforeEach(() => {
         vi.clearAllMocks();
         mockDb = {

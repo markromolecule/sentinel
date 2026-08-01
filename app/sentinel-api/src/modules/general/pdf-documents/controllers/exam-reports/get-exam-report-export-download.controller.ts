@@ -2,9 +2,7 @@ import { createRoute, z } from '@hono/zod-openapi';
 import { type AppRouteHandler } from '../../../../../types/hono';
 import { LogsService } from '../../../logs/logs.service';
 import { PdfStorageService } from '../../storage/pdf-storage.service';
-import {
-    requireAllPdfDocumentPermissions,
-} from '../../services/pdf-document-authorization.service';
+import { requireAllPdfDocumentPermissions } from '../../services/pdf-document-authorization.service';
 import {
     type AssessmentAllowedRole,
     assertAssessmentAccess,
@@ -54,7 +52,8 @@ export const getExamReportExportDownloadHandler: AppRouteHandler<
     requireAllPdfDocumentPermissions({
         activePermissionKeys: c.get('activePermissionKeys'),
         requiredPermissions: ['examinations:export_results_report'],
-        missingPermissionMessage: 'Forbidden. Missing examinations:export_results_report permission.',
+        missingPermissionMessage:
+            'Forbidden. Missing examinations:export_results_report permission.',
     });
 
     const { exportId } = c.req.valid('param');
@@ -99,7 +98,8 @@ export const getExamReportExportDownloadHandler: AppRouteHandler<
         }
 
         const now = new Date();
-        const isExpired = row.status === 'EXPIRED' || (row.expires_at && new Date(row.expires_at) < now);
+        const isExpired =
+            row.status === 'EXPIRED' || (row.expires_at && new Date(row.expires_at) < now);
 
         if (isExpired) {
             return c.json(

@@ -1,9 +1,6 @@
 import PDFDocument from 'pdfkit';
 import { PDF_LAYOUT } from './pdf-page-layout';
-import {
-    ExamResultsReportViewModel,
-    mapSourceToViewModel,
-} from './exam-results-report-view-model';
+import { ExamResultsReportViewModel, mapSourceToViewModel } from './exam-results-report-view-model';
 import { renderPdfDocumentBuffer } from './render-pdf-buffer';
 import { HeaderConfig } from './pdf-header-renderer';
 import { FooterConfig } from './pdf-footer-renderer';
@@ -111,7 +108,11 @@ export function drawExamResultsReportBody(
 
     doc.fillColor(PDF_LAYOUT.colors.textSecondary).font(PDF_LAYOUT.fonts.regular).fontSize(8);
 
-    doc.text(`Subject: ${data.subjectCode} - ${data.subjectName}`, PDF_LAYOUT.marginLeft + 12, y + 28);
+    doc.text(
+        `Subject: ${data.subjectCode} - ${data.subjectName}`,
+        PDF_LAYOUT.marginLeft + 12,
+        y + 28,
+    );
     const options: Intl.DateTimeFormatOptions = {
         timeZone: 'Asia/Manila',
         year: 'numeric',
@@ -124,8 +125,16 @@ export function drawExamResultsReportBody(
     const schedDateStr = new Date(data.scheduledDate).toLocaleString('en-US', options);
     const endDateStr = new Date(data.endDateTime).toLocaleString('en-US', options);
 
-    doc.text(`Scheduled: ${schedDateStr} (PHT) to ${endDateStr} (PHT)`, PDF_LAYOUT.marginLeft + 12, y + 40);
-    doc.text(`Duration: ${data.durationMinutes} mins   |   Passing Score: ${data.passingScore}%`, PDF_LAYOUT.marginLeft + 12, y + 52);
+    doc.text(
+        `Scheduled: ${schedDateStr} (PHT) to ${endDateStr} (PHT)`,
+        PDF_LAYOUT.marginLeft + 12,
+        y + 40,
+    );
+    doc.text(
+        `Duration: ${data.durationMinutes} mins   |   Passing Score: ${data.passingScore}%`,
+        PDF_LAYOUT.marginLeft + 12,
+        y + 52,
+    );
 
     const generatedDateStr = new Date(data.generatedAt).toLocaleString('en-US', options);
     doc.text(
@@ -162,7 +171,11 @@ export function drawExamResultsReportBody(
         { label: 'Pass Rate', value: `${data.summary.passRate}%`, color: '#6366F1' },
         { label: 'Average Score', value: `${data.summary.averageScore}%`, color: '#F59E0B' },
         { label: 'Absent Students', value: data.summary.totalAbsent.toString(), color: '#EC4899' },
-        { label: 'Integrity Flags', value: data.summary.totalIncidents.toString(), color: '#EF4444' },
+        {
+            label: 'Integrity Flags',
+            value: data.summary.totalIncidents.toString(),
+            color: '#EF4444',
+        },
     ];
 
     doc.save();
@@ -204,12 +217,18 @@ export function drawExamResultsReportBody(
             y,
             PDF_LAYOUT.pageWidth - PDF_LAYOUT.marginLeft - PDF_LAYOUT.marginRight,
             24,
-        ).fillColor('#F9FAFB').fill();
+        )
+            .fillColor('#F9FAFB')
+            .fill();
 
         doc.fillColor(PDF_LAYOUT.colors.textLight)
             .font(PDF_LAYOUT.fonts.regular)
             .fontSize(8.5)
-            .text('No student attempts or records found for this examination.', PDF_LAYOUT.marginLeft + 12, y + 8);
+            .text(
+                'No student attempts or records found for this examination.',
+                PDF_LAYOUT.marginLeft + 12,
+                y + 8,
+            );
         y += 24;
     } else {
         data.students.forEach((student, idx) => {
@@ -252,7 +271,9 @@ export function drawExamResultsReportBody(
             doc.text(`${student.lastName}, ${student.firstName}`, curX + 6, y + 3, {
                 width: studentCols[0].width - 12,
             });
-            doc.font(PDF_LAYOUT.fonts.regular).fillColor(PDF_LAYOUT.colors.textSecondary).fontSize(7);
+            doc.font(PDF_LAYOUT.fonts.regular)
+                .fillColor(PDF_LAYOUT.colors.textSecondary)
+                .fontSize(7);
             doc.text(student.studentNo, curX + 6, y + rowHeight - 8);
             doc.fontSize(8).fillColor(PDF_LAYOUT.colors.textPrimary);
             curX += studentCols[0].width;
@@ -377,7 +398,9 @@ export function drawExamResultsReportBody(
                     y,
                     PDF_LAYOUT.pageWidth - PDF_LAYOUT.marginLeft - PDF_LAYOUT.marginRight,
                     18,
-                ).fillColor('#F9FAFB').fill();
+                )
+                    .fillColor('#F9FAFB')
+                    .fill();
             }
 
             doc.moveTo(PDF_LAYOUT.marginLeft, y + 18)
@@ -392,13 +415,22 @@ export function drawExamResultsReportBody(
             doc.text(sec.sectionName, curX + 6, y + 5, { width: sectionCols[0].width - 12 });
             curX += sectionCols[0].width;
 
-            doc.text(sec.totalStudents.toString(), curX, y + 5, { width: sectionCols[1].width, align: 'center' });
+            doc.text(sec.totalStudents.toString(), curX, y + 5, {
+                width: sectionCols[1].width,
+                align: 'center',
+            });
             curX += sectionCols[1].width;
 
-            doc.text(`${sec.averageScore}%`, curX - 6, y + 5, { width: sectionCols[2].width, align: 'right' });
+            doc.text(`${sec.averageScore}%`, curX - 6, y + 5, {
+                width: sectionCols[2].width,
+                align: 'right',
+            });
             curX += sectionCols[2].width;
 
-            doc.text(`${sec.passRate}%`, curX - 6, y + 5, { width: sectionCols[3].width, align: 'right' });
+            doc.text(`${sec.passRate}%`, curX - 6, y + 5, {
+                width: sectionCols[3].width,
+                align: 'right',
+            });
 
             y += 18;
         });
@@ -426,7 +458,11 @@ export function drawExamResultsReportBody(
         doc.font(PDF_LAYOUT.fonts.regular)
             .fontSize(8)
             .fillColor(PDF_LAYOUT.colors.textLight)
-            .text('No integrity incidents flagged during this examination.', PDF_LAYOUT.marginLeft, incY);
+            .text(
+                'No integrity incidents flagged during this examination.',
+                PDF_LAYOUT.marginLeft,
+                incY,
+            );
     } else {
         data.incidentTypes.forEach((t) => {
             doc.fillColor(PDF_LAYOUT.colors.textSecondary)
@@ -463,12 +499,20 @@ export function drawExamResultsReportBody(
     doc.fillColor('#991B1B')
         .font(PDF_LAYOUT.fonts.bold)
         .fontSize(16)
-        .text(data.actionQueueCount.toString(), PDF_LAYOUT.marginLeft + halfWidth + 35, actionY + 12);
+        .text(
+            data.actionQueueCount.toString(),
+            PDF_LAYOUT.marginLeft + halfWidth + 35,
+            actionY + 12,
+        );
 
     doc.fillColor('#991B1B')
         .font(PDF_LAYOUT.fonts.regular)
         .fontSize(8.5)
-        .text('Students in Action/Review Queue', PDF_LAYOUT.marginLeft + halfWidth + 35, actionY + 34);
+        .text(
+            'Students in Action/Review Queue',
+            PDF_LAYOUT.marginLeft + halfWidth + 35,
+            actionY + 34,
+        );
 
     actionY += 75;
     doc.fillColor(PDF_LAYOUT.colors.textSecondary)
@@ -476,7 +520,7 @@ export function drawExamResultsReportBody(
         .fontSize(7.5)
         .text(
             'Note: The action queue includes all students with unresolved proctoring incidents, ' +
-            'absences needing makeup scheduling, or scores failing the passing criteria.',
+                'absences needing makeup scheduling, or scores failing the passing criteria.',
             PDF_LAYOUT.marginLeft + halfWidth + 20,
             actionY,
             { width: halfWidth, align: 'justify' },

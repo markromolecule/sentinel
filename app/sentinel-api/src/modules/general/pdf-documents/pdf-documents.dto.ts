@@ -1,6 +1,10 @@
 import { z } from '@hono/zod-openapi';
 
-export const documentKindEnum = z.enum(['ANALYTICS_OVERALL', 'EXAM_ANSWER_KEY', 'EXAM_RESULTS_REPORT']);
+export const documentKindEnum = z.enum([
+    'ANALYTICS_OVERALL',
+    'EXAM_ANSWER_KEY',
+    'EXAM_RESULTS_REPORT',
+]);
 export const templateStatusEnum = z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']);
 
 // --- Header/Footer config schemas using hono zod-openapi ---
@@ -247,6 +251,4 @@ export const createExamResultsReportExportResponseSchema = z.object({
 export type CreateExamResultsReportExportBody = z.infer<
     typeof createExamResultsReportExportBodySchema
 >;
-export type ExamResultsReportExportRecord = z.infer<
-    typeof examResultsReportExportRecordSchema
->;
+export type ExamResultsReportExportRecord = z.infer<typeof examResultsReportExportRecordSchema>;
