@@ -99,6 +99,16 @@ export function parseSubjectRows(
             continue;
         }
 
+        if (code.length > 50) {
+            errors.push(`${candidate.sourceLabel}: Subject code must be 50 characters or less.`);
+            continue;
+        }
+
+        if (title.length > 255) {
+            errors.push(`${candidate.sourceLabel}: Subject title must be 255 characters or less.`);
+            continue;
+        }
+
         const codeKey = code.toLowerCase();
 
         if (seenCodes.has(codeKey)) {

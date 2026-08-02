@@ -8,7 +8,9 @@ import { useWizardValidation } from './use-wizard-validation';
 import { useWizardSubjectImport } from './use-wizard-subject-import';
 import { useWizardPublish } from './use-wizard-publish';
 
-export function useInstitutionWizard(args: { onSuccess?: () => void } = {}) {
+export function useInstitutionWizard(
+    args: { editInstitutionId?: string; onSuccess?: () => void } = {},
+) {
     const apiClient = useApi();
     const { data: institutions = [] } = useInstitutionsQuery();
 
@@ -72,6 +74,7 @@ export function useInstitutionWizard(args: { onSuccess?: () => void } = {}) {
     const { isPublishing, publishSetup } = useWizardPublish({
         apiClient,
         draft,
+        editInstitutionId: args.editInstitutionId,
         validateStep,
         setActiveStep,
         setErrors,

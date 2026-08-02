@@ -10,15 +10,17 @@ import {
     createSubject,
     saveInstitutionNamingConventions,
     updateInstitution,
+    updateSubject,
 } from '@sentinel/services';
 import { useApi } from '@sentinel/hooks';
-import type { WizardDraft } from '../../_types';
+import type { WizardDraft, WizardSubject } from '../../_types';
 import { DRAFT_KEY, STEPS } from '../../_constants';
 import { asErrorMessage } from '../../_utils';
 
 export type UseWizardPublishArgs = {
     apiClient: ReturnType<typeof useApi>;
     draft: WizardDraft;
+    editInstitutionId?: string;
     validateStep: (step: number) => boolean;
     setActiveStep: (step: number) => void;
     setErrors: (errors: string[]) => void;
@@ -26,9 +28,68 @@ export type UseWizardPublishArgs = {
     onSuccess?: () => void;
 };
 
+const SUBJECT_BATCH_SIZE = 20;
+
+function getPersistedSubjectId(subject: WizardSubject) {
+    if (subject.persistedId) {
+        return subject.persistedId;
+    }
+
+    if (subject.isInherited !== undefined || subject.sourceRecordId !== undefined) {
+        return subject.clientId;
+    }
+
+    return null;
+}
+
+function hasSubjectChanged(subject: WizardSubject) {
+    return (
+        subject.initialCode === undefined ||
+        subject.initialTitle === undefined ||
+        subject.code.trim() !== subject.initialCode.trim() ||
+        subject.title.trim() !== subject.initialTitle.trim()
+    );
+}
+
+async function syncExistingInstitutionSubjects(
+    apiClient: ReturnType<typeof useApi>,
+    institutionId: string,
+    subjects: WizardSubject[],
+) {
+    const subjectRows = subjects.filter((row) => row.code.trim() && row.title.trim());
+
+    for (let i = 0; i < subjectRows.length; i += SUBJECT_BATCH_SIZE) {
+        const batch = subjectRows.slice(i, i + SUBJECT_BATCH_SIZE);
+        await Promise.all(
+            batch.map((subject) => {
+                const persistedSubjectId = getPersistedSubjectId(subject);
+                const payload = {
+                    code: subject.code.trim(),
+                    title: subject.title.trim(),
+                    institution_id: institutionId,
+                };
+
+                if (persistedSubjectId) {
+                    if (!hasSubjectChanged(subject)) {
+                        return Promise.resolve();
+                    }
+
+                    return updateSubject(apiClient, {
+                        id: persistedSubjectId,
+                        payload,
+                    });
+                }
+
+                return createSubject(apiClient, payload);
+            }),
+        );
+    }
+}
+
 export function useWizardPublish({
     apiClient,
     draft,
+    editInstitutionId,
     validateStep,
     setActiveStep,
     setErrors,
@@ -50,8 +111,8 @@ export function useWizardPublish({
         setErrors([]);
 
         try {
-            const isEditing = !!draft.identity.id;
-            let institutionId = draft.identity.id || '';
+            const isEditing = !!editInstitutionId || !!draft.identity.id;
+            let institutionId = editInstitutionId || draft.identity.id || '';
 
             if (isEditing) {
                 await updateInstitution(apiClient, {
@@ -97,43 +158,59 @@ export function useWizardPublish({
                 const departmentIds = new Map<string, string>();
                 const courseIds = new Map<string, string>();
 
-                for (const department of draft.departments.filter((row) => row.name.trim())) {
-                    const created = await createDepartment(apiClient, {
-                        name: department.name.trim(),
-                        code: department.code.trim() || undefined,
-                        institution_id: institutionId,
-                    });
-                    departmentIds.set(department.clientId, created.id);
-                }
+                const departmentRows = draft.departments.filter((row) => row.name.trim());
+                await Promise.all(
+                    departmentRows.map(async (department) => {
+                        const created = await createDepartment(apiClient, {
+                            name: department.name.trim(),
+                            code: department.code.trim() || undefined,
+                            institution_id: institutionId,
+                        });
+                        departmentIds.set(department.clientId, created.id);
+                    }),
+                );
 
-                for (const course of draft.courses.filter((row) => row.title.trim())) {
-                    const created = await createCourse(apiClient, {
-                        title: course.title.trim(),
-                        code: course.code.trim(),
-                        departmentId: departmentIds.get(course.departmentClientId) ?? null,
-                        description: null,
-                        institution_id: institutionId,
-                    });
-                    courseIds.set(course.clientId, created.id);
-                }
+                const courseRows = draft.courses.filter((row) => row.title.trim());
+                await Promise.all(
+                    courseRows.map(async (course) => {
+                        const created = await createCourse(apiClient, {
+                            title: course.title.trim(),
+                            code: course.code.trim(),
+                            departmentId: departmentIds.get(course.departmentClientId) ?? null,
+                            description: null,
+                            institution_id: institutionId,
+                        });
+                        courseIds.set(course.clientId, created.id);
+                    }),
+                );
 
-                for (const term of draft.terms.filter((row) => row.academicYear.trim())) {
-                    await createSemester(apiClient, {
-                        academic_year: term.academicYear.trim(),
-                        semester: term.semester.trim(),
-                        is_active: term.isActive,
-                        start_date: term.startDate || null,
-                        end_date: term.endDate || null,
-                        institution_id: institutionId,
-                    });
-                }
+                const termRows = draft.terms.filter((row) => row.academicYear.trim());
+                await Promise.all(
+                    termRows.map((term) =>
+                        createSemester(apiClient, {
+                            academic_year: term.academicYear.trim(),
+                            semester: term.semester.trim(),
+                            is_active: term.isActive,
+                            start_date: term.startDate || null,
+                            end_date: term.endDate || null,
+                            institution_id: institutionId,
+                        }),
+                    ),
+                );
 
-                for (const subject of draft.subjects.filter((row) => row.title.trim())) {
-                    await createSubject(apiClient, {
-                        code: subject.code.trim(),
-                        title: subject.title.trim(),
-                        institution_id: institutionId,
-                    });
+                const subjectRows = draft.subjects.filter((row) => row.title.trim());
+                const batchSize = 20;
+                for (let i = 0; i < subjectRows.length; i += batchSize) {
+                    const batch = subjectRows.slice(i, i + batchSize);
+                    await Promise.all(
+                        batch.map((subject) =>
+                            createSubject(apiClient, {
+                                code: subject.code.trim(),
+                                title: subject.title.trim(),
+                                institution_id: institutionId,
+                            }),
+                        ),
+                    );
                 }
 
                 // Save finalized naming conventions with course IDs
@@ -169,6 +246,8 @@ export function useWizardPublish({
             } else {
                 // If editing, at least update naming conventions
                 // Mapping clientId back to real IDs if they were loaded
+                await syncExistingInstitutionSubjects(apiClient, institutionId, draft.subjects);
+
                 const sectionRulesByCourseId: Record<string, InstitutionSectionNamingRule> = {};
                 for (const [courseClientId, rule] of Object.entries(
                     draft.naming.sectionRulesByCourseClientId,
@@ -216,6 +295,7 @@ export function useWizardPublish({
     }, [
         apiClient,
         draft,
+        editInstitutionId,
         validateStep,
         setActiveStep,
         setErrors,

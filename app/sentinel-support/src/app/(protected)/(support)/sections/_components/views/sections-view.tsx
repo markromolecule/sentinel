@@ -148,7 +148,13 @@ export function SectionsView() {
                             <Button
                                 onClick={() => {
                                     setEditingSectionId(null);
-                                    form.reset();
+                                    form.reset({
+                                        name: '',
+                                        institution_id: selectedInstitutionId || '',
+                                        department_id: '',
+                                        course_id: '',
+                                        year_level: undefined,
+                                    });
                                     setFormOpen(true);
                                 }}
                                 className="bg-[#323d8f] hover:bg-[#323d8f]/90"
@@ -235,6 +241,7 @@ export function SectionsView() {
                 onOpenChange={setFormOpen}
                 editingSectionId={editingSectionId}
                 form={form}
+                institutions={institutions}
                 departments={departments}
                 courses={courses}
                 namingConvention={namingConvention}

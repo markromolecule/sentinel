@@ -37,22 +37,14 @@ export function InstitutionWizardDialog({
         lastSavedAt,
         summary,
         institutions,
-        subjectBulkInput,
-        subjectFileName,
-        activeSubjectPreview,
-        isParsingSubjects,
         updateDraft,
         saveDraft,
         goNext,
         goBack,
         publishSetup,
-        handleSubjectFileChange,
-        setSubjectFilePreview,
-        applySubjectBulkRows,
-        setSubjectBulkInput,
-        setSubjectFileName,
         setDraft,
     } = useInstitutionWizard({
+        editInstitutionId: institution?.id,
         onSuccess: () => onOpenChange(false),
     });
 
@@ -82,7 +74,7 @@ export function InstitutionWizardDialog({
                     <WizardSidebar activeStep={activeStep} />
 
                     <main className="flex min-h-0 min-w-0 flex-1 flex-col bg-white">
-                        <ScrollArea className="flex-1">
+                        <ScrollArea className="min-h-0 flex-1">
                             <div className="mx-auto max-w-4xl px-8 py-8">
                                 {errors.length > 0 && (
                                     <div className="mb-6">
@@ -113,16 +105,7 @@ export function InstitutionWizardDialog({
                                                 institutionKind: i.institutionKind!,
                                             }))}
                                         summary={summary}
-                                        subjectBulkInput={subjectBulkInput}
-                                        subjectFileName={subjectFileName}
-                                        activeSubjectPreview={activeSubjectPreview}
-                                        isParsingSubjects={isParsingSubjects}
                                         updateDraft={updateDraft}
-                                        setSubjectBulkInput={setSubjectBulkInput}
-                                        handleSubjectFileChange={handleSubjectFileChange}
-                                        setSubjectFilePreview={setSubjectFilePreview}
-                                        setSubjectFileName={setSubjectFileName}
-                                        applySubjectBulkRows={applySubjectBulkRows}
                                     />
                                 </div>
                             </div>

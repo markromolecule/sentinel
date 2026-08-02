@@ -4,6 +4,7 @@ export type SubjectFormState = {
     id?: string;
     code: string;
     title: string;
+    institutionId?: string;
     isInherited?: boolean;
 };
 

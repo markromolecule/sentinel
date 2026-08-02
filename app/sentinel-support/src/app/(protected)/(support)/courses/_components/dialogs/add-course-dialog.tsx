@@ -1,6 +1,6 @@
 'use client';
 
-import { useDepartmentsQuery, useActivePermissions } from '@sentinel/hooks';
+import { useDepartmentsQuery, useActivePermissions, useInstitutionsQuery } from '@sentinel/hooks';
 import { useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@sentinel/ui';
@@ -27,25 +27,47 @@ const UNASSIGNED_DEPARTMENT_VALUE = '__unassigned__';
 export function AddCourseDialog({ institutionId }: AddCourseDialogProps) {
     const { hasPermission } = useActivePermissions();
     const [open, setOpen] = useState(false);
+    const [selectedInstitutionId, setSelectedInstitutionId] = useState(institutionId);
+    const effectiveInstitutionId = selectedInstitutionId || institutionId;
 
+    const { data: institutions = [] } = useInstitutionsQuery();
     const { data: departments = [], isLoading: isLoadingDepartments } = useDepartmentsQuery({
         search: '',
-        institutionId: institutionId || undefined,
+        institutionId: effectiveInstitutionId || undefined,
     });
-    const { form, onSubmit, isPending } = useAddCourseForm(institutionId, () => setOpen(false));
-    const scopedDepartments = useMemo(
-        () => departments.filter((department) => department.institutionId === institutionId),
-        [departments, institutionId],
+    const { form, onSubmit, isPending } = useAddCourseForm(effectiveInstitutionId, () =>
+        setOpen(false),
     );
+    const scopedDepartments = useMemo(
+        () =>
+            departments.filter(
+                (department) =>
+                    !effectiveInstitutionId || department.institutionId === effectiveInstitutionId,
+            ),
+        [departments, effectiveInstitutionId],
+    );
+
+    const handleInstitutionChange = (nextInstitutionId: string) => {
+        setSelectedInstitutionId(nextInstitutionId);
+        form.setValue('department_id', null);
+    };
+
+    const handleOpenChange = (nextOpen: boolean) => {
+        if (nextOpen) {
+            setSelectedInstitutionId(institutionId);
+            form.setValue('department_id', null);
+        }
+        setOpen(nextOpen);
+    };
 
     if (!hasPermission('courses:create')) {
         return null;
     }
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>
-                <Button disabled={!institutionId} aria-disabled={!institutionId}>
+                <Button>
                     <Plus className="mr-2 h-4 w-4" />
                     Add Course
                 </Button>
@@ -59,6 +81,24 @@ export function AddCourseDialog({ institutionId }: AddCourseDialogProps) {
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        <div className="space-y-2">
+                            <FormLabel>Institution</FormLabel>
+                            <Select
+                                value={effectiveInstitutionId || undefined}
+                                onValueChange={handleInstitutionChange}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select institution" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {institutions.map((institution) => (
+                                        <SelectItem key={institution.id} value={institution.id}>
+                                            {institution.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                         <FormField
                             control={form.control}
                             name="code"
@@ -105,7 +145,7 @@ export function AddCourseDialog({ institutionId }: AddCourseDialogProps) {
                                         value={field.value ?? UNASSIGNED_DEPARTMENT_VALUE}
                                     >
                                         <FormControl>
-                                            <SelectTrigger>
+                                            <SelectTrigger disabled={!effectiveInstitutionId}>
                                                 <SelectValue placeholder="Select Department" />
                                             </SelectTrigger>
                                         </FormControl>
@@ -137,7 +177,7 @@ export function AddCourseDialog({ institutionId }: AddCourseDialogProps) {
                             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                                 Cancel
                             </Button>
-                            <Button type="submit" disabled={isPending}>
+                            <Button type="submit" disabled={isPending || !effectiveInstitutionId}>
                                 {isPending ? 'Creating...' : 'Create Course'}
                             </Button>
                         </DialogFooter>

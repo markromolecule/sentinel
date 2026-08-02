@@ -4,12 +4,18 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@senti
 import { Input } from '@sentinel/ui';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@sentinel/ui';
 import type { UseFormReturn } from 'react-hook-form';
-import type { Department, Course, InstitutionNamingConventions } from '@sentinel/shared/types';
+import type {
+    Department,
+    Course,
+    Institution,
+    InstitutionNamingConventions,
+} from '@sentinel/shared/types';
 import { type SectionFormValues } from '@sentinel/shared/schema';
 import { useEffect } from 'react';
 
 export type SectionFormFieldsProps = {
     form: UseFormReturn<SectionFormValues>;
+    institutions?: Institution[];
     departments?: Department[];
     courses?: Course[];
     namingConvention?: InstitutionNamingConventions | null;
@@ -20,6 +26,7 @@ export type SectionFormFieldsProps = {
 
 export function SectionFormFields({
     form,
+    institutions = [],
     departments = [],
     courses = [],
     namingConvention,
@@ -28,6 +35,7 @@ export function SectionFormFields({
     fixedCourseId,
 }: SectionFormFieldsProps) {
     const courseId = form.watch('course_id');
+    const institutionId = form.watch('institution_id');
 
     // Auto-prefill section name based on course-scoped naming conventions
     useEffect(() => {
@@ -51,18 +59,60 @@ export function SectionFormFields({
         <div className="space-y-4">
             <FormField
                 control={form.control}
+                name="institution_id"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Institution</FormLabel>
+                        <Select
+                            disabled={isPending || mode === 'edit'}
+                            onValueChange={(value) => {
+                                field.onChange(value);
+                                form.setValue('department_id', '', { shouldValidate: true });
+                                form.setValue('course_id', '', { shouldValidate: true });
+                                if (mode === 'create') {
+                                    form.setValue('name', '');
+                                }
+                            }}
+                            value={field.value ?? ''}
+                        >
+                            <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select institution" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {institutions.map((institution) => (
+                                    <SelectItem key={institution.id} value={institution.id}>
+                                        {institution.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+
+            <FormField
+                control={form.control}
                 name="department_id"
                 render={({ field }) => (
                     <FormItem>
                         <FormLabel>Department</FormLabel>
                         <Select
-                            disabled={isPending}
+                            disabled={isPending || !institutionId}
                             onValueChange={field.onChange}
                             value={field.value ?? ''}
                         >
                             <FormControl>
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Select department" />
+                                    <SelectValue
+                                        placeholder={
+                                            institutionId
+                                                ? 'Select department'
+                                                : 'Select institution first'
+                                        }
+                                    />
                                 </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -86,13 +136,19 @@ export function SectionFormFields({
                         <FormItem>
                             <FormLabel>Course</FormLabel>
                             <Select
-                                disabled={isPending}
+                                disabled={isPending || !institutionId}
                                 onValueChange={field.onChange}
                                 value={field.value ?? ''}
                             >
                                 <FormControl>
                                     <SelectTrigger>
-                                        <SelectValue placeholder="Select course" />
+                                        <SelectValue
+                                            placeholder={
+                                                institutionId
+                                                    ? 'Select course'
+                                                    : 'Select institution first'
+                                            }
+                                        />
                                     </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>

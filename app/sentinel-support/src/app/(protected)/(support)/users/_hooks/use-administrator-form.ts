@@ -8,16 +8,29 @@ import { User } from '@sentinel/shared/types';
 import { useEffect } from 'react';
 import { z } from 'zod';
 import type { AdministratorRole } from '@/app/(protected)/(support)/users/_lib/administrator-role-config';
+import { getAdministratorRoleConfig } from '@/app/(protected)/(support)/users/_lib/administrator-role-config';
 
-const administratorFormSchema = userFormBaseSchema.superRefine((data, ctx) => {
-    if (!(data.institution ?? '').trim()) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: 'Institution is required',
-            path: ['institution'],
-        });
-    }
-});
+function createAdministratorFormSchema(role: AdministratorRole) {
+    const config = getAdministratorRoleConfig(role);
+
+    return userFormBaseSchema.superRefine((data, ctx) => {
+        if (!(data.institution ?? '').trim()) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Institution is required',
+                path: ['institution'],
+            });
+        }
+
+        if (config.requiresDepartment && !(data.department ?? '').trim()) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Department is required',
+                path: ['department'],
+            });
+        }
+    });
+}
 
 interface UseAdministratorFormProps {
     role: AdministratorRole;
@@ -29,7 +42,7 @@ export function useAdministratorForm({ role, user, onSuccess }: UseAdministrator
     const { data: targetUserDetail } = useUserQuery(user?.id || '');
 
     const form = useForm<UserFormValues>({
-        resolver: zodResolver(administratorFormSchema),
+        resolver: zodResolver(createAdministratorFormSchema(role)),
         defaultValues: {
             firstName: '',
             lastName: '',

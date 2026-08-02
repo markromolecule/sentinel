@@ -38,6 +38,7 @@ export function useBulkRoomUploadForm(onSuccess: () => void) {
     const start = useWatch({ control, name: 'start_number' });
     const end = useWatch({ control, name: 'end_number' });
     const padding = useWatch({ control, name: 'padding' });
+    const roomType = useWatch({ control, name: 'room_type' });
 
     const { data: namingConvention } = useEffectiveInstitutionNamingConventionsQuery(
         selectedInstitutionId || '',
@@ -46,15 +47,14 @@ export function useBulkRoomUploadForm(onSuccess: () => void) {
     const generatedRoomsPreview = useMemo(() => {
         if (!namingConvention || !start || !end) return [];
 
-        const namePrefix =
-            namingConvention.namingRules?.room?.prefix ||
-            namingConvention.roomCodeFormat?.replace('{number}', '') ||
-            'Room ';
-
-        const codePrefix =
-            namingConvention.roomCodeFormat?.replace('{number}', '') ||
-            namingConvention.namingRules?.room?.prefix ||
-            'RM';
+        const roomRules = namingConvention.namingRules?.room;
+        const standardPrefix =
+            roomRules?.prefix || namingConvention.roomCodeFormat?.replace('{number}', '') || 'RM';
+        const virtualPrefix = roomRules?.virtualPrefix || 'VR';
+        const standardNamePrefix =
+            namingConvention.roomCodeFormat?.replace('{number}', '') || 'Room';
+        const namePrefix = roomType === 'VIRTUAL' ? virtualPrefix : standardNamePrefix;
+        const codePrefix = roomType === 'VIRTUAL' ? virtualPrefix : standardPrefix;
 
         return generateRooms({
             namePrefix,
@@ -63,7 +63,7 @@ export function useBulkRoomUploadForm(onSuccess: () => void) {
             end,
             padding,
         });
-    }, [namingConvention, start, end, padding]);
+    }, [namingConvention, start, end, padding, roomType]);
 
     const bulkCreate = useBulkCreateRoomsMutation({
         onSuccess: (data) => {

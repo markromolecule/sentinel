@@ -8,7 +8,13 @@ import {
     DialogTitle,
     Input,
     Label,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@sentinel/ui';
+import type { Institution } from '@sentinel/shared/types';
 import { SubjectFormState } from '../../_hooks/use-subjects-page-state/_types';
 
 export type SubjectFormDialogProps = {
@@ -18,6 +24,7 @@ export type SubjectFormDialogProps = {
     setForm: (form: SubjectFormState) => void;
     onSubmit: () => void;
     isPending: boolean;
+    institutions: Institution[];
 };
 
 export function SubjectFormDialog({
@@ -27,17 +34,45 @@ export function SubjectFormDialog({
     setForm,
     onSubmit,
     isPending,
+    institutions,
 }: SubjectFormDialogProps) {
+    const isCreateMode = !form.id;
+    const canSubmit = !isPending && form.code.trim().length > 0 && form.title.trim().length > 0;
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>{form.id ? 'Edit Subject' : 'Add Subject'}</DialogTitle>
+                    <DialogTitle>{isCreateMode ? 'Add Subject' : 'Edit Subject'}</DialogTitle>
                     <DialogDescription>
-                        Subject changes are scoped to the selected template context.
+                        {isCreateMode
+                            ? 'Create a subject and assign it to an institution.'
+                            : 'Subject changes are scoped to the selected template context.'}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4">
+                    {isCreateMode ? (
+                        <div className="space-y-2">
+                            <Label>Institution</Label>
+                            <Select
+                                value={form.institutionId || undefined}
+                                onValueChange={(institutionId) =>
+                                    setForm({ ...form, institutionId })
+                                }
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select institution" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {institutions.map((institution) => (
+                                        <SelectItem key={institution.id} value={institution.id}>
+                                            {institution.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    ) : null}
                     <div className="space-y-2">
                         <Label>Code</Label>
                         <Input
@@ -57,7 +92,10 @@ export function SubjectFormDialog({
                     <Button variant="outline" onClick={() => onOpenChange(false)}>
                         Cancel
                     </Button>
-                    <Button onClick={onSubmit} disabled={isPending}>
+                    <Button
+                        onClick={onSubmit}
+                        disabled={!canSubmit || (isCreateMode && !form.institutionId)}
+                    >
                         Save
                     </Button>
                 </DialogFooter>

@@ -2,7 +2,12 @@
 
 import { UseFormReturn } from 'react-hook-form';
 import { SectionFormValues } from '@sentinel/shared/schema';
-import { Course, Department, InstitutionNamingConventions } from '@sentinel/shared/types';
+import {
+    Course,
+    Department,
+    Institution,
+    InstitutionNamingConventions,
+} from '@sentinel/shared/types';
 import {
     Button,
     Dialog,
@@ -20,6 +25,7 @@ export type SectionFormDialogProps = {
     onOpenChange: (open: boolean) => void;
     editingSectionId: string | null;
     form: UseFormReturn<SectionFormValues>;
+    institutions: Institution[];
     departments: Department[];
     courses: Course[];
     namingConvention: InstitutionNamingConventions | null | undefined;
@@ -32,6 +38,7 @@ export function SectionFormDialog({
     onOpenChange,
     editingSectionId,
     form,
+    institutions,
     departments,
     courses,
     namingConvention,
@@ -51,6 +58,7 @@ export function SectionFormDialog({
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                         <SectionFormFields
                             form={form}
+                            institutions={institutions}
                             departments={departments}
                             courses={courses}
                             namingConvention={namingConvention}

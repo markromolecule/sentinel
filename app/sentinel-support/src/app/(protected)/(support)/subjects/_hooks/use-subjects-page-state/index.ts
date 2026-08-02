@@ -108,7 +108,16 @@ export function useSubjectsPageState() {
             id: subjectId,
             code: subject.code,
             title: subject.title,
+            institutionId: selectedInstitutionId || undefined,
             isInherited: subject.isInherited,
+        });
+        setFormOpen(true);
+    };
+
+    const handleCreate = () => {
+        setForm({
+            ...EMPTY_SUBJECT_FORM,
+            institutionId: selectedInstitutionId || '',
         });
         setFormOpen(true);
     };
@@ -164,10 +173,12 @@ export function useSubjectsPageState() {
             return;
         }
 
+        if (!form.institutionId) return;
+
         createSubjectMutation.mutate({
             code: form.code.trim(),
             title: form.title.trim(),
-            institution_id: selectedInstitutionId || undefined,
+            institution_id: form.institutionId,
         });
     };
 
@@ -193,6 +204,7 @@ export function useSubjectsPageState() {
         error,
         parentSubject,
         handleEdit,
+        handleCreate,
         handleDelete,
         handleRevert,
         submitForm,

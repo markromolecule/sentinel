@@ -19,6 +19,7 @@ import { PermissionGuard } from '@sentinel/hooks';
 interface AdministratorActionsCellProps {
     administrator: User;
     role: AdministratorRole;
+    isCurrentUser?: boolean;
     onEdit: (admin: User) => void;
     onDelete: (admin: User) => void;
 }
@@ -26,6 +27,7 @@ interface AdministratorActionsCellProps {
 export function AdministratorActionsCell({
     administrator,
     role,
+    isCurrentUser = false,
     onEdit,
     onDelete,
 }: AdministratorActionsCellProps) {
@@ -56,14 +58,16 @@ export function AdministratorActionsCell({
                     </DropdownMenuItem>
                 </PermissionGuard>
                 <DropdownMenuSeparator />
-                <PermissionGuard permission="users:delete">
-                    <DropdownMenuItem
-                        className="text-destructive"
-                        onClick={() => onDelete(administrator)}
-                    >
-                        <Trash className="mr-2 h-4 w-4" /> Delete
-                    </DropdownMenuItem>
-                </PermissionGuard>
+                {!isCurrentUser && (
+                    <PermissionGuard permission="users:delete">
+                        <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => onDelete(administrator)}
+                        >
+                            <Trash className="mr-2 h-4 w-4" /> Delete
+                        </DropdownMenuItem>
+                    </PermissionGuard>
+                )}
             </DropdownMenuContent>
         </DropdownMenu>
     );

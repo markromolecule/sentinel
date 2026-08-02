@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, type ChangeEvent } from 'react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
-import type { WizardDraft, SubjectImportPreview } from '../../_types';
+import type { WizardDraft, SubjectImportPreview, SubjectImportRow } from '../../_types';
 import { parseSubjectManualText, parseSubjectWorksheetRows, createClientId } from '../../_utils';
 
 export type UseWizardSubjectImportArgs = {
@@ -61,15 +61,35 @@ export function useWizardSubjectImport({ updateDraft }: UseWizardSubjectImportAr
             toast.error('Add at least one valid subject before importing.');
             return;
         }
-        updateDraft((current) => ({
-            ...current,
-            subjects: rows.map((row) => ({
-                clientId: createClientId(),
-                code: row.code,
-                title: row.title,
-            })),
-        }));
-        toast.success(`Loaded ${rows.length} subject${rows.length === 1 ? '' : 's'}.`);
+        updateDraft((current) => {
+            const incomingByCode = new Map(
+                rows.map((row: SubjectImportRow) => [row.code.trim().toUpperCase(), row]),
+            );
+            const existingCodes = new Set(
+                current.subjects.map((subject) => subject.code.trim().toUpperCase()),
+            );
+            const updatedSubjects = current.subjects.map((subject) => {
+                const incoming = incomingByCode.get(subject.code.trim().toUpperCase());
+                return incoming
+                    ? { ...subject, code: incoming.code, title: incoming.title }
+                    : subject;
+            });
+            const newSubjects = rows
+                .filter(
+                    (row: SubjectImportRow) => !existingCodes.has(row.code.trim().toUpperCase()),
+                )
+                .map((row: SubjectImportRow) => ({
+                    clientId: createClientId(),
+                    code: row.code,
+                    title: row.title,
+                }));
+
+            return {
+                ...current,
+                subjects: [...updatedSubjects, ...newSubjects],
+            };
+        });
+        toast.success(`Added ${rows.length} subject${rows.length === 1 ? '' : 's'}.`);
     }, [activeSubjectPreview, updateDraft]);
 
     return {

@@ -45,7 +45,7 @@ export const ADMINISTRATOR_ROLE_CONFIG: Record<AdministratorRole, AdministratorR
         deleteDescriptionLabel: 'superadmin account',
         formFootnote:
             'Superadmin accounts are created with global platform access and are managed from the support portal.',
-        requiresDepartment: false,
+        requiresDepartment: true,
     },
     support: {
         role: 'support',

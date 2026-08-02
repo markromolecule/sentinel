@@ -44,6 +44,7 @@ export default function NewInstitutionWizardPage() {
         publishSetup,
         handleSubjectFileChange,
         setSubjectFilePreview,
+        setSubjectFileName,
         applySubjectBulkRows,
         setSubjectBulkInput,
     } = useInstitutionWizard();
@@ -51,7 +52,7 @@ export default function NewInstitutionWizardPage() {
     const isLastStep = activeStep === STEPS.length - 1;
 
     return (
-        <div className="-m-6 flex h-[calc(100vh-theme(spacing.16))] flex-col overflow-hidden bg-slate-50/50">
+        <div className="flex h-full w-full flex-col overflow-hidden bg-slate-50/50">
             {/* Header */}
             <header className="border-border bg-card sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between border-b px-6">
                 <div className="flex items-center gap-4">
@@ -117,7 +118,7 @@ export default function NewInstitutionWizardPage() {
 
                 {/* Main Wizard Content */}
                 <main className="flex min-h-0 min-w-0 flex-1 flex-col">
-                    <ScrollArea className="flex-1">
+                    <ScrollArea className="min-h-0 flex-1">
                         <div className="mx-auto max-w-5xl px-8 py-10">
                             <Card className="border-none shadow-none">
                                 <CardContent className="p-0">
@@ -185,6 +186,7 @@ export default function NewInstitutionWizardPage() {
                                                 setSubjectBulkInput={setSubjectBulkInput}
                                                 handleSubjectFileChange={handleSubjectFileChange}
                                                 setSubjectFilePreview={setSubjectFilePreview}
+                                                setSubjectFileName={setSubjectFileName}
                                                 applySubjectBulkRows={applySubjectBulkRows}
                                             />
                                         )}

@@ -6,7 +6,7 @@ import { DepartmentsStep } from './steps/departments-step';
 import { CoursesStep } from './steps/courses-step';
 import { SubjectsStep } from './steps/subjects-step';
 import { ReviewStep } from './steps/review-step';
-import { WizardDraft, SimpleInstitution, WizardSummary, SubjectImportPreview } from './_types';
+import { WizardDraft, SimpleInstitution, WizardSummary } from './_types';
 
 export type WizardStepsRendererProps = {
     activeStep: number;
@@ -14,16 +14,7 @@ export type WizardStepsRendererProps = {
     draft: WizardDraft;
     institutions: SimpleInstitution[];
     summary: WizardSummary;
-    subjectBulkInput: string;
-    subjectFileName: string;
-    activeSubjectPreview: SubjectImportPreview;
-    isParsingSubjects: boolean;
     updateDraft: (updater: (current: WizardDraft) => WizardDraft) => void;
-    setSubjectBulkInput: (input: string) => void;
-    handleSubjectFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    setSubjectFilePreview: (preview: SubjectImportPreview | null) => void;
-    setSubjectFileName: (name: string) => void;
-    applySubjectBulkRows: () => void;
 };
 
 export function WizardStepsRenderer({
@@ -32,16 +23,7 @@ export function WizardStepsRenderer({
     draft,
     institutions,
     summary,
-    subjectBulkInput,
-    subjectFileName,
-    activeSubjectPreview,
-    isParsingSubjects,
     updateDraft,
-    setSubjectBulkInput,
-    handleSubjectFileChange,
-    setSubjectFilePreview,
-    setSubjectFileName,
-    applySubjectBulkRows,
 }: WizardStepsRendererProps) {
     if (isInitialDataLoading) {
         return (
@@ -72,20 +54,7 @@ export function WizardStepsRenderer({
                 <CoursesStep draft={draft} summary={summary} updateDraft={updateDraft} />
             )}
             {activeStep === 5 && (
-                <SubjectsStep
-                    draft={draft}
-                    summary={summary}
-                    subjectBulkInput={subjectBulkInput}
-                    subjectFileName={subjectFileName}
-                    activeSubjectPreview={activeSubjectPreview}
-                    isParsingSubjects={isParsingSubjects}
-                    updateDraft={updateDraft}
-                    setSubjectBulkInput={setSubjectBulkInput}
-                    handleSubjectFileChange={handleSubjectFileChange}
-                    setSubjectFilePreview={setSubjectFilePreview}
-                    setSubjectFileName={setSubjectFileName}
-                    applySubjectBulkRows={applySubjectBulkRows}
-                />
+                <SubjectsStep draft={draft} summary={summary} updateDraft={updateDraft} />
             )}
             {activeStep === 6 && <ReviewStep summary={summary} />}
         </>

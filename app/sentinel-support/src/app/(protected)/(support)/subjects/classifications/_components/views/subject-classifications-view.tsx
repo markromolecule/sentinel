@@ -170,7 +170,11 @@ export function SubjectClassificationsView() {
                         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                             {filteredClassifications.map((classification) => (
                                 <ClassificationCard
-                                    key={classification.id}
+                                    key={`${classification.id}-${
+                                        classification.effectiveInstitutionId ??
+                                        classification.institution_id ??
+                                        'global'
+                                    }`}
                                     classification={classification}
                                     canOffer={canOffer}
                                     canEdit={canUpdate}

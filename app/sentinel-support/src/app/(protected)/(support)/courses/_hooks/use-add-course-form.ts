@@ -25,7 +25,6 @@ export function useAddCourseForm(institutionId: string, onSuccess: () => void) {
 
     function onSubmit(values: CourseFormValues) {
         if (!institutionId) {
-            console.error('No institution selected');
             return;
         }
 

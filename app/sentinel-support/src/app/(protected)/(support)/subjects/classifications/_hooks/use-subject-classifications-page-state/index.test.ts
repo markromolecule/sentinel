@@ -94,6 +94,93 @@ describe('useSubjectClassificationsPageState', () => {
         expect(result.current.filteredClassifications[0].id).toBe('class-2');
     });
 
+    it('collapses inherited projections when the source classification is already visible locally', () => {
+        (useSubjectClassificationsQuery as any).mockReturnValue({
+            data: {
+                items: [
+                    {
+                        id: 'shared-class',
+                        name: 'General Subjects',
+                        type: 'GENERAL',
+                        inheritanceStatus: 'LOCAL',
+                        sourceRecordId: 'shared-class',
+                        subjectCount: 18,
+                        subjects: [],
+                    },
+                    {
+                        id: 'shared-class',
+                        name: 'General Subjects',
+                        type: 'GENERAL',
+                        inheritanceStatus: 'INHERITED',
+                        sourceRecordId: 'shared-class',
+                        effectiveInstitutionId: 'branch-1',
+                        subjectCount: 18,
+                        subjects: [],
+                    },
+                ],
+                pagination: { page: 1, limit: 10, total: 2, hasMore: false },
+            },
+            isLoading: false,
+            isError: false,
+            error: null,
+        });
+
+        const { result } = renderHook(() => useSubjectClassificationsPageState());
+
+        expect(result.current.classifications).toHaveLength(1);
+        expect(result.current.filteredClassifications).toHaveLength(1);
+        expect(result.current.filteredClassifications[0]).toMatchObject({
+            id: 'shared-class',
+            inheritanceStatus: 'LOCAL',
+        });
+        expect(result.current.totalCount).toBe(1);
+    });
+
+    it('shows inherited projections when the inherited origin filter is selected', () => {
+        (useSubjectClassificationsQuery as any).mockReturnValue({
+            data: {
+                items: [
+                    {
+                        id: 'shared-class',
+                        name: 'General Subjects',
+                        type: 'GENERAL',
+                        inheritanceStatus: 'LOCAL',
+                        sourceRecordId: 'shared-class',
+                        subjectCount: 18,
+                        subjects: [],
+                    },
+                    {
+                        id: 'shared-class',
+                        name: 'General Subjects',
+                        type: 'GENERAL',
+                        inheritanceStatus: 'INHERITED',
+                        sourceRecordId: 'shared-class',
+                        effectiveInstitutionId: 'branch-1',
+                        subjectCount: 18,
+                        subjects: [],
+                    },
+                ],
+                pagination: { page: 1, limit: 10, total: 2, hasMore: false },
+            },
+            isLoading: false,
+            isError: false,
+            error: null,
+        });
+
+        const { result } = renderHook(() => useSubjectClassificationsPageState());
+
+        act(() => {
+            result.current.handleSelectOrigin('INHERITED');
+        });
+
+        expect(result.current.filteredClassifications).toHaveLength(1);
+        expect(result.current.filteredClassifications[0]).toMatchObject({
+            id: 'shared-class',
+            inheritanceStatus: 'INHERITED',
+            effectiveInstitutionId: 'branch-1',
+        });
+    });
+
     it('sets proper counts for facets', () => {
         const { result } = renderHook(() => useSubjectClassificationsPageState());
         expect(result.current.typeCounts.get('GENERAL')).toBe(1);
