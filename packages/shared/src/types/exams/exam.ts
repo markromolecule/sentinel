@@ -208,6 +208,8 @@ export type ExamQuestionContent = {
     pairs?: MatchingPair[];
     blanks?: string[];
     caseSensitive?: boolean;
+    answerGuidance?: string;
+    guidance?: string;
 };
 
 export type ExamQuestionSection = {
