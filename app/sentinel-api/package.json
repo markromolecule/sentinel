@@ -20,6 +20,9 @@
         "build": "cd ../../packages/db && pnpm run build && cd ../../packages/shared && pnpm run build",
         "ignore-build": "npx turbo-ignore",
         "seed:support": "prisma db seed",
+        "db:cleanup-seed-data": "tsx prisma/cleanup-seed-data.ts",
+        "seed:real-baseline": "tsx prisma/seed-real-baseline.ts",
+        "db:prepare-real": "pnpm run db:cleanup-seed-data && pnpm run seed:real-baseline",
         "seed:passwords": "tsx prisma/update-user-passwords.ts",
         "rollout:institution-inheritance": "tsx -r dotenv/config scripts/institution-inheritance-rollout.ts",
         "backfill:passages": "tsx -r dotenv/config scripts/backfill-passage-content.ts"

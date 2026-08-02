@@ -15,6 +15,7 @@
         "db:migrate": "pnpm --dir packages/db run migrate:deploy",
         "db:seed:support": "pnpm --dir app/sentinel-api run seed:support",
         "db:setup:support": "pnpm run db:migrate && pnpm run db:seed:support",
+        "db:prepare-real": "pnpm --dir app/sentinel-api run db:prepare-real",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
         "clean": "rm -rf node_modules"
