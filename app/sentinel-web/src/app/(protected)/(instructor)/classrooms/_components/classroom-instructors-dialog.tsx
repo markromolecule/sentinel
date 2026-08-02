@@ -77,6 +77,7 @@ export function ClassroomInstructorsDialog({
     });
 
     const instructors = instructorsQuery.data ?? [];
+    const canManageInstructors = classroom.canManage;
 
     return (
         <>
@@ -89,17 +90,19 @@ export function ClassroomInstructorsDialog({
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="mb-4 flex justify-end">
-                        <Button
-                            onClick={() => setIsAssignOpen(true)}
-                            disabled={instructorsQuery.isLoading}
-                            size="sm"
-                            className="bg-[#323d8f] text-white hover:bg-[#323d8f]/90"
-                        >
-                            <UserPlus className="mr-2 h-4 w-4" />
-                            Assign Instructor
-                        </Button>
-                    </div>
+                    {canManageInstructors ? (
+                        <div className="mb-4 flex justify-end">
+                            <Button
+                                onClick={() => setIsAssignOpen(true)}
+                                disabled={instructorsQuery.isLoading}
+                                size="sm"
+                                className="bg-[#323d8f] text-white hover:bg-[#323d8f]/90"
+                            >
+                                <UserPlus className="mr-2 h-4 w-4" />
+                                Assign Instructor
+                            </Button>
+                        </div>
+                    ) : null}
 
                     <ScrollArea className="max-h-[60vh] pr-4">
                         {instructorsQuery.error ? (
@@ -153,7 +156,7 @@ export function ClassroomInstructorsDialog({
                                             </div>
                                         </div>
 
-                                        {!instructor.isHead ? (
+                                        {canManageInstructors && !instructor.isHead ? (
                                             <Button
                                                 variant="outline"
                                                 size="sm"

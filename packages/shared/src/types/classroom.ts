@@ -60,6 +60,7 @@ export type ClassroomSummary = {
     archivedAt?: string | null;
     updatedBy: string | null;
     updatedByName: string | null;
+    canManage: boolean;
     instructors: string[];
     scopeSummary: ClassroomScopeSummary;
 };

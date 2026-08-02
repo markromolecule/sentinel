@@ -40,6 +40,7 @@ export function ActivityLogTable() {
                 onPaginationChange={setPagination}
                 pageCount={totalPages}
                 totalCount={totalCount}
+                hideDetails={true}
             />
         </div>
     );

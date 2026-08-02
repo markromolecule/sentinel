@@ -159,7 +159,6 @@ export async function removeInstructorFromClassroom(args: {
     userRole?: string;
 }) {
     const { dbClient, classGroupId, instructorUserId, actorUserId, institutionId, userRole } = args;
-    const instructorRoleId = await getInstructorRoleId(dbClient);
 
     await assertHeadInstructorClassroomAccess({
         dbClient,
@@ -168,6 +167,8 @@ export async function removeInstructorFromClassroom(args: {
         institutionId,
         userRole,
     });
+
+    const instructorRoleId = await getInstructorRoleId(dbClient);
 
     const existingAssignment = await getClassroomInstructorAssignment({
         dbClient,

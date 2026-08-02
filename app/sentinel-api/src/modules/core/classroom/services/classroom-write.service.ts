@@ -8,6 +8,7 @@ import { getClassGroupColumnSupport } from '../helper/classroom-schema-compat';
 import { getAccessibleClassroomOrThrow } from './classroom-access-query.service';
 import { ActivityNotificationService } from '../../../general/notification/services/activity-notification.service';
 import { deleteExamForCleanup } from '../../../examination/exams/services/delete-exam.service';
+import { assertHeadInstructorClassroomAccess } from './classroom-instructor-write-helper.service';
 
 export async function saveClassroomConfiguration(args: {
     dbClient: DbClient;
@@ -71,6 +72,14 @@ export async function deleteClassroom(
     dbClient: DbClient,
     { classGroupId, userId, institutionId, userRole }: ClassroomAccessScope,
 ) {
+    await assertHeadInstructorClassroomAccess({
+        dbClient,
+        classGroupId,
+        userId,
+        institutionId,
+        userRole,
+    });
+
     const isCoreAdmin = userRole ? ['support', 'superadmin', 'admin'].includes(userRole) : false;
 
     let query = dbClient
@@ -152,6 +161,18 @@ export async function bulkDeleteClassrooms(
     if (classGroupIds.length === 0) return;
 
     const isCoreAdmin = userRole ? ['support', 'superadmin', 'admin'].includes(userRole) : false;
+
+    if (!isCoreAdmin) {
+        for (const classGroupId of classGroupIds) {
+            await assertHeadInstructorClassroomAccess({
+                dbClient,
+                classGroupId,
+                userId,
+                institutionId,
+                userRole,
+            });
+        }
+    }
 
     let query = dbClient
         .selectFrom('class_groups as cg')
