@@ -94,14 +94,16 @@ export function ClassroomActionCell({ classroom }: ClassroomActionCellProps) {
                             </DropdownMenuItem>
                         ))}
 
-                    <DropdownMenuItem
-                        variant="destructive"
-                        className="cursor-pointer"
-                        onClick={() => setDeleteOpen(true)}
-                    >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                    </DropdownMenuItem>
+                    {classroom.canManage ? (
+                        <DropdownMenuItem
+                            variant="destructive"
+                            className="cursor-pointer"
+                            onClick={() => setDeleteOpen(true)}
+                        >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                        </DropdownMenuItem>
+                    ) : null}
                 </DropdownMenuContent>
             </DropdownMenu>
 

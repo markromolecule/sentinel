@@ -8,6 +8,7 @@ import {
 import { ActivityNotificationService } from '../../../general/notification/services/activity-notification.service';
 import { HTTPException } from 'hono/http-exception';
 import { deleteExamForCleanup } from '../../../examination/exams/services/delete-exam.service';
+import { assertHeadInstructorClassroomAccess } from './classroom-instructor-write-helper.service';
 
 vi.mock('../../../general/notification/services/activity-notification.service', () => ({
     ActivityNotificationService: {
@@ -16,8 +17,12 @@ vi.mock('../../../general/notification/services/activity-notification.service', 
     },
 }));
 
-vi.mock('../../../examination/exams/services/delete-exam', () => ({
+vi.mock('../../../examination/exams/services/delete-exam.service', () => ({
     deleteExamForCleanup: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('./classroom-instructor-write-helper.service', () => ({
+    assertHeadInstructorClassroomAccess: vi.fn().mockResolvedValue(undefined),
 }));
 
 function createSelectBuilder(result: any) {
@@ -55,6 +60,7 @@ function createUpdateBuilder() {
 describe('classroom-write.service', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        vi.mocked(assertHeadInstructorClassroomAccess).mockResolvedValue(undefined);
     });
 
     describe('bulkDeleteClassrooms', () => {
@@ -94,6 +100,14 @@ describe('classroom-write.service', () => {
                 userRole: 'instructor',
             });
 
+            expect(assertHeadInstructorClassroomAccess).toHaveBeenCalledTimes(2);
+            expect(assertHeadInstructorClassroomAccess).toHaveBeenNthCalledWith(1, {
+                dbClient,
+                classGroupId: 'class-1',
+                userId: 'user-1',
+                institutionId: 'inst-1',
+                userRole: 'instructor',
+            });
             expect(dbClient.selectFrom).toHaveBeenCalledWith('class_groups as cg');
             expect(selectBuilder.innerJoin).toHaveBeenCalledTimes(2); // joins class_roles and roles
             expect(dbClient.deleteFrom).toHaveBeenCalledWith('class_groups');
@@ -124,6 +138,7 @@ describe('classroom-write.service', () => {
                 userRole: 'admin',
             });
 
+            expect(assertHeadInstructorClassroomAccess).not.toHaveBeenCalled();
             expect(dbClient.selectFrom).toHaveBeenCalledWith('class_groups as cg');
             expect(selectBuilder.innerJoin).not.toHaveBeenCalled();
             expect(dbClient.deleteFrom).toHaveBeenCalledWith('class_groups');
@@ -131,6 +146,33 @@ describe('classroom-write.service', () => {
             expect(
                 ActivityNotificationService.notifyInstitutionActivityDeleted,
             ).toHaveBeenCalledTimes(1);
+        });
+
+        it('blocks bulk deletion when the instructor is not the head instructor', async () => {
+            vi.mocked(assertHeadInstructorClassroomAccess).mockRejectedValue(
+                new HTTPException(403, {
+                    message: 'Only the head instructor can manage classroom instructors.',
+                }),
+            );
+
+            const dbClient = {
+                selectFrom: vi.fn(),
+                deleteFrom: vi.fn(),
+            } as any;
+
+            await expect(
+                bulkDeleteClassrooms(dbClient, {
+                    classGroupIds: ['class-1'],
+                    userId: 'assistant-1',
+                    institutionId: 'inst-1',
+                    userRole: 'instructor',
+                }),
+            ).rejects.toMatchObject<Partial<HTTPException>>({
+                status: 403,
+            });
+
+            expect(dbClient.selectFrom).not.toHaveBeenCalled();
+            expect(dbClient.deleteFrom).not.toHaveBeenCalled();
         });
     });
 
@@ -166,6 +208,13 @@ describe('classroom-write.service', () => {
                 userRole: 'admin',
             });
 
+            expect(assertHeadInstructorClassroomAccess).toHaveBeenCalledWith({
+                dbClient,
+                classGroupId: 'class-1',
+                userId: 'user-1',
+                institutionId: 'inst-1',
+                userRole: 'admin',
+            });
             expect(deleteExamForCleanup).toHaveBeenCalledTimes(2);
             expect(deleteExamForCleanup).toHaveBeenNthCalledWith(1, dbClient, 'exam-1', 'inst-1');
             expect(deleteExamForCleanup).toHaveBeenNthCalledWith(2, dbClient, 'exam-2', 'inst-1');
@@ -181,6 +230,33 @@ describe('classroom-write.service', () => {
                 '=',
                 'class-1',
             );
+        });
+
+        it('blocks deletion when the instructor is not the head instructor', async () => {
+            vi.mocked(assertHeadInstructorClassroomAccess).mockRejectedValue(
+                new HTTPException(403, {
+                    message: 'Only the head instructor can manage classroom instructors.',
+                }),
+            );
+
+            const dbClient = {
+                selectFrom: vi.fn(),
+                deleteFrom: vi.fn(),
+            } as any;
+
+            await expect(
+                deleteClassroom(dbClient, {
+                    classGroupId: 'class-1',
+                    userId: 'assistant-1',
+                    institutionId: 'inst-1',
+                    userRole: 'instructor',
+                }),
+            ).rejects.toMatchObject<Partial<HTTPException>>({
+                status: 403,
+            });
+
+            expect(dbClient.selectFrom).not.toHaveBeenCalled();
+            expect(dbClient.deleteFrom).not.toHaveBeenCalled();
         });
 
         it('removes classroom assignment rows without deleting exams that are only shared links', async () => {

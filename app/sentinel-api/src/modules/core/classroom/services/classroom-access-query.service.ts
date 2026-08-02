@@ -70,6 +70,17 @@ export async function buildAccessibleClassroomsQuery(
         )
         .where('cg.institution_id', '=', institutionId);
 
+    const canManageSelect =
+        role === ('admin' as any)
+            ? sql<boolean>`true`
+            : sql<boolean>`exists (
+                  select 1
+                  from classroom_instructor_assignments cia_manage
+                  where cia_manage.class_group_id = cg.class_group_id
+                    and cia_manage.instructor_user_id = ${userId}
+                    and cia_manage.is_head = true
+              )`;
+
     const status = options.status ?? 'active';
     if (status === 'active') {
         query = query.where('cg.archived_at', 'is', null);
@@ -132,6 +143,7 @@ export async function buildAccessibleClassroomsQuery(
                   'updated_by_name',
               )
             : sql<string | null>`null`.as('updated_by_name'),
+        canManageSelect.as('can_manage'),
         sql<any>`(
             select coalesce(json_agg(distinct nullif(trim(concat_ws(' ', up.first_name, up.last_name)), '')), '[]'::json)
             from (

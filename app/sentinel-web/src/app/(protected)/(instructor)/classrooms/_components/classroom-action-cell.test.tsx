@@ -38,6 +38,7 @@ const mockClassroom = {
     updatedAt: null,
     updatedBy: null,
     updatedByName: null,
+    canManage: true,
     instructors: [],
     scopeSummary: {
         subjectLabel: 'CS101 - Intro to CS',

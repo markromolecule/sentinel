@@ -58,6 +58,7 @@ export const classroomSummarySchema = z.object({
     archived_at: z.union([z.coerce.date(), z.string()]).nullable().optional(),
     updated_by: z.string().uuid().nullable(),
     updated_by_name: z.string().nullable(),
+    can_manage: z.boolean(),
     instructors: z.array(z.string()),
     scope_summary: classroomScopeSummarySchema,
 });

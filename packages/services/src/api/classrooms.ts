@@ -73,6 +73,7 @@ interface ApiClassroomSummary {
     archived_at?: string | null;
     updated_by: string | null;
     updated_by_name: string | null;
+    can_manage: boolean;
     instructors: string[];
     scope_summary: ApiClassroomScopeSummary;
 }
@@ -150,6 +151,7 @@ function mapClassroomSummary(classroom: ApiClassroomSummary): ClassroomSummary {
         archivedAt: classroom.archived_at,
         updatedBy: classroom.updated_by,
         updatedByName: classroom.updated_by_name,
+        canManage: classroom.can_manage,
         instructors: classroom.instructors,
         scopeSummary: mapScopeSummary(classroom.scope_summary),
     };

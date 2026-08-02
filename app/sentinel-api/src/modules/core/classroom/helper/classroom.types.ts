@@ -25,6 +25,7 @@ export type RawClassroomRecord = {
     archived_at: string | Date | null;
     updated_by: string | null;
     updated_by_name: string | null;
+    can_manage: boolean;
     instructors: string[];
 };
 

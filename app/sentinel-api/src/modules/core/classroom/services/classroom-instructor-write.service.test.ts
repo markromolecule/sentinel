@@ -169,8 +169,10 @@ describe('classroom instructor write service', () => {
             class_group_id: 'class-1',
         } as any);
 
+        const headCheckBuilder = createSelectBuilder({
+            assignment_id: 'actor-head-assignment',
+        });
         const roleBuilder = createSelectBuilder({ role_id: 7 });
-        const headCheckBuilder = createSelectBuilder({ assignment_id: 'head-assignment' });
         const existingAssignmentBuilder = createSelectBuilder({
             assignment_id: 'head-assignment',
             is_head: true,
@@ -178,8 +180,8 @@ describe('classroom instructor write service', () => {
         const dbClient = {
             selectFrom: vi
                 .fn()
-                .mockReturnValueOnce(roleBuilder)
                 .mockReturnValueOnce(headCheckBuilder)
+                .mockReturnValueOnce(roleBuilder)
                 .mockReturnValueOnce(existingAssignmentBuilder),
         } as any;
 
@@ -195,5 +197,78 @@ describe('classroom instructor write service', () => {
             status: 409,
             message: 'The head instructor cannot be removed from the classroom.',
         });
+    });
+
+    it('rejects removal attempts from non-head instructors', async () => {
+        vi.mocked(getAccessibleClassroomOrThrow).mockResolvedValue({
+            class_group_id: 'class-1',
+        } as any);
+
+        const headCheckBuilder = createSelectBuilder(undefined);
+        const dbClient = {
+            selectFrom: vi.fn().mockReturnValueOnce(headCheckBuilder),
+        } as any;
+
+        await expect(
+            removeInstructorFromClassroom({
+                dbClient,
+                classGroupId: 'class-1',
+                instructorUserId: 'assistant-1',
+                actorUserId: 'assistant-2',
+                institutionId: 'institution-1',
+            }),
+        ).rejects.toMatchObject<Partial<HTTPException>>({
+            status: 403,
+            message: 'Only the head instructor can manage classroom instructors.',
+        });
+
+        expect(getAccessibleClassroomOrThrow).toHaveBeenCalledWith(dbClient, {
+            classGroupId: 'class-1',
+            userId: 'assistant-2',
+            institutionId: 'institution-1',
+            userRole: undefined,
+        });
+        expect(executeTransaction).not.toHaveBeenCalled();
+    });
+
+    it('allows removing an assigned instructor by the head instructor', async () => {
+        vi.mocked(getAccessibleClassroomOrThrow).mockResolvedValue({
+            class_group_id: 'class-1',
+        } as any);
+        vi.mocked(executeTransaction).mockImplementation(async (callback: any) => {
+            const trx = {
+                deleteFrom: vi.fn().mockReturnValue({
+                    where: vi.fn().mockReturnThis(),
+                    execute: vi.fn().mockResolvedValue(undefined),
+                }),
+            } as any;
+            return await callback(trx);
+        });
+
+        const headCheckBuilder = createSelectBuilder({
+            assignment_id: 'head-assignment',
+        });
+        const roleBuilder = createSelectBuilder({ role_id: 7 });
+        const existingAssignmentBuilder = createSelectBuilder({
+            assignment_id: 'assistant-assignment',
+            is_head: false,
+        });
+        const dbClient = {
+            selectFrom: vi
+                .fn()
+                .mockReturnValueOnce(headCheckBuilder)
+                .mockReturnValueOnce(roleBuilder)
+                .mockReturnValueOnce(existingAssignmentBuilder),
+        } as any;
+
+        await removeInstructorFromClassroom({
+            dbClient,
+            classGroupId: 'class-1',
+            instructorUserId: 'assistant-1',
+            actorUserId: 'head-1',
+            institutionId: 'institution-1',
+        });
+
+        expect(executeTransaction).toHaveBeenCalled();
     });
 });

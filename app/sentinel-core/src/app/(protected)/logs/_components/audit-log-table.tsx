@@ -12,6 +12,7 @@ interface AuditLogTableProps {
     onPaginationChange?: (pagination: PaginationState) => void;
     pageCount?: number;
     totalCount?: number;
+    hideDetails?: boolean;
 }
 
 export function AuditLogTable({
@@ -21,6 +22,7 @@ export function AuditLogTable({
     onPaginationChange,
     pageCount,
     totalCount,
+    hideDetails,
 }: AuditLogTableProps) {
     if (isLoading) {
         return (
@@ -30,9 +32,16 @@ export function AuditLogTable({
         );
     }
 
+    const tableColumns = hideDetails
+        ? columns.filter(
+              (col) =>
+                  (col as any).accessorKey !== 'details' && col.id !== 'details',
+          )
+        : columns;
+
     return (
         <DataTable
-            columns={columns}
+            columns={tableColumns}
             data={logs}
             searchKey="action"
             searchPlaceholder="Search by action name (e.g. user.login)..."
