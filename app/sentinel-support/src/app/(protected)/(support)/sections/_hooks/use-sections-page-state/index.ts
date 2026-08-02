@@ -16,7 +16,7 @@ import {
 import { sectionSchema, type SectionFormValues } from '@sentinel/shared/schema';
 import { Section } from '@sentinel/shared/types';
 import { useMemo, useState } from 'react';
-import { useForm, type SubmitHandler, type Resolver } from 'react-hook-form';
+import { useForm, useWatch, type SubmitHandler, type Resolver } from 'react-hook-form';
 import { DEFAULT_SECTION_FORM_VALUES } from './_types';
 
 export function useSectionsPageState() {
@@ -31,9 +31,11 @@ export function useSectionsPageState() {
         defaultValues: DEFAULT_SECTION_FORM_VALUES,
     });
 
-    const { data: namingConvention } = useEffectiveInstitutionNamingConventionsQuery(
-        selectedInstitutionId || '',
-    );
+    const formInstitutionId = useWatch({ control: form.control, name: 'institution_id' });
+    const activeFormInstitutionId = formInstitutionId || selectedInstitutionId || '';
+
+    const { data: namingConvention } =
+        useEffectiveInstitutionNamingConventionsQuery(activeFormInstitutionId);
     const debouncedSearch = useDebounce(searchTerm, 500);
     const { pagination, setPagination } = useServerPagination([debouncedSearch]);
     const { data: institutions = [] } = useInstitutionsQuery();
@@ -66,11 +68,11 @@ export function useSectionsPageState() {
 
     const { data: departments = [] } = useDepartmentsQuery({
         search: '',
-        institutionId: selectedInstitutionId || undefined,
+        institutionId: activeFormInstitutionId || undefined,
     });
     const { data: courses = [] } = useCoursesQuery({
         search: '',
-        institutionId: selectedInstitutionId || undefined,
+        institutionId: activeFormInstitutionId || undefined,
     });
 
     const createSectionMutation = useCreateSectionMutation({
@@ -101,6 +103,11 @@ export function useSectionsPageState() {
     const handleEdit = (section: Section) => {
         setEditingSectionId(section.id);
         form.reset({
+            institution_id:
+                section.effectiveInstitutionId ??
+                section.institutionId ??
+                selectedInstitutionId ??
+                '',
             name: section.name,
             department_id: section.departmentId ?? '',
             course_id: section.courseId ?? '',
@@ -132,9 +139,18 @@ export function useSectionsPageState() {
     };
 
     const onSubmit: SubmitHandler<SectionFormValues> = (values) => {
+        const institutionId = values.institution_id || selectedInstitutionId || undefined;
+        if (!institutionId) {
+            form.setError('institution_id', {
+                type: 'manual',
+                message: 'Institution is required',
+            });
+            return;
+        }
+
         const payload = {
             ...values,
-            institution_id: selectedInstitutionId || undefined,
+            institution_id: institutionId,
         };
 
         if (editingSectionId) {

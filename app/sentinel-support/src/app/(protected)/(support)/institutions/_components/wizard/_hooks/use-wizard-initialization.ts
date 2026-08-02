@@ -88,8 +88,11 @@ export function useWizardInitialization({
                 })),
                 subjects: subjects.map((s) => ({
                     clientId: s.id || '',
+                    persistedId: s.id || null,
                     code: s.code,
                     title: s.title,
+                    initialCode: s.code,
+                    initialTitle: s.title,
                     isInherited: s.isInherited,
                     sourceRecordId: s.sourceRecordId || null,
                 })),

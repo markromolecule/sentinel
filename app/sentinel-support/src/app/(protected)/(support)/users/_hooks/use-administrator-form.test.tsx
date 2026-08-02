@@ -103,4 +103,27 @@ describe('useAdministratorForm', () => {
             }),
         );
     });
+
+    it('requires a department for superadmin dean invites', async () => {
+        const { result } = renderHook(() =>
+            useAdministratorForm({
+                role: 'superadmin',
+            }),
+        );
+
+        await act(async () => {
+            result.current.form.setValue('firstName', 'Ada');
+            result.current.form.setValue('lastName', 'Lovelace');
+            result.current.form.setValue('email', 'ada@example.com');
+            result.current.form.setValue('institution', 'inst-1');
+            result.current.form.setValue('department', '');
+            const isValid = await result.current.form.trigger();
+            expect(isValid).toBe(false);
+        });
+
+        expect(inviteMutateAsync).not.toHaveBeenCalled();
+        expect(result.current.form.getFieldState('department').error?.message).toBe(
+            'Department is required',
+        );
+    });
 });

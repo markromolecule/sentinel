@@ -11,6 +11,7 @@ import type { AdministratorRole } from '@/app/(protected)/(support)/users/_lib/a
 export const columns = (
     onEdit: (admin: User) => void,
     onDelete: (admin: User) => void,
+    currentUserId?: string,
 ): ColumnDef<User>[] => [
     {
         id: 'select',
@@ -96,7 +97,9 @@ export const columns = (
             const date = row.getValue<string | Date>('createdAt');
             if (!date) return <div className="text-muted-foreground">—</div>;
             return (
-                <div className="text-muted-foreground">{format(new Date(date), 'MMM d, yyyy')}</div>
+                <div className="text-muted-foreground">
+                    {format(new Date(date), 'MMM d, yyyy')}
+                </div>
             );
         },
     },
@@ -106,6 +109,7 @@ export const columns = (
             <AdministratorActionsCell
                 administrator={row.original}
                 role={row.original.role as AdministratorRole}
+                isCurrentUser={row.original.id === currentUserId}
                 onEdit={onEdit}
                 onDelete={onDelete}
             />

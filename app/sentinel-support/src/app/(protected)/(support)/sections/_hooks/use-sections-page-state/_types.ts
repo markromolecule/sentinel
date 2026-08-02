@@ -10,6 +10,7 @@ export type SectionPageState = {
 };
 
 export const DEFAULT_SECTION_FORM_VALUES: SectionFormValues = {
+    institution_id: '',
     name: '',
     department_id: '',
     course_id: '',

@@ -3,6 +3,18 @@ import { type CreateUserBody, type UpdateUserBody } from '../user.dto';
 import { supabaseAdmin } from '../../../../lib/supabase-admin';
 import { HTTPException } from 'hono/http-exception';
 
+function isMissingAuthUserError(error: unknown) {
+    const status = Number((error as any)?.status ?? (error as any)?.code);
+    const message = String((error as any)?.message ?? '').toLowerCase();
+
+    return (
+        status === 404 ||
+        message.includes('user not found') ||
+        message.includes('no user found') ||
+        message.includes('not found')
+    );
+}
+
 export class UserAuthService {
     static async createUserAuth(dbClient: DbClient, values: CreateUserBody) {
         const { data, error } = await supabaseAdmin.auth.admin.createUser({
@@ -75,6 +87,10 @@ export class UserAuthService {
         const { error } = await supabaseAdmin.auth.admin.deleteUser(id);
 
         if (error) {
+            if (isMissingAuthUserError(error)) {
+                return;
+            }
+
             console.error('Supabase admin delete user error:', error);
             throw new HTTPException(400, { message: error.message });
         }

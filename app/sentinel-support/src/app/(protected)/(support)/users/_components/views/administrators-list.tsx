@@ -1,4 +1,5 @@
 import {
+    useAuth,
     useDeleteUserMutation,
     useDeleteUsersMutation,
     useStableValue,
@@ -45,6 +46,7 @@ export function AdministratorsList({
     onSearchChange,
 }: AdministratorsListProps) {
     const config = getAdministratorRoleConfig(role);
+    const { user: authUser } = useAuth();
     const [editingAdmin, setEditingAdmin] = useState<User | null>(null);
     const [adminToDelete, setAdminToDelete] = useState<User | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -62,8 +64,9 @@ export function AdministratorsList({
         return Object.keys(rowSelection)
             .filter((index) => rowSelection[index as keyof typeof rowSelection])
             .map((index) => administrators[parseInt(index)]?.id)
+            .filter((id) => id !== authUser?.id)
             .filter(Boolean);
-    }, [rowSelection, administrators]);
+    }, [rowSelection, administrators, authUser?.id]);
 
     const handleBulkDelete = () => {
         if (selectedIds.length > 0) {
@@ -124,8 +127,8 @@ export function AdministratorsList({
     }, [editingAdmin]);
 
     const administratorColumns = useStableValue(
-        () => columns(setEditingAdmin, handleDelete),
-        [handleDelete, setEditingAdmin],
+        () => columns(setEditingAdmin, handleDelete, authUser?.id),
+        [handleDelete, setEditingAdmin, authUser?.id],
     );
 
     const deleteConfig = adminToDelete

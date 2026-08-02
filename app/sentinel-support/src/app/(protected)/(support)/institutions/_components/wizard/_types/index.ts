@@ -36,8 +36,11 @@ export type WizardTerm = {
 
 export type WizardSubject = {
     clientId: string;
+    persistedId?: string | null;
     code: string;
     title: string;
+    initialCode?: string;
+    initialTitle?: string;
     isInherited?: boolean;
     sourceRecordId?: string | null;
 };

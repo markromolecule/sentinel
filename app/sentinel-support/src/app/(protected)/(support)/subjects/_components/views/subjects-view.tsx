@@ -17,6 +17,7 @@ import { RevertPreviewDialog } from '@/app/(protected)/(support)/_components/rev
 import { useSubjectsPageState } from '@/app/(protected)/(support)/subjects/_hooks/use-subjects-page-state';
 import { getSubjectColumns } from '@/app/(protected)/(support)/subjects/_components/tables/subject-columns';
 import { SubjectFormDialog } from '@/app/(protected)/(support)/subjects/_components/forms/subject-form-dialog';
+import { SubjectPageShell } from '@/app/(protected)/(support)/subjects/_components/layout';
 import {
     isPermissionDeniedError,
     useStableValue,
@@ -25,7 +26,7 @@ import {
 } from '@sentinel/hooks';
 import { useInstitutionFacet } from '@/hooks';
 import { getSubjectId } from '@/app/(protected)/(support)/subjects/_hooks/use-subjects-page-state/_types';
-import { Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 
 export function SubjectsView() {
     const {
@@ -49,6 +50,7 @@ export function SubjectsView() {
         isError,
         error,
         parentSubject,
+        handleCreate,
         handleEdit,
         handleDelete,
         handleRevert,
@@ -142,7 +144,20 @@ export function SubjectsView() {
     );
 
     return (
-        <>
+        <SubjectPageShell
+            title="Subject List"
+            description="Browse and manage the institutional subject catalog."
+            actions={
+                !isViewDenied ? (
+                    <PermissionGuard permission="subjects:create">
+                        <Button onClick={handleCreate}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add Subject
+                        </Button>
+                    </PermissionGuard>
+                ) : null
+            }
+        >
             {isViewDenied ? (
                 <PermissionDeniedState resourceName="subjects" className="h-[360px]" />
             ) : (
@@ -220,6 +235,7 @@ export function SubjectsView() {
                 setForm={setForm}
                 onSubmit={submitForm}
                 isPending={createSubjectMutation.isPending || updateSubjectMutation.isPending}
+                institutions={institutions}
             />
 
             <RevertPreviewDialog
@@ -253,6 +269,6 @@ export function SubjectsView() {
                 isPending={deleteSubjectMutation.isPending}
                 onConfirm={handleRevert}
             />
-        </>
+        </SubjectPageShell>
     );
 }

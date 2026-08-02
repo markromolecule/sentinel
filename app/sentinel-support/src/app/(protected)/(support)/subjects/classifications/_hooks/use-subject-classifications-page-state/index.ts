@@ -13,6 +13,44 @@ import {
 import { SubjectClassification } from '@sentinel/shared/types';
 import { useAcademicScope, useInstitutionFacet } from '@/hooks';
 
+function getClassificationResolutionKey(classification: SubjectClassification) {
+    return classification.sourceRecordId ?? classification.id;
+}
+
+function getClassificationPriority(classification: SubjectClassification) {
+    if (classification.isLocal || (classification.inheritanceStatus ?? 'LOCAL') === 'LOCAL') {
+        return 0;
+    }
+
+    if (classification.isOverridden || classification.inheritanceStatus === 'OVERRIDDEN') {
+        return 1;
+    }
+
+    if (classification.isInherited || classification.inheritanceStatus === 'INHERITED') {
+        return 2;
+    }
+
+    return 3;
+}
+
+function collapseInheritedClassificationProjections(classifications: SubjectClassification[]) {
+    const byResolutionKey = new Map<string, SubjectClassification>();
+
+    for (const classification of classifications) {
+        const resolutionKey = getClassificationResolutionKey(classification);
+        const existing = byResolutionKey.get(resolutionKey);
+
+        if (
+            !existing ||
+            getClassificationPriority(classification) < getClassificationPriority(existing)
+        ) {
+            byResolutionKey.set(resolutionKey, classification);
+        }
+    }
+
+    return Array.from(byResolutionKey.values());
+}
+
 /**
  * Custom hook to manage all page-level state, data fetching, filtering,
  * and mutations for the Subject Classifications view.
@@ -71,8 +109,14 @@ export function useSubjectClassificationsPageState() {
         pagination.pageSize,
     );
 
-    const classifications = classificationsResponse?.items ?? [];
-    const totalCount = classificationsResponse?.pagination?.total ?? 0;
+    const rawClassifications = classificationsResponse?.items ?? [];
+    const collapsedClassifications = useMemo(
+        () => collapseInheritedClassificationProjections(rawClassifications),
+        [rawClassifications],
+    );
+    const classifications =
+        selectedOrigins.size > 0 ? rawClassifications : collapsedClassifications;
+    const totalCount = classifications.length;
     const pageCount = classificationsResponse?.pagination
         ? Math.max(1, Math.ceil(totalCount / pagination.pageSize))
         : 1;
@@ -142,14 +186,14 @@ export function useSubjectClassificationsPageState() {
         const counts = new Map<string, number>();
         counts.set(
             'LOCAL',
-            classifications.filter((c) => (c.inheritanceStatus ?? 'LOCAL') === 'LOCAL').length,
+            rawClassifications.filter((c) => (c.inheritanceStatus ?? 'LOCAL') === 'LOCAL').length,
         );
         counts.set(
             'INHERITED',
-            classifications.filter((c) => c.inheritanceStatus === 'INHERITED').length,
+            rawClassifications.filter((c) => c.inheritanceStatus === 'INHERITED').length,
         );
         return counts;
-    }, [classifications]);
+    }, [rawClassifications]);
 
     const isFiltered = Boolean(
         searchTerm ||

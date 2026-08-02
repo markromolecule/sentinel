@@ -4,6 +4,7 @@ import { prepareUserForAuthDeletion } from './data/delete-user';
 import { UserAuthService } from './services/user-auth.service';
 import { UserInviteService } from './services/user-invite.service';
 import { UserCrudService } from './services/user-crud.service';
+import { HTTPException } from 'hono/http-exception';
 
 export class UserService {
     // Get all users
@@ -162,6 +163,10 @@ export class UserService {
         requesterDepartmentId?: string | null,
         requesterCourseId?: string | null,
     ) {
+        if (id === requesterUserId) {
+            throw new HTTPException(400, { message: 'Cannot delete your own user account' });
+        }
+
         await UserCrudService.getUserById(
             dbClient,
             id,

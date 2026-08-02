@@ -14,14 +14,14 @@ import { SupportHeader } from '@/components/sidebar/support/support-header';
  */
 export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
-    const isMessages = pathname === '/messages';
+    const isFullScreen = pathname === '/messages' || pathname === '/institutions/new';
 
     return (
         <SidebarProvider
             defaultOpen={false}
             className={cn(
                 'flex-col [&_[data-slot=sidebar-gap]]:w-[var(--sidebar-width-icon)]',
-                isMessages && 'h-screen !min-h-0 overflow-hidden',
+                isFullScreen && 'h-screen !min-h-0 overflow-hidden',
             )}
         >
             <SupportHeader />
@@ -32,13 +32,13 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
                     <SuperAdminSidebar />
                 </Suspense>
                 <SidebarInset
-                    className={cn('relative !ml-0', isMessages && 'min-h-0 flex-1 overflow-hidden')}
+                    className={cn('relative !ml-0', isFullScreen && 'min-h-0 flex-1 overflow-hidden')}
                 >
                     <main
                         data-app-scroll-container="support"
                         className={cn(
                             'flex-1',
-                            isMessages
+                            isFullScreen
                                 ? 'flex min-h-0 flex-1 flex-col overflow-hidden p-0'
                                 : 'scrollbar-hidden overflow-auto p-6',
                         )}
