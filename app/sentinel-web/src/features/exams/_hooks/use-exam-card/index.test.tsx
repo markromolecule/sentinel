@@ -82,7 +82,7 @@ describe('useExamCard', () => {
             const exportAction = actions.find((action) => action.href?.endsWith('/export'));
 
             expect(exportAction).toMatchObject({
-                label: 'Export Answer Key PDF',
+                label: 'Export Answer Key',
                 href: `/exams/${baseExam.id}/export`,
                 variant: 'outline',
             });
@@ -101,6 +101,7 @@ describe('useExamCard', () => {
             );
             expect(actions.map((action) => action.label)).not.toContain('Export PDF');
             expect(actions.map((action) => action.label)).not.toContain('Export Answer Key PDF');
+            expect(actions.map((action) => action.label)).not.toContain('Export Answer Key');
         },
     );
 
@@ -122,7 +123,7 @@ describe('useExamCard', () => {
 
         expect(result.current.canManageExam).toBe(false);
         expect(result.current.primaryActions.map((action) => action.label)).toEqual([
-            'Export Answer Key PDF',
+            'Export Answer Key',
         ]);
     });
 });

@@ -46,7 +46,7 @@ export function useExamsDashboard() {
     );
 
     const examsByTab: Record<ExamTabKey, Exam[]> = {
-        all: visibleExams,
+        all: allExams,
         published,
         drafts,
         archived,

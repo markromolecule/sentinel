@@ -7,6 +7,7 @@ export function useProctorExams() {
     const { institutionId } = useAcademicScope();
     const { data: exams = [], isLoading } = useExamsQuery({
         institutionId: institutionId || undefined,
+        limit: 100,
     });
 
     return {

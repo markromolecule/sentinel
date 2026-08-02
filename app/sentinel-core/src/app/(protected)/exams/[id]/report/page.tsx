@@ -137,6 +137,7 @@ export default function ExamReportPage({ params }: { params: Promise<{ id: strin
                         <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
                             {isFetching ? 'Refreshing...' : 'Refresh Report'}
                         </Button>
+                        <ExamReportPdfExport examId={id} variant="button" />
                         <Button variant="outline" asChild>
                             <Link href="/exams">
                                 <ArrowLeft className="mr-2 h-4 w-4" />
@@ -144,7 +145,6 @@ export default function ExamReportPage({ params }: { params: Promise<{ id: strin
                             </Link>
                         </Button>
                     </div>
-                    <ExamReportPdfExport examId={id} />
                 </div>
             </div>
 

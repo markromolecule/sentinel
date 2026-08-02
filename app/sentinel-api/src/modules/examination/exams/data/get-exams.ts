@@ -244,6 +244,10 @@ export async function getExamsData({
         );
     }
 
+    if (filters.status) {
+        query = query.where(sql<boolean>`lower(e.status::text) = ${filters.status}`);
+    }
+
     if (filters.search) {
         query = query.where((eb) =>
             eb.or([

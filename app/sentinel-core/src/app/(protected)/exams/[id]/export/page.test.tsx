@@ -207,6 +207,48 @@ describe('ExamExportPage', () => {
         expect(mockCreateMutate).toHaveBeenCalledTimes(1);
     });
 
+    it('shows the newly created export immediately after create succeeds', () => {
+        mockCreateMutate.mockImplementation(
+            (_payload, options: { onSuccess: (record: typeof readyExport) => void }) => {
+                options.onSuccess({ ...readyExport, status: 'PENDING' });
+            },
+        );
+
+        render(<ExamExportPage />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Create Answer Key PDF' }));
+
+        expect(screen.getByText('PENDING')).toBeTruthy();
+        expect(screen.getByText('Examination answer key PDF export requested.')).toBeTruthy();
+        expect(mockStatusQuery).toHaveBeenLastCalledWith('export-1', {
+            enabled: true,
+        });
+    });
+
+    it('replaces an optimistic pending export with the refreshed server status', () => {
+        mockCreateMutate.mockImplementation(
+            (_payload, options: { onSuccess: (record: typeof readyExport) => void }) => {
+                options.onSuccess({ ...readyExport, status: 'PENDING' });
+            },
+        );
+
+        const { rerender } = render(<ExamExportPage />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Create Answer Key PDF' }));
+        expect(screen.getByText('PENDING')).toBeTruthy();
+
+        mockStatusQuery.mockReturnValue({
+            data: readyExport,
+            error: null,
+        });
+
+        rerender(<ExamExportPage />);
+
+        expect(screen.getByText('READY')).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Download PDF' })).toBeTruthy();
+        expect(screen.queryByText('PENDING')).toBeNull();
+    });
+
     it('polls latest export status through the answer-key status hook', () => {
         mockExportsQuery.mockReturnValue({
             data: {
@@ -252,6 +294,29 @@ describe('ExamExportPage', () => {
         );
     });
 
+    it('does not show a blocked-popup error when a noopener download returns no window handle', async () => {
+        mockExportsQuery.mockReturnValue({
+            data: { records: [readyExport], total_records: 1, page: 1, limit: 1 },
+            error: null,
+            isLoading: false,
+        });
+        vi.stubGlobal('window', {
+            open: vi.fn(() => null),
+            localStorage: { setItem: vi.fn() },
+            sessionStorage: { setItem: vi.fn() },
+        } as unknown as Window & typeof globalThis);
+
+        render(<ExamExportPage />);
+
+        await act(async () => {
+            fireEvent.click(screen.getByRole('button', { name: 'Download PDF' }));
+        });
+
+        expect(mockToastError).not.toHaveBeenCalledWith(
+            'Your browser blocked the PDF download. Allow pop-ups and try again.',
+        );
+    });
+
     it('retries only failed exports and deletes the current export', () => {
         mockExportsQuery.mockReturnValue({
             data: {
@@ -285,6 +350,25 @@ describe('ExamExportPage', () => {
             },
             expect.any(Object),
         );
+    });
+
+    it('removes the deleted export from the panel immediately after delete succeeds', () => {
+        mockExportsQuery.mockReturnValue({
+            data: { records: [readyExport], total_records: 1, page: 1, limit: 1 },
+            error: null,
+            isLoading: false,
+        });
+        mockDeleteMutate.mockImplementation((_payload, options: { onSuccess: () => void }) => {
+            options.onSuccess();
+        });
+
+        render(<ExamExportPage />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Delete Export' }));
+
+        expect(screen.queryByText('READY')).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Download PDF' })).toBeNull();
+        expect(screen.getByText('Examination answer key PDF export deleted.')).toBeTruthy();
     });
 
     it('surfaces stale-permission 403 errors from mutations', () => {

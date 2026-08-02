@@ -102,11 +102,12 @@ export function ExamCardHeader({
             >
                 {exam.title}
             </CardTitle>
-            {exam.description && (
-                <CardDescription className="line-clamp-2 text-xs break-words">
-                    {exam.description}
-                </CardDescription>
-            )}
+            <CardDescription
+                className={`line-clamp-2 min-h-8 text-xs break-words ${exam.description ? '' : 'opacity-0'}`}
+                aria-hidden={!exam.description}
+            >
+                {exam.description || 'No description'}
+            </CardDescription>
         </CardHeader>
     );
 }
