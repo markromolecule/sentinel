@@ -1,6 +1,6 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { buildEnrollmentRequestFormValues, type SubjectOffering } from '@sentinel/shared';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RequestOfferedSubjectBuilderDialog } from './request-offered-subject-builder-dialog';
 
 class ResizeObserverMock {
@@ -74,9 +74,11 @@ const offering: SubjectOffering = {
 describe('RequestOfferedSubjectBuilderDialog', () => {
     globalThis.ResizeObserver = ResizeObserverMock as typeof ResizeObserver;
 
+    const enrollMutate = vi.fn();
     const updateMutate = vi.fn();
 
     beforeEach(() => {
+        enrollMutate.mockReset();
         updateMutate.mockReset();
         mockUseDebounce.mockImplementation((value: string) => value);
         mockUseSubjectOfferingsQuery.mockReturnValue({
@@ -84,13 +86,17 @@ describe('RequestOfferedSubjectBuilderDialog', () => {
             isLoading: false,
         });
         mockUseEnrollSubjectMutation.mockReturnValue({
-            mutate: vi.fn(),
+            mutate: enrollMutate,
             isPending: false,
         });
         mockUseUpdateEnrollmentRequestMutation.mockReturnValue({
             mutate: updateMutate,
             isPending: false,
         });
+    });
+
+    afterEach(() => {
+        cleanup();
     });
 
     it('hydrates existing request targets in edit mode and submits the update payload', () => {
@@ -119,5 +125,74 @@ describe('RequestOfferedSubjectBuilderDialog', () => {
         expect(screen.getByLabelText('CS-2A').getAttribute('data-state')).toBe('checked');
 
         expect(updateMutate).not.toHaveBeenCalled();
+    });
+
+    it('submits raw section ids instead of class group ids', async () => {
+        const offeringWithClassGroupSection: SubjectOffering = {
+            ...offering,
+            id: '00000000-0000-4000-8000-000000000001',
+            subjectId: '00000000-0000-4000-8000-000000000002',
+            termId: '00000000-0000-4000-8000-000000000003',
+            departmentIds: ['00000000-0000-4000-8000-000000000004'],
+            courseIds: ['00000000-0000-4000-8000-000000000005'],
+            sectionIds: ['00000000-0000-4000-8000-000000000006'],
+            departments: [
+                {
+                    id: '00000000-0000-4000-8000-000000000004',
+                    name: 'College of Computing',
+                    code: 'CCS',
+                },
+            ],
+            courses: [
+                {
+                    id: '00000000-0000-4000-8000-000000000005',
+                    title: 'Bachelor of Science in Computer Science',
+                    code: 'BSCS',
+                },
+            ],
+            sections: [
+                {
+                    id: '00000000-0000-4000-8000-000000000099',
+                    classGroupId: '00000000-0000-4000-8000-000000000099',
+                    sectionId: '00000000-0000-4000-8000-000000000006',
+                    name: 'CS-2A',
+                    departmentId: '00000000-0000-4000-8000-000000000004',
+                    courseId: '00000000-0000-4000-8000-000000000005',
+                    yearLevel: 2,
+                },
+            ],
+        };
+
+        mockUseSubjectOfferingsQuery.mockReturnValue({
+            data: [offeringWithClassGroupSection],
+            isLoading: false,
+        });
+
+        render(
+            <RequestOfferedSubjectBuilderDialog
+                mode="pick-offering"
+                open
+                onOpenChange={() => undefined}
+                initialValues={buildEnrollmentRequestFormValues({
+                    subjectOfferingId: offeringWithClassGroupSection.id,
+                    departmentIds: offeringWithClassGroupSection.departmentIds,
+                    courseIds: offeringWithClassGroupSection.courseIds,
+                    yearLevels: [2],
+                    sectionIds: [],
+                })}
+            />,
+        );
+
+        fireEvent.click(screen.getByLabelText('CS-2A'));
+        fireEvent.click(screen.getByRole('button', { name: /submit request/i }));
+
+        await waitFor(() => {
+            expect(enrollMutate).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    section_ids: ['00000000-0000-4000-8000-000000000006'],
+                }),
+                expect.any(Object),
+            );
+        });
     });
 });

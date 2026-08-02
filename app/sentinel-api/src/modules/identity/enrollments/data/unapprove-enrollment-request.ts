@@ -43,6 +43,12 @@ export const unapproveEnrollmentRequestData = async ({
             .execute();
 
         await dbClient
+            .deleteFrom('classroom_instructor_assignments')
+            .where('class_group_id', '=', request.class_group_id)
+            .where('instructor_user_id', '=', request.user_id)
+            .execute();
+
+        await dbClient
             .updateTable('enrollment_requests')
             .set({
                 status: 'PENDING',
