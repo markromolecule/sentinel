@@ -384,6 +384,8 @@ export type GetExamsParams = {
     classroomId?: string;
     institutionId?: string;
     viewer?: 'student' | 'staff';
+    page?: number;
+    limit?: number;
 };
 
 export type GetExamParams = {

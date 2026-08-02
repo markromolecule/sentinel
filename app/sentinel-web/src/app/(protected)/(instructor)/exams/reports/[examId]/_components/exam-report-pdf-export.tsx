@@ -15,7 +15,8 @@ import {
     useRetryExamReportExportMutation,
 } from '@sentinel/hooks';
 import type { ExamResultsReportExportRecord } from '@sentinel/services';
-import { PdfExportLifecyclePanel } from '@sentinel/ui';
+import { Button, PdfExportLifecyclePanel } from '@sentinel/ui';
+import { Download, FileText, Loader2, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 
 const EXPORT_PERMISSION = 'examinations:export_results_report';
@@ -35,7 +36,12 @@ function openSignedDownload(downloadUrl: string) {
     return popup !== null;
 }
 
-export function ExamReportPdfExport({ examId }: { examId: string }) {
+type ExamReportPdfExportProps = {
+    examId: string;
+    variant?: 'panel' | 'button';
+};
+
+export function ExamReportPdfExport({ examId, variant = 'panel' }: ExamReportPdfExportProps) {
     const queryClient = useQueryClient();
     const { hasPermission, isLoading: isLoadingPermissions } = useActivePermissions();
     const [permissionDenied, setPermissionDenied] = useState(false);
@@ -208,6 +214,52 @@ export function ExamReportPdfExport({ examId }: { examId: string }) {
             limit: 1,
         });
     };
+
+    if (variant === 'button') {
+        const isBusy =
+            isLoadingPermissions ||
+            createMutation.isPending ||
+            retryMutation.isPending ||
+            downloadMutation.isPending;
+        const isGenerating =
+            activeExport?.status === 'PENDING' || activeExport?.status === 'GENERATING';
+        const compactLabel =
+            activeExport?.status === 'READY'
+                ? 'Download PDF'
+                : activeExport?.status === 'FAILED'
+                  ? 'Retry Export'
+                  : isGenerating
+                    ? 'Exporting...'
+                    : 'Export Results PDF';
+        const CompactIcon =
+            isBusy || isGenerating
+                ? Loader2
+                : activeExport?.status === 'READY'
+                  ? Download
+                  : activeExport?.status === 'FAILED'
+                    ? RotateCcw
+                    : FileText;
+        const handleCompactAction =
+            activeExport?.status === 'READY'
+                ? handleDownload
+                : activeExport?.status === 'FAILED'
+                  ? handleRetry
+                  : handleCreate;
+
+        return (
+            <Button
+                type="button"
+                onClick={handleCompactAction}
+                disabled={isBusy || isGenerating}
+                aria-live="polite"
+            >
+                <CompactIcon
+                    className={`h-4 w-4 ${isBusy || isGenerating ? 'animate-spin' : ''}`}
+                />
+                {compactLabel}
+            </Button>
+        );
+    }
 
     return (
         <PdfExportLifecyclePanel

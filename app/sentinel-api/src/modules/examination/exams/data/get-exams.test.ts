@@ -366,4 +366,31 @@ describe('getExamsData', () => {
         expect(compiledQuery.parameters).toContain(20);
         expect(compiledQuery.parameters).toContain(40);
     });
+
+    it('applies status filtering before pagination', async () => {
+        const { db, executeSpy } = createMockDb(
+            [
+                { column_name: 'section_id' },
+                { column_name: 'section_name' },
+                { column_name: 'room_id' },
+            ],
+            [],
+        );
+
+        await getExamsData({
+            dbClient: db as any,
+            institutionId: 'inst-123',
+            filters: {
+                status: 'draft',
+                limit: 20,
+                page: 1,
+            },
+        });
+
+        const compiledQuery = executeSpy.mock.calls[1][0];
+
+        expect(compiledQuery.sql).toContain('lower(e.status::text) =');
+        expect(compiledQuery.sql).toContain('limit');
+        expect(compiledQuery.parameters).toContain('draft');
+    });
 });

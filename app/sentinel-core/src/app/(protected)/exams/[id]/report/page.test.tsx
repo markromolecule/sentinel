@@ -18,8 +18,8 @@ vi.mock('next/link', () => ({
 }));
 
 vi.mock('./_components/exam-report-pdf-export', () => ({
-    ExamReportPdfExport: ({ examId }: { examId: string }) => (
-        <button type="button" data-testid="exam-report-pdf-export">
+    ExamReportPdfExport: ({ examId, variant }: { examId: string; variant?: string }) => (
+        <button type="button" data-testid="exam-report-pdf-export" data-variant={variant}>
             Export Results PDF for {examId}
         </button>
     ),
@@ -373,6 +373,12 @@ describe('ExamReportPage', () => {
         expect(screen.getByTestId('exam-report-pdf-export').textContent).toContain(
             'Export Results PDF for exam-1',
         );
+        expect(screen.getByTestId('exam-report-pdf-export').dataset.variant).toBe('button');
+        expect(
+            screen
+                .getByTestId('exam-report-pdf-export')
+                .compareDocumentPosition(screen.getByText('Back to Exams')),
+        ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
         expect(mockRefetch).not.toHaveBeenCalled();
     });
 });

@@ -44,6 +44,7 @@ export function OverviewView({ report, examId, refetch, isFetching }: OverviewVi
                         <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
                             {isFetching ? 'Refreshing...' : 'Refresh Report'}
                         </Button>
+                        <ExamReportPdfExport examId={examId} variant="button" />
                         <Button variant="outline" asChild>
                             <Link href="/exams/reports">
                                 <ArrowLeft className="mr-2 h-4 w-4" />
@@ -51,7 +52,6 @@ export function OverviewView({ report, examId, refetch, isFetching }: OverviewVi
                             </Link>
                         </Button>
                     </div>
-                    <ExamReportPdfExport examId={examId} />
                 </div>
             </div>
 

@@ -31,11 +31,10 @@ const DENIED_MESSAGE = getPermissionDeniedMessage({
 
 function openSignedDownload(downloadUrl: string) {
     if (typeof window === 'undefined') {
-        return false;
+        return;
     }
 
-    const popup = window.open(downloadUrl, '_blank', 'noopener,noreferrer');
-    return popup !== null;
+    window.open(downloadUrl, '_blank', 'noopener,noreferrer');
 }
 
 export default function ExamExportPage() {
@@ -45,6 +44,10 @@ export default function ExamExportPage() {
     const { hasPermission, isLoading: isLoadingPermissions } = useActivePermissions();
     const [permissionDenied, setPermissionDenied] = useState(false);
     const [liveRegionMessage, setLiveRegionMessage] = useState<string | null>(null);
+    const [optimisticExport, setOptimisticExport] = useState<ExamAnswerKeyExportRecord | null>(
+        null,
+    );
+    const [hiddenExportId, setHiddenExportId] = useState<string | null>(null);
     const canExport = hasPermission(EXPORT_PERMISSION);
 
     const exportsQuery = useAnswerKeyExportsQuery({
@@ -57,9 +60,13 @@ export default function ExamExportPage() {
     });
 
     const latestExport = exportsQuery.data?.records[0] ?? null;
+    const statusExportId =
+        latestExport?.exportId === hiddenExportId
+            ? (optimisticExport?.exportId ?? null)
+            : (latestExport?.exportId ?? optimisticExport?.exportId ?? null);
 
-    const statusQuery = useAnswerKeyExportStatusQuery(latestExport?.exportId, {
-        enabled: canExport && Boolean(latestExport?.exportId),
+    const statusQuery = useAnswerKeyExportStatusQuery(statusExportId, {
+        enabled: canExport && Boolean(statusExportId),
     });
 
     const queryPermissionDenied = Boolean(
@@ -67,9 +74,24 @@ export default function ExamExportPage() {
         (statusQuery.error && isPermissionDeniedError(statusQuery.error, EXPORT_PERMISSION)),
     );
 
-    const activeExport = useMemo<ExamAnswerKeyExportRecord | null>(() => {
+    const queriedExport = useMemo<ExamAnswerKeyExportRecord | null>(() => {
         return statusQuery.data ?? latestExport;
     }, [latestExport, statusQuery.data]);
+    const activeExport = useMemo<ExamAnswerKeyExportRecord | null>(() => {
+        if (queriedExport?.exportId === hiddenExportId) {
+            return null;
+        }
+
+        if (optimisticExport) {
+            if (queriedExport?.exportId === optimisticExport.exportId) {
+                return queriedExport;
+            }
+
+            return optimisticExport;
+        }
+
+        return queriedExport;
+    }, [hiddenExportId, optimisticExport, queriedExport]);
     const showPermissionDenied =
         permissionDenied || queryPermissionDenied || (!isLoadingPermissions && !canExport);
 
@@ -86,8 +108,10 @@ export default function ExamExportPage() {
     }, [queryClient, queryPermissionDenied]);
 
     const createMutation = useCreateAnswerKeyExportMutation({
-        onSuccess: () => {
+        onSuccess: (createdExport) => {
             setPermissionDenied(false);
+            setHiddenExportId(null);
+            setOptimisticExport(createdExport);
             setLiveRegionMessage('Examination answer key PDF export requested.');
             toast.success('Examination answer key PDF export requested.');
         },
@@ -107,6 +131,17 @@ export default function ExamExportPage() {
     const retryMutation = useRetryAnswerKeyExportMutation({
         onSuccess: () => {
             setPermissionDenied(false);
+            setHiddenExportId(null);
+            setOptimisticExport(
+                activeExport
+                    ? {
+                          ...activeExport,
+                          status: 'PENDING',
+                          failureCode: null,
+                          failureMessage: null,
+                      }
+                    : null,
+            );
             setLiveRegionMessage('Examination answer key PDF export queued again.');
             toast.success('Examination answer key PDF export queued again.');
         },
@@ -140,6 +175,8 @@ export default function ExamExportPage() {
     const deleteMutation = useDeleteAnswerKeyExportMutation({
         onSuccess: () => {
             setPermissionDenied(false);
+            setHiddenExportId(activeExport?.exportId ?? null);
+            setOptimisticExport(null);
             setLiveRegionMessage('Examination answer key PDF export deleted.');
             toast.success('Examination answer key PDF export deleted.');
         },
@@ -185,12 +222,7 @@ export default function ExamExportPage() {
 
         try {
             const response = await downloadMutation.mutateAsync(activeExport.exportId);
-            const opened = openSignedDownload(response.downloadUrl);
-
-            if (!opened) {
-                toast.error('Your browser blocked the PDF download. Allow pop-ups and try again.');
-                return;
-            }
+            openSignedDownload(response.downloadUrl);
 
             setPermissionDenied(false);
             setLiveRegionMessage('Examination answer key PDF download opened in a new tab.');

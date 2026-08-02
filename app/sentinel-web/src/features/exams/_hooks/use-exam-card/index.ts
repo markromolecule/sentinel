@@ -83,7 +83,7 @@ export function useExamCard({ exam }: UseExamCardProps): UseExamCardReturn {
         const isStatusUpdating = updateExamStatusMutation.isPending;
         const exportAction: ExamPrimaryAction | null = canExportAnswerKey
             ? {
-                  label: 'Export Answer Key PDF',
+                  label: 'Export Answer Key',
                   href: `/exams/${exam.id}/export`,
                   icon: FileDown,
                   variant: 'outline',

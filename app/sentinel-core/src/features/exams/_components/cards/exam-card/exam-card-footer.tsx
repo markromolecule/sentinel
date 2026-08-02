@@ -10,14 +10,14 @@ export function ExamCardFooter({ primaryActions }: ExamCardFooterProps) {
     if (!primaryActions || primaryActions.length === 0) return null;
 
     return (
-        <CardFooter className="flex flex-row items-center gap-2 border-t px-4 pt-3">
+        <CardFooter className="mt-auto flex flex-row items-center gap-2 border-t px-4 pt-3">
             {primaryActions.map((action, i) => {
                 const buttonContent = (
                     <>
                         {action.isLoading ? (
-                            <Spinner className="mr-2 h-4 w-4" />
+                            <Spinner className="h-4 w-4" />
                         ) : (
-                            <action.icon className="mr-2 h-4 w-4" />
+                            <action.icon className="h-4 w-4" />
                         )}
                         {action.label}
                     </>
@@ -28,7 +28,7 @@ export function ExamCardFooter({ primaryActions }: ExamCardFooterProps) {
                         <Button
                             key={i}
                             asChild
-                            className="flex-1"
+                            className="flex-1 gap-1.5"
                             variant={action.variant || 'default'}
                         >
                             <Link href={action.href} onClick={action.onClick}>
@@ -41,7 +41,7 @@ export function ExamCardFooter({ primaryActions }: ExamCardFooterProps) {
                 return (
                     <Button
                         key={i}
-                        className="flex-1"
+                        className="flex-1 gap-1.5"
                         variant={action.variant || 'default'}
                         onClick={action.onClick}
                         disabled={action.disabled}

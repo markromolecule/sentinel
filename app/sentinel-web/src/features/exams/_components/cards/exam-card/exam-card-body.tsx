@@ -52,24 +52,32 @@ export function ExamCardBody({ exam }: ExamCardBodyProps) {
     const attribution = getExamAttribution(exam);
 
     return (
-        <CardContent className="px-4">
+        <CardContent className="flex-1 px-4">
             <div className="text-muted-foreground space-y-3 text-xs">
-                <div className="space-y-1">
+                <div className="min-h-9 space-y-1">
                     <div className="flex min-w-0 items-center gap-2">
                         <School className="text-primary/60 h-3.5 w-3.5 shrink-0" />
                         <span className="text-foreground/80 truncate font-medium">
                             {exam.subject || exam.classroomName || 'No subject assigned'}
                         </span>
                     </div>
-                    {((exam.sectionNames && exam.sectionNames.length > 0) || exam.section) && (
-                        <div className="flex min-w-0 items-center gap-2 pl-5.5">
-                            <span className="truncate text-[11px] opacity-70">
-                                {exam.sectionNames && exam.sectionNames.length > 0
-                                    ? exam.sectionNames.join(' • ')
-                                    : exam.section}
-                            </span>
-                        </div>
-                    )}
+                    <div className="flex min-w-0 items-center gap-2 pl-5.5">
+                        <span
+                            className={`truncate text-[11px] opacity-70 ${
+                                (exam.sectionNames && exam.sectionNames.length > 0) || exam.section
+                                    ? ''
+                                    : 'opacity-0'
+                            }`}
+                            aria-hidden={
+                                !(exam.sectionNames && exam.sectionNames.length > 0) &&
+                                !exam.section
+                            }
+                        >
+                            {exam.sectionNames && exam.sectionNames.length > 0
+                                ? exam.sectionNames.join(' • ')
+                                : exam.section || 'No section assigned'}
+                        </span>
+                    </div>
                 </div>
 
                 <div className="border-border/40 border-t pt-2.5">

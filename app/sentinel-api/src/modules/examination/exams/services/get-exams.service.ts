@@ -31,11 +31,5 @@ export async function getExams(
         }),
     );
 
-    const visibleExams = exams;
-
-    if (filters.status) {
-        return visibleExams.filter((exam) => exam.status === filters.status);
-    }
-
-    return visibleExams;
+    return exams;
 }

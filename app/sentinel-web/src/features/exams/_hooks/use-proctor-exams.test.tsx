@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useProctorExams } from './use-proctor-exams';
 
 const mockUseExamsQuery = vi.fn();
-const mockUseAcademicScope = vi.fn();
 
 vi.mock('@sentinel/hooks', async () => {
     const actual = await vi.importActual<typeof import('@sentinel/hooks')>('@sentinel/hooks');
@@ -14,30 +13,18 @@ vi.mock('@sentinel/hooks', async () => {
     };
 });
 
-vi.mock('@/hooks/use-academic-scope', () => ({
-    useAcademicScope: () => mockUseAcademicScope(),
-}));
-
 describe('useProctorExams', () => {
     beforeEach(() => {
         mockUseExamsQuery.mockReset();
-        mockUseAcademicScope.mockReset();
-
-        mockUseAcademicScope.mockReturnValue({
-            institutionId: 'institution-1',
-        });
         mockUseExamsQuery.mockReturnValue({
             data: [],
             isLoading: false,
         });
     });
 
-    it('passes the current institution and max dashboard page size into the exam query', () => {
+    it('requests the maximum dashboard page size so counts include all current exams', () => {
         renderHook(() => useProctorExams());
 
-        expect(mockUseExamsQuery).toHaveBeenCalledWith({
-            institutionId: 'institution-1',
-            limit: 100,
-        });
+        expect(mockUseExamsQuery).toHaveBeenCalledWith({ limit: 100 });
     });
 });

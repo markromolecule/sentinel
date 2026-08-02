@@ -23,6 +23,8 @@ import type {
 } from './types';
 import type { ExamAttemptLifecycleResponseType } from '@sentinel/shared';
 
+const DEFAULT_EXAMS_PAGE_SIZE = 100;
+
 function buildQueryString(params?: GetExamsParams) {
     if (!params) {
         return '';
@@ -54,18 +56,55 @@ function buildQueryString(params?: GetExamsParams) {
         searchParams.set('viewer', params.viewer);
     }
 
+    if (params.page) {
+        searchParams.set('page', String(params.page));
+    }
+
+    if (params.limit) {
+        searchParams.set('limit', String(params.limit));
+    }
+
     const query = searchParams.toString();
     return query ? `?${query}` : '';
+}
+
+async function getExamsPage(apiClient: ApiClientType, params?: GetExamsParams) {
+    const response: ApiExamResponse<ApiExamSummary[]> = await apiClient(
+        `/exams${buildQueryString(params)}`,
+    );
+
+    return response.data.map(mapExam);
 }
 
 export async function getExams(
     apiClient: ApiClientType,
     params?: GetExamsParams,
 ): Promise<ProctorExam[]> {
-    const response: ApiExamResponse<ApiExamSummary[]> = await apiClient(
-        `/exams${buildQueryString(params)}`,
-    );
-    return response.data.map(mapExam);
+    if (params?.page) {
+        return getExamsPage(apiClient, params);
+    }
+
+    const limit = params?.limit ?? DEFAULT_EXAMS_PAGE_SIZE;
+    const exams: ProctorExam[] = [];
+    let page = 1;
+
+    while (true) {
+        const pageExams = await getExamsPage(apiClient, {
+            ...params,
+            page,
+            limit,
+        });
+
+        exams.push(...pageExams);
+
+        if (pageExams.length < limit) {
+            break;
+        }
+
+        page += 1;
+    }
+
+    return exams;
 }
 
 export async function getExam(

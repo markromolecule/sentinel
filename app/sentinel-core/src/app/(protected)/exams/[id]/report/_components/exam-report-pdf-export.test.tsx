@@ -84,6 +84,19 @@ interface MockPanelProps {
 }
 
 vi.mock('@sentinel/ui', () => ({
+    Button: ({
+        children,
+        onClick,
+        disabled,
+    }: {
+        children: React.ReactNode;
+        onClick?: () => void;
+        disabled?: boolean;
+    }) => (
+        <button type="button" onClick={onClick} disabled={disabled}>
+            {children}
+        </button>
+    ),
     PdfExportLifecyclePanel: (props: MockPanelProps) => (
         <div>
             <div>{props.title}</div>
@@ -162,6 +175,15 @@ describe('ExamReportPdfExport', () => {
 
         fireEvent.click(screen.getByRole('button', { name: 'Export Results PDF' }));
 
+        expect(mockCreateMutate).toHaveBeenCalledWith({ exam_id: 'exam-1' }, expect.any(Object));
+    });
+
+    it('renders a compact header button variant that creates an export', () => {
+        render(<ExamReportPdfExport examId="exam-1" variant="button" />);
+
+        fireEvent.click(screen.getByRole('button', { name: /export results pdf/i }));
+
+        expect(screen.queryByText('Create and manage a PDF export')).toBeNull();
         expect(mockCreateMutate).toHaveBeenCalledWith({ exam_id: 'exam-1' }, expect.any(Object));
     });
 
