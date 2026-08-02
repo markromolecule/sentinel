@@ -28,6 +28,10 @@ function mapSelectedLabels(selectedIds: string[], labelMap: Map<string, string>)
         .filter((label): label is string => Boolean(label));
 }
 
+function getRequestSectionId(section: SubjectOffering['sections'][number]) {
+    return section.sectionId ?? section.id;
+}
+
 function toggleStringListValue(
     currentValues: string[],
     nextValue: string,
@@ -175,7 +179,11 @@ export function useRequestOfferedSubjectBuilder(
         availableCourses,
         (course) => course.code?.trim() || course.title,
     );
-    const sectionLabelMap = useStableIdMap(allowedSections, (section) => section.name);
+    const sectionLabelMap = useStableValue(
+        () =>
+            new Map(allowedSections.map((section) => [getRequestSectionId(section), section.name])),
+        [allowedSections],
+    );
 
     const departmentOptions = useStableValue(
         () =>
@@ -207,7 +215,7 @@ export function useRequestOfferedSubjectBuilder(
         () =>
             createStableCheckboxOptions(
                 visibleSections,
-                (section) => section.id,
+                getRequestSectionId,
                 (section) => section.name,
             ),
         [visibleSections],
@@ -352,7 +360,7 @@ export function useRequestOfferedSubjectBuilder(
     }, [form, selectedYearLevels, visibleYearLevels]);
 
     useEffect(() => {
-        const validSectionIds = new Set(visibleSections.map((section) => section.id));
+        const validSectionIds = new Set(visibleSections.map(getRequestSectionId));
         const nextSectionIds = selectedSectionIds.filter((sectionId) =>
             validSectionIds.has(sectionId),
         );

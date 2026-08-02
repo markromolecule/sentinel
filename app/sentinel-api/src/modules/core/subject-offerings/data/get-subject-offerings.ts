@@ -28,12 +28,6 @@ export async function getSubjectOfferingsData({
         .selectFrom('subject_offerings as so')
         .innerJoin('subjects as sub', 'sub.subject_id', 'so.subject_id')
         .innerJoin('terms as trm', 'trm.term_id', 'so.term_id')
-        .leftJoin('subject_classification_subjects as scs', 'scs.subject_id', 'sub.subject_id')
-        .leftJoin(
-            'subject_classifications as scl',
-            'scl.subject_classification_id',
-            'scs.subject_classification_id',
-        )
         .leftJoin('user_profiles as creator', 'creator.user_id', 'so.created_by')
         .leftJoin('user_profiles as updater', 'updater.user_id', 'so.updated_by')
         .leftJoin('institutions as i', 'i.id', 'so.institution_id')
@@ -163,10 +157,16 @@ export async function getSubjectOfferingsData({
                         'email', u.email
                     ))
                     FROM class_groups cg
-                    JOIN classroom_instructor_assignments cia
-                      ON cia.class_group_id = cg.class_group_id
-                     AND cia.status = 'ACTIVE'
-                    JOIN user_profiles up ON up.user_id = cia.instructor_user_id
+                    JOIN user_profiles up ON up.user_id IN (
+                        SELECT cr.user_id
+                        FROM class_roles cr
+                        JOIN roles r ON r.role_id = cr.role_id AND r.role_name = 'instructor'
+                        WHERE cr.class_group_id = cg.class_group_id
+                        UNION
+                        SELECT cia.instructor_user_id
+                        FROM classroom_instructor_assignments cia
+                        WHERE cia.class_group_id = cg.class_group_id AND cia.status = 'ACTIVE'
+                    )
                     JOIN users u ON u.id = up.user_id
                     WHERE cg.subject_offering_id = so.subject_offering_id
                 ),
@@ -180,7 +180,18 @@ export async function getSubjectOfferingsData({
         if (instructorDepartmentId) {
             query = query.where((eb) =>
                 eb.or([
-                    eb('scl.classification_type', '=', 'GENERAL'),
+                    eb.exists(
+                        eb
+                            .selectFrom('subject_classification_subjects as scs_general')
+                            .innerJoin(
+                                'subject_classifications as scl_general',
+                                'scl_general.subject_classification_id',
+                                'scs_general.subject_classification_id',
+                            )
+                            .whereRef('scs_general.subject_id', '=', 'so.subject_id')
+                            .where('scl_general.classification_type', '=', 'GENERAL')
+                            .select('scs_general.subject_id'),
+                    ),
                     // If no departments are explicitly assigned, it's considered open to everyone
                     eb.not(
                         eb.exists(
