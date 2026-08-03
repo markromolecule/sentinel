@@ -81,15 +81,23 @@ vi.mock('@sentinel/ui', async (importOriginal) => {
 describe('ExamSectionAssignmentList', () => {
     const mockMutate = vi.fn();
     const mockOnAssignClick = vi.fn();
+    let latestDeleteOptions: any;
 
     beforeEach(() => {
         vi.clearAllMocks();
         document.body.innerHTML = '';
-        vi.mocked(useDeleteExamSectionAssignmentMutation).mockReturnValue({
-            mutateAsync: mockMutate,
-            isPending: false,
-        } as unknown as ReturnType<typeof useDeleteExamSectionAssignmentMutation>);
-        vi.spyOn(window, 'confirm').mockReturnValue(true);
+        latestDeleteOptions = undefined;
+        vi.mocked(useDeleteExamSectionAssignmentMutation).mockImplementation((options: any) => {
+            latestDeleteOptions = options;
+            return {
+                mutateAsync: async (payload: { examId: string; id: string }) => {
+                    mockMutate(payload);
+                    await options?.onSuccess?.({ id: payload.id }, payload, undefined);
+                    return { id: payload.id };
+                },
+                isPending: false,
+            } as any;
+        });
     });
 
     const mockAssignments = [
@@ -178,7 +186,7 @@ describe('ExamSectionAssignmentList', () => {
         expect(mockOnAssignClick).toHaveBeenCalled();
     });
 
-    it('triggers the delete mutation when delete action is clicked', () => {
+    it('opens the delete dialog and confirms assignment removal', async () => {
         render(
             <ExamSectionAssignmentList
                 examId="exam-1"
@@ -199,10 +207,16 @@ describe('ExamSectionAssignmentList', () => {
 
         if (deleteBtn) {
             fireEvent.click(deleteBtn);
+            expect(screen.getByText('Remove Assignment?')).toBeDefined();
+
+            const removeButton = screen.getByRole('button', { name: 'Remove' });
+            fireEvent.click(removeButton);
+
             expect(mockMutate).toHaveBeenCalledWith({
                 examId: 'exam-1',
                 id: 'assignment-1',
             });
+            expect(latestDeleteOptions).toBeDefined();
         }
     });
 });

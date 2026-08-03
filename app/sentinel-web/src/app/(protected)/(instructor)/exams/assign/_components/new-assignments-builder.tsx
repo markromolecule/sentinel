@@ -4,12 +4,6 @@ import * as React from 'react';
 import {
     Button,
     Label,
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-    cn,
 } from '@sentinel/ui';
 import {
     useClassroomsQuery,
@@ -27,6 +21,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 
 import { RowInstructorCombobox } from './row-instructor-combobox';
 import { RowClassroomCombobox } from './row-classroom-combobox';
+import { RowRoomCombobox } from './row-room-combobox';
 
 export interface NewAssignmentsBuilderProps {
     examId: string;
@@ -54,7 +49,8 @@ export function NewAssignmentsBuilder({
         institutionId: profile?.institutionId || undefined,
         subjectId: subjectId || undefined,
     });
-    const { data: rooms = [], isLoading: isRoomsLoading } = useRoomsQuery();
+    // Rooms are no longer eagerly loaded — RowRoomCombobox handles lazy search internally
+    const { data: rooms = [] } = useRoomsQuery({ limit: 25, page: 1 });
     const { data: users = [], isLoading: isUsersLoading } = useUsersQuery({ role: 'instructor' });
 
     const filteredClassrooms = React.useMemo(() => {
@@ -123,7 +119,7 @@ export function NewAssignmentsBuilder({
             string,
             {
                 classroomId?: HTMLInputElement | null;
-                roomId?: HTMLButtonElement | null;
+                roomId?: HTMLInputElement | null;
                 instructorId?: HTMLInputElement | null;
             }
         >
@@ -277,69 +273,33 @@ export function NewAssignmentsBuilder({
                                         )}
                                     </div>
 
-                                    {/* Room Select */}
+                                    {/* Room Combobox */}
                                     <div className="space-y-1.5 md:col-span-4">
                                         <Label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
                                             Room
                                         </Label>
-                                        {isRoomsLoading ? (
-                                            <div className="flex h-10 items-center rounded-md border bg-white px-3 dark:bg-zinc-950">
-                                                <Loader2 className="mr-1.5 h-3 w-3 animate-spin text-zinc-500" />
-                                                <span className="text-xs text-zinc-500">
-                                                    Loading...
-                                                </span>
-                                            </div>
-                                        ) : (
-                                            <Select
-                                                value={row.roomId}
-                                                onValueChange={(val) =>
-                                                    updateRowField(row.localId, 'roomId', val)
-                                                }
-                                                disabled={isPending}
-                                            >
-                                                <SelectTrigger
-                                                    ref={(el) => {
-                                                        if (!rowRefs.current[row.localId])
-                                                            rowRefs.current[row.localId] = {};
-                                                        rowRefs.current[row.localId].roomId = el;
-                                                    }}
-                                                    aria-invalid={
-                                                        submitAttempted && !!rowErrs.roomId
-                                                    }
-                                                    aria-describedby={
-                                                        submitAttempted && rowErrs.roomId
-                                                            ? `err-room-${row.localId}`
-                                                            : undefined
-                                                    }
-                                                    className="bg-white dark:bg-zinc-950"
-                                                >
-                                                    <SelectValue placeholder="Select room" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {activeRooms.map((room) => (
-                                                        <SelectItem key={room.id} value={room.id}>
-                                                            <div className="flex w-full items-center justify-between gap-2">
-                                                                <span>
-                                                                    {room.name} ({room.room_number})
-                                                                </span>
-                                                                <span
-                                                                    className={cn(
-                                                                        'ml-2 rounded-xs border px-1.5 py-0.5 text-[10px] font-semibold tracking-wider uppercase',
-                                                                        room.status === 'AVAILABLE'
-                                                                            ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/20 dark:text-emerald-400'
-                                                                            : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-400',
-                                                                    )}
-                                                                >
-                                                                    {room.status === 'AVAILABLE'
-                                                                        ? 'Available'
-                                                                        : 'Assigned'}
-                                                                </span>
-                                                            </div>
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        )}
+                                        <RowRoomCombobox
+                                            ref={(el) => {
+                                                if (!rowRefs.current[row.localId])
+                                                    rowRefs.current[row.localId] = {};
+                                                rowRefs.current[row.localId].roomId = el;
+                                            }}
+                                            value={row.roomId}
+                                            onValueChange={(val) =>
+                                                updateRowField(row.localId, 'roomId', val)
+                                            }
+                                            rooms={activeRooms}
+                                            disabled={isPending}
+                                            placeholder="Search room..."
+                                            aria-invalid={
+                                                submitAttempted && !!rowErrs.roomId
+                                            }
+                                            aria-describedby={
+                                                submitAttempted && rowErrs.roomId
+                                                    ? `err-room-${row.localId}`
+                                                    : undefined
+                                            }
+                                        />
                                         {submitAttempted && rowErrs.roomId && (
                                             <p
                                                 id={`err-room-${row.localId}`}
