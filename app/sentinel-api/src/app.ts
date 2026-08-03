@@ -1,4 +1,5 @@
 import { OpenAPIHono } from '@hono/zod-openapi';
+import type { Context } from 'hono';
 import { cors } from 'hono/cors';
 import { HTTPException } from 'hono/http-exception';
 import { bodyLimit } from 'hono/body-limit';
@@ -73,34 +74,45 @@ type Variables = {
 
 const app = new OpenAPIHono<{ Variables: Variables }>({ strict: false });
 
+const DEFAULT_CORS_ORIGIN = 'https://sentinelph.tech';
+const ALLOWED_CORS_ORIGINS = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3002',
+    'http://localhost:3003',
+    'https://sentinel-coral.vercel.app',
+    'https://app.sentinelph.tech',
+    'https://sentinelph.tech',
+    'https://www.sentinelph.tech',
+    'https://core.sentinelph.tech',
+];
+
+function resolveCorsOrigin(origin?: string | null) {
+    if (!origin) return DEFAULT_CORS_ORIGIN;
+    if (ALLOWED_CORS_ORIGINS.includes(origin)) return origin;
+
+    const isAllowedDomain =
+        origin.endsWith('.sentinelph.tech') || origin.endsWith('.vercel.app');
+    if (isAllowedDomain) return origin;
+
+    return null;
+}
+
+function applyCorsHeaders(c: Context) {
+    const allowedOrigin = resolveCorsOrigin(c.req.header('Origin'));
+
+    if (!allowedOrigin) return;
+
+    c.header('Access-Control-Allow-Origin', allowedOrigin);
+    c.header('Access-Control-Allow-Credentials', 'true');
+    c.header('Vary', 'Origin');
+}
+
 // 1. CORS Configuration
 app.use(
     '*',
     cors({
-        origin: (origin) => {
-            if (!origin) return 'https://sentinelph.tech';
-
-            const allowedOrigins = [
-                'http://localhost:3000',
-                'http://localhost:3001',
-                'http://localhost:3002',
-                'http://localhost:3003',
-                'https://sentinel-coral.vercel.app',
-                'https://app.sentinelph.tech',
-                'https://sentinelph.tech',
-                'https://www.sentinelph.tech',
-                'https://core.sentinelph.tech',
-            ];
-
-            if (allowedOrigins.includes(origin)) return origin;
-
-            const isAllowedDomain =
-                origin.endsWith('.sentinelph.tech') || origin.endsWith('.vercel.app');
-            if (isAllowedDomain) return origin;
-
-            // Return null to actively deny unrecognized origins
-            return null;
-        },
+        origin: (origin) => resolveCorsOrigin(origin),
         allowHeaders: [
             'Content-Type',
             'Authorization',
@@ -170,7 +182,6 @@ app.route('/questions', questionsRouter);
 app.route('/question-types', questionTypeRouter);
 app.route('/question-bank', questionBankRouter);
 app.route('/question-collection', questionCollectionRouter);
-app.route('/ai', aiRouter);
 app.use(
     '/ai/*',
     bodyLimit({
@@ -178,6 +189,7 @@ app.use(
         onError: (c) => c.json({ success: false, error: 'Payload too large.' }, 413),
     }),
 );
+app.route('/ai', aiRouter);
 app.route('/builder', builderRouter);
 app.route('/semesters', semestersRouter);
 app.route('/rooms', roomsRouter);
@@ -219,6 +231,8 @@ app.get('/reference', async (c, next) => {
 
 // 6. Global Error Handling
 app.onError((err, c) => {
+    applyCorsHeaders(c);
+
     if (err instanceof HTTPException) {
         return c.json(
             {
@@ -268,6 +282,8 @@ app.onError((err, c) => {
 
 // 7. 404 Handler
 app.notFound((c) => {
+    applyCorsHeaders(c);
+
     return c.json({ error: 'Not Found', message: `Route ${c.req.path} not found` }, 404);
 });
 
