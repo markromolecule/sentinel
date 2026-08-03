@@ -122,17 +122,6 @@ export function useSubjectsPageState() {
         setFormOpen(true);
     };
 
-    const handleDelete = (subject: MasterSubject) => {
-        const subjectId = getSubjectId(subject);
-        if (!subjectId) return;
-        if (window.confirm(`Delete ${subject.title}?`)) {
-            deleteSubjectMutation.mutate({
-                id: subjectId,
-                institutionId: selectedInstitutionId || undefined,
-            });
-        }
-    };
-
     const handleRevert = () => {
         if (!subjectToRevert) return;
         const subjectId = getSubjectId(subjectToRevert);
@@ -205,7 +194,6 @@ export function useSubjectsPageState() {
         parentSubject,
         handleEdit,
         handleCreate,
-        handleDelete,
         handleRevert,
         submitForm,
         createSubjectMutation,

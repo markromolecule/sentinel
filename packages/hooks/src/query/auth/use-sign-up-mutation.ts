@@ -1,8 +1,13 @@
-import type { SignUpWithPasswordCredentials, AuthResponse } from '@supabase/supabase-js';
+import type { SignUpWithPasswordCredentials, User, Session } from '@supabase/supabase-js';
 import { useAuth } from '../../auth-provider';
 import { useApi } from '../../api-provider';
 import { ApiError } from '@sentinel/services';
 import { UseMutationOptions, useMutation } from '@tanstack/react-query';
+
+export interface SignUpResponse {
+    user: User | null;
+    session: Session | null;
+}
 
 export class SignUpError extends Error {
     code: string;
@@ -15,7 +20,7 @@ export class SignUpError extends Error {
 }
 
 export function useSignUpMutation(
-    args: UseMutationOptions<AuthResponse, SignUpError, SignUpWithPasswordCredentials> = {},
+    args: UseMutationOptions<SignUpResponse, SignUpError, SignUpWithPasswordCredentials> = {},
 ) {
     const { supabase } = useAuth();
     const api = useApi();
@@ -27,7 +32,6 @@ export function useSignUpMutation(
 
             try {
                 // Call the Sentinel API Proxy for Auth
-                // This correctly routes the sign-up through our rate-limiter
                 const response = (await api('/auth/register', {
                     method: 'POST',
                     body: JSON.stringify({
@@ -40,7 +44,14 @@ export function useSignUpMutation(
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                })) as AuthResponse;
+                })) as SignUpResponse;
+
+                if (response.session) {
+                    await supabase.auth.setSession({
+                        access_token: response.session.access_token,
+                        refresh_token: response.session.refresh_token,
+                    });
+                }
 
                 return response;
             } catch (error: any) {

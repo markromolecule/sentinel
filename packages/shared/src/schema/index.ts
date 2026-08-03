@@ -160,8 +160,8 @@ export type { AssignmentFormValues } from './assignments/AssignmentSchema';
 // Auth
 export { LoginSchema } from './auth/login-schema';
 export type { LoginSchemaType } from './auth/login-schema';
-export { RegisterSchema } from './auth/register-schema';
-export type { RegisterSchemaType } from './auth/register-schema';
+export { RegisterSchema, ApiRegisterSchema } from './auth/register-schema';
+export type { RegisterSchemaType, ApiRegisterSchemaType } from './auth/register-schema';
 
 // Onboarding
 export { onboardingSchema } from './onboarding/onboarding-schema';

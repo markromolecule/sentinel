@@ -42,8 +42,12 @@ export default function RegisterScreen() {
     const [googleLoading, setGoogleLoading] = useState(false);
 
     const signUpMutation = useSignUpMutation({
-        onSuccess: () => {
-            router.replace('/(auth)/login');
+        onSuccess: (data) => {
+            if (data.session) {
+                router.replace('/(onboarding)');
+            } else {
+                router.replace('/(auth)/login');
+            }
         },
         onError: (error) => {
             setAuthError(error.message);

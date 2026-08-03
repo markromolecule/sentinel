@@ -5,8 +5,10 @@ import { useState } from 'react';
 import { RegisterSchema } from '@sentinel/shared/schema';
 import { RegisterSchemaType } from '@sentinel/shared/schema';
 import { config } from '@/lib/config';
+import { useRouter } from 'next/navigation';
 
 export function useRegisterForm() {
+    const router = useRouter();
     const [authError, setAuthError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -23,10 +25,15 @@ export function useRegisterForm() {
     });
 
     const { mutate: signUp, isPending: isLoading } = useSignUpMutation({
-        onSuccess: () => {
-            setSuccessMessage(
-                'Registration successful! Please check your email to verify your account.',
-            );
+        onSuccess: (data) => {
+            if (data.session) {
+                router.push('/onboarding');
+                router.refresh();
+            } else {
+                setSuccessMessage(
+                    'Registration successful! Please check your email to verify your account.',
+                );
+            }
         },
         onError: (error: SignUpError) => {
             setAuthError(error.message);

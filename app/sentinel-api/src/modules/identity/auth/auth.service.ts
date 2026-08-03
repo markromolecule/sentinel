@@ -1,5 +1,6 @@
+import { supabaseAdmin } from '../../../lib/supabase-admin';
 import { supabaseAnon } from '../../../lib/supabase-anon';
-import { LoginSchemaType, RegisterSchemaType } from '@sentinel/shared/schema';
+import { LoginSchemaType, ApiRegisterSchemaType } from '@sentinel/shared/schema';
 
 export class AuthService {
     /**
@@ -21,23 +22,36 @@ export class AuthService {
     /**
      * Register a new user via Supabase.
      */
-    static async register(body: RegisterSchemaType) {
-        const { data, error } = await supabaseAnon.auth.signUp({
+    static async register(body: ApiRegisterSchemaType) {
+        // 1. Create the user using the admin client to auto-confirm the email
+        const { data: createData, error: createError } = await supabaseAdmin.auth.admin.createUser({
             email: body.email,
             password: body.password,
-            options: {
-                data: {
-                    first_name: body.firstName,
-                    last_name: body.lastName,
-                    role: 'student', // Default role for portal signups
-                },
+            email_confirm: true,
+            user_metadata: {
+                first_name: body.firstName,
+                last_name: body.lastName,
+                role: 'student', // Default role for portal signups
+            },
+            app_metadata: {
+                role: 'student',
             },
         });
 
-        if (error) {
-            throw error;
+        if (createError || !createData?.user) {
+            throw createError || new Error('Failed to create user');
         }
 
-        return data;
+        // 2. Sign in the user immediately to generate a session
+        const { data: sessionData, error: loginError } = await supabaseAnon.auth.signInWithPassword({
+            email: body.email,
+            password: body.password,
+        });
+
+        if (loginError) {
+            throw loginError;
+        }
+
+        return sessionData;
     }
 }

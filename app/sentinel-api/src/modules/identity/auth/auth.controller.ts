@@ -1,6 +1,6 @@
 import { createRoute, z } from '@hono/zod-openapi';
 import { type AppRouteHandler } from '../../../types/hono';
-import { LoginSchema, RegisterSchema } from '@sentinel/shared/schema';
+import { LoginSchema, ApiRegisterSchema } from '@sentinel/shared/schema';
 import { AuthService } from './auth.service';
 import { LogsService } from '../../general/logs/logs.service';
 
@@ -40,7 +40,7 @@ export const registerRoute = createRoute({
         body: {
             content: {
                 'application/json': {
-                    schema: RegisterSchema,
+                    schema: ApiRegisterSchema,
                 },
             },
         },
