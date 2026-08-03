@@ -141,4 +141,35 @@ describe('AssessPassageQualityStep', () => {
             ),
         ).rejects.toBe(upstreamError);
     });
+
+    it('splits large critic workloads into concurrent batches', async () => {
+        const slots: ReconciledSlot[] = Array.from({ length: 21 }, (_, index) => ({
+            slotId: `slot-${index}`,
+            type: 'ESSAY',
+            question: {
+                content: { prompt: `Explain concept ${index}.` },
+                passageContent: `Background context for concept ${index}.`,
+                sourceEvidence: `Evidence ${index}.`,
+            },
+        }));
+        const generateStructuredJson = vi.fn().mockImplementation(({ prompt }) => ({
+            evaluations: slots
+                .filter((slot) => prompt.includes(`\"slotId\": \"${slot.slotId}\"`))
+                .map((slot) => ({
+                    slotId: slot.slotId,
+                    leaksAnswer: false,
+                    answerableFromPassage: true,
+                    reasonCode: 'SAFE',
+                    reason: 'Good passage.',
+                })),
+        }));
+
+        const result = await assessPassageQuality(slots, config, 'gemini-model', {
+            generateStructuredJson,
+        } as unknown as QuestionGeneratorLlmProvider);
+
+        expect(generateStructuredJson).toHaveBeenCalledTimes(3);
+        expect(result.failedSlots).toHaveLength(0);
+        expect(result.passedSlots).toHaveLength(21);
+    });
 });

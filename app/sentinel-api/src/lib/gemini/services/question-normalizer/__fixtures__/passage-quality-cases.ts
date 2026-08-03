@@ -206,6 +206,19 @@ export const passageQualityCases: PassageQualityTestCase[] = [
         shouldPass: true,
         description: 'True/False question with no containment or high overlap.',
     },
+    {
+        id: 'tf-safe-supporting-evidence',
+        type: 'TRUE_FALSE',
+        content: {
+            prompt: 'Mobile commerce depends on reliable cellular infrastructure.',
+            correctAnswer: true,
+        },
+        passageContent:
+            'Continuous access to mobile services is enabled by robust and widespread phone networks.',
+        shouldPass: true,
+        description:
+            'Supporting evidence for a true/false proposition is not treated as a verbatim restatement.',
+    },
     // 8. ESSAY
     {
         id: 'essay-safe',

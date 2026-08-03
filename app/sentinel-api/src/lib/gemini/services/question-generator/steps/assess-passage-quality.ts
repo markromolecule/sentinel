@@ -6,7 +6,11 @@ import {
     buildPassageQualityCriticPrompt,
     buildPassageQualityCriticSchema,
 } from '../../prompt-builder/passage-quality-prompts';
+import { runWithConcurrencyLimit } from '../utils/concurrency';
 import { z } from 'zod';
+
+const CRITIC_BATCH_SIZE = 10;
+const CRITIC_CONCURRENCY_LIMIT = 3;
 
 export interface AssessPassageQualityResult {
     passedSlots: Array<{ slotId: string; type: string; question: any }>;
@@ -78,38 +82,53 @@ export async function assessPassageQuality(
         }
     }
 
-    // 2. Run batched critic for deterministic survivors
+    // 2. Run the critic in small concurrent batches. Large critic responses are more
+    // likely to omit slot IDs and take substantially longer to decode.
     if (survivors.length > 0) {
-        const criticInputs = survivors.map((slot) => ({
-            slotId: slot.slotId,
-            type: slot.type,
-            prompt: String(slot.question.content?.prompt || ''),
-            correctAnswer:
-                slot.question.content?.correctAnswer ??
-                slot.question.content?.acceptedAnswers ??
-                slot.question.content?.blanks ??
-                '',
-            passageContent: slot.question.passageContent,
-            sourceEvidence: slot.question.sourceEvidence || '',
-        }));
-
-        const prompt = buildPassageQualityCriticPrompt(criticInputs);
         const responseJsonSchema = buildPassageQualityCriticSchema();
+        const criticTasks: Array<() => Promise<z.infer<typeof criticResponseSchema>>> = [];
 
-        let criticOutput: any;
-        try {
-            criticOutput = await provider.generateStructuredJson<any>({
-                model,
-                prompt,
-                responseJsonSchema,
+        for (let offset = 0; offset < survivors.length; offset += CRITIC_BATCH_SIZE) {
+            const batch = survivors.slice(offset, offset + CRITIC_BATCH_SIZE);
+            criticTasks.push(async () => {
+                const prompt = buildPassageQualityCriticPrompt(
+                    batch.map((slot) => ({
+                        slotId: slot.slotId,
+                        type: slot.type,
+                        prompt: String(slot.question.content?.prompt || ''),
+                        questionContent: slot.question.content,
+                        correctAnswer:
+                            slot.question.content?.correctAnswer ??
+                            slot.question.content?.acceptedAnswers ??
+                            slot.question.content?.blanks ??
+                            '',
+                        passageContent: slot.question.passageContent,
+                        sourceEvidence: slot.question.sourceEvidence || '',
+                    })),
+                );
+                const criticOutput = await provider.generateStructuredJson<unknown>({
+                    model,
+                    prompt,
+                    responseJsonSchema,
+                });
+
+                return criticResponseSchema.parse(criticOutput);
             });
-        } catch (error) {
-            console.error('Critic model call failed:', error);
-            throw error;
         }
 
-        const parsed = criticResponseSchema.safeParse(criticOutput);
-        const evaluations = parsed.success ? parsed.data.evaluations : [];
+        const criticResults = await runWithConcurrencyLimit(criticTasks, CRITIC_CONCURRENCY_LIMIT);
+        const failedBatch = criticResults.find(
+            (result): result is PromiseRejectedResult => result.status === 'rejected',
+        );
+
+        if (failedBatch) {
+            console.error('Critic model call failed:', failedBatch.reason);
+            throw failedBatch.reason;
+        }
+
+        const evaluations = criticResults.flatMap((result) =>
+            result.status === 'fulfilled' ? result.value.evaluations : [],
+        );
 
         for (const slot of survivors) {
             const evals = evaluations.filter((e) => e.slotId === slot.slotId);

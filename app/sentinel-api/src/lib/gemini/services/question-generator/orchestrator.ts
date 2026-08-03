@@ -27,6 +27,18 @@ export type { LlmFile, QuestionGeneratorLlmProvider, RawGeneratedQuestion } from
 
 const MAX_PASSAGE_REPAIR_ROUNDS = 2;
 const MAX_DEFICIT_REPLENISHMENT_ROUNDS = 2;
+const BLOCKING_PASSAGE_VIOLATIONS = new Set([
+    'MISSING_ITEM',
+    'EMPTY_PASSAGE',
+    'ANSWER_EXACT_MATCH',
+    'ENUMERATION_LIST_REVEALED',
+    'MATCHING_PAIR_REVEALED',
+    'TRUE_FALSE_PROPOSITION_RESTATED',
+]);
+
+export function isBlockingPassageFailure(failedSlot: { violations: string[] }) {
+    return failedSlot.violations.some((violation) => BLOCKING_PASSAGE_VIOLATIONS.has(violation));
+}
 
 export class QuestionGeneratorService {
     /**
@@ -51,20 +63,31 @@ export class QuestionGeneratorService {
         const uploadedFiles = await uploadFilesStep(args.files, provider);
 
         try {
-            const { rawQuestions: allRawQuestions } = await generateBatchesStep({
-                batches,
-                files: args.files,
-                uploadedFiles,
-                model,
-                provider,
-            });
+            const [generationResult, pageCountResult] = await Promise.allSettled([
+                generateBatchesStep({
+                    batches,
+                    files: args.files,
+                    uploadedFiles,
+                    model,
+                    provider,
+                }),
+                resolvePageCountsStep({
+                    files: args.files,
+                    uploadedFiles,
+                    model,
+                    provider,
+                }),
+            ]);
 
-            const sourcePageCounts = await resolvePageCountsStep({
-                files: args.files,
-                uploadedFiles,
-                model,
-                provider,
-            });
+            if (generationResult.status === 'rejected') {
+                throw generationResult.reason;
+            }
+            if (pageCountResult.status === 'rejected') {
+                throw pageCountResult.reason;
+            }
+
+            const { rawQuestions: allRawQuestions } = generationResult.value;
+            const sourcePageCounts = pageCountResult.value;
 
             const sourceDocuments = buildSourceDocumentsStep(
                 args.files,
@@ -128,19 +151,29 @@ export class QuestionGeneratorService {
                 assessResult.failedSlots.length > 0 &&
                 currentRound < MAX_PASSAGE_REPAIR_ROUNDS
             ) {
+                const failedSlotsToRepair =
+                    currentRound === 0
+                        ? assessResult.failedSlots
+                        : assessResult.failedSlots.filter(isBlockingPassageFailure);
+
+                if (failedSlotsToRepair.length === 0) {
+                    break;
+                }
+
                 currentRound++;
                 console.log(
-                    `Running repair round ${currentRound} for ${assessResult.failedSlots.length} failed slots.`,
+                    `Running repair round ${currentRound} for ${failedSlotsToRepair.length} failed slots.`,
                 );
 
                 const repaired = await repairInvalidQuestions({
-                    failedSlots: assessResult.failedSlots,
+                    failedSlots: failedSlotsToRepair,
                     config: args.config,
                     files: args.files,
                     uploadedFiles,
                     model,
                     provider,
                 });
+                const repairedSlotIds = new Set(failedSlotsToRepair.map((slot) => slot.slotId));
 
                 for (const rep of repaired) {
                     const slotIndex = reconciliation.slots.findIndex(
@@ -161,36 +194,44 @@ export class QuestionGeneratorService {
                                 `Normalization failed for repaired slot ${rep.slotId}:`,
                                 error,
                             );
-                            reconciliation.slots[slotIndex].question = null;
                         }
-                    } else {
-                        reconciliation.slots[slotIndex].question = null;
                     }
                 }
 
+                const repairedSlots = reconciliation.slots.filter((slot) =>
+                    repairedSlotIds.has(slot.slotId),
+                );
                 assessResult = await assessPassageQuality(
-                    reconciliation.slots,
+                    repairedSlots,
                     args.config,
                     model,
                     provider,
                 );
             }
 
-            if (assessResult.failedSlots.length > 0) {
+            const blockingFailures = assessResult.failedSlots.filter(isBlockingPassageFailure);
+
+            if (blockingFailures.length > 0) {
                 console.error(
                     'Passage quality validation failed after repair rounds:',
-                    assessResult.failedSlots,
+                    blockingFailures,
                 );
                 throw new PassageQualityValidationError(
                     'AI passage generation did not meet the required quality criteria. Reframed questions could not be generated without leaking answers.',
                     {
-                        violations: assessResult.failedSlots.flatMap((s) =>
+                        violations: blockingFailures.flatMap((s) =>
                             (s.violations || []).map((code, idx) => ({
                                 code,
                                 message: s.reasons?.[idx] || 'Quality violation',
                             })),
                         ),
                     },
+                );
+            }
+
+            if (assessResult.failedSlots.length > 0) {
+                console.warn(
+                    `Continuing with ${assessResult.failedSlots.length} non-blocking passage quality warnings after repair.`,
                 );
             }
 

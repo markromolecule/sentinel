@@ -8,25 +8,29 @@ export async function uploadFilesStep(
     files: File[],
     provider: QuestionGeneratorLlmProvider,
 ): Promise<LlmFile[]> {
-    const uploadedFiles: LlmFile[] = [];
-
-    try {
-        for (const file of files) {
+    const uploadResults = await Promise.allSettled(
+        files.map(async (file) => {
             const buffer = Buffer.from(await file.arrayBuffer());
-            uploadedFiles.push(
-                await provider.uploadFile({
-                    buffer,
-                    mimeType: file.type || 'application/pdf',
-                    displayName: file.name,
-                }),
-            );
-        }
+            return await provider.uploadFile({
+                buffer,
+                mimeType: file.type || 'application/pdf',
+                displayName: file.name,
+            });
+        }),
+    );
+    const uploadedFiles = uploadResults.flatMap((result) =>
+        result.status === 'fulfilled' ? [result.value] : [],
+    );
+    const failedUpload = uploadResults.find(
+        (result): result is PromiseRejectedResult => result.status === 'rejected',
+    );
 
-        return uploadedFiles;
-    } catch (error) {
+    if (failedUpload) {
         await deleteUploadedFilesStep(uploadedFiles, provider);
-        throw error;
+        throw failedUpload.reason;
     }
+
+    return uploadedFiles;
 }
 
 /**

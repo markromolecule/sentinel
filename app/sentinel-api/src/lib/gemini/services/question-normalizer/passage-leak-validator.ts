@@ -114,45 +114,6 @@ function segmentPassage(text: string): string[] {
 }
 
 /**
- * Helper to compute character trigrams for overlap checking.
- */
-function getCharacterTrigrams(str: string): Set<string> {
-    const trigrams = new Set<string>();
-    for (let i = 0; i < str.length - 2; i++) {
-        trigrams.add(str.substring(i, i + 3));
-    }
-    return trigrams;
-}
-
-/**
- * Helper to compute word token Jaccard overlap.
- */
-function calculateWordOverlap(str1: string, str2: string): number {
-    const w1 = str1.split(' ').filter((w) => w && !COMMON_WORDS.has(w));
-    if (w1.length === 0) return 0;
-    const w2 = new Set(str2.split(' ').filter((w) => w && !COMMON_WORDS.has(w)));
-    let matchCount = 0;
-    for (const word of w1) {
-        if (w2.has(word)) matchCount++;
-    }
-    return matchCount / w1.length;
-}
-
-/**
- * Helper to compute character trigram Jaccard overlap.
- */
-function calculateTrigramOverlap(str1: string, str2: string): number {
-    const t1 = getCharacterTrigrams(str1);
-    const t2 = getCharacterTrigrams(str2);
-    if (t1.size === 0 || t2.size === 0) return 0;
-    let intersect = 0;
-    for (const t of t1) {
-        if (t2.has(t)) intersect++;
-    }
-    return intersect / Math.max(t1.size, t2.size);
-}
-
-/**
  * Extracts answer-key signals to evaluate leakage.
  */
 export function extractQuestionAnswerSignals(
@@ -271,15 +232,7 @@ export function validateGeneratedPassage(
             for (const segment of segments) {
                 const normSegment = normalizePassageComparisonText(segment);
 
-                // Exact containment
-                const containment =
-                    normSegment.includes(normPrompt) || normPrompt.includes(normSegment);
-
-                // Overlap calculation
-                const wordOverlap = calculateWordOverlap(normPrompt, normSegment);
-                const trigramOverlap = calculateTrigramOverlap(normPrompt, normSegment);
-
-                if (containment || wordOverlap > 0.7 || trigramOverlap > 0.6) {
+                if (normSegment.includes(normPrompt)) {
                     violations.push({
                         code: 'TRUE_FALSE_PROPOSITION_RESTATED',
                         message: `True/false proposition is restated in passage segment: "${segment}".`,
