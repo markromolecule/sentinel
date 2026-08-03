@@ -4,6 +4,7 @@ export interface CriticSlotInput {
     slotId: string;
     type: string;
     prompt: string;
+    questionContent?: any;
     correctAnswer: any;
     passageContent: string;
     sourceEvidence: string;
@@ -20,6 +21,7 @@ export function buildPassageQualityCriticPrompt(slots: CriticSlotInput[]): strin
                     slotId: slot.slotId,
                     type: slot.type,
                     prompt: slot.prompt,
+                    questionContent: slot.questionContent,
                     correctAnswer: slot.correctAnswer,
                     passageContent: slot.passageContent,
                     sourceEvidence: slot.sourceEvidence,
@@ -33,9 +35,11 @@ export function buildPassageQualityCriticPrompt(slots: CriticSlotInput[]): strin
     return [
         'You are an expert assessment quality critic. Evaluate the following generated questions for passage quality, answer leakage, and student answerability.',
         'CRITICAL EVALUATION RULES:',
-        '1. Set "leaksAnswer" to true if the student-facing "passageContent" explicitly leaks or contains the correct answer (or key clues making the question a trivial copy-paste match) for MULTIPLE_CHOICE, MULTIPLE_RESPONSE, IDENTIFICATION, FILL_BLANK, or ENUMERATION. For TRUE_FALSE, set to true if the proposition is restated with high semantic overlap. For MATCHING, set to true if the pairs are explicitly associated in the same sentence segment.',
-        '2. Set "answerableFromPassage" to true if a student can answer the question based solely on the context provided in "passageContent". It must contain sufficient information for synthesis or derivation.',
-        '3. For each slot, return exactly one evaluation entry matching its slotId.',
+        '1. Set "leaksAnswer" to true only when the student-facing "passageContent" explicitly gives the answer or makes the item a trivial copy-paste match. Descriptive clues, definitions without the term, and evidence used to infer an answer are not leaks.',
+        '2. For TRUE_FALSE, evidence that supports or refutes the proposition is required and is not an answer leak by itself. Mark a leak only if the passage repeats the proposition nearly verbatim or explicitly labels it true or false.',
+        '3. Set "answerableFromPassage" to true when the passage and the complete questionContent together provide enough information to derive or select the answer. For selected-response questions, inspect the supplied options; the correct option does not need to appear verbatim in the passage.',
+        '4. Do not require external subject knowledge when the passage describes the concept and the available options let the student identify it.',
+        '5. For each slot, return exactly one evaluation entry matching its slotId.',
         '',
         'SLOTS TO EVALUATE:',
         serializedSlots,
@@ -82,6 +86,7 @@ export interface RepairPromptInput {
     passageContent: string;
     sourceEvidence: string;
     violations: string[];
+    reasons?: string[];
     sourceFiles: string[];
 }
 
@@ -89,9 +94,12 @@ export function buildPassageRepairBatchPrompt(args: {
     slots: Omit<RepairPromptInput, 'sourceFiles'>[];
     sourceFiles: string[];
 }): string {
+    const slotIds = args.slots.map((slot) => slot.slotId);
+
     return [
         `Repair exactly ${args.slots.length} generated questions.`,
         'Return exactly one replacement for every requested slotId. Do not omit, duplicate, or rename slot IDs.',
+        `Valid slot IDs: ${slotIds.join(', ')}.`,
         'Each replacement must retain the requested question type and satisfy its supplied response schema.',
         '',
         'SLOTS TO REPAIR:',
@@ -118,6 +126,7 @@ export function buildPassageRepairPrompt(args: RepairPromptInput): string {
         passageContent,
         sourceEvidence,
         violations,
+        reasons = [],
         sourceFiles,
     } = args;
 
@@ -125,6 +134,9 @@ export function buildPassageRepairPrompt(args: RepairPromptInput): string {
         `Repair the generated question for slot "${slotId}" of type "${type}".`,
         'The original question had the following passage quality or leakage violations:',
         violations.map((v) => `- ${v}`).join('\n'),
+        reasons.length > 0
+            ? `Detailed reasons:\n${reasons.map((reason) => `- ${reason}`).join('\n')}`
+            : null,
         '',
         'ORIGINAL ITEM DETAILS:',
         `- Prompt: ${prompt}`,
@@ -206,21 +218,16 @@ export function buildPassageRepairSchema(config: RepairSchemaConfig) {
     };
 }
 
-export function buildPassageRepairBatchSchema(config: RepairSchemaConfig & { slotIds: string[] }) {
+export function buildPassageRepairBatchSchema(config: RepairSchemaConfig) {
     return {
         type: 'object',
         properties: {
             repairs: {
                 type: 'array',
-                minItems: config.slotIds.length,
-                maxItems: config.slotIds.length,
                 items: {
                     type: 'object',
                     properties: {
-                        slotId: {
-                            type: 'string',
-                            enum: config.slotIds,
-                        },
+                        slotId: { type: 'string' },
                         question: buildPassageRepairSchema(config),
                     },
                     required: ['slotId', 'question'],

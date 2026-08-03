@@ -48,6 +48,37 @@ describe('uploadFilesStep and deleteUploadedFilesStep', () => {
 
             expect(mockProvider.deleteFile).toHaveBeenCalledWith('files/file1');
         });
+
+        it('uploads multiple files concurrently', async () => {
+            const files = [
+                new File(['pdf-1'], 'file1.pdf', { type: 'application/pdf' }),
+                new File(['pdf-2'], 'file2.pdf', { type: 'application/pdf' }),
+            ];
+            let activeCalls = 0;
+            let maxActiveCalls = 0;
+            const mockProvider: Partial<QuestionGeneratorLlmProvider> = {
+                uploadFile: vi.fn().mockImplementation(async ({ displayName }) => {
+                    activeCalls++;
+                    maxActiveCalls = Math.max(maxActiveCalls, activeCalls);
+                    await Promise.resolve();
+                    activeCalls--;
+                    return {
+                        name: `files/${displayName}`,
+                        uri: `https://gemini/${displayName}`,
+                        mimeType: 'application/pdf',
+                    };
+                }),
+                deleteFile: vi.fn(),
+            };
+
+            const uploaded = await uploadFilesStep(
+                files,
+                mockProvider as QuestionGeneratorLlmProvider,
+            );
+
+            expect(uploaded).toHaveLength(2);
+            expect(maxActiveCalls).toBe(2);
+        });
     });
 
     describe('deleteUploadedFilesStep', () => {

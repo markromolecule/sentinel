@@ -143,4 +143,59 @@ describe('RepairInvalidQuestionsStep', () => {
 
         expect(generateStructuredJson).toHaveBeenCalledTimes(1);
     });
+
+    it('runs independent repair batches concurrently', async () => {
+        const failedSlots = [
+            ...Array.from({ length: 11 }, (_, index) => ({
+                slotId: `mc-${index}`,
+                type: 'MULTIPLE_CHOICE',
+            })),
+            { slotId: 'essay-1', type: 'ESSAY' },
+        ].map((slot) => ({
+            ...slot,
+            question: {
+                content: { prompt: `Question ${slot.slotId}?` },
+                passageContent: 'Leaky passage.',
+                sourceEvidence: 'Evidence.',
+            },
+            violations: ['ANSWER_EXACT_MATCH'],
+            reasons: ['Leaks answer.'],
+        }));
+        let activeCalls = 0;
+        let maxActiveCalls = 0;
+        const generateStructuredJson = vi.fn().mockImplementation(async ({ prompt }) => {
+            activeCalls++;
+            maxActiveCalls = Math.max(maxActiveCalls, activeCalls);
+            await Promise.resolve();
+            const repairs = failedSlots
+                .filter((slot) => prompt.includes(slot.slotId))
+                .map((slot) => ({
+                    slotId: slot.slotId,
+                    question: {
+                        sourceFileName: 'algebra.pdf',
+                        sourcePageNumber: 1,
+                        sourceEvidence: 'Evidence.',
+                        passageContent: 'Safe passage.',
+                        content: slot.question.content,
+                    },
+                }));
+            activeCalls--;
+            return { repairs };
+        });
+
+        const result = await repairInvalidQuestions({
+            failedSlots,
+            config,
+            files: [new File([], 'algebra.pdf')],
+            uploadedFiles: [{ name: 'file1', uri: 'uri1', mimeType: 'pdf' }],
+            model: 'gemini-model',
+            provider: {
+                generateStructuredJson,
+            } as unknown as QuestionGeneratorLlmProvider,
+        });
+
+        expect(generateStructuredJson).toHaveBeenCalledTimes(3);
+        expect(maxActiveCalls).toBeGreaterThan(1);
+        expect(result).toHaveLength(12);
+    });
 });
