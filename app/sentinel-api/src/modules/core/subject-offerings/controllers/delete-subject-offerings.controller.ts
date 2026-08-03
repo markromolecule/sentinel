@@ -10,6 +10,13 @@ import {
     buildRequesterAcademicScope,
 } from '../../../_shared/academic-scope';
 
+function isNoResultError(error: unknown) {
+    return (
+        error instanceof Error &&
+        (error.name === 'NoResultError' || error.message.toLowerCase().includes('no result'))
+    );
+}
+
 export const deleteSubjectOfferingsRoute = createRoute({
     method: 'post',
     path: '/bulk-delete',
@@ -47,36 +54,69 @@ export const deleteSubjectOfferingsRouteHandler: AppRouteHandler<
             'subject_offerings:delete',
             'Forbidden. Missing subject_offerings:delete permission.',
         );
-        const { ids } = c.req.valid('json');
+        const { ids, institutionId: requestedInstitutionId } = c.req.valid('json');
         const user = c.get('user');
         const supabaseUser = c.get('supabaseUser') as any;
+        const requesterRole = supabaseUser?.user_metadata?.role;
+        const targetInstitutionId =
+            requesterRole === 'support' || requesterRole === 'superadmin'
+                ? (requestedInstitutionId ?? c.get('institutionId'))
+                : c.get('institutionId');
         const scope = buildRequesterAcademicScope({
-            requesterRole: supabaseUser?.user_metadata?.role,
-            requesterInstitutionId: c.get('institutionId'),
+            requesterRole,
+            requesterInstitutionId: targetInstitutionId,
             requesterDepartmentId: user.user_profiles?.department_id ?? null,
             requesterCourseId: user.user_profiles?.course_id ?? null,
         });
 
         assertSubjectOfferingMutationAccess(scope);
 
-        // Verify all exist and are in scope before deleting
-        for (const id of ids) {
-            const existingOffering = await SubjectOfferingsService.getSubjectOfferingById(
-                c.get('dbClient'),
-                id,
-                c.get('institutionId'),
-            );
+        const deleteTargets: Array<{ id: string; institutionId?: string | null }> = [];
+
+        // Verify all exist and are in scope before deleting. Support/superadmin views may include
+        // child-institution rows while the active filter is on the parent institution.
+        for (const id of [...new Set(ids)]) {
+            let existingOffering;
+
+            try {
+                existingOffering = await SubjectOfferingsService.getSubjectOfferingById(
+                    c.get('dbClient'),
+                    id,
+                    targetInstitutionId,
+                );
+            } catch (error) {
+                if (!isNoResultError(error)) {
+                    throw error;
+                }
+
+                existingOffering = await SubjectOfferingsService.getSubjectOfferingById(
+                    c.get('dbClient'),
+                    id,
+                );
+            }
+
             assertSubjectOfferingRecordInScope(scope, {
                 departmentIds: existingOffering.department_ids,
                 courseIds: existingOffering.course_ids,
             });
+
+            deleteTargets.push({
+                id,
+                institutionId:
+                    existingOffering.effective_institution_id ??
+                    existingOffering.origin_institution_id ??
+                    targetInstitutionId,
+            });
         }
 
-        await SubjectOfferingsService.deleteSubjectOfferings(
-            c.get('dbClient'),
-            ids,
-            c.get('institutionId'),
-        );
+        for (const target of deleteTargets) {
+            await SubjectOfferingsService.deleteSubjectOffering(
+                c.get('dbClient'),
+                target.id,
+                target.institutionId,
+                user.id,
+            );
+        }
 
         return c.json(
             {

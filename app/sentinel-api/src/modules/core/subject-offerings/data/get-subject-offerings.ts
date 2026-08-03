@@ -131,7 +131,6 @@ export async function getSubjectOfferingsData({
                     JOIN sections s ON s.section_id = sos2.section_id
                     LEFT JOIN class_groups cg ON cg.subject_offering_id = sos2.subject_offering_id AND cg.section_id = s.section_id
                     WHERE sos2.subject_offering_id = so.subject_offering_id
-                      AND cg.class_group_id IS NOT NULL
                 ),
                 '[]'::jsonb
             )`.as('sections'),

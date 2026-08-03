@@ -31,7 +31,7 @@ export function useUnenrollment({ subject, onSuccess }: UseUnenrollmentProps) {
                 class_group_id?: string;
             };
             return {
-                id: section.id || section.section_id || section.class_group_id || 'unknown',
+                id: section.class_group_id || section.id || section.section_id || 'unknown',
                 name: section.name || section.section_name || 'Unknown',
             };
         });

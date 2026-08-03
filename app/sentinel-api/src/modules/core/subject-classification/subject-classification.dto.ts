@@ -33,6 +33,7 @@ export const subjectClassificationSchemaOpenApi = z
         subjects: z.array(subjectClassificationSubjectSchemaOpenApi),
         department_id: z.string().uuid().nullable(),
         course_ids: z.array(z.string().uuid()).default([]),
+        year_levels: z.array(z.number().int().min(1).max(6)).default([]),
         institution_id: z.string().uuid().nullable(),
         created_at: z.union([z.coerce.date(), z.string()]).nullable(),
         updated_at: z.union([z.coerce.date(), z.string()]).nullable(),

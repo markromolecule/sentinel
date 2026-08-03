@@ -56,4 +56,16 @@ describe('useDeleteSubjectOfferingsMutation Hook', () => {
             queryKey: SUBJECT_QUERY_KEYS.all,
         });
     });
+
+    it('passes institution-scoped delete payloads through to the service', async () => {
+        const payload = {
+            ids: ['offering-uuid-1'],
+            institutionId: 'institution-uuid-1',
+        };
+
+        const mutation = useDeleteSubjectOfferingsMutation();
+        await (mutation as any).mutateAsync(payload);
+
+        expect(deleteSubjectOfferings).toHaveBeenCalledWith({ mockClient: true }, payload);
+    });
 });

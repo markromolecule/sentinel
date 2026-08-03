@@ -8,6 +8,7 @@ import { validateEffectiveInstitutionScope } from '../helper/validate-institutio
 import { assertSubjectOfferingAssignmentsVisible } from './assignments-visibility-helper';
 import { SubjectOfferingAssignmentsService } from './subject-offering-assignments.service';
 import {
+    assertSubjectOfferingHasAudience,
     buildCreateSubjectOfferingValues,
     normalizeAssignments,
     type CreateSubjectOfferingPayload,
@@ -47,6 +48,7 @@ export class CreateSubjectOfferingService {
         await validateEffectiveInstitutionScope(dbClient, subject, data.institution_id, 'Subject');
         await validateEffectiveInstitutionScope(dbClient, term, data.institution_id, 'Term');
         await assertSubjectOfferingAssignmentsVisible(dbClient, data.institution_id, data);
+        assertSubjectOfferingHasAudience(data);
 
         const createdSubjectOffering = await createSubjectOfferingData({
             dbClient,

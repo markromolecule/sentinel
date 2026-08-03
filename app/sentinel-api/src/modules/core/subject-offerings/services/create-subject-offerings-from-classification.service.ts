@@ -9,6 +9,7 @@ import { assertSubjectOfferingAssignmentsVisible } from './assignments-visibilit
 import { SubjectOfferingAssignmentsService } from './subject-offering-assignments.service';
 import { SubjectClassificationService } from '../../subject-classification/subject-classification.service';
 import {
+    assertSubjectOfferingHasAudience,
     buildCreateSubjectOfferingValues,
     normalizeAssignments,
 } from './subject-offering-payload.service';
@@ -97,6 +98,7 @@ export class CreateSubjectOfferingsFromClassificationService {
 
         await validateEffectiveInstitutionScope(dbClient, term, data.institution_id, 'Term');
         await assertSubjectOfferingAssignmentsVisible(dbClient, data.institution_id, data);
+        assertSubjectOfferingHasAudience(data);
 
         const existingOfferings = await getExistingSubjectOfferingsBySubjectsData({
             dbClient,
@@ -183,11 +185,22 @@ export class CreateSubjectOfferingsFromClassificationService {
                 dbClient: trx,
                 values: subjectOfferingValues,
             });
+            const assignments = normalizeAssignments(data);
 
             await SubjectOfferingAssignmentsService.createAllForOfferings(
                 trx,
                 createdRecords.map((record) => record.subject_offering_id),
-                normalizeAssignments(data),
+                assignments,
+            );
+
+            await Promise.all(
+                skipped.map((skippedOffering) =>
+                    SubjectOfferingAssignmentsService.updateAll(
+                        trx,
+                        skippedOffering.existing_subject_offering_id,
+                        assignments,
+                    ),
+                ),
             );
 
             return createdRecords;

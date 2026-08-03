@@ -5,6 +5,7 @@ import { updateSubjectOfferingData } from '../data/update-subject-offering';
 import { deleteSubjectOfferingData } from '../data/delete-subject-offering';
 import { buildSubjectOfferingError } from '../helper/subject-offering-errors';
 import { validateEffectiveInstitutionScope } from '../helper/validate-institution-scope';
+import { hideInheritedRecord } from '../../inheritance/inheritable-write-helper';
 import { assertSubjectOfferingAssignmentsVisible } from './assignments-visibility-helper';
 import { SubjectOfferingAssignmentsService } from './subject-offering-assignments.service';
 import {
@@ -13,6 +14,7 @@ import {
     type UpdateSubjectOfferingPayload,
 } from './subject-offering-payload.service';
 import { GetSubjectOfferingsService } from './get-subject-offerings.service';
+import { SUBJECT_OFFERING_INHERITANCE_CONFIG } from './_utils';
 
 /**
  * Service to handle updating and deleting subject offerings.
@@ -92,7 +94,20 @@ export class UpdateDeleteSubjectOfferingService {
         dbClient: DbClient,
         id: string,
         institutionId?: string | null,
+        actorId?: string | null,
     ) {
+        const hiddenSubjectOffering = await hideInheritedRecord({
+            dbClient,
+            config: SUBJECT_OFFERING_INHERITANCE_CONFIG,
+            id,
+            institutionId: institutionId ?? undefined,
+            actorId,
+        });
+
+        if (hiddenSubjectOffering) {
+            return;
+        }
+
         const existingSubjectOffering = await getSubjectOfferingBaseRecordData({
             dbClient,
             id,
@@ -117,12 +132,14 @@ export class UpdateDeleteSubjectOfferingService {
         dbClient: DbClient,
         ids: string[],
         institutionId?: string | null,
+        actorId?: string | null,
     ) {
-        for (const id of ids) {
+        for (const id of [...new Set(ids)]) {
             await UpdateDeleteSubjectOfferingService.deleteSubjectOffering(
                 dbClient,
                 id,
                 institutionId,
+                actorId,
             );
         }
     }

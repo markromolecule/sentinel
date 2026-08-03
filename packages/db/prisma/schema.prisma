@@ -1002,6 +1002,7 @@ model subject_classifications {
   updated_by                                      String?                           @db.Uuid
   institution_id                                  String?                           @db.Uuid
   department_id                                   String?                           @db.Uuid
+  year_levels                                     Int[]                             @default([]) @db.SmallInt
   source_record_id                                String?                           @db.Uuid
   inheritance_status                              inheritance_status?               @default(LOCAL)
   overridden_at                                   DateTime?                         @db.Timestamptz(6)
@@ -2678,4 +2679,3 @@ model essay_rubric_versions {
   @@index([is_active])
   @@schema("public")
 }
-

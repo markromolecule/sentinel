@@ -14,6 +14,7 @@ export type CreateSubjectClassificationPayload = {
     subject_ids?: string[];
     department_id?: string | null;
     course_ids?: string[];
+    year_levels?: number[];
     created_by?: string | null;
     institution_id?: string | null;
 };
@@ -25,8 +26,20 @@ export type UpdateSubjectClassificationPayload = Partial<{
     subject_ids: string[];
     department_id: string | null;
     course_ids: string[];
+    year_levels: number[];
     updated_by: string | null;
 }>;
+
+function normalizeYearLevels(value?: number[]) {
+    if (value === undefined) {
+        return undefined;
+    }
+
+    return [...new Set(value)]
+        .map((yearLevel) => Number(yearLevel))
+        .filter((yearLevel) => Number.isInteger(yearLevel) && yearLevel >= 1 && yearLevel <= 6)
+        .sort((left, right) => left - right);
+}
 
 function normalizeDescription(value?: string | null) {
     if (value === undefined) {
@@ -58,6 +71,7 @@ export function normalizeCreatePayload(data: CreateSubjectClassificationPayload)
     const name = data.name.trim();
     const type = normalizeType(data.type);
     const courseIds = data.course_ids ? [...new Set(data.course_ids)] : [];
+    const yearLevels = normalizeYearLevels(data.year_levels) ?? [];
 
     if (!name) {
         throw buildClassificationError(
@@ -87,6 +101,7 @@ export function normalizeCreatePayload(data: CreateSubjectClassificationPayload)
         subject_ids: toUniqueSubjectIds(data.subject_ids),
         department_id: type === 'CORE' ? (data.department_id ?? null) : null,
         course_ids: type === 'CORE' ? courseIds : [],
+        year_levels: yearLevels,
         created_by: data.created_by ?? null,
         institution_id: data.institution_id ?? null,
     };
@@ -96,6 +111,7 @@ export function normalizeUpdatePayload(data: UpdateSubjectClassificationPayload)
     const name = data.name?.trim();
     const type = normalizeType(data.type);
     const courseIds = data.course_ids !== undefined ? [...new Set(data.course_ids)] : undefined;
+    const yearLevels = normalizeYearLevels(data.year_levels);
 
     if (name !== undefined && !name) {
         throw buildClassificationError(
@@ -124,6 +140,7 @@ export function normalizeUpdatePayload(data: UpdateSubjectClassificationPayload)
             ? { department_id: type === 'GENERAL' ? null : data.department_id }
             : {}),
         ...(courseIds !== undefined ? { course_ids: type === 'GENERAL' ? [] : courseIds } : {}),
+        ...(yearLevels !== undefined ? { year_levels: yearLevels } : {}),
         ...(data.updated_by !== undefined ? { updated_by: data.updated_by } : {}),
     };
 }

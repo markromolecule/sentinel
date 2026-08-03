@@ -7,14 +7,17 @@ import {
     useSubjectClassificationsQuery,
 } from '@sentinel/hooks';
 
+const mockDeleteMutation = {
+    mutate: vi.fn(),
+    isPending: false,
+};
+
 vi.mock('@sentinel/hooks', () => ({
     useActivePermissions: vi.fn(),
     useDebounce: vi.fn((val) => val),
     useInstitutionsQuery: vi.fn(),
     useSubjectClassificationsQuery: vi.fn(),
-    useDeleteSubjectClassificationMutation: vi.fn(() => ({
-        mutate: vi.fn(),
-    })),
+    useDeleteSubjectClassificationMutation: vi.fn(() => mockDeleteMutation),
     isPermissionDeniedError: vi.fn(() => false),
 }));
 
@@ -238,5 +241,31 @@ describe('useSubjectClassificationsPageState', () => {
             pageIndex: 0,
             pageSize: 10,
         });
+    });
+
+    it('opens a delete confirmation before deleting a classification', () => {
+        const { result } = renderHook(() => useSubjectClassificationsPageState());
+        const classification = result.current.filteredClassifications[0];
+
+        act(() => {
+            result.current.handleDelete(classification);
+        });
+
+        expect(result.current.classificationToDelete).toEqual(classification);
+        expect(mockDeleteMutation.mutate).not.toHaveBeenCalled();
+
+        act(() => {
+            result.current.handleConfirmDelete();
+        });
+
+        expect(mockDeleteMutation.mutate).toHaveBeenCalledWith(
+            {
+                id: classification.id,
+                institutionId: undefined,
+            },
+            {
+                onSuccess: expect.any(Function),
+            },
+        );
     });
 });

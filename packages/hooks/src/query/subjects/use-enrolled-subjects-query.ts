@@ -19,6 +19,9 @@ export function useEnrolledSubjectsQuery(
 export function useEnrolledSubjectsQuery(
     params: UseEnrolledSubjectsQueryArgs & { page: number; limit: number },
 ): UseQueryResult<PaginatedApiResponse<EnrolledSubjectData>, Error>;
+export function useEnrolledSubjectsQuery(
+    searchOrParams?: string | UseEnrolledSubjectsQueryArgs,
+): UseQueryResult<EnrolledSubjectData[] | PaginatedApiResponse<EnrolledSubjectData>, Error>;
 export function useEnrolledSubjectsQuery(searchOrParams?: string | UseEnrolledSubjectsQueryArgs) {
     const apiClient = useApi();
     const isAuthenticatedQueryEnabled = useAuthenticatedQueryEnabled();

@@ -15,15 +15,17 @@ import {
 } from '@sentinel/ui';
 import { SubjectPageShell } from '@/app/(protected)/(support)/subjects/_components/layout';
 import { useOfferedPageState } from '@/app/(protected)/(support)/subjects/offered/_hooks/use-offered-page-state';
-import { offeredColumns } from '@/app/(protected)/(support)/subjects/offered/_components/tables/offered-columns';
 import {
     isPermissionDeniedError,
     useStableValue,
     useDeleteSubjectOfferingsMutation,
     PermissionGuard,
+    useSectionsQuery,
+    useStableIdMap,
 } from '@sentinel/hooks';
 import { useInstitutionFacet, useDataTableFilterSync } from '@/hooks';
 import { Trash2 } from 'lucide-react';
+import { createOfferedColumns } from '@/app/(protected)/(support)/subjects/offered/_components/tables/offered-columns';
 
 export function OfferedView() {
     const {
@@ -42,7 +44,7 @@ export function OfferedView() {
         error,
     } = useOfferedPageState();
 
-    const [rowSelection, setRowSelection] = useState({});
+    const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
     const deleteOfferingsMutation = useDeleteSubjectOfferingsMutation({
@@ -53,15 +55,15 @@ export function OfferedView() {
     });
 
     const selectedIds = useMemo(() => {
-        return Object.keys(rowSelection)
-            .filter((index) => rowSelection[index as keyof typeof rowSelection])
-            .map((index) => offerings[parseInt(index)]?.id)
-            .filter(Boolean);
-    }, [rowSelection, offerings]);
+        return Object.keys(rowSelection).filter((id) => rowSelection[id]);
+    }, [rowSelection]);
 
     const handleBulkDelete = () => {
         if (selectedIds.length > 0) {
-            deleteOfferingsMutation.mutate(selectedIds);
+            deleteOfferingsMutation.mutate({
+                ids: selectedIds,
+                institutionId: selectedInstitutionId,
+            });
         }
     };
 
@@ -72,6 +74,15 @@ export function OfferedView() {
     const isViewDenied = isPermissionDeniedError(error, 'subject_offerings:view');
 
     const institutionOptions = useInstitutionFacet({ institutions });
+    const { data: sections = [] } = useSectionsQuery();
+    const sectionLabelMap = useStableIdMap(sections, (section) => section.name);
+    const columns = useStableValue(
+        () =>
+            createOfferedColumns({
+                sectionLabelMap,
+            }),
+        [sectionLabelMap],
+    );
 
     useDataTableFilterSync({
         columnFilters,
@@ -120,7 +131,7 @@ export function OfferedView() {
             ) : (
                 <>
                     <DataTable
-                        columns={offeredColumns}
+                        columns={columns}
                         data={offerings}
                         searchValue={searchTerm}
                         onSearchChange={setSearchTerm}
@@ -137,6 +148,7 @@ export function OfferedView() {
                         initialColumnVisibility={{ institution: false, origin: false }}
                         rowSelection={rowSelection}
                         onRowSelectionChange={setRowSelection}
+                        getRowId={(offering) => offering.id}
                         toolbarActions={
                             selectedIds.length > 0 ? (
                                 <PermissionGuard permission="subject_offerings:delete">

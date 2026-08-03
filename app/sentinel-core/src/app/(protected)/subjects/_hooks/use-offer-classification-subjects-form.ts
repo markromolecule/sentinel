@@ -13,6 +13,7 @@ import {
 import { useEffect } from 'react';
 import { useForm, type Resolver } from 'react-hook-form';
 import { toast } from 'sonner';
+import { useAcademicScope } from '@/hooks/use-academic-scope';
 
 function toClassificationOfferingFormValues(
     classification: SubjectClassification | null,
@@ -32,6 +33,9 @@ export function useOfferClassificationSubjectsForm(
     classification: SubjectClassification | null,
     onSuccess: (result: ClassificationSubjectOfferingResult) => void,
 ) {
+    const { assignedDepartmentId, assignedCourseId, shouldLockDepartment, shouldLockCourse } =
+        useAcademicScope();
+
     const form = useForm<ClassificationSubjectOfferingFormValues>({
         resolver: zodResolver(
             classificationSubjectOfferingFormSchema,
@@ -56,11 +60,18 @@ export function useOfferClassificationSubjectsForm(
     }
 
     function onSubmit(values: ClassificationSubjectOfferingFormValues) {
+        const departmentIds =
+            shouldLockDepartment && assignedDepartmentId
+                ? [assignedDepartmentId]
+                : values.department_ids;
+        const courseIds =
+            shouldLockCourse && assignedCourseId ? [assignedCourseId] : values.course_ids;
+
         createOfferings.mutate({
             ...values,
             subject_classification_id: classification?.id ?? values.subject_classification_id,
-            department_ids: Array.from(new Set(values.department_ids)),
-            course_ids: Array.from(new Set(values.course_ids)),
+            department_ids: Array.from(new Set(departmentIds)),
+            course_ids: Array.from(new Set(courseIds)),
             section_ids: Array.from(new Set(values.section_ids)),
             year_levels: Array.from(new Set(values.year_levels)).sort(
                 (left, right) => left - right,

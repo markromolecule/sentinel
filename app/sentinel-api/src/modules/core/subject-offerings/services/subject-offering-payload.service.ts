@@ -3,6 +3,7 @@ import { type Insertable, type Updateable } from 'kysely';
 import { type DB } from '@sentinel/db';
 import type { SubjectOfferingStatus } from '@sentinel/shared/types';
 import type { SubjectOfferingAssignmentsPayload } from './subject-offering-assignments.service';
+import { buildSubjectOfferingError } from '../helper/subject-offering-errors';
 
 export type CreateSubjectOfferingPayload = SubjectOfferingAssignmentsPayload & {
     subject_id: string;
@@ -30,6 +31,26 @@ export function normalizeAssignments(payload: SubjectOfferingAssignmentsPayload)
         section_ids: payload.section_ids,
         year_levels: payload.year_levels,
     };
+}
+
+export function hasSubjectOfferingAudience(payload: SubjectOfferingAssignmentsPayload) {
+    return (
+        (payload.department_ids?.length ?? 0) > 0 ||
+        (payload.course_ids?.length ?? 0) > 0 ||
+        (payload.section_ids?.length ?? 0) > 0 ||
+        (payload.year_levels?.length ?? 0) > 0
+    );
+}
+
+export function assertSubjectOfferingHasAudience(payload: SubjectOfferingAssignmentsPayload) {
+    if (hasSubjectOfferingAudience(payload)) {
+        return;
+    }
+
+    throw buildSubjectOfferingError(
+        'Select at least one department, course, year level, or section before offering a subject',
+        'INVALID_SUBJECT_OFFERING_PAYLOAD',
+    );
 }
 
 export function resolveNextStatus(args: {

@@ -1,4 +1,5 @@
 import { type DbClient } from '@sentinel/db';
+import { HTTPException } from 'hono/http-exception';
 import { unenrollInstructorSubjectData } from '../data/unenroll-instructor-subject';
 import { LogsService } from '../../../general/logs/logs.service';
 
@@ -36,6 +37,12 @@ export async function unenrollInstructorSubjectService({
         classGroupIds,
     });
 
+    if (result.deletedCount === 0) {
+        throw new HTTPException(404, {
+            message: 'No matching instructor assignment found to unenroll.',
+        });
+    }
+
     try {
         const profile = await dbClient
             .selectFrom('user_profiles')
@@ -50,7 +57,7 @@ export async function unenrollInstructorSubjectService({
                 resourceType: 'enrollment',
                 resourceId: subjectId,
                 activeInstitutionId: profile.institution_id,
-                details: { subjectId, classGroupIds, status },
+                details: { subjectId, classGroupIds: result.classGroupIds, status },
             });
         }
     } catch (logErr) {

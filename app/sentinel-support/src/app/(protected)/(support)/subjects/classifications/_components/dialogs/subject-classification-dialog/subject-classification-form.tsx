@@ -2,6 +2,7 @@ import { UseFormReturn } from 'react-hook-form';
 import { type SubjectClassificationFormValues } from '@sentinel/shared/schema';
 import {
     Button,
+    Checkbox,
     DialogFooter,
     Form,
     FormControl,
@@ -19,6 +20,8 @@ import {
 import { Course, Department, Institution, MasterSubject } from '@sentinel/shared/types';
 import { CourseSelectionField } from './_components/course-selection-field';
 import { SubjectAssignmentSection } from './_components/subject-assignment-section';
+
+const YEAR_LEVEL_OPTIONS = [1, 2, 3, 4, 5, 6];
 
 type SubjectClassificationFormProps = {
     form: UseFormReturn<SubjectClassificationFormValues>;
@@ -195,6 +198,46 @@ export function SubjectClassificationForm({
                                 />
                             </>
                         ) : null}
+
+                        <FormField
+                            control={form.control}
+                            name="year_levels"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Year Levels</FormLabel>
+                                    <div className="grid grid-cols-2 gap-2 rounded-md border p-3">
+                                        {YEAR_LEVEL_OPTIONS.map((yearLevel) => (
+                                            <label
+                                                key={yearLevel}
+                                                className="flex items-center gap-2 text-sm"
+                                            >
+                                                <Checkbox
+                                                    checked={field.value.includes(yearLevel)}
+                                                    disabled={isPending}
+                                                    onCheckedChange={() =>
+                                                        toggleSelected(
+                                                            field.value.map(String),
+                                                            String(yearLevel),
+                                                            (values) =>
+                                                                field.onChange(
+                                                                    values
+                                                                        .map(Number)
+                                                                        .sort(
+                                                                            (left, right) =>
+                                                                                left - right,
+                                                                        ),
+                                                                ),
+                                                        )
+                                                    }
+                                                />
+                                                <span>Year {yearLevel}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
                     </div>
 
                     <SubjectAssignmentSection

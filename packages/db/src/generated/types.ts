@@ -1394,6 +1394,7 @@ export type subject_classifications = {
     updated_by: string | null;
     institution_id: string | null;
     department_id: string | null;
+    year_levels: Generated<number[]>;
     source_record_id: string | null;
     inheritance_status: Generated<inheritance_status | null>;
     overridden_at: Timestamp | null;

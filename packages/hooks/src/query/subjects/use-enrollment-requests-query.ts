@@ -27,6 +27,11 @@ export function useEnrollmentRequestsQuery(
     statusOrParams?: 'PENDING' | 'APPROVED' | 'REJECTED' | UseEnrollmentRequestsQueryArgs,
     search?: string,
     institutionId?: string,
+): UseQueryResult<EnrollmentRequest[] | PaginatedApiResponse<EnrollmentRequest>, Error>;
+export function useEnrollmentRequestsQuery(
+    statusOrParams?: 'PENDING' | 'APPROVED' | 'REJECTED' | UseEnrollmentRequestsQueryArgs,
+    search?: string,
+    institutionId?: string,
 ) {
     const apiClient = useApi();
     const isAuthenticatedQueryEnabled = useAuthenticatedQueryEnabled();

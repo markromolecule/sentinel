@@ -5,7 +5,15 @@ import { toast } from 'sonner';
 import { useApi } from '../../api-provider';
 import { notifyPermissionDenied } from '../_shared/permission-errors';
 
-export type UseDeleteSubjectOfferingsMutationArgs = UseMutationOptions<void, Error, string[]>;
+export type DeleteSubjectOfferingsMutationVariables =
+    | string[]
+    | { ids: string[]; institutionId?: string };
+
+export type UseDeleteSubjectOfferingsMutationArgs = UseMutationOptions<
+    void,
+    Error,
+    DeleteSubjectOfferingsMutationVariables
+>;
 
 export function useDeleteSubjectOfferingsMutation(
     args: UseDeleteSubjectOfferingsMutationArgs = {},

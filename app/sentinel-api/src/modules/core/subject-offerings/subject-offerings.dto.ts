@@ -163,6 +163,7 @@ export const deleteSubjectOfferingSchema = {
 export const deleteSubjectOfferingsSchema = {
     body: z.object({
         ids: z.array(z.string().uuid()).min(1),
+        institutionId: z.string().uuid().optional(),
     }),
     response: z.object({
         message: z.string(),

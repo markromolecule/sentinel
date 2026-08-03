@@ -41,6 +41,7 @@ export class ManageSubjectClassificationService {
                     classification_type: payload.type,
                     description: payload.description,
                     department_id: payload.department_id,
+                    year_levels: payload.year_levels,
                     created_by: payload.created_by,
                     institution_id: payload.institution_id,
                 },
@@ -114,6 +115,9 @@ export class ManageSubjectClassificationService {
                         : {}),
                     ...(payload.department_id !== undefined
                         ? { department_id: payload.department_id }
+                        : {}),
+                    ...(payload.year_levels !== undefined
+                        ? { year_levels: payload.year_levels }
                         : {}),
                     ...(payload.updated_by !== undefined ? { updated_by: payload.updated_by } : {}),
                     updated_at: new Date(),

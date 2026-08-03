@@ -11,9 +11,12 @@ import {
     EMPTY_SUBJECT_OFFERING_FORM_VALUES,
     toSubjectOfferingFormValues,
 } from '@/app/(protected)/subjects/_hooks/subject-offering-form-values';
+import { useAcademicScope } from '@/hooks/use-academic-scope';
 
 export function useOfferSubjectForm(subject: MasterSubject | null, onSuccess: () => void) {
     const { data: existingOfferings = [] } = useSubjectOfferingsQuery();
+    const { assignedDepartmentId, assignedCourseId, shouldLockDepartment, shouldLockCourse } =
+        useAcademicScope();
 
     const form = useForm<SubjectOfferingFormValues>({
         resolver: zodResolver(subjectOfferingFormSchema) as Resolver<SubjectOfferingFormValues>,
@@ -33,11 +36,18 @@ export function useOfferSubjectForm(subject: MasterSubject | null, onSuccess: ()
     }, [form, subject]);
 
     function onSubmit(values: SubjectOfferingFormValues) {
+        const departmentIds =
+            shouldLockDepartment && assignedDepartmentId
+                ? [assignedDepartmentId]
+                : values.department_ids;
+        const courseIds =
+            shouldLockCourse && assignedCourseId ? [assignedCourseId] : values.course_ids;
+
         const normalizedValues: SubjectOfferingFormValues = {
             subject_id: values.subject_id,
             term_id: values.term_id,
-            department_ids: Array.from(new Set(values.department_ids)),
-            course_ids: Array.from(new Set(values.course_ids)),
+            department_ids: Array.from(new Set(departmentIds)),
+            course_ids: Array.from(new Set(courseIds)),
             section_ids: Array.from(new Set(values.section_ids)),
             year_levels: Array.from(new Set(values.year_levels)).sort(
                 (left, right) => left - right,

@@ -20,6 +20,7 @@ interface ApiSubjectClassification {
     updated_by: string | null;
     department_id: string | null;
     course_ids: string[];
+    year_levels?: number[];
     institution_id: string | null;
     source_record_id?: string | null;
     inheritance_status?: string | null;
@@ -58,6 +59,7 @@ function mapSubjectClassification(
         updatedBy: apiSubjectClassification.updated_by,
         department_id: apiSubjectClassification.department_id,
         course_ids: apiSubjectClassification.course_ids ?? [],
+        year_levels: apiSubjectClassification.year_levels ?? [],
         institution_id: apiSubjectClassification.institution_id ?? null,
         sourceRecordId: apiSubjectClassification.source_record_id ?? null,
         inheritanceStatus: apiSubjectClassification.inheritance_status ?? undefined,

@@ -36,6 +36,7 @@ export function mapClassificationRecord(record: any) {
             return [];
         })(),
         department_id: record.department_id,
+        year_levels: Array.isArray(record.year_levels) ? record.year_levels.map(Number) : [],
         course_ids: (() => {
             if (Array.isArray(record.course_ids)) return record.course_ids;
             if (typeof record.course_ids === 'string') {

@@ -56,7 +56,7 @@ const mapEnrolledToSubject = (
     courseIds: approvedRequest?.target_course_ids ?? s.course_ids,
     sectionIds:
         approvedRequest?.sections
-            .map((section) => section.section_id || section.class_group_id)
+            .map((section) => section.class_group_id || section.section_id)
             .filter((value): value is string => Boolean(value)) ??
         s.sections.map((section) => section.id),
     yearLevelsNumeric: approvedRequest?.target_year_levels ?? s.year_levels,
@@ -103,7 +103,7 @@ const mapRequestToSubject = (r: EnrollmentRequest): Subject => ({
     departmentIds: r.target_department_ids,
     courseIds: r.target_course_ids,
     sectionIds: r.sections
-        .map((section) => section.section_id || section.class_group_id)
+        .map((section) => section.class_group_id || section.section_id)
         .filter((value): value is string => Boolean(value)),
     yearLevelsNumeric: r.target_year_levels,
     requestIds: r.sections.map((section) => section.request_id),
@@ -146,6 +146,20 @@ type UseSubjectsListResult = {
     };
 };
 
+type PaginationMetadata = {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages?: number;
+    hasMore: boolean;
+};
+
+function getPaginationMetadata<T>(
+    response: T[] | PaginatedApiResponse<T>,
+): PaginationMetadata | undefined {
+    return Array.isArray(response) ? undefined : response.pagination;
+}
+
 /**
  * Fetches and merges the instructor subjects view, optionally using paginated API calls.
  */
@@ -170,7 +184,7 @@ export function useSubjectsList(
                   page: params.page,
                   limit: params.limit,
               }
-            : params.search) as any,
+            : params.search),
     );
 
     const {
@@ -185,8 +199,8 @@ export function useSubjectsList(
                   page: params.page,
                   limit: params.limit,
               }
-            : undefined) as any,
-        (hasPagination ? undefined : params.search) as any,
+            : undefined),
+        hasPagination ? undefined : params.search,
     );
 
     const enrolledItems = Array.isArray(enrolledRaw)
@@ -220,31 +234,11 @@ export function useSubjectsList(
             return undefined;
         }
 
-        const enrolledPagination = (
-            !Array.isArray(enrolledRaw) ? (enrolledRaw as any).pagination : undefined
-        ) as
-            | {
-                  page: number;
-                  pageSize: number;
-                  total: number;
-                  totalPages: number;
-                  hasMore: boolean;
-              }
-            | undefined;
-        const requestPagination = (
-            !Array.isArray(requestsRaw) ? (requestsRaw as any).pagination : undefined
-        ) as
-            | {
-                  page: number;
-                  pageSize: number;
-                  total: number;
-                  totalPages: number;
-                  hasMore: boolean;
-              }
-            | undefined;
+        const enrolledPagination = getPaginationMetadata(enrolledRaw);
+        const requestPagination = getPaginationMetadata(requestsRaw);
 
         const pageSize =
-            enrolledPagination?.pageSize ?? requestPagination?.pageSize ?? params.limit ?? 10;
+            enrolledPagination?.limit ?? requestPagination?.limit ?? params.limit ?? 10;
         const total =
             (enrolledPagination?.total ?? enrolledItems.length) +
             (requestPagination?.total ?? requestItems.length);

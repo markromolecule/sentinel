@@ -29,6 +29,7 @@ export async function getSubjectClassificationByIdData({
             'sc.description',
             'sc.institution_id',
             'sc.department_id',
+            'sc.year_levels',
             'sc.created_at',
             'sc.updated_at',
             'sc.created_by',
