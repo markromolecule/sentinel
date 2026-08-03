@@ -58,4 +58,37 @@ describe('CORS functionality', () => {
         expect(res.status).toBe(204);
         expect(res.headers.get('Access-Control-Allow-Origin')).toBe('https://core.sentinelph.tech');
     });
+
+    it('should return CORS headers for AI route preflight requests from the app domain', async () => {
+        const res = await app.request('/ai/generate-preview', {
+            method: 'OPTIONS',
+            headers: {
+                Origin: 'https://app.sentinelph.tech',
+                'Access-Control-Request-Method': 'POST',
+                'Access-Control-Request-Headers': 'authorization, content-type',
+            },
+        });
+
+        expect(res.status).toBe(204);
+        expect(res.headers.get('Access-Control-Allow-Origin')).toBe('https://app.sentinelph.tech');
+        expect(res.headers.get('Access-Control-Allow-Methods')).toContain('POST');
+        expect(res.headers.get('Access-Control-Allow-Headers')).toContain('Authorization');
+        expect(res.headers.get('Access-Control-Allow-Headers')).toContain('Content-Type');
+    });
+
+    it('should keep CORS headers on AI route error responses from the app domain', async () => {
+        const res = await app.request('/ai/generate-preview', {
+            method: 'POST',
+            headers: {
+                Origin: 'https://app.sentinelph.tech',
+            },
+        });
+
+        expect(res.status).toBe(401);
+        expect(res.headers.get('Access-Control-Allow-Origin')).toBe('https://app.sentinelph.tech');
+        expect(res.headers.get('Access-Control-Allow-Credentials')).toBe('true');
+        await expect(res.json()).resolves.toMatchObject({
+            message: 'Missing auth token',
+        });
+    });
 });
