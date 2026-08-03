@@ -14,16 +14,28 @@ export async function completeStudentOnboarding(
     const now = new Date();
 
     await dbClient
-        .updateTable('user_profiles')
-        .set({
+        .insertInto('user_profiles')
+        .values({
+            user_id: userId,
             first_name: studentData.firstName,
             last_name: studentData.lastName,
             institution_id: studentData.institutionId,
             department_id: studentData.departmentId,
             course_id: studentData.courseId,
+            status: 'ACTIVE',
+            created_at: now,
             updated_at: now,
         })
-        .where('user_id', '=', userId)
+        .onConflict((oc) =>
+            oc.column('user_id').doUpdateSet({
+                first_name: studentData.firstName,
+                last_name: studentData.lastName,
+                institution_id: studentData.institutionId,
+                department_id: studentData.departmentId,
+                course_id: studentData.courseId,
+                updated_at: now,
+            }),
+        )
         .execute();
 
     const createdStudent = await createStudentData({

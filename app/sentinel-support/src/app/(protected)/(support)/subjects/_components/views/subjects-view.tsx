@@ -17,6 +17,8 @@ import { RevertPreviewDialog } from '@/app/(protected)/(support)/_components/rev
 import { useSubjectsPageState } from '@/app/(protected)/(support)/subjects/_hooks/use-subjects-page-state';
 import { getSubjectColumns } from '@/app/(protected)/(support)/subjects/_components/tables/subject-columns';
 import { SubjectFormDialog } from '@/app/(protected)/(support)/subjects/_components/forms/subject-form-dialog';
+import { BulkUploadDialog } from '@/app/(protected)/(support)/subjects/_components/dialogs/bulk-upload-dialog';
+import { DeleteSubjectDialog } from '@/app/(protected)/(support)/subjects/_components/dialogs/delete-subject-dialog';
 import { SubjectPageShell } from '@/app/(protected)/(support)/subjects/_components/layout';
 import {
     isPermissionDeniedError,
@@ -26,6 +28,7 @@ import {
 } from '@sentinel/hooks';
 import { useInstitutionFacet } from '@/hooks';
 import { getSubjectId } from '@/app/(protected)/(support)/subjects/_hooks/use-subjects-page-state/_types';
+import { MasterSubject } from '@sentinel/shared/types';
 import { Plus, Trash2 } from 'lucide-react';
 
 export function SubjectsView() {
@@ -52,7 +55,6 @@ export function SubjectsView() {
         parentSubject,
         handleCreate,
         handleEdit,
-        handleDelete,
         handleRevert,
         submitForm,
         createSubjectMutation,
@@ -62,6 +64,7 @@ export function SubjectsView() {
 
     const [rowSelection, setRowSelection] = useState({});
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [subjectToDelete, setSubjectToDelete] = useState<MasterSubject | null>(null);
 
     const deleteSelectedSubjectsMutation = useDeleteSelectedSubjectsMutation({
         onSuccess: () => {
@@ -84,6 +87,23 @@ export function SubjectsView() {
         if (selectedIds.length > 0) {
             deleteSelectedSubjectsMutation.mutate(selectedIds);
         }
+    };
+
+    const handleConfirmDeleteSubject = () => {
+        if (!subjectToDelete) return;
+
+        const subjectId = getSubjectId(subjectToDelete);
+        if (!subjectId) return;
+
+        deleteSubjectMutation.mutate(
+            {
+                id: subjectId,
+                institutionId: selectedInstitutionId || undefined,
+            },
+            {
+                onSuccess: () => setSubjectToDelete(null),
+            },
+        );
     };
 
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -116,10 +136,10 @@ export function SubjectsView() {
         () =>
             getSubjectColumns({
                 onEdit: handleEdit,
-                onDelete: handleDelete,
+                onDelete: setSubjectToDelete,
                 onRevert: setSubjectToRevert,
             }),
-        [handleEdit, handleDelete, setSubjectToRevert],
+        [handleEdit, setSubjectToRevert],
     );
 
     const institutionOptions = useInstitutionFacet({ institutions });
@@ -150,10 +170,16 @@ export function SubjectsView() {
             actions={
                 !isViewDenied ? (
                     <PermissionGuard permission="subjects:create">
-                        <Button onClick={handleCreate}>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add Subject
-                        </Button>
+                        <div className="flex items-center gap-3">
+                            <BulkUploadDialog
+                                institutions={institutions}
+                                defaultInstitutionId={selectedInstitutionId}
+                            />
+                            <Button onClick={handleCreate}>
+                                <Plus className="mr-2 h-4 w-4" />
+                                Add Subject
+                            </Button>
+                        </div>
                     </PermissionGuard>
                 ) : null
             }
@@ -227,6 +253,18 @@ export function SubjectsView() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <DeleteSubjectDialog
+                open={Boolean(subjectToDelete)}
+                subject={subjectToDelete}
+                isDeleting={deleteSubjectMutation.isPending}
+                onOpenChange={(open) => {
+                    if (!open && !deleteSubjectMutation.isPending) {
+                        setSubjectToDelete(null);
+                    }
+                }}
+                onConfirm={handleConfirmDeleteSubject}
+            />
 
             <SubjectFormDialog
                 open={formOpen}
