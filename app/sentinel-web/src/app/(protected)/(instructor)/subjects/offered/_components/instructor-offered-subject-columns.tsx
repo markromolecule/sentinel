@@ -34,6 +34,10 @@ function SummaryBadges({ labels, emptyLabel }: { labels: string[]; emptyLabel: s
     );
 }
 
+function mapLabels(ids: string[], labelMap: Map<string, string>) {
+    return ids.map((id) => labelMap.get(id)).filter((label): label is string => Boolean(label));
+}
+
 function RequestActionCell({
     offering,
     existingStatus,

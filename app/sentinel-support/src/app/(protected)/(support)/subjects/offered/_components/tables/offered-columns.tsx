@@ -27,7 +27,16 @@ function SummaryBadges({ labels, emptyLabel }: { labels: string[]; emptyLabel: s
     );
 }
 
-export const offeredColumns: ColumnDef<SubjectOffering>[] = [
+function mapLabels(ids: string[], labelMap: Map<string, string>) {
+    return ids.map((id) => labelMap.get(id)).filter((label): label is string => Boolean(label));
+}
+
+export function createOfferedColumns({
+    sectionLabelMap,
+}: {
+    sectionLabelMap: Map<string, string>;
+}): ColumnDef<SubjectOffering>[] {
+    return [
     {
         id: 'select',
         header: ({ table }) => (
@@ -132,14 +141,26 @@ export const offeredColumns: ColumnDef<SubjectOffering>[] = [
         ),
     },
     {
+        id: 'yearLevels',
+        accessorFn: (row) => row.yearLevels.map((level) => `Year ${level}`).join(', '),
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Year Levels" />,
+        cell: ({ row }) => (
+            <SummaryBadges
+                labels={row.original.yearLevels.map((level) => `Year ${level}`)}
+                emptyLabel="No year levels"
+            />
+        ),
+    },
+    {
         id: 'sections',
-        accessorFn: (row) => row.sections.map((section) => section.name).join(', '),
+        accessorFn: (row) => mapLabels(row.sectionIds, sectionLabelMap).join(', '),
         header: ({ column }) => <DataTableColumnHeader column={column} title="Sections" />,
         cell: ({ row }) => (
             <SummaryBadges
-                labels={row.original.sections.map((section) => section.name)}
+                labels={mapLabels(row.original.sectionIds, sectionLabelMap)}
                 emptyLabel="No sections"
             />
         ),
     },
-];
+    ];
+}

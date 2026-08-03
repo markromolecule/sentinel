@@ -195,4 +195,43 @@ describe('RequestOfferedSubjectBuilderDialog', () => {
             );
         });
     });
+
+    it('hydrates request options from offering sections', () => {
+        mockUseSubjectOfferingsQuery.mockReturnValue({
+            data: [
+                {
+                    ...offering,
+                    sections: [
+                        {
+                            id: 'section-1',
+                            name: 'CS-2A',
+                            departmentId: 'dept-1',
+                            courseId: 'course-1',
+                            yearLevel: 2,
+                        },
+                    ],
+                },
+            ],
+            isLoading: false,
+        });
+
+        render(
+            <RequestOfferedSubjectBuilderDialog
+                mode="pick-offering"
+                open
+                onOpenChange={() => undefined}
+                initialValues={buildEnrollmentRequestFormValues({
+                    subjectOfferingId: offering.id,
+                    departmentIds: offering.departmentIds,
+                    courseIds: [],
+                    yearLevels: [],
+                    sectionIds: [],
+                })}
+            />,
+        );
+
+        expect(screen.getByLabelText('BSCS').getAttribute('data-state')).toBe('checked');
+        expect(screen.getByLabelText('Year 2')).toBeTruthy();
+        expect(screen.getByLabelText('CS-2A')).toBeTruthy();
+    });
 });

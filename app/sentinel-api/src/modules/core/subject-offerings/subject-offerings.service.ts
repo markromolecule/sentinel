@@ -90,11 +90,13 @@ export class SubjectOfferingsService {
         dbClient: DbClient,
         id: string,
         institutionId?: string | null,
+        actorId?: string | null,
     ) {
         return UpdateDeleteSubjectOfferingService.deleteSubjectOffering(
             dbClient,
             id,
             institutionId,
+            actorId,
         );
     }
 
@@ -105,11 +107,13 @@ export class SubjectOfferingsService {
         dbClient: DbClient,
         ids: string[],
         institutionId?: string | null,
+        actorId?: string | null,
     ) {
         return UpdateDeleteSubjectOfferingService.deleteSubjectOfferings(
             dbClient,
             ids,
             institutionId,
+            actorId,
         );
     }
 }

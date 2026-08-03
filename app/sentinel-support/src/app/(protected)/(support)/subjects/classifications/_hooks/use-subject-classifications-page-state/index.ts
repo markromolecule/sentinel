@@ -64,6 +64,8 @@ export function useSubjectClassificationsPageState() {
         useState<SubjectClassification | null>(null);
     const [selectedOfferingClassification, setSelectedOfferingClassification] =
         useState<SubjectClassification | null>(null);
+    const [classificationToDelete, setClassificationToDelete] =
+        useState<SubjectClassification | null>(null);
     const [pagination, setPagination] = useState<PaginationState>({
         pageIndex: 0,
         pageSize: 10,
@@ -252,12 +254,21 @@ export function useSubjectClassificationsPageState() {
     };
 
     const handleDelete = (classification: SubjectClassification) => {
-        if (window.confirm(`Delete classification "${classification.name}"?`)) {
-            deleteClassification.mutate({
-                id: classification.id,
-                institutionId: classification.institution_id ?? undefined,
-            });
-        }
+        setClassificationToDelete(classification);
+    };
+
+    const handleConfirmDelete = () => {
+        if (!classificationToDelete) return;
+
+        deleteClassification.mutate(
+            {
+                id: classificationToDelete.id,
+                institutionId: classificationToDelete.institution_id ?? undefined,
+            },
+            {
+                onSuccess: () => setClassificationToDelete(null),
+            },
+        );
     };
 
     return {
@@ -270,6 +281,8 @@ export function useSubjectClassificationsPageState() {
         setSelectedClassification,
         selectedOfferingClassification,
         setSelectedOfferingClassification,
+        classificationToDelete,
+        setClassificationToDelete,
         selectedInstitutions,
         selectedTypes,
         selectedOrigins,
@@ -314,5 +327,6 @@ export function useSubjectClassificationsPageState() {
         handleOffer,
         handleEdit,
         handleDelete,
+        handleConfirmDelete,
     };
 }

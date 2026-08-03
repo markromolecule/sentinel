@@ -23,6 +23,7 @@ export const subjectClassificationFormSchema = z.object({
     subject_ids: z.array(z.string().uuid('Invalid subject ID')).default([]),
     department_id: z.string().uuid('Invalid department ID').optional().nullable(),
     course_ids: z.array(z.string().uuid('Invalid course ID')).default([]),
+    year_levels: z.array(z.coerce.number().int().min(1).max(6)).default([]),
     institution_id: z.string().uuid('Invalid institution ID').optional().nullable(),
 });
 

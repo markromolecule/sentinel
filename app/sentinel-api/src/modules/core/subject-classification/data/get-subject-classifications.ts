@@ -33,6 +33,7 @@ export async function getSubjectClassificationsData({
             'sc.classification_type',
             'sc.description',
             'sc.department_id',
+            'sc.year_levels',
             'sc.institution_id',
             'sc.source_record_id',
             'sc.inheritance_status',

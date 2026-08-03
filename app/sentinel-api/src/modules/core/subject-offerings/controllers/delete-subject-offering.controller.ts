@@ -68,6 +68,7 @@ export const deleteSubjectOfferingRouteHandler: AppRouteHandler<
             c.get('dbClient'),
             id,
             c.get('institutionId'),
+            user.id,
         );
 
         return c.json(

@@ -1,6 +1,7 @@
 import { type DbClient } from '@sentinel/db';
 import { getSubjectOfferingsData } from '../data/get-subject-offerings';
 import { getSubjectOfferingByIdData } from '../data/get-subject-offering-by-id';
+import { deleteEmptyDuplicateSubjectOfferingsData } from '../data/delete-empty-duplicate-subject-offerings';
 import { mapSubjectOfferingResponse } from '../helper/map-subject-offering-response';
 import {
     isMissingSubjectOfferingTableError,
@@ -44,6 +45,10 @@ export class GetSubjectOfferingsService {
 
         try {
             await ensureClassGroupsForSubjectOfferings(dbClient);
+            await deleteEmptyDuplicateSubjectOfferingsData({
+                dbClient,
+                institutionId: args.institutionId,
+            });
 
             const rawSubjectOfferings = await loadEffectiveRows<any>({
                 institutionId: args.institutionId,

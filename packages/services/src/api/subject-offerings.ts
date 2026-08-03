@@ -325,14 +325,16 @@ export async function deleteSubjectOffering(apiClient: ApiClientType, id: string
  */
 export async function deleteSubjectOfferings(
     apiClient: ApiClientType,
-    ids: string[],
+    payload: string[] | { ids: string[]; institutionId?: string },
 ): Promise<void> {
+    const body = Array.isArray(payload) ? { ids: payload } : payload;
+
     await apiClient('/subject-offerings/bulk-delete', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ ids }),
+        body: JSON.stringify(body),
     });
 }
 

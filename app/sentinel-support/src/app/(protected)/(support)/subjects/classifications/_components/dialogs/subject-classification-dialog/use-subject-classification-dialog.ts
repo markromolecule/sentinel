@@ -128,6 +128,9 @@ export function useSubjectClassificationDialog({
             description: '',
             department_id: values.type === 'CORE' ? values.department_id : null,
             course_ids: values.type === 'CORE' ? values.course_ids : [],
+            year_levels: Array.from(new Set(values.year_levels)).sort(
+                (left, right) => left - right,
+            ),
         };
 
         if (classification) {

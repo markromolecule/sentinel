@@ -20,7 +20,7 @@ import { OfferedSubjectsEmptyState } from './offered-subjects-empty-state';
 import { offeredSubjectsFacets } from './offered-subjects-facets';
 import { useState } from 'react';
 import { FloatingActionBar } from './floating-action-bar';
-import { useApi, useDeleteSubjectOfferingsMutation, useActivePermissions } from '@sentinel/hooks';
+import { useDeleteSubjectOfferingsMutation, useActivePermissions } from '@sentinel/hooks';
 import { AssignSubjectToInstructorDialog } from '../dialogs/assign-subject-to-instructor-dialog';
 import { toast } from 'sonner';
 
@@ -59,7 +59,7 @@ export function OfferedSubjectsList({
     const { hasPermission } = useActivePermissions();
     const canAssignSubjects = hasPermission('subjects:update');
 
-    const selectedOfferings = offerings.filter((_, index) => rowSelection[index.toString()]);
+    const selectedOfferings = offerings.filter((offering) => rowSelection[offering.id]);
 
     const deleteOfferingsMutation = useDeleteSubjectOfferingsMutation({
         onSuccess: () => {
@@ -77,7 +77,7 @@ export function OfferedSubjectsList({
     const isBulkUnofferPending = deleteOfferingsMutation.isPending;
 
     async function handleBulkUnoffer() {
-        const ids = selectedOfferings.map((o) => o.id);
+        const ids = [...new Set(selectedOfferings.map((offering) => offering.id))];
 
         if (ids.length === 0 || isBulkUnofferPending) return;
 
@@ -107,6 +107,7 @@ export function OfferedSubjectsList({
                 pageCount={pageCount}
                 totalCount={totalCount}
                 manualPagination={manualPagination}
+                getRowId={(offering) => offering.id}
             />
 
             {(canDeleteOfferings || canAssignSubjects) && (

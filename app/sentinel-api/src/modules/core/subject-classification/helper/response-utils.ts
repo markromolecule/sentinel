@@ -18,6 +18,9 @@ export function toSubjectClassificationResponse(rawClassification: any) {
         updated_by: rawClassification.updated_by ?? null,
         department_id: rawClassification.department_id ?? null,
         course_ids: Array.isArray(rawClassification.course_ids) ? rawClassification.course_ids : [],
+        year_levels: Array.isArray(rawClassification.year_levels)
+            ? rawClassification.year_levels.map(Number)
+            : [],
         institution_id: rawClassification.institution_id ?? null,
         source_record_id: rawClassification.source_record_id ?? null,
         inheritance_status: rawClassification.inheritance_status ?? 'LOCAL',

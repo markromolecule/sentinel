@@ -19,6 +19,7 @@ export const EMPTY_SUBJECT_CLASSIFICATION_FORM_VALUES: SubjectClassificationForm
     subject_ids: [],
     department_id: null,
     course_ids: [],
+    year_levels: [],
 };
 
 function toFormValues(
@@ -35,6 +36,7 @@ function toFormValues(
         subject_ids: classification.subjects.map((subject) => subject.id),
         department_id: classification.department_id ?? null,
         course_ids: classification.course_ids ?? [],
+        year_levels: classification.year_levels ?? [],
     };
 }
 
@@ -109,6 +111,9 @@ export function useSubjectClassificationForm({
             subject_ids: values.subject_ids,
             department_id: values.type === 'CORE' ? values.department_id : null,
             course_ids: values.type === 'CORE' ? values.course_ids : [],
+            year_levels: Array.from(new Set(values.year_levels)).sort(
+                (left, right) => left - right,
+            ),
         };
 
         if (classification) {

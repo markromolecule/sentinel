@@ -41,9 +41,9 @@ subjectOfferingsRoutes
     )
     .openapi(createSubjectOfferingRoute, createSubjectOfferingRouteHandler)
     .openapi(getSubjectOfferingsRoute, getSubjectOfferingsRouteHandler)
+    .openapi(deleteSubjectOfferingsRoute, deleteSubjectOfferingsRouteHandler)
     .openapi(getSubjectOfferingRoute, getSubjectOfferingRouteHandler)
     .openapi(updateSubjectOfferingRoute, updateSubjectOfferingRouteHandler)
-    .openapi(deleteSubjectOfferingRoute, deleteSubjectOfferingRouteHandler)
-    .openapi(deleteSubjectOfferingsRoute, deleteSubjectOfferingsRouteHandler);
+    .openapi(deleteSubjectOfferingRoute, deleteSubjectOfferingRouteHandler);
 
 export default subjectOfferingsRoutes;

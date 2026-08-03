@@ -7,7 +7,9 @@ const mocks = vi.hoisted(() => ({
     getExistingSubjectOfferingsBySubjectsData: vi.fn(),
     createSubjectOfferingsData: vi.fn(),
     createAllForOfferings: vi.fn(),
+    updateAll: vi.fn(),
     getSubjectClassification: vi.fn(),
+    assertSubjectOfferingAssignmentsVisible: vi.fn(),
 }));
 
 vi.mock('@sentinel/db', () => ({
@@ -33,7 +35,12 @@ vi.mock('../data/create-subject-offering', () => ({
 vi.mock('./subject-offering-assignments.service', () => ({
     SubjectOfferingAssignmentsService: {
         createAllForOfferings: mocks.createAllForOfferings,
+        updateAll: mocks.updateAll,
     },
+}));
+
+vi.mock('./assignments-visibility-helper', () => ({
+    assertSubjectOfferingAssignmentsVisible: mocks.assertSubjectOfferingAssignmentsVisible,
 }));
 
 vi.mock('../../subject-classification/subject-classification.service', () => ({
@@ -171,11 +178,44 @@ describe('SubjectOfferingsService.createSubjectOfferingsFromClassification', () 
                 subject_classification_id: 'classification-a',
                 term_id: 'term-a',
                 institution_id: 'institution-a',
+                department_ids: ['department-a'],
+                course_ids: ['course-a'],
                 duplicate_strategy: 'fail_existing',
             }),
         ).rejects.toMatchObject({
             code: 'P2002',
         });
+    });
+
+    it('rejects classification offerings without any audience assignments before inserting', async () => {
+        mocks.getSubjectClassification.mockResolvedValue({
+            id: 'classification-a',
+            name: 'General Education',
+            subjects: [
+                {
+                    id: 'subject-a',
+                    code: 'GE101',
+                    title: 'Understanding the Self',
+                },
+            ],
+        });
+
+        await expect(
+            SubjectOfferingsService.createSubjectOfferingsFromClassification({} as any, {
+                subject_classification_id: 'classification-a',
+                term_id: 'term-a',
+                institution_id: 'institution-a',
+                department_ids: [],
+                course_ids: [],
+                section_ids: [],
+                year_levels: [],
+            }),
+        ).rejects.toMatchObject({
+            code: 'INVALID_SUBJECT_OFFERING_PAYLOAD',
+        });
+
+        expect(mocks.executeTransaction).not.toHaveBeenCalled();
+        expect(mocks.createSubjectOfferingsData).not.toHaveBeenCalled();
     });
 
     it('creates missing offerings and reports skipped duplicates', async () => {
@@ -211,6 +251,10 @@ describe('SubjectOfferingsService.createSubjectOfferingsFromClassification', () 
                 term_id: 'term-a',
                 institution_id: 'institution-a',
                 created_by: 'user-a',
+                department_ids: ['department-a'],
+                course_ids: ['course-a'],
+                section_ids: ['section-a'],
+                year_levels: [1],
                 duplicate_strategy: 'skip_existing',
             },
         );
@@ -221,6 +265,16 @@ describe('SubjectOfferingsService.createSubjectOfferingsFromClassification', () 
         );
         expect(result.created_count).toBe(1);
         expect(result.skipped_count).toBe(1);
+        expect(mocks.updateAll).toHaveBeenCalledWith(
+            { tx: true },
+            'offering-b',
+            {
+                department_ids: ['department-a'],
+                course_ids: ['course-a'],
+                section_ids: ['section-a'],
+                year_levels: [1],
+            },
+        );
         expect(result.skipped).toEqual([
             {
                 subject_id: 'subject-b',

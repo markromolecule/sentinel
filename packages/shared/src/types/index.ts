@@ -668,6 +668,7 @@ export interface SubjectClassification extends SubjectClassificationSummary {
     subjects: SubjectClassificationSubject[];
     department_id?: string | null;
     course_ids?: string[];
+    year_levels?: number[];
     institution_id?: string | null;
     createdAt?: Date | string | null;
     createdBy?: string | null;

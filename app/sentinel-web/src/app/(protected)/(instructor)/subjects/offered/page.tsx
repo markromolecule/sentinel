@@ -9,7 +9,7 @@ import {
     useStableValue,
     useSubjectOfferingsQuery,
 } from '@sentinel/hooks';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { PermissionDeniedState } from '@sentinel/ui';
 import { createInstructorOfferedSubjectColumns } from './_components/instructor-offered-subject-columns';
 import { InstructorOfferedSubjectsList } from './_components/instructor-offered-subjects-list';

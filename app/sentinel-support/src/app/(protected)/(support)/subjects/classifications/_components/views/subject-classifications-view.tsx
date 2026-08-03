@@ -2,6 +2,14 @@
 
 import { useMemo } from 'react';
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
     Button,
     EmptyState,
     FacetedFilter,
@@ -33,6 +41,8 @@ export function SubjectClassificationsView() {
         selectedClassification,
         selectedOfferingClassification,
         setSelectedOfferingClassification,
+        classificationToDelete,
+        setClassificationToDelete,
         selectedInstitutions,
         selectedTypes,
         selectedOrigins,
@@ -55,6 +65,7 @@ export function SubjectClassificationsView() {
         typeCounts,
         originCounts,
         isFiltered,
+        deleteClassification,
         handleSelectInstitution,
         handleSelectType,
         handleSelectOrigin,
@@ -65,6 +76,7 @@ export function SubjectClassificationsView() {
         handleOffer,
         handleEdit,
         handleDelete,
+        handleConfirmDelete,
     } = useSubjectClassificationsPageState();
 
     const emptyState = useMemo(
@@ -329,6 +341,45 @@ export function SubjectClassificationsView() {
                         : null
                 }
             />
+            <AlertDialog
+                open={Boolean(classificationToDelete)}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setClassificationToDelete(null);
+                    }
+                }}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Classification?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will permanently delete{' '}
+                            <strong>{classificationToDelete?.name}</strong>
+                            {classificationToDelete?.subjectCount
+                                ? ` and detach ${classificationToDelete.subjectCount} assigned subject${
+                                      classificationToDelete.subjectCount === 1 ? '' : 's'
+                                  }`
+                                : ''}
+                            . This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={deleteClassification.isPending}>
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            className="bg-destructive hover:bg-destructive/90 text-white"
+                            disabled={deleteClassification.isPending}
+                            onClick={(event) => {
+                                event.preventDefault();
+                                handleConfirmDelete();
+                            }}
+                        >
+                            {deleteClassification.isPending ? 'Deleting...' : 'Delete'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </SubjectPageShell>
     );
 }
