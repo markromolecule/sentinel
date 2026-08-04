@@ -49,39 +49,40 @@ export class EvidenceCandidateService {
             };
         }
 
-        if (persistenceResult.disposition === 'duplicate-ignored') {
-            return this.resolveDuplicateDecision(db, payload, studentUserId);
-        }
-
-        if (persistenceResult.finalSeverity === 'LOW') {
-            return {
-                telemetryDisposition: persistenceResult.disposition,
-                evidenceDecision: 'NOT_ELIGIBLE',
-            };
-        }
+        const deferredSideEffects = persistenceResult;
+        let response: EvidenceCandidateResponse;
 
         try {
-            const upload = await EvidenceUploadService.initializeUpload(db, {
-                attemptId: payload.examSessionId,
-                incidentId: persistenceResult.incidentId,
-                eventId: payload.metadata.eventId,
-                eventType: this.mapEvidenceEventType(payload.eventType),
-                capturedAt: payload.capture.capturedAt,
-                mimeType: payload.capture.mimeType,
-                sizeBytes: payload.capture.sizeBytes,
-                studentUserId,
-            });
+            if (persistenceResult.disposition === 'duplicate-ignored') {
+                response = await this.resolveDuplicateDecision(db, payload, studentUserId);
+            } else if (persistenceResult.finalSeverity === 'LOW') {
+                response = {
+                    telemetryDisposition: persistenceResult.disposition,
+                    evidenceDecision: 'NOT_ELIGIBLE',
+                };
+            } else {
+                const upload = await EvidenceUploadService.initializeUpload(db, {
+                    attemptId: payload.examSessionId,
+                    incidentId: persistenceResult.incidentId,
+                    eventId: payload.metadata.eventId,
+                    eventType: this.mapEvidenceEventType(payload.eventType),
+                    capturedAt: payload.capture.capturedAt,
+                    mimeType: payload.capture.mimeType,
+                    sizeBytes: payload.capture.sizeBytes,
+                    studentUserId,
+                });
 
-            return {
-                telemetryDisposition: persistenceResult.disposition,
-                evidenceDecision: 'UPLOAD',
-                upload: {
-                    evidenceId: upload.evidenceId,
-                    uploadUrl: upload.uploadUrl,
-                    uploadToken: upload.uploadToken,
-                    expiresAt: upload.expiresAt.toISOString(),
-                },
-            };
+                response = {
+                    telemetryDisposition: persistenceResult.disposition,
+                    evidenceDecision: 'UPLOAD',
+                    upload: {
+                        evidenceId: upload.evidenceId,
+                        uploadUrl: upload.uploadUrl,
+                        uploadToken: upload.uploadToken,
+                        expiresAt: upload.expiresAt.toISOString(),
+                    },
+                };
+            }
         } catch (error) {
             console.warn(
                 '[TelemetryEvidence] Upload target unavailable after candidate persisted',
@@ -94,11 +95,15 @@ export class EvidenceCandidateService {
                 },
             );
 
-            return {
+            response = {
                 telemetryDisposition: persistenceResult.disposition,
                 evidenceDecision: 'UNAVAILABLE',
             };
+        } finally {
+            await deferredSideEffects.runSideEffects();
         }
+
+        return response;
     }
 
     private static mapEvidenceEventType(

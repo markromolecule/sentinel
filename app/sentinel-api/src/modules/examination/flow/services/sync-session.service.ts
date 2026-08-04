@@ -59,12 +59,21 @@ export async function syncSessionService({
         });
     }
 
-    await SessionRepository.updateSyncProgress(dbClient, {
+    const updatedRows = await SessionRepository.updateSyncProgress(dbClient, {
         sessionId: body.sessionId,
         answeredCount: body.answeredCount,
         timeSpentMinutes: body.elapsedSeconds > 0 ? Math.ceil(body.elapsedSeconds / 60) : 0,
         answers: body.answers as ExamAttemptAnswers | undefined,
     });
+
+    // If zero rows were updated the attempt was closed concurrently between the
+    // pre-flight read above and the write.  Surface this as the same terminal
+    // 409 the pre-flight checks would have produced.
+    if (updatedRows === 0) {
+        throw new HTTPException(409, {
+            message: resolveSyncLifecycleConflictMessage(attempt.lifecycle_state),
+        });
+    }
 
     // Telemetry logging
     if (attempt.institution_id) {

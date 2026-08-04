@@ -3,6 +3,7 @@ import type {
     ApiExamResponse,
     CompleteExamSessionPayload,
     CompleteExamSessionResult,
+    ExamSessionStatusResult,
     PrepareExamSessionPayload,
     PrepareExamSessionResult,
     StartExamSessionPayload,
@@ -10,6 +11,20 @@ import type {
     SyncExamProgressPayload,
     SyncExamProgressResult,
 } from './types';
+
+/**
+ * Fetches lightweight lifecycle status for a student-owned exam session.
+ */
+export async function getExamSessionStatus(
+    apiClient: ApiClientType,
+    sessionId: string,
+): Promise<ExamSessionStatusResult> {
+    const response: ApiExamResponse<ExamSessionStatusResult> = await apiClient(
+        `/examination/flow/sessions/${sessionId}/status`,
+    );
+
+    return response.data;
+}
 
 export async function startExamSession(
     apiClient: ApiClientType,

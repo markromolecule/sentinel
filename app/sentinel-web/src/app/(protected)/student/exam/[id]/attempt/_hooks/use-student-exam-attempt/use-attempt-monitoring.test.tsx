@@ -11,8 +11,17 @@ vi.mock('next/navigation', () => ({
     }),
 }));
 
-const { mockEnsureAudioAccess, mockUseAudioAnomalyWorker } = vi.hoisted(() => ({
+const {
+    mockEnsureAudioAccess,
+    mockStopAudioStream,
+    mockStopStream,
+    mockSuspendSecurityMonitoring,
+    mockUseAudioAnomalyWorker,
+} = vi.hoisted(() => ({
     mockEnsureAudioAccess: vi.fn().mockResolvedValue(undefined),
+    mockStopAudioStream: vi.fn(),
+    mockStopStream: vi.fn(),
+    mockSuspendSecurityMonitoring: vi.fn(),
     mockUseAudioAnomalyWorker: vi.fn(),
 }));
 
@@ -21,6 +30,13 @@ vi.mock('@/app/(protected)/student/exam/[id]/_components/student-exam-audio-prov
         audioStream: null,
         worker: null,
         ensureAudioAccess: mockEnsureAudioAccess,
+        stopAudioStream: mockStopAudioStream,
+    }),
+}));
+
+vi.mock('@/app/(protected)/student/exam/[id]/_components/student-exam-mediapipe-provider', () => ({
+    useStudentExamMediaPipeStream: () => ({
+        stopStream: mockStopStream,
     }),
 }));
 
@@ -30,7 +46,7 @@ vi.mock('@/app/(protected)/student/exam/[id]/_hooks/use-exam-monitoring', () => 
         isResumingExam: false,
         resumeSecuredExam: vi.fn(),
         fullScreenContainerRef: { current: null },
-        suspendSecurityMonitoring: vi.fn(),
+        suspendSecurityMonitoring: mockSuspendSecurityMonitoring,
     }),
 }));
 
@@ -59,6 +75,7 @@ describe('useAttemptMonitoring', () => {
             isEnabled: false,
             phase: 'idle',
         });
+        mockSuspendSecurityMonitoring.mockReturnValue(true);
     });
 
     it('invokes ensureAudioAccess when mic is required', async () => {
@@ -169,6 +186,40 @@ describe('useAttemptMonitoring', () => {
         expect(mockUseAudioAnomalyWorker).toHaveBeenCalledWith(
             expect.objectContaining({
                 runtimeConfig: DEFAULT_AUDIO_ANOMALY_CONFIG,
+            }),
+        );
+    });
+
+    it('stops browser, audio, and MediaPipe monitoring exactly once for terminal attempts', () => {
+        const configuration = {
+            micRequired: true,
+            aiRules: {
+                audio_anomaly_detection: true,
+            },
+        } as any;
+
+        const { rerender } = renderHook(
+            ({ isTerminalAttempt }) =>
+                useAttemptMonitoring({
+                    examId: 'exam-1',
+                    configuration,
+                    isRedirectingToTurnIn: false,
+                    isTerminalAttempt,
+                }),
+            {
+                initialProps: { isTerminalAttempt: true },
+            },
+        );
+
+        rerender({ isTerminalAttempt: true });
+
+        expect(mockSuspendSecurityMonitoring).toHaveBeenCalledTimes(1);
+        expect(mockStopAudioStream).toHaveBeenCalledTimes(1);
+        expect(mockStopStream).toHaveBeenCalledTimes(1);
+        expect(mockEnsureAudioAccess).not.toHaveBeenCalled();
+        expect(mockUseAudioAnomalyWorker).toHaveBeenCalledWith(
+            expect.objectContaining({
+                isSuspended: true,
             }),
         );
     });

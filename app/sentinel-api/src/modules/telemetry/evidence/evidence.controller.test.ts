@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { OpenAPIHono } from '@hono/zod-openapi';
+import { HTTPException } from 'hono/http-exception';
 import telemetryEvidenceRoutes from './evidence.routes';
 import { EvidenceUploadService } from './services/evidence-upload.service';
 import { EvidenceCandidateService } from './services/evidence-candidate.service';
@@ -290,6 +291,27 @@ describe('Telemetry Evidence Controllers', () => {
                 state: 'AVAILABLE',
                 expiresAt: '2026-07-27T12:00:00.000Z',
             });
+            expect(EvidenceUploadService.completeUpload).toHaveBeenCalled();
+        });
+
+        it('surfaces object metadata mismatch errors from completion', async () => {
+            vi.mocked(EvidenceUploadService.completeUpload).mockRejectedValue(
+                new HTTPException(409, {
+                    message: 'Upload metadata does not match the stored evidence record.',
+                }),
+            );
+
+            const response = await app.request(
+                '/evidence/123e4567-e89b-12d3-a456-426614174000/complete',
+                {
+                    method: 'POST',
+                    headers: {
+                        Authorization: 'Bearer user-token',
+                    },
+                },
+            );
+
+            expect(response.status).toBe(409);
             expect(EvidenceUploadService.completeUpload).toHaveBeenCalled();
         });
     });

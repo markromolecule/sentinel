@@ -86,6 +86,45 @@ export const syncSessionSchema = {
     }),
 };
 
+const sessionStatusLifecycleStateSchema = z.enum([
+    'IN_PROGRESS',
+    'LOCKED',
+    'CLOSED',
+    'SUBMITTED',
+    'SUPERSEDED',
+]);
+
+const sessionStatusAttemptStatusSchema = z.enum([
+    'DRAFT',
+    'PUBLISHED',
+    'ARCHIVED',
+    'SCHEDULED',
+    'AVAILABLE',
+    'COMPLETED',
+    'IN_PROGRESS',
+    'UPCOMING',
+    'ACTIVE',
+]);
+
+export const sessionStatusSchema = {
+    params: z.object({
+        sessionId: z.string().uuid(),
+    }),
+    response: z.object({
+        message: z.string(),
+        data: z.object({
+            sessionId: z.string().uuid(),
+            attemptId: z.string().uuid(),
+            examId: z.string().uuid(),
+            status: sessionStatusAttemptStatusSchema.nullable(),
+            lifecycleState: sessionStatusLifecycleStateSchema.nullable(),
+            completedAt: z.string().nullable(),
+            closedReason: z.string().nullable(),
+            terminalMessage: z.string().nullable(),
+        }),
+    }),
+};
+
 export type StartSessionBody = z.infer<typeof startSessionSchema.body>;
 export type StartSessionResponse = z.infer<typeof startSessionSchema.response>;
 export type CompleteSessionBody = z.infer<typeof completeSessionSchema.body>;
@@ -93,3 +132,5 @@ export type CompleteSessionResponse = z.infer<typeof completeSessionSchema.respo
 export type PrepareSessionBody = z.infer<typeof prepareSessionSchema.body>;
 export type PrepareSessionResponse = z.infer<typeof prepareSessionSchema.response>;
 export type SyncSessionBody = z.infer<typeof syncSessionSchema.body>;
+export type SessionStatusParams = z.infer<typeof sessionStatusSchema.params>;
+export type SessionStatusResponse = z.infer<typeof sessionStatusSchema.response>;

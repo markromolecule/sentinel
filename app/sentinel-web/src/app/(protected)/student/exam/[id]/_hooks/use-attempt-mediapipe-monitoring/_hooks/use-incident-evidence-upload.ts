@@ -5,6 +5,7 @@ import {
     type IngestMediaPipeEvidenceCandidateResponse,
 } from '@sentinel/services';
 import { createSupabaseClient } from '@/data/supabase/client';
+import { writeMonitoringEventTrace } from '@/app/(protected)/student/exam/[id]/_lib/web-telemetry-client';
 
 const SAFE_RETRY_ATTEMPTS = 2;
 
@@ -12,6 +13,7 @@ export type StartIncidentEvidenceUploadArgs = {
     apiClient: ApiClientType;
     upload: NonNullable<IngestMediaPipeEvidenceCandidateResponse['upload']>;
     blob: Blob;
+    eventType: 'GAZE_OFF_SCREEN' | 'NO_FACE_DETECTED' | 'MULTIPLE_FACES';
 };
 
 function isRetryableHttpStatus(status: number) {
@@ -60,7 +62,19 @@ export function useIncidentEvidenceUpload() {
     const supabaseRef = useRef(createSupabaseClient());
 
     const startIncidentEvidenceUpload = useCallback(
-        async ({ apiClient, upload, blob }: StartIncidentEvidenceUploadArgs) => {
+        async ({ apiClient, upload, blob, eventType }: StartIncidentEvidenceUploadArgs) => {
+            writeMonitoringEventTrace({
+                detectorSource: 'mediapipe',
+                eventType,
+                detectionTime: new Date().toISOString(),
+                emissionTime: new Date().toISOString(),
+                disposition: 'emitting',
+                reason: 'evidence-upload:start',
+                developmentContext: {
+                    evidenceId: upload.evidenceId,
+                },
+            });
+
             await retry(
                 async () => {
                     const path = new URL(upload.uploadUrl).pathname
@@ -84,6 +98,18 @@ export function useIncidentEvidenceUpload() {
                     if (error) {
                         throw error;
                     }
+
+                    writeMonitoringEventTrace({
+                        detectorSource: 'mediapipe',
+                        eventType,
+                        detectionTime: new Date().toISOString(),
+                        emissionTime: new Date().toISOString(),
+                        disposition: 'accepted',
+                        reason: 'evidence-upload:uploaded',
+                        developmentContext: {
+                            evidenceId: upload.evidenceId,
+                        },
+                    });
                 },
                 (error) => {
                     if (
@@ -100,6 +126,18 @@ export function useIncidentEvidenceUpload() {
             );
 
             await completeEvidenceUpload(apiClient, upload.evidenceId);
+
+            writeMonitoringEventTrace({
+                detectorSource: 'mediapipe',
+                eventType,
+                detectionTime: new Date().toISOString(),
+                emissionTime: new Date().toISOString(),
+                disposition: 'accepted',
+                reason: 'evidence-upload:completed',
+                developmentContext: {
+                    evidenceId: upload.evidenceId,
+                },
+            });
         },
         [],
     );

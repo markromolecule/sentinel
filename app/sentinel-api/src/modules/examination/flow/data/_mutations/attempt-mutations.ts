@@ -122,6 +122,13 @@ export async function persistAttemptAssessmentSnapshot(
 
 /**
  * Persists in-progress answer/time sync without marking the attempt as complete.
+ *
+ * Guards with `status = IN_PROGRESS`, `completed_at IS NULL`, and
+ * `lifecycle_state = IN_PROGRESS` so a concurrent closure or submission cannot
+ * be followed by a successful progress overwrite.
+ *
+ * @returns The number of rows actually updated.  A value of `0` means the
+ *   attempt was already closed/submitted and the write was silently skipped.
  */
 export async function syncAttemptProgress(
     db: DbClient,
@@ -147,9 +154,14 @@ export async function syncAttemptProgress(
         updateValues.answer_snapshot = args.answers as unknown;
     }
 
-    return await db
+    const result = await db
         .updateTable('exam_attempts')
         .set(updateValues)
         .where('attempt_id', '=', args.sessionId)
-        .execute();
+        .where('status', '=', 'IN_PROGRESS')
+        .where('completed_at', 'is', null)
+        .where('lifecycle_state', '=', 'IN_PROGRESS')
+        .executeTakeFirst();
+
+    return Number(result?.numUpdatedRows ?? 0);
 }

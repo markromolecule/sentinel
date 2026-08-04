@@ -425,4 +425,46 @@ describe('SessionRepository.createSession', () => {
             }),
         );
     });
+
+    it('guards progress sync with active-attempt predicates and reports the updated row count', async () => {
+        const updateBuilder = {
+            set: vi.fn().mockReturnThis(),
+            where: vi.fn().mockReturnThis(),
+            executeTakeFirst: vi.fn().mockResolvedValue({ numUpdatedRows: 1 }),
+        };
+        const dbClient = {
+            updateTable: vi.fn().mockReturnValue(updateBuilder),
+        } as unknown as DbClient;
+
+        const result = await SessionRepository.updateSyncProgress(dbClient, {
+            sessionId: 'attempt-sync-1',
+            answeredCount: 21,
+            timeSpentMinutes: 3,
+            answers: { 'question-1': 'A' },
+        });
+
+        expect(result).toBe(1);
+        expect(updateBuilder.set).toHaveBeenCalledWith(
+            expect.objectContaining({
+                answered_question_count: 21,
+                time_spent_minutes: 3,
+                answer_snapshot: { 'question-1': 'A' },
+                last_synced_at: expect.any(Date),
+            }),
+        );
+        expect(updateBuilder.where).toHaveBeenNthCalledWith(
+            1,
+            'attempt_id',
+            '=',
+            'attempt-sync-1',
+        );
+        expect(updateBuilder.where).toHaveBeenNthCalledWith(2, 'status', '=', 'IN_PROGRESS');
+        expect(updateBuilder.where).toHaveBeenNthCalledWith(3, 'completed_at', 'is', null);
+        expect(updateBuilder.where).toHaveBeenNthCalledWith(
+            4,
+            'lifecycle_state',
+            '=',
+            'IN_PROGRESS',
+        );
+    });
 });

@@ -133,7 +133,14 @@ function resolveMonitoringStatus(args: {
 }
 
 function resolveProgress(row: MonitoringStudentRow, durationMinutes: number, questionCount = 0) {
-    if (row.completed_at || row.attempt_status?.toUpperCase() === 'COMPLETED') {
+    // Only a fully submitted attempt earns 100%.  Closed-unsubmitted attempts
+    // (LOCKED, CLOSED, SUPERSEDED) retain their last-persisted percentage so
+    // the monitoring view does not falsely imply complete submission.
+    const isSubmitted =
+        (row.completed_at || row.attempt_status?.toUpperCase() === 'COMPLETED') &&
+        (row.lifecycle_state === 'SUBMITTED' || row.attempt_status?.toUpperCase() === 'COMPLETED');
+
+    if (isSubmitted) {
         return 100;
     }
 

@@ -463,7 +463,7 @@ describe('Examination Flow Integration', () => {
             manualReviewQuestionCount: 0,
             requiresManualReview: false,
         });
-        expect(SessionRepository.completeSession).toHaveBeenCalledWith(mockDb, {
+        expect(SessionRepository.completeSession).toHaveBeenCalledWith(expect.any(Object), {
             sessionId: '8e08d10d-a25f-4d6d-9b5f-8ca176fb8bc6',
             score: 5,
             initialScore: 5,
@@ -478,6 +478,10 @@ describe('Examination Flow Integration', () => {
                 scoringVersion: 'fix-001-student-score-integrity-v1',
                 score: 5,
                 totalScore: 5,
+                rubric: expect.objectContaining({
+                    id: 'legacy-standard-v1',
+                    source: 'LEGACY',
+                }),
             }),
             scoringVersion: 'fix-001-student-score-integrity-v1',
         });
@@ -557,7 +561,7 @@ describe('Examination Flow Integration', () => {
             manualReviewQuestionCount: 1,
             requiresManualReview: true,
         });
-        expect(SessionRepository.completeSession).toHaveBeenCalledWith(mockDb, {
+        expect(SessionRepository.completeSession).toHaveBeenCalledWith(expect.any(Object), {
             sessionId: '8e08d10d-a25f-4d6d-9b5f-8ca176fb8bc6',
             score: 0,
             initialScore: 0,
@@ -574,6 +578,10 @@ describe('Examination Flow Integration', () => {
                 score: 0,
                 totalScore: 15,
                 requiresManualReview: true,
+                rubric: expect.objectContaining({
+                    id: 'legacy-standard-v1',
+                    source: 'LEGACY',
+                }),
             }),
             scoringVersion: 'fix-001-student-score-integrity-v1',
         });
@@ -715,6 +723,22 @@ describe('Examination Flow Integration', () => {
             percentage: 100,
             answeredCount: 1,
         });
+        expect(SessionRepository.completeSession).toHaveBeenCalledWith(
+            expect.any(Object),
+            expect.objectContaining({
+                sessionId: '8e08d10d-a25f-4d6d-9b5f-8ca176fb8bc6',
+                scoreSnapshot: expect.objectContaining({
+                    version: 'attempt-score.v1',
+                    scoringVersion: 'fix-001-student-score-integrity-v1',
+                    score: 5,
+                    totalScore: 5,
+                    rubric: expect.objectContaining({
+                        id: 'legacy-standard-v1',
+                        source: 'LEGACY',
+                    }),
+                }),
+            }),
+        );
         expect(appendExamAttemptLifecycleEvent).not.toHaveBeenCalled();
     });
 
@@ -813,5 +837,73 @@ describe('Examination Flow Integration', () => {
         expect(result.sessionId).toBeUndefined();
         expect(SessionRepository.createSession).not.toHaveBeenCalled();
         expect(getExamConfigurationState).not.toHaveBeenCalled();
+    });
+
+    it('syncs active attempt progress and logs a heartbeat on success', async () => {
+        vi.mocked(SessionRepository.getOwnedSessionAttempt).mockResolvedValue({
+            attempt_id: 'attempt-sync-1',
+            exam_id: examId,
+            student_id: 'student-profile-1',
+            completed_at: null,
+            status: 'IN_PROGRESS',
+            lifecycle_state: 'IN_PROGRESS',
+            institution_id: 'institution-123',
+        } as never);
+        vi.mocked(SessionRepository.updateSyncProgress).mockResolvedValue(1 as never);
+
+        await SessionManagerService.syncSession(mockDb, studentId, {
+            sessionId: 'attempt-sync-1',
+            answeredCount: 21,
+            elapsedSeconds: 121,
+            answers: {
+                'question-1': 'A',
+            },
+        } as never);
+
+        expect(SessionRepository.updateSyncProgress).toHaveBeenCalledWith(mockDb, {
+            sessionId: 'attempt-sync-1',
+            answeredCount: 21,
+            timeSpentMinutes: 3,
+            answers: {
+                'question-1': 'A',
+            },
+        });
+        expect(LogsService.createLog).toHaveBeenCalledWith(
+            mockDb,
+            expect.objectContaining({
+                action: 'exam.heartbeat_synced',
+                resourceId: 'attempt-sync-1',
+                details: {
+                    sessionId: 'attempt-sync-1',
+                    answeredCount: 21,
+                    timeSpentMinutes: 3,
+                },
+            }),
+        );
+    });
+
+    it('converts a zero-row guarded sync update into a terminal 409', async () => {
+        vi.mocked(SessionRepository.getOwnedSessionAttempt).mockResolvedValue({
+            attempt_id: 'attempt-sync-2',
+            exam_id: examId,
+            student_id: 'student-profile-1',
+            completed_at: null,
+            status: 'IN_PROGRESS',
+            lifecycle_state: 'IN_PROGRESS',
+        } as never);
+        vi.mocked(SessionRepository.updateSyncProgress).mockResolvedValue(0 as never);
+
+        await expect(
+            SessionManagerService.syncSession(mockDb, studentId, {
+                sessionId: 'attempt-sync-2',
+                answeredCount: 8,
+                elapsedSeconds: 75,
+            } as never),
+        ).rejects.toMatchObject({
+            status: 409,
+            message: 'This exam attempt has been closed and can no longer accept progress updates.',
+        } satisfies Partial<HTTPException>);
+
+        expect(LogsService.createLog).not.toHaveBeenCalled();
     });
 });

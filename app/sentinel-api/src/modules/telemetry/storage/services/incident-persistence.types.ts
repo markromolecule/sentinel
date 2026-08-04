@@ -1,3 +1,4 @@
+import type { PersistableProctoringEvent } from '../../ingestion/ingestion.dto';
 import type { incident_severity } from '@sentinel/db';
 
 export type IngestSessionType = {
@@ -16,4 +17,9 @@ export type AppendEventResult = {
     previousSeverity: incident_severity | null;
     institutionId: string | null;
     studentUserId: string;
+};
+
+export type DeferredIncidentSideEffectsResult = AppendEventResult & {
+    payload: PersistableProctoringEvent;
+    runSideEffects: () => Promise<void>;
 };

@@ -19,6 +19,7 @@ export * from './use-assign-exam-mutation';
 export * from './use-update-exam-incidents-mutation';
 export * from './use-exam-reports-list-query';
 export * from './use-exam-attempt-lifecycle-mutation';
+export * from './use-exam-session-status-query';
 export * from './live-inspection';
 export * from './use-essay-rubric-query';
 export * from './use-update-exam-essay-rubric-mutation';

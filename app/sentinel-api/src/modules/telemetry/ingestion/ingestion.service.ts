@@ -8,7 +8,7 @@ import { telemetryIngestionQueueService } from './services/ingestion-queue.servi
 import { telemetryPolicyService } from './services/telemetry-policy.service';
 import { telemetrySettingsResolverService } from '../settings/telemetry-settings-resolver.service';
 import { TelemetryStorageService } from '../storage/storage.service';
-import type { AppendEventResult } from '../storage/services/incident-persistence.service';
+import type { DeferredIncidentSideEffectsResult } from '../storage/services/incident-persistence.service';
 import { HTTPException } from 'hono/http-exception';
 
 import type { TelemetryQueueMode } from './config/ingestion-queue.config';
@@ -103,7 +103,7 @@ export class TelemetryIngestionService {
     static async persistEvidenceCandidate(
         db: DbClient,
         payload: ProctoringEventBody,
-    ): Promise<AppendEventResult | null> {
+    ): Promise<DeferredIncidentSideEffectsResult | null> {
         if (
             !EVIDENCE_CANDIDATE_EVENT_TYPES.has(
                 payload.eventType as 'GAZE_OFF_SCREEN' | 'NO_FACE_DETECTED' | 'MULTIPLE_FACES',
@@ -119,7 +119,7 @@ export class TelemetryIngestionService {
             return null;
         }
 
-        return TelemetryStorageService.appendEvent(db, prepared.payload);
+        return TelemetryStorageService.appendEvidenceCandidate(db, prepared.payload);
     }
 
     /**

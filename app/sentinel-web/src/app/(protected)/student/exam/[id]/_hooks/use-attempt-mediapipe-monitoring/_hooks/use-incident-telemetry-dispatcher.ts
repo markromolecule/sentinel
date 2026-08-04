@@ -74,15 +74,22 @@ export function useIncidentTelemetryDispatcher(): UseIncidentTelemetryDispatcher
                 durationMs: dispatch.durationMs ?? undefined,
             };
 
-            writeMonitoringEventTrace({
-                detectorSource: 'mediapipe',
-                eventType: telemetrySignal,
-                eventSubtype: normalizedAnalysis.status,
-                detectionTime,
-                emissionTime,
-                disposition: 'emitting',
-                developmentContext,
-            });
+            const traceEvidence = (disposition: 'suppressed' | 'emitting' | 'accepted' | 'failed', reason: string) => {
+                writeMonitoringEventTrace({
+                    detectorSource: 'mediapipe',
+                    eventType: telemetrySignal,
+                    eventSubtype: normalizedAnalysis.status,
+                    eventId,
+                    dedupeKey,
+                    detectionTime,
+                    emissionTime,
+                    disposition,
+                    reason,
+                    developmentContext,
+                });
+            };
+
+            traceEvidence('emitting', 'evidence-capture:start');
 
             // Show a contextual toast for each incident type.
             if (telemetrySignal === 'GAZE_OFF_SCREEN') {
@@ -122,28 +129,13 @@ export function useIncidentTelemetryDispatcher(): UseIncidentTelemetryDispatcher
                     },
                 })
                     .then((emitted) => {
-                        writeMonitoringEventTrace({
-                            detectorSource: 'mediapipe',
-                            eventType: telemetrySignal,
-                            eventSubtype: normalizedAnalysis.status,
-                            detectionTime,
-                            emissionTime,
-                            disposition: emitted ? 'accepted' : 'suppressed',
-                            reason,
-                            developmentContext,
-                        });
+                        traceEvidence(emitted ? 'accepted' : 'suppressed', reason);
                     })
                     .catch((error) => {
-                        writeMonitoringEventTrace({
-                            detectorSource: 'mediapipe',
-                            eventType: telemetrySignal,
-                            eventSubtype: normalizedAnalysis.status,
-                            detectionTime,
-                            emissionTime,
-                            disposition: 'failed',
-                            reason: error instanceof Error ? error.message : 'unknown-error',
-                            developmentContext,
-                        });
+                        traceEvidence(
+                            'failed',
+                            error instanceof Error ? error.message : 'unknown-error',
+                        );
                         console.error('Failed to emit MediaPipe telemetry event.', {
                             error,
                         });
@@ -175,6 +167,7 @@ export function useIncidentTelemetryDispatcher(): UseIncidentTelemetryDispatcher
 
                 try {
                     const capturedFrame = await captureIncidentEvidenceFrame(videoElement);
+                    traceEvidence('emitting', 'evidence-capture:captured');
                     const decision = await emitMediaPipeEvidenceCandidate(apiClient, {
                         configuration: resolvedConfiguration,
                         mediaPipeSandbox: sandbox,
@@ -198,60 +191,44 @@ export function useIncidentTelemetryDispatcher(): UseIncidentTelemetryDispatcher
                     });
 
                     if (decision === false) {
+                        traceEvidence('suppressed', 'evidence-candidate:suppressed');
                         emitFallbackTelemetry('candidate-suppressed');
                         return;
                     }
 
                     candidateTelemetryPersisted = true;
+                    traceEvidence(
+                        'accepted',
+                        `evidence-decision:${decision.telemetryDisposition}:${decision.evidenceDecision}`,
+                    );
 
                     if (decision.evidenceDecision === 'UPLOAD' && decision.upload) {
                         if (decisionController.signal.aborted) {
+                            traceEvidence('suppressed', 'evidence-upload:aborted-before-start');
                             return;
                         }
 
+                        traceEvidence('emitting', 'evidence-upload:start');
                         await startIncidentEvidenceUpload({
                             apiClient,
                             upload: decision.upload,
                             blob: capturedFrame.blob,
+                            eventType: telemetrySignal,
                         });
 
-                        writeMonitoringEventTrace({
-                            detectorSource: 'mediapipe',
-                            eventType: telemetrySignal,
-                            eventSubtype: normalizedAnalysis.status,
-                            detectionTime,
-                            emissionTime,
-                            disposition: 'accepted',
-                            reason: `evidence:${decision.telemetryDisposition}:upload`,
-                            developmentContext,
-                        });
+                        traceEvidence('accepted', `evidence:${decision.telemetryDisposition}:upload`);
                         return;
                     }
 
                     if (decision.evidenceDecision === 'UPLOAD') {
-                        writeMonitoringEventTrace({
-                            detectorSource: 'mediapipe',
-                            eventType: telemetrySignal,
-                            eventSubtype: normalizedAnalysis.status,
-                            detectionTime,
-                            emissionTime,
-                            disposition: 'failed',
-                            reason: 'candidate-missing-upload-target',
-                            developmentContext,
-                        });
+                        traceEvidence('failed', 'candidate-missing-upload-target');
                         return;
                     }
 
-                    writeMonitoringEventTrace({
-                        detectorSource: 'mediapipe',
-                        eventType: telemetrySignal,
-                        eventSubtype: normalizedAnalysis.status,
-                        detectionTime,
-                        emissionTime,
-                        disposition: 'accepted',
-                        reason: `evidence:${decision.telemetryDisposition}:${decision.evidenceDecision.toLowerCase()}`,
-                        developmentContext,
-                    });
+                    traceEvidence(
+                        'accepted',
+                        `evidence:${decision.telemetryDisposition}:${decision.evidenceDecision.toLowerCase()}`,
+                    );
                 } catch (error) {
                     if (decisionController.signal.aborted) {
                         if (
@@ -259,20 +236,12 @@ export function useIncidentTelemetryDispatcher(): UseIncidentTelemetryDispatcher
                             decisionController.signal.reason.message ===
                                 'Evidence decision timed out.'
                         ) {
+                            traceEvidence('suppressed', 'candidate-timeout');
                             emitFallbackTelemetry('candidate-timeout');
                             return;
                         }
 
-                        writeMonitoringEventTrace({
-                            detectorSource: 'mediapipe',
-                            eventType: telemetrySignal,
-                            eventSubtype: normalizedAnalysis.status,
-                            detectionTime,
-                            emissionTime,
-                            disposition: 'suppressed',
-                            reason: 'candidate-aborted',
-                            developmentContext,
-                        });
+                        traceEvidence('suppressed', 'candidate-aborted');
                         return;
                     }
 
@@ -282,19 +251,12 @@ export function useIncidentTelemetryDispatcher(): UseIncidentTelemetryDispatcher
                             : 'candidate-failure';
 
                     if (candidateTelemetryPersisted) {
-                        writeMonitoringEventTrace({
-                            detectorSource: 'mediapipe',
-                            eventType: telemetrySignal,
-                            eventSubtype: normalizedAnalysis.status,
-                            detectionTime,
-                            emissionTime,
-                            disposition: 'failed',
-                            reason:
-                                error instanceof Error
-                                    ? `${reasonPrefix}:${error.message}`
-                                    : `${reasonPrefix}:unknown-error`,
-                            developmentContext,
-                        });
+                        traceEvidence(
+                            'failed',
+                            error instanceof Error
+                                ? `${reasonPrefix}:${error.message}`
+                                : `${reasonPrefix}:unknown-error`,
+                        );
                         return;
                     }
 

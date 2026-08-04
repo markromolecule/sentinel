@@ -13,6 +13,7 @@ export type UseMediapipeRuntimeEligibilityArgs = {
     configuration?: ExamConfig;
     activeSandbox: ResolvedMediaPipeSandbox | undefined;
     isRedirectingToTurnIn?: boolean;
+    isTerminalAttempt?: boolean;
     runtimeAccess?: ExamRuntimeAccess | null;
 };
 
@@ -40,6 +41,7 @@ export function useMediapipeRuntimeEligibility({
     configuration,
     activeSandbox,
     isRedirectingToTurnIn,
+    isTerminalAttempt,
     runtimeAccess,
 }: UseMediapipeRuntimeEligibilityArgs): MediapipeRuntimeEligibility {
     const runtimeAccessAllowed = Boolean(
@@ -49,6 +51,7 @@ export function useMediapipeRuntimeEligibility({
     const baseRuntimeEnabled = Boolean(
         examSessionId &&
         !isRedirectingToTurnIn &&
+        !isTerminalAttempt &&
         studentId &&
         configuration?.cameraRequired &&
         isMediaPipeRuntimeEnabled({

@@ -297,6 +297,51 @@ describe('Telemetry Evidence Services', () => {
             expect(row.size_bytes).toBe(12345);
         });
 
+        testWithDbClient(
+            'rejects a later evidence target once the attempt has been closed',
+            async ({ dbClient }) => {
+                (globalThis as any).activeTestTrx = dbClient;
+                const fix = await createTestFixture(dbClient);
+                const firstEventId = randomUUID();
+                const secondEventId = randomUUID();
+
+                const first = await EvidenceUploadService.initializeUpload(dbClient, {
+                    attemptId: fix.attemptId,
+                    incidentId: randomUUID(),
+                    eventId: firstEventId,
+                    eventType: 'FACE_NOT_VISIBLE',
+                    capturedAt: new Date().toISOString(),
+                    mimeType: 'image/webp',
+                    sizeBytes: 12345,
+                    studentUserId: fix.userId,
+                });
+
+                expect(first.evidenceId).toBeDefined();
+
+                await dbClient
+                    .updateTable('exam_attempts')
+                    .set({
+                        lifecycle_state: 'CLOSED',
+                        closed_reason: 'AUTO_HIGH_INCIDENT_THRESHOLD',
+                    })
+                    .where('attempt_id', '=', fix.attemptId)
+                    .execute();
+
+                await expect(
+                    EvidenceUploadService.initializeUpload(dbClient, {
+                        attemptId: fix.attemptId,
+                        incidentId: randomUUID(),
+                        eventId: secondEventId,
+                        eventType: 'FACE_NOT_VISIBLE',
+                        capturedAt: new Date().toISOString(),
+                        mimeType: 'image/webp',
+                        sizeBytes: 12345,
+                        studentUserId: fix.userId,
+                    }),
+                ).rejects.toThrow('Evidence upload is only permitted for in-progress attempts.');
+            },
+        );
+
         testWithDbClient('fails upload on size mismatch', async ({ dbClient }) => {
             (globalThis as any).activeTestTrx = dbClient;
             const fix = await createTestFixture(dbClient);

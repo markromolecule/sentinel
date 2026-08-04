@@ -4,7 +4,21 @@ import { prisma, type DbClient } from '@sentinel/db';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { testWithDbClient } from '../../../../lib/test-with-db-client';
 import type { PersistableProctoringEvent } from '../../ingestion/ingestion.dto';
+import { EvidenceUploadService } from '../../evidence/services/evidence-upload.service';
 import { IncidentPersistenceService } from './incident-persistence.service';
+import * as incidentSideEffectsService from './incident-side-effects.service';
+
+vi.mock('../../evidence/services/evidence-storage.service', () => ({
+    EvidenceStorageService: {
+        createSignedUploadTarget: vi.fn().mockResolvedValue({
+            signedUrl: 'https://upload-target.url',
+            token: 'test-upload-token',
+        }),
+        inspectObject: vi.fn(),
+        createSignedViewUrl: vi.fn(),
+        deleteObject: vi.fn(),
+    },
+}));
 
 function parseIncidentDetails(details: string | null | undefined) {
     return JSON.parse(details ?? '{}') as Record<string, unknown>;
@@ -308,6 +322,49 @@ describe('IncidentPersistenceService', () => {
                 disposition: 'duplicate-ignored',
                 incidentId: first?.incidentId,
             });
+        },
+    );
+
+    testWithDbClient(
+        'returns deferred side effects once and keeps duplicate-ignored candidates from running them twice',
+        async ({ dbClient }) => {
+            const fixture = await createTelemetryAttemptFixture(dbClient);
+            const eventId = randomUUID();
+            const payload = buildPayload({
+                ...fixture,
+                metadata: {
+                    eventId,
+                    dedupeKey: `attempt:RIGHT_CLICK_ATTEMPT:${eventId}`,
+                    clientActionAt: '2026-04-22T08:00:00.000Z',
+                },
+            });
+
+            const first = await IncidentPersistenceService.appendEventDeferred(dbClient, payload);
+            const second = await IncidentPersistenceService.appendEventDeferred(dbClient, payload);
+
+            expect(first).toMatchObject({
+                disposition: 'inserted',
+                runSideEffects: expect.any(Function),
+                payload: expect.objectContaining({
+                    examSessionId: fixture.attemptId,
+                }),
+            });
+            expect(second).toMatchObject({
+                disposition: 'duplicate-ignored',
+                runSideEffects: expect.any(Function),
+            });
+
+            const sideEffectsSpy = vi
+                .spyOn(incidentSideEffectsService, 'handleIncidentSideEffects')
+                .mockResolvedValue(undefined);
+
+            expect(sideEffectsSpy).not.toHaveBeenCalled();
+
+            await first?.runSideEffects();
+            await first?.runSideEffects();
+            await second?.runSideEffects();
+
+            expect(sideEffectsSpy).toHaveBeenCalledTimes(1);
         },
     );
 
@@ -849,7 +906,7 @@ describe('IncidentPersistenceService', () => {
                     platform: 'WEB',
                     metadata: {
                         dedupeKey: 'mixed:right-click:bucket-1',
-                        eventId: 'mixed-right-click-1',
+                        eventId: '11111111-1111-4111-8111-111111111111',
                         clientActionAt: '2026-04-22T08:00:00.000Z',
                     },
                 }),
@@ -863,7 +920,7 @@ describe('IncidentPersistenceService', () => {
                     platform: 'WEB',
                     metadata: {
                         dedupeKey: 'mixed:right-click:bucket-1',
-                        eventId: 'mixed-right-click-1-retry',
+                        eventId: '22222222-2222-4222-8222-222222222222',
                         clientActionAt: '2026-04-22T08:00:00.000Z',
                     },
                 }),
@@ -877,7 +934,7 @@ describe('IncidentPersistenceService', () => {
                     platform: 'WEB',
                     metadata: {
                         dedupeKey: 'mixed:right-click:bucket-2',
-                        eventId: 'mixed-right-click-2',
+                        eventId: '33333333-3333-4333-8333-333333333333',
                         clientActionAt: '2026-04-22T08:00:04.000Z',
                     },
                 }),
@@ -892,7 +949,7 @@ describe('IncidentPersistenceService', () => {
                     platform: 'MOBILE',
                     metadata: {
                         dedupeKey: 'mixed:backgrounding:bucket-1',
-                        eventId: 'mixed-backgrounding-1',
+                        eventId: '66666666-6666-4666-8666-666666666666',
                         clientActionAt: '2026-04-22T08:01:00.000Z',
                     },
                 }),
@@ -907,7 +964,7 @@ describe('IncidentPersistenceService', () => {
                     platform: 'WEB',
                     metadata: {
                         dedupeKey: 'mixed:audio:bucket-1',
-                        eventId: 'mixed-audio-1',
+                        eventId: '77777777-7777-4777-8777-777777777777',
                         clientActionAt: '2026-04-22T08:02:00.000Z',
                         anomalyType: 'TALKING',
                         confidenceScore: 0.84,
@@ -924,7 +981,7 @@ describe('IncidentPersistenceService', () => {
                     platform: 'WEB',
                     metadata: {
                         dedupeKey: 'mixed:gaze:bucket-1',
-                        eventId: 'mixed-gaze-1',
+                        eventId: '88888888-8888-4888-8888-888888888888',
                         clientActionAt: '2026-04-22T08:03:00.000Z',
                         durationMs: 1500,
                         confidenceScore: 0.79,
@@ -1006,7 +1063,7 @@ describe('IncidentPersistenceService', () => {
             const fixture = await createTelemetryAttemptFixture(dbClient);
             const metadata = {
                 dedupeKey: 'attempt:right-click:bucket-1',
-                eventId: 'event-1',
+                eventId: '33333333-3333-4333-8333-333333333333',
                 clientActionAt: '2026-04-22T08:00:00.000Z',
             };
 
@@ -1050,7 +1107,7 @@ describe('IncidentPersistenceService', () => {
                     ...fixture,
                     metadata: {
                         dedupeKey: 'attempt:right-click:bucket-1',
-                        eventId: 'event-1',
+                        eventId: '33333333-3333-4333-8333-333333333333',
                         clientActionAt: '2026-04-22T08:00:00.000Z',
                     },
                 }),
@@ -1061,7 +1118,7 @@ describe('IncidentPersistenceService', () => {
                     ...fixture,
                     metadata: {
                         dedupeKey: 'attempt:right-click:bucket-2',
-                        eventId: 'event-2',
+                        eventId: '44444444-4444-4444-8444-444444444444',
                         clientActionAt: '2026-04-22T08:00:03.000Z',
                     },
                 }),
@@ -1289,6 +1346,87 @@ describe('IncidentPersistenceService', () => {
             expect(attempt.closed_reason).toBe('AUTO_HIGH_INCIDENT_THRESHOLD');
         },
     );
+
+    testWithDbClient(
+        'keeps a pending evidence row while the triggering attempt transitions to closed',
+        async ({ dbClient }) => {
+            const fixture = await createTelemetryAttemptFixture(dbClient);
+            vi.stubEnv('TELEMETRY_EVIDENCE_INSTITUTION_ALLOWLIST', fixture.institutionId);
+
+            const eventId = randomUUID();
+            const incidentId = randomUUID();
+
+            await dbClient
+                .insertInto('exam_configurations')
+                .values({
+                    exam_id: fixture.examId,
+                    ai_rules: {
+                        face_detection: true,
+                        multiple_faces_detection: true,
+                        gaze_tracking: true,
+                        automaticClosePolicy: {
+                            enabled: true,
+                            highIncidentThreshold: 1,
+                            windowMinutes: 10,
+                        },
+                    },
+                })
+                .execute();
+
+            const init = await EvidenceUploadService.initializeUpload(dbClient, {
+                attemptId: fixture.attemptId,
+                incidentId,
+                eventId,
+                eventType: 'FACE_NOT_VISIBLE',
+                capturedAt: new Date('2026-04-22T08:00:00.000Z').toISOString(),
+                mimeType: 'image/webp',
+                sizeBytes: 12345,
+                studentUserId: fixture.studentUserId,
+            });
+
+            await IncidentPersistenceService.appendEvent(
+                dbClient,
+                buildPayload({
+                    ...fixture,
+                    ruleKey: 'webSecurity.right_click_disable',
+                    eventType: 'RIGHT_CLICK_ATTEMPT',
+                    metadata: {
+                        eventId: randomUUID(),
+                        dedupeKey: `attempt:right_click_disable:${eventId}`,
+                        clientActionAt: '2026-04-22T08:00:03.000Z',
+                    },
+                    runtimeSettingsSnapshot: {
+                        version: DEFAULT_TELEMETRY_SETTINGS.version,
+                        operations: { ...DEFAULT_TELEMETRY_SETTINGS.operations },
+                        ruleOverrideApplied: {
+                            severity: 'HIGH',
+                        },
+                    } as any,
+                }),
+            );
+
+            const evidenceRows = await dbClient
+                .selectFrom('telemetry_incident_evidence')
+                .select(['evidence_id', 'state', 'incident_id', 'event_id'])
+                .where('evidence_id', '=', init.evidenceId)
+                .execute();
+
+            const attempt = await dbClient
+                .selectFrom('exam_attempts')
+                .select(['lifecycle_state', 'closed_reason'])
+                .where('attempt_id', '=', fixture.attemptId)
+                .executeTakeFirstOrThrow();
+
+            expect(evidenceRows).toHaveLength(1);
+            expect(evidenceRows[0]).toMatchObject({
+                state: 'PENDING_UPLOAD',
+                incident_id: incidentId,
+                event_id: eventId,
+            });
+            expect(attempt.lifecycle_state).toBe('CLOSED');
+            expect(attempt.closed_reason).toBe('AUTO_HIGH_INCIDENT_THRESHOLD');
+        },
+    );
 });
 
 test('IncidentPersistenceService keeps one row and occurrence count one for concurrent first-trigger writes with the same dedupe key', async () => {
@@ -1299,7 +1437,7 @@ test('IncidentPersistenceService keeps one row and occurrence count one for conc
         studentUserId: fixture.studentUserId,
         metadata: {
             dedupeKey: 'attempt:right-click:bucket-concurrent',
-            eventId: 'event-concurrent-1',
+            eventId: '55555555-5555-4555-8555-555555555555',
             clientActionAt: '2026-04-22T08:00:00.000Z',
         },
     });
@@ -1316,7 +1454,7 @@ test('IncidentPersistenceService keeps one row and occurrence count one for conc
             .where('attempt_id', '=', fixture.attemptId)
             .execute();
 
-        expect(results.filter(Boolean)).toHaveLength(1);
+        expect(results.filter((result) => result?.disposition !== 'duplicate-ignored')).toHaveLength(1);
         expect(incidents).toHaveLength(1);
         expect(incidents[0]?.dedupe_key).toBe('attempt:right-click:bucket-concurrent');
         expect(parseIncidentDetails(incidents[0]?.details)).toMatchObject({

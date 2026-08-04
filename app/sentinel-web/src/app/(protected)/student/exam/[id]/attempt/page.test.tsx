@@ -13,6 +13,9 @@ const {
     mockAttemptMediaPipeMonitoring,
     mockUseAudioAnomalyWorker,
     mockUseAudioSettingsQuery,
+    mockUseExamSessionStatusQuery,
+    mockStudentLiveInspectionBridge,
+    mockPrepareExamSession,
 } = vi.hoisted(() => ({
     mockRouterReplace: vi.fn(),
     mockStudentExamData: vi.fn(),
@@ -21,6 +24,9 @@ const {
     mockAttemptMediaPipeMonitoring: vi.fn(),
     mockUseAudioAnomalyWorker: vi.fn(),
     mockUseAudioSettingsQuery: vi.fn(),
+    mockUseExamSessionStatusQuery: vi.fn(),
+    mockStudentLiveInspectionBridge: vi.fn(() => null),
+    mockPrepareExamSession: vi.fn(),
 }));
 
 vi.mock('next/navigation', () => ({
@@ -66,7 +72,7 @@ vi.mock('@/app/(protected)/student/exam/[id]/_hooks/use-attempt-mediapipe-monito
 }));
 
 vi.mock('@/app/(protected)/student/exam/[id]/_components/student-live-inspection-bridge', () => ({
-    StudentLiveInspectionBridge: () => null,
+    StudentLiveInspectionBridge: (props: unknown) => mockStudentLiveInspectionBridge(props),
 }));
 
 vi.mock('@/hooks/use-audio-anomaly-worker', () => ({
@@ -74,7 +80,13 @@ vi.mock('@/hooks/use-audio-anomaly-worker', () => ({
 }));
 
 vi.mock('@sentinel/hooks', () => ({
+    useApi: () => ({ mockClient: true }),
     useAudioSettingsQuery: () => mockUseAudioSettingsQuery(),
+    useExamSessionStatusQuery: (...args: unknown[]) => mockUseExamSessionStatusQuery(...args),
+}));
+
+vi.mock('@sentinel/services', () => ({
+    prepareExamSession: (...args: unknown[]) => mockPrepareExamSession(...args),
 }));
 
 vi.mock('@/app/(protected)/student/exam/[id]/attempt/_lib/exam-turn-in-storage', () => ({
@@ -407,6 +419,20 @@ describe('StudentExamAttemptPage', () => {
             data: null,
             isLoading: false,
         });
+        mockUseExamSessionStatusQuery.mockReturnValue({
+            data: null,
+            isLoading: false,
+        });
+        mockPrepareExamSession.mockResolvedValue({
+            preparationToken: 'prep-token',
+            score: 1,
+            totalScore: 1,
+            percentage: 100,
+            answeredCount: 1,
+            autoGradableQuestionCount: 1,
+            manualReviewQuestionCount: 0,
+            requiresManualReview: false,
+        });
     });
 
     it('renders the active MediaPipe status badge inside the attempt shell', () => {
@@ -480,6 +506,30 @@ describe('StudentExamAttemptPage', () => {
         expect(screen.getByRole('button', { name: /answer 4/i })).toBeTruthy();
         expect(screen.getByRole('button', { name: /turn in exam/i })).toBeTruthy();
         expect(screen.queryByText(/loading\.\.\./i)).toBeNull();
+    });
+
+    it('renders terminal blocked state without live inspection or question controls', () => {
+        mockUseExamSessionStatusQuery.mockReturnValue({
+            data: {
+                sessionId: '22222222-2222-2222-2222-222222222222',
+                attemptId: '33333333-3333-4333-8333-333333333333',
+                examId: '11111111-1111-1111-1111-111111111111',
+                status: 'IN_PROGRESS',
+                lifecycleState: 'CLOSED',
+                completedAt: null,
+                closedReason: 'EXAM_WINDOW_ENDED',
+                terminalMessage: 'This exam attempt has been closed.',
+            },
+            isLoading: false,
+        });
+
+        render(<StudentExamAttemptPage />);
+
+        expect(screen.getByText('Exam Closed')).toBeTruthy();
+        expect(screen.getByText('This exam attempt has been closed.')).toBeTruthy();
+        expect(screen.queryByRole('button', { name: /answer 4/i })).toBeNull();
+        expect(screen.queryByRole('button', { name: /turn in exam/i })).toBeNull();
+        expect(mockStudentLiveInspectionBridge).not.toHaveBeenCalled();
     });
 
     it('updates the runtime passage content when navigating between questions without leaking prior content', () => {
@@ -620,7 +670,7 @@ describe('StudentExamAttemptPage', () => {
         expect(screen.getByRole('button', { name: /answer 4/i })).toBeTruthy();
     });
 
-    it('starts result navigation before exiting fullscreen on turn in', () => {
+    it('starts result navigation before exiting fullscreen on turn in', async () => {
         vi.useFakeTimers();
         const mockExitFullscreen = vi.fn().mockResolvedValue(undefined);
         const mockSuspendSecurityMonitoring = vi.fn(() => true);
@@ -640,6 +690,17 @@ describe('StudentExamAttemptPage', () => {
             fullScreenContainerRef: { current: null },
             suspendSecurityMonitoring: mockSuspendSecurityMonitoring,
         });
+        mockExamSession.mockReturnValue({
+            examSession: {
+                sessionId: '22222222-2222-4222-8222-222222222223',
+                configSnapshot: null,
+            },
+            isInitializingSession: false,
+            elapsedSeconds: 120,
+            secondsRemaining: 1800,
+            saveAnswerDraft: vi.fn(),
+            syncProgress: vi.fn(),
+        });
 
         render(<StudentExamAttemptPage />);
 
@@ -647,6 +708,9 @@ describe('StudentExamAttemptPage', () => {
         fireEvent.click(screen.getByRole('button', { name: /turn in exam/i }));
 
         expect(mockSuspendSecurityMonitoring).toHaveBeenCalled();
+        await act(async () => {
+            await Promise.resolve();
+        });
         expect(mockRouterReplace).toHaveBeenCalledWith(
             '/student/exam/11111111-1111-1111-1111-111111111111/result',
         );
@@ -662,7 +726,7 @@ describe('StudentExamAttemptPage', () => {
         );
     });
 
-    it('keeps the turn-in flow free of fullscreen lock side effects when fullscreenchange fires immediately', () => {
+    it('keeps the turn-in flow free of fullscreen lock side effects when fullscreenchange fires immediately', async () => {
         vi.useFakeTimers();
         const mockExitFullscreen = vi.fn().mockResolvedValue(undefined);
         const mockSuspendSecurityMonitoring = vi.fn(() => true);
@@ -692,6 +756,9 @@ describe('StudentExamAttemptPage', () => {
         });
 
         expect(mockSuspendSecurityMonitoring).toHaveBeenCalledTimes(1);
+        await act(async () => {
+            await Promise.resolve();
+        });
         expect(mockRouterReplace).toHaveBeenCalledWith(
             '/student/exam/11111111-1111-1111-1111-111111111111/result',
         );
@@ -774,7 +841,7 @@ describe('StudentExamAttemptPage', () => {
         expect(screen.getByText(/no live audio tracks available/i)).toBeTruthy();
     });
 
-    it('covers active monitoring, browser lock, audio state, gaze incident, submission, and teardown in one regression flow', () => {
+    it('covers active monitoring, browser lock, audio state, gaze incident, submission, and teardown in one regression flow', async () => {
         vi.useFakeTimers();
         const mockExitFullscreen = vi.fn().mockResolvedValue(undefined);
         const mockSuspendSecurityMonitoring = vi.fn(() => true);
@@ -810,6 +877,17 @@ describe('StudentExamAttemptPage', () => {
 
         mockExamMonitoring.mockImplementation(() => monitoringState);
         mockAttemptMediaPipeMonitoring.mockImplementation(() => mediaPipeState);
+        mockExamSession.mockReturnValue({
+            examSession: {
+                sessionId: '22222222-2222-4222-8222-222222222224',
+                configSnapshot: null,
+            },
+            isInitializingSession: false,
+            elapsedSeconds: 120,
+            secondsRemaining: 1800,
+            saveAnswerDraft: vi.fn(),
+            syncProgress: vi.fn(),
+        });
 
         mockUseAudioAnomalyWorker.mockReturnValue({
             errorMessage: null,
@@ -865,6 +943,9 @@ describe('StudentExamAttemptPage', () => {
         fireEvent.click(screen.getByRole('button', { name: /turn in exam/i }));
 
         expect(mockSuspendSecurityMonitoring).toHaveBeenCalledTimes(1);
+        await act(async () => {
+            await Promise.resolve();
+        });
         expect(mockRouterReplace).toHaveBeenCalledWith(
             '/student/exam/11111111-1111-1111-1111-111111111111/result',
         );

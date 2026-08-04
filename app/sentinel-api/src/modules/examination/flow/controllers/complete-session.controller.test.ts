@@ -135,4 +135,66 @@ describe('completeSessionRouteHandler', () => {
             error: message,
         });
     });
+
+    it('returns the latest preparation conflict when the prepared result is stale', async () => {
+        vi.mocked(EntitlementsRepository.getStudentProfileByUserId).mockResolvedValue({
+            student_id: 'student-1',
+            institution_id: 'institution-1',
+        } as any);
+        vi.mocked(SessionManagerService.completeSession).mockRejectedValue(
+            new HTTPException(409, {
+                message:
+                    'Your turn-in preview is no longer valid. Please review the latest prepared result before submitting.',
+            }),
+        );
+
+        const app = createApp({ id: 'user-1' });
+        const response = await app.request('/complete', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                sessionId: '11111111-1111-4111-8111-111111111111',
+                answers: {},
+                elapsedSeconds: 120,
+                preparationToken: 'stale-token',
+            }),
+        });
+
+        expect(response.status).toBe(409);
+        await expect(response.json()).resolves.toMatchObject({
+            error: 'Your turn-in preview is no longer valid. Please review the latest prepared result before submitting.',
+        });
+    });
+
+    it('sanitizes persistence failures to a generic 500 response', async () => {
+        vi.mocked(EntitlementsRepository.getStudentProfileByUserId).mockResolvedValue({
+            student_id: 'student-1',
+            institution_id: 'institution-1',
+        } as any);
+        vi.mocked(SessionManagerService.completeSession).mockRejectedValue(
+            new Error(
+                'PrismaDriver.beginTransaction() failed: relation "exam_attempt_lifecycle_events" does not exist',
+            ),
+        );
+
+        const app = createApp({ id: 'user-1' });
+        const response = await app.request('/complete', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                sessionId: '11111111-1111-4111-8111-111111111111',
+                answers: {},
+                elapsedSeconds: 120,
+            }),
+        });
+
+        expect(response.status).toBe(500);
+        await expect(response.json()).resolves.toMatchObject({
+            error: 'Internal Server Error',
+        });
+    });
 });

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import type {
@@ -15,6 +15,7 @@ import {
 } from '@/app/(protected)/student/exam/[id]/_hooks/use-exam-monitoring';
 import { useAudioAnomalyWorker } from '@/hooks/use-audio-anomaly-worker';
 import { useCheckupAudio } from '@/app/(protected)/student/exam/[id]/_components/student-exam-audio-provider';
+import { useStudentExamMediaPipeStream } from '@/app/(protected)/student/exam/[id]/_components/student-exam-mediapipe-provider';
 
 export type UseAttemptMonitoringArgs = {
     examId: string;
@@ -26,6 +27,7 @@ export type UseAttemptMonitoringArgs = {
     mediaPipeSandbox?: TelemetryMediaPipeSandboxSettings;
     runtimeAccess?: ExamRuntimeAccess | null;
     monitoringPhase?: AttemptMonitoringPhase;
+    isTerminalAttempt?: boolean;
 };
 
 /**
@@ -45,7 +47,9 @@ export function useAttemptMonitoring({
     mediaPipeSandbox,
     runtimeAccess,
     monitoringPhase,
+    isTerminalAttempt = false,
 }: UseAttemptMonitoringArgs) {
+    const isAttemptSuspended = isRedirectingToTurnIn || isTerminalAttempt;
     const {
         securityLockReason,
         isResumingExam,
@@ -56,9 +60,14 @@ export function useAttemptMonitoring({
         examId,
         configuration,
         examSessionId,
-        isMonitoringSuspended: isRedirectingToTurnIn,
+        isMonitoringSuspended: isAttemptSuspended,
         monitoringPhase:
-            monitoringPhase ?? (isRedirectingToTurnIn ? 'navigating-to-turn-in' : 'active'),
+            monitoringPhase ??
+            (isTerminalAttempt
+                ? 'suspended'
+                : isRedirectingToTurnIn
+                  ? 'navigating-to-turn-in'
+                  : 'active'),
     });
 
     const {
@@ -75,21 +84,40 @@ export function useAttemptMonitoring({
         mediaPipeSandbox,
         examSessionId,
         attemptId,
-        isRedirectingToTurnIn,
+        isRedirectingToTurnIn: isAttemptSuspended,
+        isTerminalAttempt,
         runtimeAccess,
     });
 
-    const { audioStream, worker: audioWorker, ensureAudioAccess } = useCheckupAudio();
+    const {
+        audioStream,
+        worker: audioWorker,
+        ensureAudioAccess,
+        stopAudioStream,
+    } = useCheckupAudio();
+    const { stopStream } = useStudentExamMediaPipeStream();
+    const didStopDevicesRef = useRef(false);
+
+    useEffect(() => {
+        if (!isTerminalAttempt || didStopDevicesRef.current) {
+            return;
+        }
+
+        didStopDevicesRef.current = true;
+        suspendSecurityMonitoring();
+        stopAudioStream();
+        stopStream();
+    }, [isTerminalAttempt, stopAudioStream, stopStream, suspendSecurityMonitoring]);
 
     useEffect(() => {
         const isMicRequired = configuration?.micRequired ?? false;
         const isAudioAnomalyEnabled = configuration?.aiRules?.audio_anomaly_detection ?? false;
-        if ((isMicRequired || isAudioAnomalyEnabled) && configuration && !isRedirectingToTurnIn) {
+        if ((isMicRequired || isAudioAnomalyEnabled) && configuration && !isAttemptSuspended) {
             ensureAudioAccess(configuration).catch((err) => {
                 console.error('Failed to ensure audio access in attempt:', err);
             });
         }
-    }, [configuration, ensureAudioAccess, isRedirectingToTurnIn]);
+    }, [configuration, ensureAudioAccess, isAttemptSuspended]);
 
     const {
         errorMessage: audioErrorMessage,
@@ -98,7 +126,7 @@ export function useAttemptMonitoring({
     } = useAudioAnomalyWorker({
         configuration,
         examSessionId,
-        isSuspended: isRedirectingToTurnIn,
+        isSuspended: isAttemptSuspended,
         runtimeConfig: audioSettings,
         audioStream,
         worker: audioWorker,
@@ -107,7 +135,7 @@ export function useAttemptMonitoring({
     const router = useRouter();
 
     useEffect(() => {
-        if (isRedirectingToTurnIn || !configuration) return;
+        if (isAttemptSuspended || !configuration) return;
 
         const isMicRequired = configuration.micRequired;
         const isCameraRequired = configuration.cameraRequired;
@@ -136,7 +164,7 @@ export function useAttemptMonitoring({
         audioErrorMessage,
         configuration,
         examId,
-        isRedirectingToTurnIn,
+        isAttemptSuspended,
         mediaPipeErrorMessage,
         router,
     ]);

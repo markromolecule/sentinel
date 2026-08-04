@@ -74,6 +74,7 @@ describe('useAttemptSubmission', () => {
 
     it('suspends monitoring before navigation and fullscreen teardown during turn-in', async () => {
         const suspendSecurityMonitoring = vi.fn(() => true);
+        const flushPendingProgress = vi.fn().mockResolvedValue(undefined);
 
         const { result } = renderHook(() =>
             useAttemptSubmission({
@@ -103,6 +104,7 @@ describe('useAttemptSubmission', () => {
                 setIsSubmitDialogOpen: vi.fn(),
                 suspendSecurityMonitoring,
                 isBlocked: false,
+                flushPendingProgress,
             }),
         );
 
@@ -128,6 +130,152 @@ describe('useAttemptSubmission', () => {
         expect(suspendSecurityMonitoring.mock.invocationCallOrder[0]).toBeLessThan(
             mockExitFullscreen.mock.invocationCallOrder[0],
         );
+    });
+
+    it('flushes pending progress before writing the turn-in preview and routing', async () => {
+        const suspendSecurityMonitoring = vi.fn(() => true);
+        const flushPendingProgress = vi.fn().mockResolvedValue(undefined);
+
+        const { result } = renderHook(() =>
+            useAttemptSubmission({
+                examId: '11111111-1111-1111-1111-111111111111',
+                sessionId: '22222222-2222-2222-2222-222222222222',
+                releaseScoreMode: 'AUTO_RELEASE',
+                questions: [
+                    {
+                        id: 'question-1',
+                        questionId: 'question-1',
+                        orderIndex: 0,
+                        points: 1,
+                        type: 'MULTIPLE_CHOICE',
+                        content: {
+                            prompt: 'Question 1',
+                            options: ['A', 'B', 'C', 'D'],
+                        },
+                    },
+                ] as any,
+                selectedAnswers: {
+                    'question-1': 'A',
+                },
+                elapsedSeconds: 120,
+                unansweredCount: 0,
+                isRedirectingToTurnIn: false,
+                setIsRedirectingToTurnIn: vi.fn(),
+                setIsSubmitDialogOpen: vi.fn(),
+                suspendSecurityMonitoring,
+                isBlocked: false,
+                flushPendingProgress,
+            }),
+        );
+
+        await act(async () => {
+            await result.current.proceedToTurnInReview();
+            await Promise.resolve();
+        });
+
+        expect(flushPendingProgress).toHaveBeenCalledTimes(1);
+        expect(mockPrepareExamSession).toHaveBeenCalledTimes(1);
+        expect(flushPendingProgress.mock.invocationCallOrder[0]).toBeLessThan(
+            mockPrepareExamSession.mock.invocationCallOrder[0],
+        );
+        expect(mockPrepareExamSession.mock.invocationCallOrder[0]).toBeLessThan(
+            mockWriteStoredExamTurnInPreview.mock.invocationCallOrder[0],
+        );
+        expect(mockWriteStoredExamTurnInPreview.mock.invocationCallOrder[0]).toBeLessThan(
+            mockRouterReplace.mock.invocationCallOrder[0],
+        );
+    });
+
+    it('falls back to the normal turn-in flow when flushPendingProgress fails', async () => {
+        const suspendSecurityMonitoring = vi.fn(() => true);
+        const flushPendingProgress = vi.fn().mockRejectedValue(new Error('flush failed'));
+
+        const { result } = renderHook(() =>
+            useAttemptSubmission({
+                examId: '11111111-1111-1111-1111-111111111111',
+                sessionId: '22222222-2222-2222-2222-222222222222',
+                releaseScoreMode: 'AUTO_RELEASE',
+                questions: [
+                    {
+                        id: 'question-1',
+                        questionId: 'question-1',
+                        orderIndex: 0,
+                        points: 1,
+                        type: 'MULTIPLE_CHOICE',
+                        content: {
+                            prompt: 'Question 1',
+                            options: ['A', 'B', 'C', 'D'],
+                        },
+                    },
+                ] as any,
+                selectedAnswers: {
+                    'question-1': 'A',
+                },
+                elapsedSeconds: 120,
+                unansweredCount: 0,
+                isRedirectingToTurnIn: false,
+                setIsRedirectingToTurnIn: vi.fn(),
+                setIsSubmitDialogOpen: vi.fn(),
+                suspendSecurityMonitoring,
+                isBlocked: false,
+                flushPendingProgress,
+            }),
+        );
+
+        await act(async () => {
+            await result.current.proceedToTurnInReview();
+            await Promise.resolve();
+        });
+
+        expect(flushPendingProgress).toHaveBeenCalledTimes(1);
+        expect(mockPrepareExamSession).toHaveBeenCalledTimes(1);
+        expect(mockWriteStoredExamTurnInPreview).toHaveBeenCalledTimes(1);
+    });
+
+    it('skips the flush path entirely when the attempt is blocked', async () => {
+        const suspendSecurityMonitoring = vi.fn(() => true);
+        const flushPendingProgress = vi.fn().mockResolvedValue(undefined);
+
+        const { result } = renderHook(() =>
+            useAttemptSubmission({
+                examId: '11111111-1111-1111-1111-111111111111',
+                sessionId: '22222222-2222-2222-2222-222222222222',
+                releaseScoreMode: 'AUTO_RELEASE',
+                questions: [
+                    {
+                        id: 'question-1',
+                        questionId: 'question-1',
+                        orderIndex: 0,
+                        points: 1,
+                        type: 'MULTIPLE_CHOICE',
+                        content: {
+                            prompt: 'Question 1',
+                            options: ['A', 'B', 'C', 'D'],
+                        },
+                    },
+                ] as any,
+                selectedAnswers: {
+                    'question-1': 'A',
+                },
+                elapsedSeconds: 120,
+                unansweredCount: 0,
+                isRedirectingToTurnIn: false,
+                setIsRedirectingToTurnIn: vi.fn(),
+                setIsSubmitDialogOpen: vi.fn(),
+                suspendSecurityMonitoring,
+                isBlocked: true,
+                flushPendingProgress,
+            }),
+        );
+
+        await act(async () => {
+            result.current.handleSubmit();
+            await Promise.resolve();
+        });
+
+        expect(flushPendingProgress).not.toHaveBeenCalled();
+        expect(mockPrepareExamSession).not.toHaveBeenCalled();
+        expect(mockRouterReplace).not.toHaveBeenCalled();
     });
 
     it('marks the submission phase before suspension and reaches suspended teardown state before navigation', async () => {
