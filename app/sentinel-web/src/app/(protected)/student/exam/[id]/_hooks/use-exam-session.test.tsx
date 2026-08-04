@@ -1,6 +1,6 @@
 import { cleanup, renderHook, waitFor } from '@testing-library/react';
 import { StrictMode, type ReactNode } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useExamSession } from './use-exam-session';
 
 const {
@@ -286,3 +286,120 @@ describe('useExamSession', () => {
         expect(mockRouterReplace).not.toHaveBeenCalled();
     });
 });
+
+describe('useExamSession — timer and callback stability', () => {
+    beforeEach(() => {
+        cleanup();
+        vi.clearAllMocks();
+        vi.useFakeTimers();
+        mockReadStoredExamSession.mockReturnValue(null);
+        mockReadStoredExamTurnInPreview.mockReturnValue(null);
+        mockReadStoredExamAnswerDraft.mockReturnValue(null);
+        mockReadStoredLobbyEntryMarker?.mockReturnValue?.(true);
+        mockConsumeStoredLobbyEntry.mockReturnValue(null);
+        mockSyncExamProgress.mockResolvedValue({ message: 'ok' });
+        mockGetStudentExamSessionAttemptId.mockReturnValue(null);
+        mockIsStudentExamAlreadyTurnedInError.mockReturnValue(false);
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+
+    it('advances elapsedSeconds and keeps elapsedSecondsRef in sync on every tick', async () => {
+        const { result } = renderHook(() =>
+            useExamSession({
+                examId: '11111111-1111-1111-1111-111111111111',
+                examDurationMinutes: 60,
+                isAttemptActive: true,
+            }),
+        );
+
+        await waitFor(() => expect(result.current.isInitializingSession).toBe(false));
+
+        // Advance 3 seconds
+        vi.advanceTimersByTime(3000);
+
+        await waitFor(() => expect(result.current.elapsedSeconds).toBe(3));
+        expect(result.current.elapsedSecondsRef.current).toBe(3);
+    });
+
+    it('does not start the timer when isAttemptActive is false', async () => {
+        const { result } = renderHook(() =>
+            useExamSession({
+                examId: '11111111-1111-1111-1111-111111111111',
+                examDurationMinutes: 60,
+                isAttemptActive: false,
+            }),
+        );
+
+        await waitFor(() => expect(result.current.isInitializingSession).toBe(false));
+
+        vi.advanceTimersByTime(5000);
+
+        // elapsedSeconds should remain at its initial value
+        expect(result.current.elapsedSeconds).toBe(0);
+    });
+
+    it('stops the timer when isAttemptActive flips to false', async () => {
+        const { result, rerender } = renderHook(
+            ({ isAttemptActive }: { isAttemptActive: boolean }) =>
+                useExamSession({
+                    examId: '11111111-1111-1111-1111-111111111111',
+                    examDurationMinutes: 60,
+                    isAttemptActive,
+                }),
+            { initialProps: { isAttemptActive: true } },
+        );
+
+        await waitFor(() => expect(result.current.isInitializingSession).toBe(false));
+
+        vi.advanceTimersByTime(2000);
+        await waitFor(() => expect(result.current.elapsedSeconds).toBe(2));
+
+        // Latch terminal state — timer must stop
+        rerender({ isAttemptActive: false });
+
+        vi.advanceTimersByTime(5000);
+        expect(result.current.elapsedSeconds).toBe(2);
+    });
+
+    it('syncProgress callback identity is stable across timer ticks', async () => {
+        const { result } = renderHook(() =>
+            useExamSession({
+                examId: '11111111-1111-1111-1111-111111111111',
+                examDurationMinutes: 60,
+                isAttemptActive: true,
+            }),
+        );
+
+        await waitFor(() => expect(result.current.isInitializingSession).toBe(false));
+
+        const syncBefore = result.current.syncProgress;
+
+        // Advance 5 seconds — identity must not change
+        vi.advanceTimersByTime(5000);
+
+        await waitFor(() => expect(result.current.elapsedSeconds).toBe(5));
+
+        expect(result.current.syncProgress).toBe(syncBefore);
+    });
+
+    it('does not tick the timer when isTerminalAttempt is true', async () => {
+        const { result } = renderHook(() =>
+            useExamSession({
+                examId: '11111111-1111-1111-1111-111111111111',
+                examDurationMinutes: 60,
+                isTerminalAttempt: true,
+                isAttemptActive: true,
+            }),
+        );
+
+        await waitFor(() => expect(result.current.isInitializingSession).toBe(false));
+
+        vi.advanceTimersByTime(5000);
+
+        expect(result.current.elapsedSeconds).toBe(0);
+    });
+});
+

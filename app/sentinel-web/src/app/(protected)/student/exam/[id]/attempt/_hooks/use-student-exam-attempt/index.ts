@@ -69,6 +69,7 @@ export function useStudentExamAttempt() {
         examSession,
         isInitializingSession,
         elapsedSeconds,
+        elapsedSecondsRef,
         secondsRemaining,
         saveAnswerDraft,
         syncProgress,
@@ -85,6 +86,14 @@ export function useStudentExamAttempt() {
                 !exam?.runtimeAccess?.canStart &&
                 !exam?.runtimeAccess?.canResume),
         isTerminalAttempt: terminalAttemptSuspended,
+        // Stop timer, draft writes, and remote sync once the attempt is terminal.
+        // Note: we don't include examSession?.sessionId here — that would be a
+        // temporal dead zone (examSession is the return value of this same call).
+        // The session-presence guard already exists inside useExamSession itself.
+        isAttemptActive:
+            !terminalAttemptSuspended &&
+            !effectiveBlockedState.isBlocked &&
+            !uiHook.isRedirectingToTurnIn,
         onInitializeAnswers: (fn) => answersHook.setSelectedAnswers(fn),
         onLifecycleBlocked: (msg) => setLocalBlockedMessage(msg),
     });
@@ -107,13 +116,14 @@ export function useStudentExamAttempt() {
     const isTerminalAttempt = terminalAttemptSuspended || terminalLifecycle.isTerminal;
     const renderedBlockedState = terminalLifecycle.blockedState ?? effectiveBlockedState;
 
-    useAttemptSync({
+    const { flushPendingProgress } = useAttemptSync({
         isInitializingSession,
         sessionId: examSession?.sessionId,
-        elapsedSeconds,
+        elapsedSecondsRef,
         selectedAnswers: answersHook.selectedAnswers,
         saveAnswerDraft,
         syncProgress,
+        onLifecycleBlocked: (msg) => setLocalBlockedMessage(msg),
         isSuspended: isTerminalAttempt,
     });
 
@@ -268,6 +278,7 @@ export function useStudentExamAttempt() {
         isCurrentQuestionFlagged,
         currentContext,
         secondsRemaining,
+        flushPendingProgress,
         // State
         selectedAnswers: answersHook.selectedAnswers,
         reviewQuestionIds: uiHook.reviewQuestionIds,

@@ -1,4 +1,4 @@
-import { act, renderHook } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_AUDIO_ANOMALY_CONFIG } from '@sentinel/shared';
 import { useStudentExamAttempt } from './index';
@@ -6,19 +6,32 @@ import { useStudentExamAttempt } from './index';
 const {
     mockUseStudentExamData,
     mockUseExamSession,
+    mockUseExamSessionStatusQuery,
     mockUseAttemptMonitoring,
     mockUseAudioSettingsQuery,
     mockRouterReplace,
     mockReadStoredLobbyEntryMarker,
     mockReadStoredExamSession,
+    mockPrepareExamSession,
 } = vi.hoisted(() => ({
     mockUseStudentExamData: vi.fn(),
     mockUseExamSession: vi.fn(),
+    mockUseExamSessionStatusQuery: vi.fn(() => ({ data: null, isLoading: false })),
     mockUseAttemptMonitoring: vi.fn(),
     mockUseAudioSettingsQuery: vi.fn(),
     mockRouterReplace: vi.fn(),
     mockReadStoredLobbyEntryMarker: vi.fn(),
     mockReadStoredExamSession: vi.fn(),
+    mockPrepareExamSession: vi.fn().mockResolvedValue({
+        preparationToken: 'tok-1',
+        score: 10,
+        totalScore: 10,
+        percentage: 100,
+        answeredCount: 10,
+        autoGradableQuestionCount: 10,
+        manualReviewQuestionCount: 0,
+        requiresManualReview: false,
+    }),
 }));
 
 vi.mock('next/navigation', () => ({
@@ -28,7 +41,9 @@ vi.mock('next/navigation', () => ({
 }));
 
 vi.mock('@sentinel/hooks', () => ({
+    useApi: () => ({ mockClient: true }),
     useAudioSettingsQuery: () => mockUseAudioSettingsQuery(),
+    useExamSessionStatusQuery: (...args: unknown[]) => mockUseExamSessionStatusQuery(...args),
 }));
 
 vi.mock('@/app/(protected)/student/exam/[id]/_hooks/use-student-exam-stage-guard', async () => {
@@ -80,6 +95,10 @@ vi.mock('@/app/(protected)/student/exam/[id]/_hooks/use-turned-in-exam-redirect'
 
 vi.mock('./use-attempt-monitoring', () => ({
     useAttemptMonitoring: (args: unknown) => mockUseAttemptMonitoring(args),
+}));
+
+vi.mock('@sentinel/services', () => ({
+    prepareExamSession: (...args: unknown[]) => mockPrepareExamSession(...args),
 }));
 
 vi.mock('@/app/(protected)/student/exam/[id]/_lib/exam-turn-in-storage', () => ({
@@ -164,6 +183,7 @@ describe('useStudentExamAttempt', () => {
             },
             isInitializingSession: false,
             elapsedSeconds: 120,
+            elapsedSecondsRef: { current: 120 },
             secondsRemaining: 1800,
             saveAnswerDraft: vi.fn(),
             syncProgress: vi.fn(),
@@ -229,6 +249,12 @@ describe('useStudentExamAttempt', () => {
         expect(result.current.answeredCount).toBe(8);
         expect(result.current.unansweredCount).toBe(2);
         expect(result.current.unansweredQuestionLabels).toEqual(['Q1', 'Q2']);
+    });
+
+    it('exposes the flushPendingProgress boundary helper', () => {
+        const { result } = renderHook(() => useStudentExamAttempt());
+
+        expect(typeof result.current.flushPendingProgress).toBe('function');
     });
 
     it('keeps the attempt page active after valid lobby entry', () => {
@@ -307,7 +333,7 @@ describe('useStudentExamAttempt', () => {
         );
     });
 
-    it('suspends security monitoring before navigating to turn-in result review', () => {
+    it('suspends security monitoring before navigating to turn-in result review', async () => {
         const suspendSecurityMonitoring = vi.fn(() => true);
         mockUseAttemptMonitoring.mockReturnValue({
             mediaPipeVideoRef: { current: null },
@@ -339,10 +365,16 @@ describe('useStudentExamAttempt', () => {
             result.current.handleSubmit();
         });
 
+        // suspendSecurityMonitoring fires synchronously inside handleSubmit
         expect(suspendSecurityMonitoring).toHaveBeenCalledTimes(1);
-        expect(mockRouterReplace).toHaveBeenCalledWith(
-            '/student/exam/11111111-1111-1111-1111-111111111111/result',
-        );
+
+        // router.replace fires after the async prepareExamSession resolves
+        await waitFor(() => {
+            expect(mockRouterReplace).toHaveBeenCalledWith(
+                '/student/exam/11111111-1111-1111-1111-111111111111/result',
+            );
+        });
+
         expect(suspendSecurityMonitoring.mock.invocationCallOrder[0]).toBeLessThan(
             mockRouterReplace.mock.invocationCallOrder[0],
         );

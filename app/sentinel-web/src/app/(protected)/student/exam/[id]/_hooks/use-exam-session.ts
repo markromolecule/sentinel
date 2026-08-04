@@ -37,8 +37,16 @@ type UseExamSessionArgs = {
     onInitializeElapsedSeconds?: (seconds: number) => void;
     onLifecycleBlocked?: (message: string) => void;
     isTerminalAttempt?: boolean;
+    /** When false the timer, draft writes, and remote sync are all suppressed. */
+    isAttemptActive?: boolean;
 };
 
+/**
+ * Manages the exam session lifecycle: reading/writing local storage, starting a
+ * session on the server, running the elapsed-time timer, and providing stable
+ * `saveAnswerDraft` / `syncProgress` callbacks whose identities do NOT change
+ * every second as the timer ticks.
+ */
 export function useExamSession({
     examId,
     examDurationMinutes,
@@ -49,6 +57,7 @@ export function useExamSession({
     onInitializeElapsedSeconds,
     onLifecycleBlocked,
     isTerminalAttempt = false,
+    isAttemptActive = true,
 }: UseExamSessionArgs) {
     const { replace } = useRouter();
     const apiClient = useApi();
@@ -57,6 +66,15 @@ export function useExamSession({
     const [examSession, setExamSession] = useState<StoredExamSession | null>(null);
     const [isInitializingSession, setIsInitializingSession] = useState(true);
     const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+    /**
+     * Ref mirror of `elapsedSeconds` — always up to date but never causes
+     * callbacks that depend on it to be recreated.  Callers that need a
+     * snapshot at the moment of a network request should read this ref rather
+     * than closing over the state variable.
+     */
+    const elapsedSecondsRef = useRef(elapsedSeconds);
+
     const processedLobbyEntryExamIdRef = useRef<string | null>(null);
     const onInitializeAnswersRef = useRef(onInitializeAnswers);
     const onInitializeElapsedSecondsRef = useRef(onInitializeElapsedSeconds);
@@ -72,6 +90,11 @@ export function useExamSession({
         };
     }, []);
 
+    // Keep the ref in sync with state on every tick — no deps on the ref itself.
+    useEffect(() => {
+        elapsedSecondsRef.current = elapsedSeconds;
+    }, [elapsedSeconds]);
+
     useEffect(() => {
         if (typeof window === 'undefined') return;
 
@@ -86,6 +109,7 @@ export function useExamSession({
             );
             onInitializeElapsedSecondsRef.current?.(pendingTurnInPreview.elapsedSeconds);
             setElapsedSeconds(pendingTurnInPreview.elapsedSeconds);
+            elapsedSecondsRef.current = pendingTurnInPreview.elapsedSeconds;
         } else if (storedSession?.sessionId) {
             const answerDraft = readStoredExamAnswerDraft(examId, storedSession.sessionId);
             const reconciled = reconcileExamAnswerDraft(answerDraft, null);
@@ -94,14 +118,16 @@ export function useExamSession({
                 onInitializeAnswersRef.current?.(reconciled.answers);
                 onInitializeElapsedSecondsRef.current?.(reconciled.elapsedSeconds);
                 setElapsedSeconds(reconciled.elapsedSeconds);
+                elapsedSecondsRef.current = reconciled.elapsedSeconds;
             }
         }
 
         setIsInitializingSession(false);
     }, [examId]);
 
+    // Timer — only runs while the attempt is active and not terminal.
     useEffect(() => {
-        if (!examDurationMinutes || isTerminalAttempt) {
+        if (!examDurationMinutes || isTerminalAttempt || !isAttemptActive) {
             return;
         }
 
@@ -110,13 +136,22 @@ export function useExamSession({
         }, 1000);
 
         return () => window.clearInterval(timerId);
-    }, [examDurationMinutes, isTerminalAttempt]);
+    }, [examDurationMinutes, isTerminalAttempt, isAttemptActive]);
 
     const secondsRemaining = Math.max((examDurationMinutes ?? 0) * 60 - elapsedSeconds, 0);
 
+    /**
+     * Persists the current answer snapshot to local storage.
+     * Suppressed when the attempt is not active.
+     */
     const saveAnswerDraft = useCallback(
         (answers: Record<string, ExamAnswerValue>, nextElapsedSeconds: number) => {
-            if (!examSession?.sessionId || isSessionStartBlocked || isTerminalAttempt) {
+            if (
+                !examSession?.sessionId ||
+                isSessionStartBlocked ||
+                isTerminalAttempt ||
+                !isAttemptActive
+            ) {
                 return;
             }
 
@@ -127,16 +162,30 @@ export function useExamSession({
                 elapsedSeconds: nextElapsedSeconds,
             });
         },
-        [examId, examSession?.sessionId, isSessionStartBlocked, isTerminalAttempt],
+        // isAttemptActive added; elapsedSeconds intentionally omitted — callers pass it explicitly.
+        [examId, examSession?.sessionId, isSessionStartBlocked, isTerminalAttempt, isAttemptActive],
     );
 
+    /**
+     * Sends a progress snapshot to the server.
+     *
+     * `nextElapsedSeconds` defaults to the ref value so callers that fire from a
+     * debounce timer always capture the current elapsed time rather than a stale
+     * closure value.
+     */
     const syncProgress = useCallback(
         async (
             answeredCount: number,
             answers?: Record<string, ExamAnswerValue>,
-            nextElapsedSeconds = elapsedSeconds,
+            /** Defaults to the current ref value — read at call time, not closure time. */
+            nextElapsedSeconds = elapsedSecondsRef.current,
         ) => {
-            if (!examSession?.sessionId || isSessionStartBlocked || isTerminalAttempt) {
+            if (
+                !examSession?.sessionId ||
+                isSessionStartBlocked ||
+                isTerminalAttempt ||
+                !isAttemptActive
+            ) {
                 return;
             }
 
@@ -159,13 +208,14 @@ export function useExamSession({
                 }
             }
         },
+        // elapsedSeconds intentionally removed — we read from elapsedSecondsRef at call time.
         [
             apiClient,
-            elapsedSeconds,
             examSession?.sessionId,
             saveAnswerDraft,
             isSessionStartBlocked,
             isTerminalAttempt,
+            isAttemptActive,
             onLifecycleBlocked,
         ],
     );
@@ -174,6 +224,7 @@ export function useExamSession({
         examSession,
         isInitializingSession,
         elapsedSeconds,
+        elapsedSecondsRef,
         secondsRemaining,
         setElapsedSeconds,
         saveAnswerDraft,

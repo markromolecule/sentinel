@@ -25,6 +25,7 @@ export type UseAttemptSubmissionArgs = {
     suspendSecurityMonitoring: () => boolean;
     isBlocked?: boolean;
     setMonitoringPhase?: (phase: AttemptMonitoringPhase) => void;
+    flushPendingProgress?: () => Promise<void>;
 };
 
 /**
@@ -48,6 +49,7 @@ export function useAttemptSubmission({
     suspendSecurityMonitoring,
     isBlocked,
     setMonitoringPhase,
+    flushPendingProgress,
 }: UseAttemptSubmissionArgs) {
     const router = useRouter();
     const apiClient = useApi();
@@ -77,6 +79,18 @@ export function useAttemptSubmission({
 
         const scoreVisible = releaseScoreMode === 'AUTO_RELEASE';
         try {
+            try {
+                await flushPendingProgress?.();
+            } catch (flushError) {
+                if (process.env.NODE_ENV === 'development') {
+                    console.warn('[AttemptSubmission] Progress flush failed before turn-in.', {
+                        examId,
+                        sessionId,
+                        flushError,
+                    });
+                }
+            }
+
             const prepared = await prepareExamSession(apiClient, {
                 sessionId,
                 answers: selectedAnswers as ExamAttemptAnswers,
