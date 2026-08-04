@@ -5,6 +5,28 @@ export interface StorageObjectMetadata {
     mimeType: string;
 }
 
+export type EvidenceBucketReadinessIssueCode =
+    | 'BUCKET_MISSING'
+    | 'BUCKET_INACCESSIBLE'
+    | 'BUCKET_PUBLIC'
+    | 'MIME_TYPES_MISMATCH'
+    | 'FILE_SIZE_LIMIT_TOO_SMALL';
+
+export type EvidenceBucketReadinessIssue = {
+    code: EvidenceBucketReadinessIssueCode;
+    message: string;
+};
+
+export type EvidenceBucketReadinessResult = {
+    bucketName: string;
+    exists: boolean;
+    isPublic: boolean | null;
+    fileSizeLimitBytes: number | null;
+    allowedMimeTypes: string[];
+    ready: boolean;
+    issues: EvidenceBucketReadinessIssue[];
+};
+
 /**
  * Storage service to manage private evidence assets in Supabase Storage.
  * Restricts client operations via short-lived signed upload and view targets.
@@ -82,6 +104,124 @@ export class EvidenceStorageService {
             };
         } catch (err: any) {
             throw new Error(`Storage object inspection error: ${err.message}`);
+        }
+    }
+
+    /**
+     * Verifies that a private evidence bucket exists and exposes the expected
+     * server-side metadata without enumerating user objects.
+     *
+     * This readiness probe only reads bucket metadata and never lists objects,
+     * so it is safe to run during deploy verification.
+     */
+    static async verifyBucketReadiness(args: {
+        bucketName: string;
+        requiredMimeTypes: readonly string[];
+        minFileSizeLimitBytes: number;
+    }): Promise<EvidenceBucketReadinessResult> {
+        const issues: EvidenceBucketReadinessIssue[] = [];
+
+        try {
+            const { data, error } = await (supabaseAdmin.storage as any).getBucket(args.bucketName);
+
+            if (error) {
+                issues.push({
+                    code: 'BUCKET_INACCESSIBLE',
+                    message:
+                        'Unable to read evidence bucket metadata with the service-role client.',
+                });
+
+                return {
+                    bucketName: args.bucketName,
+                    exists: false,
+                    isPublic: null,
+                    fileSizeLimitBytes: null,
+                    allowedMimeTypes: [],
+                    ready: false,
+                    issues,
+                };
+            }
+
+            if (!data) {
+                issues.push({
+                    code: 'BUCKET_MISSING',
+                    message: 'Evidence bucket metadata was not returned.',
+                });
+
+                return {
+                    bucketName: args.bucketName,
+                    exists: false,
+                    isPublic: null,
+                    fileSizeLimitBytes: null,
+                    allowedMimeTypes: [],
+                    ready: false,
+                    issues,
+                };
+            }
+
+            const isPublic = Boolean(data.public);
+            const allowedMimeTypes = Array.isArray(data.allowed_mime_types)
+                ? (data.allowed_mime_types as unknown[]).filter(
+                      (value: unknown): value is string => typeof value === 'string',
+                  )
+                : [];
+            const fileSizeLimitBytes =
+                typeof data.file_size_limit === 'number' ? data.file_size_limit : null;
+
+            if (isPublic) {
+                issues.push({
+                    code: 'BUCKET_PUBLIC',
+                    message: 'Evidence bucket must remain private.',
+                });
+            }
+
+            const requiredMimeTypes = [...args.requiredMimeTypes];
+            const missingMimeTypes = requiredMimeTypes.filter(
+                (mimeType) => !allowedMimeTypes.includes(mimeType),
+            );
+
+            if (missingMimeTypes.length > 0) {
+                issues.push({
+                    code: 'MIME_TYPES_MISMATCH',
+                    message: 'Evidence bucket MIME policy is missing one or more required types.',
+                });
+            }
+
+            if (
+                fileSizeLimitBytes === null ||
+                Number.isNaN(fileSizeLimitBytes) ||
+                fileSizeLimitBytes < args.minFileSizeLimitBytes
+            ) {
+                issues.push({
+                    code: 'FILE_SIZE_LIMIT_TOO_SMALL',
+                    message: 'Evidence bucket file size limit is smaller than the configured max.',
+                });
+            }
+
+            return {
+                bucketName: args.bucketName,
+                exists: true,
+                isPublic,
+                fileSizeLimitBytes,
+                allowedMimeTypes,
+                ready: issues.length === 0,
+                issues,
+            };
+        } catch (err: any) {
+            issues.push({
+                code: 'BUCKET_INACCESSIBLE',
+                message: 'Unable to read evidence bucket metadata with the service-role client.',
+            });
+
+            return {
+                bucketName: args.bucketName,
+                exists: false,
+                isPublic: null,
+                fileSizeLimitBytes: null,
+                allowedMimeTypes: [],
+                ready: false,
+                issues,
+            };
         }
     }
 

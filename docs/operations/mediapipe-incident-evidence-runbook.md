@@ -44,6 +44,22 @@ Verification steps:
 2. Confirm signed view URLs work only for short-lived reviewer access.
 3. Confirm raw bucket paths cannot be listed or opened by non-service clients.
 
+Run the non-destructive rollout gate before enabling the feature:
+
+```bash
+pnpm --dir app/sentinel-api verify:telemetry-evidence-readiness
+```
+
+Expected output:
+
+- `ready: yes` when evidence is enabled, the allowlist is populated, the API and web Supabase URLs
+  resolve to the same project, and the bucket metadata is private and compatible.
+- `ready: no` with redacted issue codes when any rollout prerequisite is missing or mismatched.
+
+The readiness command is read-only. It checks project alignment between
+`SUPABASE_URL`/`NEXT_PUBLIC_SUPABASE_URL`, verifies bucket metadata through the service-role
+client, and never lists or mutates evidence objects.
+
 ## 4. Enable / Disable Sequence
 
 Enable sequence:
@@ -61,7 +77,9 @@ Disable sequence:
 1. Set `TELEMETRY_EVIDENCE_ENABLED=false`.
 2. Leave reconciliation enabled until pending cleanup converges.
 3. Confirm no lingering `DELETE_PENDING`, `FAILED`, or stale `PENDING_UPLOAD` rows remain.
-4. Remove institutions from the allowlist only after cleanup is complete.
+4. Re-run the readiness command after any configuration rollback to confirm the bucket and project
+   alignment still match the intended environment.
+5. Remove institutions from the allowlist only after cleanup is complete.
 
 ## 5. Retention Calculation
 
