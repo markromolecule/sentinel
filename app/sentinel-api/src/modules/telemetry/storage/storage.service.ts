@@ -6,7 +6,10 @@ import {
     type UpdateTelemetryIncidentBody,
 } from './storage.dto';
 import { IncidentPersistenceService } from './services/incident-persistence.service';
-import type { AppendEventResult } from './services/incident-persistence.types';
+import type {
+    AppendEventResult,
+    DeferredIncidentSideEffectsResult,
+} from './services/incident-persistence.types';
 import { IncidentQueryService } from './services/incident-query.service';
 import { IncidentReviewService } from './services/incident-review.service';
 import { type UserQueryScope } from './data/query-scoping';
@@ -24,6 +27,16 @@ export class TelemetryStorageService {
         payload: PersistableProctoringEvent,
     ): Promise<AppendEventResult | null> {
         return IncidentPersistenceService.appendEvent(db, payload);
+    }
+
+    /**
+     * Persists a MediaPipe evidence candidate and returns the deferred side-effect context.
+     */
+    static async appendEvidenceCandidate(
+        db: DbClient,
+        payload: PersistableProctoringEvent,
+    ): Promise<DeferredIncidentSideEffectsResult | null> {
+        return IncidentPersistenceService.appendEventDeferred(db, payload);
     }
 
     /**

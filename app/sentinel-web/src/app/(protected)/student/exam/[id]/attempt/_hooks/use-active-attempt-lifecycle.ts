@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useExamSessionStatusQuery } from '@sentinel/hooks';
@@ -38,11 +36,11 @@ export type UseActiveAttemptLifecycleArgs = {
 function isTerminalStatus(status?: ExamSessionStatusResult | null) {
     return Boolean(
         status &&
-            (status.status === 'COMPLETED' ||
-                status.lifecycleState === 'LOCKED' ||
-                status.lifecycleState === 'CLOSED' ||
-                status.lifecycleState === 'SUBMITTED' ||
-                status.lifecycleState === 'SUPERSEDED'),
+        (status.status === 'COMPLETED' ||
+            status.lifecycleState === 'LOCKED' ||
+            status.lifecycleState === 'CLOSED' ||
+            status.lifecycleState === 'SUBMITTED' ||
+            status.lifecycleState === 'SUPERSEDED'),
     );
 }
 
@@ -99,7 +97,9 @@ function buildTerminalState(status: ExamSessionStatusResult): ActiveAttemptTermi
         lifecycleState: status.lifecycleState as TerminalLifecycleState | null,
         status: status.status,
         message: status.terminalMessage,
-        historyHref: shouldNavigateToHistory ? buildStudentHistoryAttemptHref(status.attemptId) : null,
+        historyHref: shouldNavigateToHistory
+            ? buildStudentHistoryAttemptHref(status.attemptId)
+            : null,
         blockedState: buildBlockedState(status),
     };
 }
@@ -123,14 +123,20 @@ export function useActiveAttemptLifecycle({
     const statusQuery = useExamSessionStatusQuery(sessionId, isAttemptActive && !terminalState);
     const observedTerminalState =
         terminalState ??
-        (isTerminalStatus(statusQuery.data) ? buildTerminalState(statusQuery.data) : null);
+        (statusQuery.data && isTerminalStatus(statusQuery.data)
+            ? buildTerminalState(statusQuery.data)
+            : null);
 
     useEffect(() => {
-        if (!isTerminalStatus(statusQuery.data)) {
+        if (!statusQuery.data || !isTerminalStatus(statusQuery.data)) {
             return;
         }
 
-        setTerminalState((current) => current ?? buildTerminalState(statusQuery.data));
+        const nextTerminalState = buildTerminalState(statusQuery.data);
+
+        void Promise.resolve().then(() => {
+            setTerminalState((current) => current ?? nextTerminalState);
+        });
     }, [statusQuery.data]);
 
     useEffect(() => {

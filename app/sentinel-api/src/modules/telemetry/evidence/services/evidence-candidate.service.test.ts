@@ -3,7 +3,7 @@ import { HTTPException } from 'hono/http-exception';
 import { EvidenceCandidateService } from './evidence-candidate.service';
 import { TelemetryIngestionService } from '../../ingestion/ingestion.service';
 import { EvidenceUploadService } from './evidence-upload.service';
-import type { AppendEventResult } from '../../storage/services/incident-persistence.service';
+import type { DeferredIncidentSideEffectsResult } from '../../storage/services/incident-persistence.service';
 
 vi.mock('../../ingestion/ingestion.service', () => ({
     TelemetryIngestionService: {
@@ -45,9 +45,9 @@ describe('EvidenceCandidateService', () => {
         expiresAt: new Date('2026-07-28T12:02:00.000Z'),
     };
 
-    function createAppendEventResult(
-        overrides: Partial<AppendEventResult> = {},
-    ): AppendEventResult {
+    function createDeferredResult(
+        overrides: Partial<DeferredIncidentSideEffectsResult> = {},
+    ): DeferredIncidentSideEffectsResult {
         return {
             incidentId: '123e4567-e89b-12d3-a456-426614174222',
             finalSeverity: 'LOW',
@@ -56,6 +56,8 @@ describe('EvidenceCandidateService', () => {
             previousSeverity: 'LOW',
             institutionId: '123e4567-e89b-12d3-a456-426614174333',
             studentUserId: '123e4567-e89b-12d3-a456-426614174001',
+            payload,
+            runSideEffects: vi.fn().mockResolvedValue(undefined),
             ...overrides,
         };
     }
@@ -88,22 +90,21 @@ describe('EvidenceCandidateService', () => {
     });
 
     it('returns NOT_ELIGIBLE for the first and second low-severity occurrences', async () => {
+        const firstDeferred = createDeferredResult({
+            finalSeverity: 'LOW',
+            disposition: 'inserted',
+            previousSeverity: null,
+            isNew: true,
+        });
+        const secondDeferred = createDeferredResult({
+            finalSeverity: 'LOW',
+            disposition: 'aggregated',
+            previousSeverity: 'LOW',
+        });
+
         vi.mocked(TelemetryIngestionService.persistEvidenceCandidate)
-            .mockResolvedValueOnce(
-                createAppendEventResult({
-                    finalSeverity: 'LOW',
-                    disposition: 'inserted',
-                    previousSeverity: null,
-                    isNew: true,
-                }),
-            )
-            .mockResolvedValueOnce(
-                createAppendEventResult({
-                    finalSeverity: 'LOW',
-                    disposition: 'aggregated',
-                    previousSeverity: 'LOW',
-                }),
-            );
+            .mockResolvedValueOnce(firstDeferred)
+            .mockResolvedValueOnce(secondDeferred);
 
         const first = await EvidenceCandidateService.process({} as any, payload, payload.studentId);
         const second = await EvidenceCandidateService.process(
@@ -121,59 +122,48 @@ describe('EvidenceCandidateService', () => {
             evidenceDecision: 'NOT_ELIGIBLE',
         });
         expect(EvidenceUploadService.initializeUpload).not.toHaveBeenCalled();
+        expect(firstDeferred.runSideEffects).toHaveBeenCalledTimes(1);
+        expect(secondDeferred.runSideEffects).toHaveBeenCalledTimes(1);
     });
 
-    it('returns UPLOAD for the third through fifth medium-severity occurrences', async () => {
-        vi.mocked(TelemetryIngestionService.persistEvidenceCandidate)
-            .mockResolvedValueOnce(
-                createAppendEventResult({
-                    finalSeverity: 'MEDIUM',
-                    disposition: 'aggregated',
-                    previousSeverity: 'LOW',
-                }),
-            )
-            .mockResolvedValueOnce(
-                createAppendEventResult({
-                    finalSeverity: 'MEDIUM',
-                    disposition: 'aggregated',
-                    previousSeverity: 'MEDIUM',
-                }),
-            )
-            .mockResolvedValueOnce(
-                createAppendEventResult({
-                    finalSeverity: 'MEDIUM',
-                    disposition: 'aggregated',
-                    previousSeverity: 'MEDIUM',
-                }),
-            );
-
-        const results = await Promise.all([
-            EvidenceCandidateService.process({} as any, payload, payload.studentId),
-            EvidenceCandidateService.process({} as any, payload, payload.studentId),
-            EvidenceCandidateService.process({} as any, payload, payload.studentId),
-        ]);
-
-        for (const result of results) {
-            expect(result).toMatchObject({
-                telemetryDisposition: 'aggregated',
-                evidenceDecision: 'UPLOAD',
-                upload: expect.objectContaining({
-                    evidenceId: uploadTarget.evidenceId,
-                }),
-            });
-        }
-
-        expect(EvidenceUploadService.initializeUpload).toHaveBeenCalledTimes(3);
-    });
-
-    it('returns UPLOAD for the sixth high-severity occurrence', async () => {
-        vi.mocked(TelemetryIngestionService.persistEvidenceCandidate).mockResolvedValue(
-            createAppendEventResult({
-                finalSeverity: 'HIGH',
-                disposition: 'aggregated',
-                previousSeverity: 'MEDIUM',
+    it('initializes upload before running deferred side effects for eligible evidence', async () => {
+        const order: string[] = [];
+        const deferred = createDeferredResult({
+            finalSeverity: 'MEDIUM',
+            disposition: 'aggregated',
+            previousSeverity: 'LOW',
+            runSideEffects: vi.fn(async () => {
+                order.push('side-effects');
             }),
-        );
+        });
+
+        vi.mocked(TelemetryIngestionService.persistEvidenceCandidate).mockResolvedValue(deferred);
+        vi.mocked(EvidenceUploadService.initializeUpload).mockImplementation(async () => {
+            order.push('upload');
+            return uploadTarget;
+        });
+
+        const result = await EvidenceCandidateService.process({} as any, payload, payload.studentId);
+
+        expect(result).toMatchObject({
+            telemetryDisposition: 'aggregated',
+            evidenceDecision: 'UPLOAD',
+            upload: expect.objectContaining({
+                evidenceId: uploadTarget.evidenceId,
+            }),
+        });
+        expect(order).toEqual(['upload', 'side-effects']);
+        expect(deferred.runSideEffects).toHaveBeenCalledTimes(1);
+    });
+
+    it('returns UPLOAD for high-severity evidence and still runs deferred side effects', async () => {
+        const deferred = createDeferredResult({
+            finalSeverity: 'HIGH',
+            disposition: 'aggregated',
+            previousSeverity: 'MEDIUM',
+        });
+
+        vi.mocked(TelemetryIngestionService.persistEvidenceCandidate).mockResolvedValue(deferred);
 
         const result = await EvidenceCandidateService.process(
             {} as any,
@@ -185,19 +175,20 @@ describe('EvidenceCandidateService', () => {
             telemetryDisposition: 'aggregated',
             evidenceDecision: 'UPLOAD',
         });
+        expect(deferred.runSideEffects).toHaveBeenCalledTimes(1);
     });
 
     it('treats forced medium or high severity as eligible', async () => {
         vi.mocked(TelemetryIngestionService.persistEvidenceCandidate)
             .mockResolvedValueOnce(
-                createAppendEventResult({
+                createDeferredResult({
                     finalSeverity: 'MEDIUM',
                     disposition: 'inserted',
                     previousSeverity: null,
                 }),
             )
             .mockResolvedValueOnce(
-                createAppendEventResult({
+                createDeferredResult({
                     finalSeverity: 'HIGH',
                     disposition: 'inserted',
                     previousSeverity: null,
@@ -231,11 +222,11 @@ describe('EvidenceCandidateService', () => {
     });
 
     it('returns UNAVAILABLE when evidence upload is disabled or denied after persistence', async () => {
-        vi.mocked(TelemetryIngestionService.persistEvidenceCandidate).mockResolvedValue(
-            createAppendEventResult({
-                finalSeverity: 'MEDIUM',
-            }),
-        );
+        const deferred = createDeferredResult({
+            finalSeverity: 'MEDIUM',
+        });
+
+        vi.mocked(TelemetryIngestionService.persistEvidenceCandidate).mockResolvedValue(deferred);
         vi.mocked(EvidenceUploadService.initializeUpload).mockRejectedValue(
             new HTTPException(403, { message: 'Evidence disabled' }),
         );
@@ -250,14 +241,20 @@ describe('EvidenceCandidateService', () => {
             telemetryDisposition: 'aggregated',
             evidenceDecision: 'UNAVAILABLE',
         });
+        expect(deferred.runSideEffects).toHaveBeenCalledTimes(1);
     });
 
     it('returns UNAVAILABLE on quota denial or initialization failure after persistence', async () => {
-        vi.mocked(TelemetryIngestionService.persistEvidenceCandidate).mockResolvedValue(
-            createAppendEventResult({
-                finalSeverity: 'MEDIUM',
-            }),
-        );
+        const firstDeferred = createDeferredResult({
+            finalSeverity: 'MEDIUM',
+        });
+        const secondDeferred = createDeferredResult({
+            finalSeverity: 'MEDIUM',
+        });
+
+        vi.mocked(TelemetryIngestionService.persistEvidenceCandidate)
+            .mockResolvedValueOnce(firstDeferred)
+            .mockResolvedValueOnce(secondDeferred);
         vi.mocked(EvidenceUploadService.initializeUpload)
             .mockRejectedValueOnce(new HTTPException(400, { message: 'quota reached' }))
             .mockRejectedValueOnce(new Error('storage target failed'));
@@ -275,11 +272,13 @@ describe('EvidenceCandidateService', () => {
 
         expect(quotaResult.evidenceDecision).toBe('UNAVAILABLE');
         expect(failureResult.evidenceDecision).toBe('UNAVAILABLE');
+        expect(firstDeferred.runSideEffects).toHaveBeenCalledTimes(1);
+        expect(secondDeferred.runSideEffects).toHaveBeenCalledTimes(1);
     });
 
     it('passes the authoritative incident id into evidence initialization', async () => {
         vi.mocked(TelemetryIngestionService.persistEvidenceCandidate).mockResolvedValue(
-            createAppendEventResult({
+            createDeferredResult({
                 incidentId: '123e4567-e89b-12d3-a456-426614174444',
                 finalSeverity: 'MEDIUM',
             }),
@@ -297,12 +296,12 @@ describe('EvidenceCandidateService', () => {
     });
 
     it('reuses a pending duplicate row by refreshing its upload target', async () => {
-        vi.mocked(TelemetryIngestionService.persistEvidenceCandidate).mockResolvedValue(
-            createAppendEventResult({
-                disposition: 'duplicate-ignored',
-                finalSeverity: 'LOW',
-            }),
-        );
+        const deferred = createDeferredResult({
+            disposition: 'duplicate-ignored',
+            finalSeverity: 'LOW',
+        });
+
+        vi.mocked(TelemetryIngestionService.persistEvidenceCandidate).mockResolvedValue(deferred);
 
         const db = createDbForEvidenceRow({
             evidence_id: '123e4567-e89b-12d3-a456-426614174555',
@@ -319,15 +318,17 @@ describe('EvidenceCandidateService', () => {
             evidenceDecision: 'UPLOAD',
         });
         expect(EvidenceUploadService.initializeUpload).toHaveBeenCalled();
+        expect(deferred.runSideEffects).toHaveBeenCalledTimes(1);
+        expect(EvidenceUploadService.initializeUpload).toHaveBeenCalledTimes(1);
     });
 
     it('returns ALREADY_AVAILABLE for duplicate rows that are already uploaded', async () => {
-        vi.mocked(TelemetryIngestionService.persistEvidenceCandidate).mockResolvedValue(
-            createAppendEventResult({
-                disposition: 'duplicate-ignored',
-                finalSeverity: 'LOW',
-            }),
-        );
+        const deferred = createDeferredResult({
+            disposition: 'duplicate-ignored',
+            finalSeverity: 'LOW',
+        });
+
+        vi.mocked(TelemetryIngestionService.persistEvidenceCandidate).mockResolvedValue(deferred);
 
         const db = createDbForEvidenceRow({
             evidence_id: '123e4567-e89b-12d3-a456-426614174555',
@@ -344,15 +345,16 @@ describe('EvidenceCandidateService', () => {
             evidenceDecision: 'ALREADY_AVAILABLE',
         });
         expect(EvidenceUploadService.initializeUpload).not.toHaveBeenCalled();
+        expect(deferred.runSideEffects).toHaveBeenCalledTimes(1);
     });
 
     it('fails closed for duplicates without an evidence row or direct incident linkage', async () => {
-        vi.mocked(TelemetryIngestionService.persistEvidenceCandidate).mockResolvedValue(
-            createAppendEventResult({
-                disposition: 'duplicate-ignored',
-                finalSeverity: 'LOW',
-            }),
-        );
+        const deferred = createDeferredResult({
+            disposition: 'duplicate-ignored',
+            finalSeverity: 'LOW',
+        });
+
+        vi.mocked(TelemetryIngestionService.persistEvidenceCandidate).mockResolvedValue(deferred);
 
         const missingRowResult = await EvidenceCandidateService.process(
             createDbForEvidenceRow(undefined),
@@ -379,5 +381,33 @@ describe('EvidenceCandidateService', () => {
             telemetryDisposition: 'duplicate-ignored',
             evidenceDecision: 'NOT_ELIGIBLE',
         });
+        expect(deferred.runSideEffects).toHaveBeenCalledTimes(2);
+    });
+
+    it('returns UNAVAILABLE when a closed attempt denies initialization but still runs deferred effects', async () => {
+        const deferred = createDeferredResult({
+            finalSeverity: 'MEDIUM',
+            disposition: 'inserted',
+            previousSeverity: null,
+        });
+
+        vi.mocked(TelemetryIngestionService.persistEvidenceCandidate).mockResolvedValue(deferred);
+        vi.mocked(EvidenceUploadService.initializeUpload).mockRejectedValue(
+            new HTTPException(400, {
+                message: 'Evidence upload is only permitted for in-progress attempts.',
+            }),
+        );
+
+        const result = await EvidenceCandidateService.process(
+            {} as any,
+            payload,
+            payload.studentId,
+        );
+
+        expect(result).toEqual({
+            telemetryDisposition: 'inserted',
+            evidenceDecision: 'UNAVAILABLE',
+        });
+        expect(deferred.runSideEffects).toHaveBeenCalledTimes(1);
     });
 });

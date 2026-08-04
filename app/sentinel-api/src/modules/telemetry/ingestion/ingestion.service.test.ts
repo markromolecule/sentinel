@@ -4,7 +4,7 @@ import { telemetrySettingsResolverService } from '../settings/telemetry-settings
 import { telemetryPolicyService } from './services/telemetry-policy.service';
 import { TelemetryStorageService } from '../storage/storage.service';
 import { telemetryIngestionQueueService } from './services/ingestion-queue.service';
-import type { AppendEventResult } from '../storage/services/incident-persistence.service';
+import type { DeferredIncidentSideEffectsResult } from '../storage/services/incident-persistence.service';
 
 vi.mock('../settings/telemetry-settings-resolver.service', () => ({
     telemetrySettingsResolverService: {
@@ -21,6 +21,7 @@ vi.mock('./services/telemetry-policy.service', () => ({
 vi.mock('../storage/storage.service', () => ({
     TelemetryStorageService: {
         appendEvent: vi.fn(),
+        appendEvidenceCandidate: vi.fn(),
         appendBatch: vi.fn(),
     },
 }));
@@ -103,7 +104,7 @@ describe('TelemetryIngestionService.persistEvidenceCandidate', () => {
         },
     };
 
-    const appendResult: AppendEventResult = {
+    const deferredResult: DeferredIncidentSideEffectsResult = {
         incidentId: '123e4567-e89b-12d3-a456-426614174555',
         finalSeverity: 'MEDIUM',
         isNew: false,
@@ -111,6 +112,8 @@ describe('TelemetryIngestionService.persistEvidenceCandidate', () => {
         previousSeverity: 'LOW',
         institutionId: '123e4567-e89b-12d3-a456-426614174777',
         studentUserId: '123e4567-e89b-12d3-a456-426614174001',
+        payload: persistablePayload,
+        runSideEffects: vi.fn().mockResolvedValue(undefined),
     };
 
     beforeEach(() => {
@@ -122,7 +125,9 @@ describe('TelemetryIngestionService.persistEvidenceCandidate', () => {
             action: 'persist',
             payload: persistablePayload,
         } as never);
-        vi.mocked(TelemetryStorageService.appendEvent).mockResolvedValue(appendResult);
+        vi.mocked(TelemetryStorageService.appendEvidenceCandidate).mockResolvedValue(
+            deferredResult,
+        );
         vi.mocked(telemetryIngestionQueueService.submit).mockResolvedValue({
             mode: 'redis',
             jobId: 'job-1',
@@ -148,7 +153,7 @@ describe('TelemetryIngestionService.persistEvidenceCandidate', () => {
 
         expect(result).toBeNull();
         expect(telemetryPolicyService.filterImportantEvent).not.toHaveBeenCalled();
-        expect(TelemetryStorageService.appendEvent).not.toHaveBeenCalled();
+        expect(TelemetryStorageService.appendEvidenceCandidate).not.toHaveBeenCalled();
         expect(telemetryIngestionQueueService.submit).not.toHaveBeenCalled();
     });
 
@@ -163,18 +168,19 @@ describe('TelemetryIngestionService.persistEvidenceCandidate', () => {
         );
 
         expect(result).toBeNull();
-        expect(TelemetryStorageService.appendEvent).not.toHaveBeenCalled();
+        expect(TelemetryStorageService.appendEvidenceCandidate).not.toHaveBeenCalled();
         expect(telemetryIngestionQueueService.submit).not.toHaveBeenCalled();
     });
 
-    it('persists candidates inline in configured sync mode and returns the append result', async () => {
+    it('persists candidates inline in configured sync mode and returns the deferred result', async () => {
         const result = await TelemetryIngestionService.persistEvidenceCandidate(
             dbClient,
             candidatePayload as never,
         );
 
-        expect(result).toEqual(appendResult);
-        expect(TelemetryStorageService.appendEvent).toHaveBeenCalledWith(
+        expect(result).toEqual(deferredResult);
+        expect(result?.runSideEffects).toEqual(expect.any(Function));
+        expect(TelemetryStorageService.appendEvidenceCandidate).toHaveBeenCalledWith(
             dbClient,
             persistablePayload,
         );
@@ -198,8 +204,8 @@ describe('TelemetryIngestionService.persistEvidenceCandidate', () => {
             candidatePayload as never,
         );
 
-        expect(result).toEqual(appendResult);
-        expect(TelemetryStorageService.appendEvent).toHaveBeenCalledOnce();
+        expect(result).toEqual(deferredResult);
+        expect(TelemetryStorageService.appendEvidenceCandidate).toHaveBeenCalledOnce();
         expect(telemetryIngestionQueueService.submit).not.toHaveBeenCalled();
     });
 });

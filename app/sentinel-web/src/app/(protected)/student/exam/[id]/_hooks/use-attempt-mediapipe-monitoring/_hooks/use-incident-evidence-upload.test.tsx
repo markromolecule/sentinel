@@ -55,6 +55,7 @@ describe('useIncidentEvidenceUpload', () => {
                 expiresAt: '2026-07-27T12:00:00.000Z',
             },
             blob: new Blob(['frame'], { type: 'image/webp' }),
+            eventType: 'NO_FACE_DETECTED',
         });
 
         await expect(promise).resolves.toBeUndefined();
@@ -93,6 +94,7 @@ describe('useIncidentEvidenceUpload', () => {
                     expiresAt: '2026-07-27T12:00:00.000Z',
                 },
                 blob: new Blob(['frame'], { type: 'image/webp' }),
+                eventType: 'NO_FACE_DETECTED',
             }),
         ).resolves.toBeUndefined();
 
@@ -116,6 +118,7 @@ describe('useIncidentEvidenceUpload', () => {
                     expiresAt: '2026-07-27T12:00:00.000Z',
                 },
                 blob: new Blob(['frame'], { type: 'image/jpeg' }),
+                eventType: 'NO_FACE_DETECTED',
             }),
         ).rejects.toThrow('complete failed');
     });
@@ -148,6 +151,7 @@ describe('useIncidentEvidenceUpload', () => {
                 expiresAt: '2026-07-27T12:00:00.000Z',
             },
             blob: new Blob(['frame'], { type: 'image/jpeg' }),
+            eventType: 'NO_FACE_DETECTED',
         });
 
         unmount();

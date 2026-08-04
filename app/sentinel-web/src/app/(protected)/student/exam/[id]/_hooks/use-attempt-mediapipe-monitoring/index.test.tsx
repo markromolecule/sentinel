@@ -439,6 +439,7 @@ describe('use-attempt-mediapipe-monitoring', () => {
                 expiresAt: '2026-07-29T04:00:00.000Z',
             },
             blob: expect.any(Blob),
+            eventType: 'GAZE_OFF_SCREEN',
         });
         expect(mockEmitMediaPipeTelemetryEvent).not.toHaveBeenCalled();
     });
