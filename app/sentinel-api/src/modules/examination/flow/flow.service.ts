@@ -3,6 +3,7 @@ import { startSessionService } from './services/start-session.service';
 import { syncSessionService } from './services/sync-session.service';
 import { completeSessionService } from './services/complete-session.service';
 import { prepareSessionService } from './services/prepare-session.service';
+import { getSessionStatusService } from './services/get-session-status.service';
 import type { CompleteSessionBody, PrepareSessionBody, SyncSessionBody } from './flow.dto';
 
 /**
@@ -27,6 +28,13 @@ export class FlowService {
      */
     static async syncSession(db: DbClient, studentUserId: string, body: SyncSessionBody) {
         return syncSessionService({ dbClient: db, studentUserId, body });
+    }
+
+    /**
+     * Reads lightweight lifecycle status for an owned attempt without answer or score payloads.
+     */
+    static async getSessionStatus(db: DbClient, studentUserId: string, sessionId: string) {
+        return getSessionStatusService({ dbClient: db, studentUserId, sessionId });
     }
 
     static async prepareSession(db: DbClient, studentUserId: string, body: PrepareSessionBody) {

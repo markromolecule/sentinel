@@ -542,6 +542,28 @@ export type StartExamSessionResult = {
         'ATTEMPT_ALREADY_COMPLETED' | 'ATTEMPT_LOCKED' | 'ATTEMPT_CLOSED' | 'ATTEMPT_SUPERSEDED';
 };
 
+export type ExamSessionAttemptStatus =
+    | 'DRAFT'
+    | 'PUBLISHED'
+    | 'ARCHIVED'
+    | 'SCHEDULED'
+    | 'AVAILABLE'
+    | 'COMPLETED'
+    | 'IN_PROGRESS'
+    | 'UPCOMING'
+    | 'ACTIVE';
+
+export type ExamSessionStatusResult = {
+    sessionId: string;
+    attemptId: string;
+    examId: string;
+    status: ExamSessionAttemptStatus | null;
+    lifecycleState: ExamAttemptLifecycleState | null;
+    completedAt: string | null;
+    closedReason: string | null;
+    terminalMessage: string | null;
+};
+
 export type CompleteExamSessionPayload = {
     sessionId: string;
     answers: ExamAttemptAnswers;

@@ -70,5 +70,5 @@ export function clearStoredExamSession(examId: string) {
 
     window.sessionStorage.removeItem(sessionKey);
     window.sessionStorage.removeItem(lockKey);
-    window.localStorage.removeItem(buildExamAnswerDraftStorageKey(examId));
+    window.localStorage?.removeItem(buildExamAnswerDraftStorageKey(examId));
 }

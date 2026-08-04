@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useEffect, useState } from 'react';
+import { useCallback, useMemo, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAudioSettingsQuery } from '@sentinel/hooks';
 import { DEFAULT_AUDIO_ANOMALY_CONFIG } from '@sentinel/shared';
@@ -20,6 +20,7 @@ import { useAttemptSync } from './use-attempt-sync';
 import { useAttemptUIState } from './use-attempt-ui-state';
 import { useAttemptMonitoring } from './use-attempt-monitoring';
 import { useAttemptSubmission } from './use-attempt-submission';
+import { useActiveAttemptLifecycle } from '../use-active-attempt-lifecycle';
 
 import { useStudentExamStageGuard } from '@/app/(protected)/student/exam/[id]/_hooks/use-student-exam-stage-guard';
 
@@ -38,6 +39,7 @@ export function useStudentExamAttempt() {
     } = stageGuard;
 
     const [localBlockedMessage, setLocalBlockedMessage] = useState<string | null>(null);
+    const [terminalAttemptSuspended, setTerminalAttemptSuspended] = useState(false);
 
     const effectiveBlockedState = useMemo(() => {
         if (localBlockedMessage) {
@@ -77,13 +79,33 @@ export function useStudentExamAttempt() {
         isLoadingData: isLoading,
         isSessionStartBlocked:
             exam?.status === 'turned_in' ||
+            terminalAttemptSuspended ||
             effectiveBlockedState.isBlocked ||
             (Boolean(exam?.runtimeAccess) &&
                 !exam?.runtimeAccess?.canStart &&
                 !exam?.runtimeAccess?.canResume),
+        isTerminalAttempt: terminalAttemptSuspended,
         onInitializeAnswers: (fn) => answersHook.setSelectedAnswers(fn),
         onLifecycleBlocked: (msg) => setLocalBlockedMessage(msg),
     });
+
+    const handleTerminalAttempt = useCallback(() => {
+        setTerminalAttemptSuspended(true);
+        uiHook.setMonitoringPhase('suspended');
+    }, [uiHook.setMonitoringPhase]);
+
+    const terminalLifecycle = useActiveAttemptLifecycle({
+        examId,
+        sessionId: examSession?.sessionId,
+        isAttemptActive:
+            Boolean(examSession?.sessionId) &&
+            !terminalAttemptSuspended &&
+            !effectiveBlockedState.isBlocked &&
+            !uiHook.isRedirectingToTurnIn,
+        onTerminate: handleTerminalAttempt,
+    });
+    const isTerminalAttempt = terminalAttemptSuspended || terminalLifecycle.isTerminal;
+    const renderedBlockedState = terminalLifecycle.blockedState ?? effectiveBlockedState;
 
     useAttemptSync({
         isInitializingSession,
@@ -92,6 +114,7 @@ export function useStudentExamAttempt() {
         selectedAnswers: answersHook.selectedAnswers,
         saveAnswerDraft,
         syncProgress,
+        isSuspended: isTerminalAttempt,
     });
 
     const isRedirectingToHistory = useTurnedInExamRedirect({
@@ -104,11 +127,13 @@ export function useStudentExamAttempt() {
     useExamInterruption({
         examId,
         sessionId: examSession?.sessionId,
-        isEnabled: !effectiveBlockedState.isBlocked && !uiHook.isRedirectingToTurnIn,
+        isEnabled:
+            !renderedBlockedState.isBlocked && !uiHook.isRedirectingToTurnIn && !isTerminalAttempt,
         isNavigationCommitted:
             uiHook.isRedirectingToTurnIn ||
             isRedirectingToHistory ||
-            effectiveBlockedState.isBlocked,
+            renderedBlockedState.isBlocked ||
+            isTerminalAttempt,
         onBeforeInterruption: () => saveAnswerDraft(answersHook.selectedAnswers, elapsedSeconds),
     });
 
@@ -131,9 +156,10 @@ export function useStudentExamAttempt() {
         Boolean(examSession?.sessionId) &&
         Boolean(canonicalAttemptId) &&
         effectiveCameraRequired &&
-        !effectiveBlockedState.isBlocked &&
+        !renderedBlockedState.isBlocked &&
         !uiHook.isRedirectingToTurnIn &&
-        !isRedirectingToHistory;
+        !isRedirectingToHistory &&
+        !isTerminalAttempt;
     const audioSettingsQuery = useAudioSettingsQuery();
     const effectiveAudioSettings = useMemo(() => {
         if (!effectiveConfiguration?.aiRules?.audio_anomaly_detection) {
@@ -169,6 +195,7 @@ export function useStudentExamAttempt() {
         mediaPipeSandbox: effectiveMediaPipeSandbox,
         runtimeAccess: exam?.runtimeAccess,
         monitoringPhase: uiHook.monitoringPhase,
+        isTerminalAttempt,
     });
 
     const unansweredQuestions = questions.filter(
@@ -192,7 +219,7 @@ export function useStudentExamAttempt() {
         setIsRedirectingToTurnIn: uiHook.setIsRedirectingToTurnIn,
         setIsSubmitDialogOpen: uiHook.setIsSubmitDialogOpen,
         suspendSecurityMonitoring: monitoringHook.suspendSecurityMonitoring,
-        isBlocked: effectiveBlockedState.isBlocked,
+        isBlocked: renderedBlockedState.isBlocked || isTerminalAttempt,
         setMonitoringPhase: uiHook.setMonitoringPhase,
     });
 
@@ -228,8 +255,9 @@ export function useStudentExamAttempt() {
         questions,
         isLoading: isResolving,
         isInitializingSession,
-        isRedirectingHistory: isRedirectingToHistory,
-        blockedState: effectiveBlockedState,
+        isRedirectingHistory: isRedirectingToHistory || terminalLifecycle.isNavigatingToHistory,
+        isTerminalAttempt,
+        blockedState: renderedBlockedState,
         currentQuestion,
         safeQuestionIndex,
         answeredCount: answersHook.answeredCount,

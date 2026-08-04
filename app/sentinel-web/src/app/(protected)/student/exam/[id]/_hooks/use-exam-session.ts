@@ -36,6 +36,7 @@ type UseExamSessionArgs = {
     onInitializeAnswers?: (answers: Record<string, ExamAnswerValue>) => void;
     onInitializeElapsedSeconds?: (seconds: number) => void;
     onLifecycleBlocked?: (message: string) => void;
+    isTerminalAttempt?: boolean;
 };
 
 export function useExamSession({
@@ -47,6 +48,7 @@ export function useExamSession({
     onInitializeAnswers,
     onInitializeElapsedSeconds,
     onLifecycleBlocked,
+    isTerminalAttempt = false,
 }: UseExamSessionArgs) {
     const { replace } = useRouter();
     const apiClient = useApi();
@@ -99,7 +101,7 @@ export function useExamSession({
     }, [examId]);
 
     useEffect(() => {
-        if (!examDurationMinutes) {
+        if (!examDurationMinutes || isTerminalAttempt) {
             return;
         }
 
@@ -108,13 +110,13 @@ export function useExamSession({
         }, 1000);
 
         return () => window.clearInterval(timerId);
-    }, [examDurationMinutes]);
+    }, [examDurationMinutes, isTerminalAttempt]);
 
     const secondsRemaining = Math.max((examDurationMinutes ?? 0) * 60 - elapsedSeconds, 0);
 
     const saveAnswerDraft = useCallback(
         (answers: Record<string, ExamAnswerValue>, nextElapsedSeconds: number) => {
-            if (!examSession?.sessionId || isSessionStartBlocked) {
+            if (!examSession?.sessionId || isSessionStartBlocked || isTerminalAttempt) {
                 return;
             }
 
@@ -125,7 +127,7 @@ export function useExamSession({
                 elapsedSeconds: nextElapsedSeconds,
             });
         },
-        [examId, examSession?.sessionId, isSessionStartBlocked],
+        [examId, examSession?.sessionId, isSessionStartBlocked, isTerminalAttempt],
     );
 
     const syncProgress = useCallback(
@@ -134,7 +136,7 @@ export function useExamSession({
             answers?: Record<string, ExamAnswerValue>,
             nextElapsedSeconds = elapsedSeconds,
         ) => {
-            if (!examSession?.sessionId || isSessionStartBlocked) {
+            if (!examSession?.sessionId || isSessionStartBlocked || isTerminalAttempt) {
                 return;
             }
 
@@ -163,6 +165,7 @@ export function useExamSession({
             examSession?.sessionId,
             saveAnswerDraft,
             isSessionStartBlocked,
+            isTerminalAttempt,
             onLifecycleBlocked,
         ],
     );

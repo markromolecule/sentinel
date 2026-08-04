@@ -1,4 +1,5 @@
 import { useRouter } from 'next/navigation';
+import { useRef } from 'react';
 import { useApi } from '@sentinel/hooks';
 import { prepareExamSession } from '@sentinel/services';
 import type { ExamAttemptAnswers, ExamConfiguration, ExamQuestion } from '@sentinel/shared/types';
@@ -7,6 +8,8 @@ import { writeStoredExamTurnInPreview } from '@/app/(protected)/student/exam/[id
 import type { AttemptMonitoringPhase } from '@/app/(protected)/student/exam/[id]/_hooks/use-exam-monitoring';
 import { toast } from 'sonner';
 import { resolveStudentExamSessionError } from '@/app/(protected)/student/exam/[id]/_lib/student-exam-session-feedback';
+
+const requestedFullscreenExitKeys = new Set<string>();
 
 export type UseAttemptSubmissionArgs = {
     examId: string;
@@ -48,13 +51,19 @@ export function useAttemptSubmission({
 }: UseAttemptSubmissionArgs) {
     const router = useRouter();
     const apiClient = useApi();
+    const hasStartedTurnInTransitionRef = useRef(false);
 
     const proceedToTurnInReview = async () => {
-        if (isRedirectingToTurnIn || !sessionId || isBlocked) return;
+        if (isRedirectingToTurnIn || !sessionId || isBlocked || hasStartedTurnInTransitionRef.current) {
+            return;
+        }
+
+        hasStartedTurnInTransitionRef.current = true;
         setMonitoringPhase?.('submitting');
         const monitoringSuspended = suspendSecurityMonitoring();
 
         if (!monitoringSuspended) {
+            hasStartedTurnInTransitionRef.current = false;
             if (process.env.NODE_ENV === 'development') {
                 console.warn(
                     '[AttemptSubmission] Monitoring suspension failed before Turn In review.',
@@ -96,6 +105,7 @@ export function useAttemptSubmission({
 
             router.replace(`/student/exam/${examId}/result`);
         } catch (error) {
+            hasStartedTurnInTransitionRef.current = false;
             setIsRedirectingToTurnIn(false);
             toast.error(resolveStudentExamSessionError(error));
             return;
@@ -116,6 +126,12 @@ export function useAttemptSubmission({
                 return;
             }
 
+            const fullscreenExitKey = `${examId}:${sessionId}`;
+            if (requestedFullscreenExitKeys.has(fullscreenExitKey)) {
+                return;
+            }
+
+            requestedFullscreenExitKeys.add(fullscreenExitKey);
             const fullscreenExit = document.exitFullscreen?.();
 
             fullscreenExit?.catch((err) => {

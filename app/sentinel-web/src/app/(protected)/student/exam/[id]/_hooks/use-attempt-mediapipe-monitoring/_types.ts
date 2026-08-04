@@ -16,6 +16,7 @@ export type UseAttemptMediaPipeMonitoringArgs = {
     examSessionId?: string;
     attemptId?: string;
     isRedirectingToTurnIn?: boolean;
+    isTerminalAttempt?: boolean;
     runtimeAccess?: ExamRuntimeAccess | null;
 };
 

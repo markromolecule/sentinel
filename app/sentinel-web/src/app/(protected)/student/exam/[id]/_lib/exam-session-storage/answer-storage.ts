@@ -82,7 +82,7 @@ export function clearStoredExamAnswerDraft(examId: string) {
         return;
     }
 
-    window.localStorage.removeItem(buildExamAnswerDraftStorageKey(examId));
+    window.localStorage?.removeItem(buildExamAnswerDraftStorageKey(examId));
 }
 
 export type MergedAnswerDraftResult = {

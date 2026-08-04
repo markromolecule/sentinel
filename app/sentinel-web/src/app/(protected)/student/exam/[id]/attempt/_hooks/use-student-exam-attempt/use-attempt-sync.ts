@@ -13,6 +13,7 @@ export type UseAttemptSyncArgs = {
         answers: Record<string, ExamAnswerValue>,
         elapsedSeconds: number,
     ) => Promise<void>;
+    isSuspended?: boolean;
 };
 
 export function useAttemptSync({
@@ -22,6 +23,7 @@ export function useAttemptSync({
     selectedAnswers,
     saveAnswerDraft,
     syncProgress,
+    isSuspended = false,
 }: UseAttemptSyncArgs) {
     const elapsedSecondsRef = useRef(elapsedSeconds);
     const selectedAnswersRef = useRef(selectedAnswers);
@@ -36,18 +38,18 @@ export function useAttemptSync({
 
     // Local checkpoint on every change
     useEffect(() => {
-        if (isInitializingSession || !sessionId) {
+        if (isInitializingSession || !sessionId || isSuspended) {
             return;
         }
 
         if (Object.keys(selectedAnswers).length > 0) {
             saveAnswerDraft(selectedAnswers, elapsedSecondsRef.current);
         }
-    }, [isInitializingSession, saveAnswerDraft, selectedAnswers, sessionId]);
+    }, [isInitializingSession, isSuspended, saveAnswerDraft, selectedAnswers, sessionId]);
 
     // Remote sync with debounce and offline retry
     useEffect(() => {
-        if (isInitializingSession || !sessionId) {
+        if (isInitializingSession || !sessionId || isSuspended) {
             return;
         }
 
@@ -93,5 +95,5 @@ export function useAttemptSync({
             clearTimeout(timer);
             window.removeEventListener('online', handleOnline);
         };
-    }, [sessionId, isInitializingSession, saveAnswerDraft, selectedAnswers, syncProgress]);
+    }, [sessionId, isInitializingSession, isSuspended, saveAnswerDraft, selectedAnswers, syncProgress]);
 }
