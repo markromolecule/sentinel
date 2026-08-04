@@ -93,7 +93,7 @@ describe('AttemptReportView', () => {
         });
     });
 
-    it('renders readonly report content without instructor actions', () => {
+    it('renders finalized report content without instructor actions', () => {
         render(
             <AttemptReportView
                 attempt={{
@@ -162,6 +162,10 @@ describe('AttemptReportView', () => {
         );
 
         expect(screen.getByText('Strong work overall.')).toBeTruthy();
+        expect(screen.getByText('Report Finalized')).toBeTruthy();
+        expect(
+            screen.getByText('This attempt report is locked and cannot be edited.'),
+        ).toBeTruthy();
         expect(screen.queryByRole('button', { name: 'Save Overrides' })).toBeNull();
         expect(screen.queryByLabelText('Override Score')).toBeNull();
     });

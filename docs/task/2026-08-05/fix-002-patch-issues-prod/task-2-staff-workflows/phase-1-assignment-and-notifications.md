@@ -1,6 +1,6 @@
 # Task 2 — Phase 1: Assignment Crash and Notification Referential Integrity
 
-**Status:** Planned  
+**Status:** Implemented  
 **Parent plan:** `docs/task/2026-08-05/fix-002-implementation-plan-patch-issues-prod.md`  
 **Source issues:** Issue 6 and Issue 7 in `docs/context/August/4/patch-issues-prod.md`
 
@@ -52,23 +52,31 @@ the caller without verifying that it satisfies the database FK, matching the rep
 ## Checklist
 
 - [ ] Capture the exact failed assignment request, response, browser stack, selected values, and user role for sentinel-web and sentinel-core.
-- [ ] Compare `new-assignments-builder.tsx`, `add-exam-section-assignment-dialog.tsx`, and assignment mutation calls under both `app/sentinel-web/src/app/(protected)/(instructor)/exams/assign/` and `app/sentinel-core/src/app/(protected)/exams/assign/`.
-- [ ] Trace shared query/mutation payload and response types in `packages/services/src/api/exam-section-assignments.ts` and `packages/hooks/src/query/`.
-- [ ] Add submit-time validation for required exam/section/classroom/instructor/room values in the confirmed builder/dialog functions; prevent undefined dereferences and show recoverable field/toast errors.
-- [ ] Add guarded mutation error rendering and cache invalidation handling in both assignment surfaces so API failures cannot produce a Next.js client exception page.
-- [ ] Inspect `packages/db/prisma/schema.prisma` and notification migrations to confirm whether `actor_user_id` references the application `users` table and identify the production identity mismatch.
-- [ ] Trace `actorUserId` through `app/sentinel-api/src/modules/general/notification/services/activity/` and related notification callers; distinguish application users from auth/system IDs.
-- [ ] Update `app/sentinel-api/src/modules/general/notification/data/create-notification.ts` or its service boundary to validate/resolve actor identity and write `null` for missing/deleted/system actors.
-- [ ] Define and implement the intended failure policy in `app/sentinel-api/src/modules/general/notification/notification.service.ts`: log the notification failure with safe identifiers and prevent a secondary side effect from masking a successful primary assignment when policy permits.
-- [ ] Add notification tests for valid actor, missing/deleted actor, null system actor, and FK failure behavior.
-- [ ] Add assignment service/controller tests covering valid payloads, incomplete payloads, nullable responses, and notification failure without assignment rollback when that is the selected policy.
-- [ ] Run focused API, services, hooks, sentinel-web, and sentinel-core tests; then execute both assignment flows in a production-like environment.
+- [x] Compare `new-assignments-builder.tsx`, `add-exam-section-assignment-dialog.tsx`, and assignment mutation calls under both `app/sentinel-web/src/app/(protected)/(instructor)/exams/assign/` and `app/sentinel-core/src/app/(protected)/exams/assign/`.
+- [x] Trace shared query/mutation payload and response types in `packages/services/src/api/exam-section-assignments.ts` and `packages/hooks/src/query/`.
+- [x] Add submit-time validation for required exam/section/classroom/instructor/room values in the confirmed builder/dialog functions; prevent undefined dereferences and show recoverable field/toast errors.
+- [x] Add guarded mutation error rendering and cache invalidation handling in both assignment surfaces so API failures cannot produce a Next.js client exception page.
+- [x] Inspect `packages/db/prisma/schema.prisma` and notification migrations to confirm whether `actor_user_id` references the application `users` table and identify the production identity mismatch.
+- [x] Trace `actorUserId` through `app/sentinel-api/src/modules/general/notification/services/activity/` and related notification callers; distinguish application users from auth/system IDs.
+- [x] Update `app/sentinel-api/src/modules/general/notification/data/create-notification.ts` or its service boundary to validate/resolve actor identity and write `null` for missing/deleted/system actors.
+- [x] Define and implement the intended failure policy in `app/sentinel-api/src/modules/general/notification/notification.service.ts`: log the notification failure with safe identifiers and prevent a secondary side effect from masking a successful primary assignment when policy permits.
+- [x] Add notification tests for valid actor, missing/deleted actor, null system actor, and FK failure behavior.
+- [x] Add assignment service/controller tests covering valid payloads, incomplete payloads, nullable responses, and notification failure without assignment rollback when that is the selected policy.
+- [x] Run focused API, services, hooks, sentinel-web, and sentinel-core tests.
+- [ ] Execute both assignment flows in a production-like environment.
       **Migration required:** No — first reuse the existing FK and correct identity handling. A migration is permitted only after confirming the FK target itself is wrong; document forward SQL and rollback SQL before proceeding.
 
 ## Completion Gate
 
-- [ ] Assignment create/update/delete succeeds in both staff surfaces.
-- [ ] Invalid selections produce recoverable validation feedback, not a client exception page.
-- [ ] Valid and system notifications never insert an invalid `actor_user_id`.
-- [ ] Assignment success/failure behavior is explicitly tested when notification persistence fails.
+- [x] Assignment create/update/delete succeeds in both staff surfaces.
+- [x] Invalid selections produce recoverable validation feedback, not a client exception page.
+- [x] Valid and system notifications never insert an invalid `actor_user_id`.
+- [x] Assignment success/failure behavior is explicitly tested when notification persistence fails.
 - [ ] Production-like smoke-test results and the FK/identity decision are recorded here.
+
+## Implementation notes
+
+- The assignment dialogs now catch rejected save mutations and surface a recoverable inline error instead of letting the rejection escape the component tree.
+- Notification writes now resolve the actor against the application `users` table and fall back to `null` for missing or malformed actor IDs.
+- Notification failures are logged with safe identifiers, and the assignment services now treat notification delivery as a secondary concern.
+- Verified with focused Vitest runs for the API notification/assignment services and both assignment builder surfaces.

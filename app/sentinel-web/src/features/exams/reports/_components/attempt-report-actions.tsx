@@ -17,10 +17,6 @@ export function AttemptReportActions({
     onSaveAndFinalize,
     isFinalized = false,
 }: AttemptReportActionsProps) {
-    if (!editable || !hasSubmitHandler) {
-        return null;
-    }
-
     if (isFinalized) {
         return (
             <div className="flex items-center gap-2.5">
@@ -35,6 +31,10 @@ export function AttemptReportActions({
                 </span>
             </div>
         );
+    }
+
+    if (!editable || !hasSubmitHandler) {
+        return null;
     }
 
     return (

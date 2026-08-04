@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as React from 'react';
 import { NewAssignmentsBuilder } from './new-assignments-builder';
@@ -200,6 +200,26 @@ describe('NewAssignmentsBuilder', () => {
                     },
                 ],
             },
+        });
+    });
+
+    it('keeps the dialog recoverable when the batch mutation fails', async () => {
+        render(<NewAssignmentsBuilder examId="exam-1" currentAssignments={[]} />);
+
+        fireEvent.click(screen.getByTestId('classroom-select-cls-1'));
+        fireEvent.change(screen.getByTestId('bulk-instructor-input'), {
+            target: { value: 'user-1' },
+        });
+        fireEvent.change(screen.getByTestId('room-input'), { target: { value: 'room-1' } });
+
+        mockBatchMutate.mockRejectedValueOnce(new Error('Assignment service unavailable'));
+
+        fireEvent.click(screen.getByRole('button', { name: 'Save assignments' }));
+
+        await waitFor(() => {
+            expect(screen.getByRole('alert').textContent).toContain(
+                'Assignment service unavailable',
+            );
         });
     });
 

@@ -1,5 +1,6 @@
 import { type DbClient } from '@sentinel/db';
 import type { NotificationActionType, NotificationResourceType } from '@sentinel/shared/schema';
+import { resolveNotificationActorUserId } from './resolve-notification-actor-user-id';
 
 export type CreateNotificationDataArgs = {
     dbClient: DbClient;
@@ -38,12 +39,13 @@ export async function createNotificationData(args: CreateNotificationDataArgs) {
         !isValidUuid && resourceId
             ? { ...(metadata ?? {}), originalResourceId: resourceId }
             : metadata;
+    const resolvedActorUserId = await resolveNotificationActorUserId(dbClient, actorUserId);
 
     return await dbClient
         .insertInto('notifications')
         .values({
             recipient_user_id: recipientUserId,
-            actor_user_id: actorUserId ?? null,
+            actor_user_id: resolvedActorUserId,
             institution_id: institutionId ?? null,
             title,
             message,
