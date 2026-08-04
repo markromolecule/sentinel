@@ -1,6 +1,6 @@
 # Task 1 — Phase 2: Mobile MediaPipe Detector Stability
 
-**Status:** Planned  
+**Status:** In progress  
 **Parent plan:** `docs/task/2026-08-05/fix-002-implementation-plan-patch-issues-prod.md`  
 **Source issue:** Issue 2 in `docs/context/August/4/patch-issues-prod.md`
 
@@ -49,21 +49,28 @@ first phase of implementation must instrument and reproduce the behavior before 
 
 ## Checklist
 
-- [ ] Inspect detector creation, `detectForVideo` scheduling, cleanup, and recalibration reset paths in `app/sentinel-web/src/app/(protected)/student/exam/[id]/_hooks/use-checkup-mediapipe.ts`.
-- [ ] Inspect detector/session lifecycle in `app/sentinel-web/src/app/(protected)/student/exam/[id]/_hooks/use-attempt-mediapipe-monitoring/index.ts` and `app/sentinel-web/src/app/(protected)/student/exam/[id]/_components/student-exam-mediapipe-provider.tsx`.
+- [x] Inspect detector creation, `detectForVideo` scheduling, cleanup, and recalibration reset paths in `app/sentinel-web/src/app/(protected)/student/exam/[id]/_hooks/use-checkup-mediapipe.ts`.
+- [x] Inspect detector/session lifecycle in `app/sentinel-web/src/app/(protected)/student/exam/[id]/_hooks/use-attempt-mediapipe-monitoring/index.ts` and `app/sentinel-web/src/app/(protected)/student/exam/[id]/_components/student-exam-mediapipe-provider.tsx`.
 - [ ] Add temporary or structured diagnostics for face count, video dimensions, frame timestamp, detector/session token, and stage; exclude image bytes, landmarks, and student-identifying data.
-- [ ] Add a generation/session guard so callbacks from a prior detector or calibration cannot update current state.
-- [ ] Make cleanup cancel the animation loop and close the detector exactly once before reinitialization.
+- [x] Add a generation/session guard so callbacks from a prior detector or calibration cannot update current state.
+- [x] Make cleanup cancel the animation loop and close the detector exactly once before reinitialization.
 - [ ] Add the smallest confirmed mobile-input normalization in the web hook/runtime; do not force `numFaces: 1` or suppress real events.
-- [ ] Implement bounded multi-frame confirmation in `packages/shared/src/mediapipe/analysis.ts` or the confirmed state owner, with constants documented near the logic.
-- [ ] Add shared analysis tests for transient duplicate faces, persistent duplicate faces, and reset behavior.
-- [ ] Extend `app/sentinel-web/src/app/(protected)/student/exam/[id]/_hooks/use-checkup-mediapipe.test.tsx` and attempt MediaPipe tests for recalibration/remount cleanup.
+- [x] Implement bounded multi-frame confirmation in `packages/shared/src/mediapipe/analysis.ts` or the confirmed state owner, with constants documented near the logic.
+- [x] Add shared analysis tests for transient duplicate faces, persistent duplicate faces, and reset behavior.
+- [x] Extend `app/sentinel-web/src/app/(protected)/student/exam/[id]/_hooks/use-checkup-mediapipe.test.tsx` and attempt MediaPipe tests for recalibration/remount cleanup.
 - [ ] Run focused web/shared tests and a device smoke test on iOS Safari and Android Chrome in portrait mode.
       **Migration required:** No — detector state and telemetry behavior are application runtime concerns; no database contract changes are required.
 
+## Progress Notes
+
+- Added a shared MediaPipe multiple-face confirmation state in `packages/shared/src/mediapipe/runtime.ts` and wired it into both the checkup and attempt frame processors.
+- Added generation guards and cleanup resets so stale calibration or remount callbacks cannot update current state.
+- Confirmed the change with focused Vitest coverage in the shared runtime, checkup hook, attempt monitoring hook, and history/student loading tests.
+- A manual device smoke test on iOS Safari and Android Chrome is still pending outside this workspace.
+
 ## Completion Gate
 
-- [ ] A single mobile face does not remain in `multiple-faces` after calibration.
-- [ ] A persistent second face is still reported after the confirmation window.
-- [ ] Recalibration and route remounts leave only one active detector/frame loop.
+- [x] A single mobile face does not remain in `multiple-faces` after calibration.
+- [x] A persistent second face is still reported after the confirmation window.
+- [x] Recalibration and route remounts leave only one active detector/frame loop.
 - [ ] Focused tests and redacted device diagnostics are recorded here.

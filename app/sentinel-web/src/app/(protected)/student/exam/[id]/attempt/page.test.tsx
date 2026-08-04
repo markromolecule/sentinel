@@ -388,9 +388,10 @@ describe('StudentExamAttemptPage', () => {
             },
             isInitializingSession: false,
             elapsedSeconds: 120,
+            elapsedSecondsRef: { current: 120 },
             secondsRemaining: 1800,
             saveAnswerDraft: vi.fn(),
-            syncProgress: vi.fn(),
+            syncProgress: vi.fn().mockResolvedValue(undefined),
         });
         mockExamMonitoring.mockReturnValue({
             securityLockReason: null,
@@ -527,6 +528,10 @@ describe('StudentExamAttemptPage', () => {
 
         expect(screen.getByText('Exam Closed')).toBeTruthy();
         expect(screen.getByText('This exam attempt has been closed.')).toBeTruthy();
+        expect(screen.getByRole('link', { name: /return to classroom/i })).toBeTruthy();
+        expect(
+            screen.getByRole('link', { name: /return to classroom/i }).getAttribute('href'),
+        ).toBe('/student/classroom');
         expect(screen.queryByRole('button', { name: /answer 4/i })).toBeNull();
         expect(screen.queryByRole('button', { name: /turn in exam/i })).toBeNull();
         expect(mockStudentLiveInspectionBridge).not.toHaveBeenCalled();
@@ -697,9 +702,10 @@ describe('StudentExamAttemptPage', () => {
             },
             isInitializingSession: false,
             elapsedSeconds: 120,
+            elapsedSecondsRef: { current: 120 },
             secondsRemaining: 1800,
             saveAnswerDraft: vi.fn(),
-            syncProgress: vi.fn(),
+            syncProgress: vi.fn().mockResolvedValue(undefined),
         });
 
         render(<StudentExamAttemptPage />);
@@ -884,9 +890,10 @@ describe('StudentExamAttemptPage', () => {
             },
             isInitializingSession: false,
             elapsedSeconds: 120,
+            elapsedSecondsRef: { current: 120 },
             secondsRemaining: 1800,
             saveAnswerDraft: vi.fn(),
-            syncProgress: vi.fn(),
+            syncProgress: vi.fn().mockResolvedValue(undefined),
         });
 
         mockUseAudioAnomalyWorker.mockReturnValue({

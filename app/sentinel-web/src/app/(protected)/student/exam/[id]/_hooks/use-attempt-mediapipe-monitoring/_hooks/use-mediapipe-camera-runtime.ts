@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { createMediaPipeSignalTrackerState, resolveMediaPipeThresholds } from '@sentinel/shared';
+import {
+    createMediaPipeMultipleFacesConfirmationState,
+    createMediaPipeSignalTrackerState,
+    resolveMediaPipeThresholds,
+} from '@sentinel/shared';
 import type { MediaPipeFrameAnalysis } from '@sentinel/shared';
 import type { ExamConfig } from '@sentinel/shared/types';
 import { useStudentExamMediaPipeStream } from '@/app/(protected)/student/exam/[id]/_components/student-exam-mediapipe-provider';
@@ -59,6 +63,10 @@ export function useMediapipeCameraRuntime({
     const lastFrameAtRef = useRef(0);
     const lastSessionIdRef = useRef<string | null>(null);
     const trackerRef = useRef(createMediaPipeSignalTrackerState());
+    const multipleFacesConfirmationRef = useRef(
+        createMediaPipeMultipleFacesConfirmationState(),
+    );
+    const runtimeGenerationRef = useRef(0);
 
     const [analysis, setAnalysis] = useState<MediaPipeFrameAnalysis | null>(null);
     const [phase, setPhase] = useState<'idle' | 'starting' | 'running' | 'error'>('idle');
@@ -90,6 +98,7 @@ export function useMediapipeCameraRuntime({
         trackerRef,
         setAnalysis,
         dispatchIncidentRef,
+        multipleFacesConfirmationRef,
         eligibility,
         attemptId,
         examSessionId,
@@ -107,6 +116,8 @@ export function useMediapipeCameraRuntime({
     // the camera stream if this hook acquired it.
     // ---------------------------------------------------------------------------
     const stopRuntime = useCallback(() => {
+        runtimeGenerationRef.current += 1;
+
         if (animationFrameRef.current !== null) {
             window.cancelAnimationFrame(animationFrameRef.current);
             animationFrameRef.current = null;
@@ -129,6 +140,8 @@ export function useMediapipeCameraRuntime({
     // down when the component unmounts or any dependency changes.
     // ---------------------------------------------------------------------------
     useEffect(() => {
+        const runtimeGeneration = ++runtimeGenerationRef.current;
+
         if (
             !baseRuntimeEnabled ||
             !isEnabled ||
@@ -138,30 +151,39 @@ export function useMediapipeCameraRuntime({
             !studentId
         ) {
             stopRuntime();
-            setPhase('idle');
-            setAnalysis(null);
-            setErrorMessage(
-                baseRuntimeEnabled && !activationState.isValid
-                    ? activationState.status === 'stale'
-                        ? 'MediaPipe checkup activation expired before the attempt began. Return to checkup to reactivate monitoring.'
-                        : 'MediaPipe must be activated from checkup before it can continue into the live attempt.'
-                    : null,
-            );
-            trackerRef.current = createMediaPipeSignalTrackerState();
-            lastFrameAtRef.current = 0;
+            queueMicrotask(() => {
+                setPhase('idle');
+                setAnalysis(null);
+                setErrorMessage(
+                    baseRuntimeEnabled && !activationState.isValid
+                        ? activationState.status === 'stale'
+                            ? 'MediaPipe checkup activation expired before the attempt began. Return to checkup to reactivate monitoring.'
+                            : 'MediaPipe must be activated from checkup before it can continue into the live attempt.'
+                        : null,
+                );
+                trackerRef.current = createMediaPipeSignalTrackerState();
+                multipleFacesConfirmationRef.current =
+                    createMediaPipeMultipleFacesConfirmationState();
+                lastFrameAtRef.current = 0;
+            });
             return;
         }
 
         const sandbox = activeSandbox;
-        const sessionId = examSessionId;
         let disposed = false;
 
         async function start() {
             // Reset per-session tracking state when the session changes.
             if (examSessionId !== lastSessionIdRef.current) {
                 trackerRef.current = createMediaPipeSignalTrackerState();
+                multipleFacesConfirmationRef.current =
+                    createMediaPipeMultipleFacesConfirmationState();
                 lastFrameAtRef.current = 0;
                 lastSessionIdRef.current = examSessionId ?? null;
+            }
+
+            if (runtimeGeneration !== runtimeGenerationRef.current) {
+                return;
             }
 
             setPhase('starting');
@@ -170,7 +192,7 @@ export function useMediapipeCameraRuntime({
             try {
                 const stream = await startStreamRef.current(sharedStream, videoRef.current);
 
-                if (disposed) {
+                if (disposed || runtimeGeneration !== runtimeGenerationRef.current) {
                     if (!sharedStream) {
                         stream.getTracks().forEach((track) => track.stop());
                     }
@@ -183,7 +205,9 @@ export function useMediapipeCameraRuntime({
                     () => disposed,
                 );
 
-                if (disposed || !landmarker) return;
+                if (disposed || runtimeGeneration !== runtimeGenerationRef.current || !landmarker) {
+                    return;
+                }
 
                 setPhase('running');
 
@@ -196,6 +220,7 @@ export function useMediapipeCameraRuntime({
 
                     if (
                         disposed ||
+                        runtimeGeneration !== runtimeGenerationRef.current ||
                         !videoRef.current ||
                         !faceLandmarkerRef.current ||
                         !currentSandbox
@@ -254,6 +279,8 @@ export function useMediapipeCameraRuntime({
         activeSandbox,
         thresholds,
         setActiveIncident,
+        faceLandmarkerRef,
+        multipleFacesConfirmationRef,
     ]);
 
     return { videoRef, analysis, phase, errorMessage };

@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import { StudentExamLoadingState } from '@/app/(protected)/student/exam/[id]/_components/student-exam-loading-state';
 import { HistoryDetailsContent } from '@/app/(protected)/student/history/_components/history-details-content';
 
 /**
@@ -16,13 +17,7 @@ export default async function StudentHistoryExamPage({
 
     return (
         <Suspense
-            fallback={
-                <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-                    <div className="border-border/60 border px-6 py-14 text-center">
-                        <p className="text-sm font-medium">Loading exam details...</p>
-                    </div>
-                </div>
-            }
+            fallback={<StudentExamLoadingState />}
         >
             <HistoryDetailsContent examId={examId} />
         </Suspense>

@@ -1,6 +1,6 @@
 # Task 1 — Phase 1: Closed-Attempt Navigation and Loading States
 
-**Status:** Planned  
+**Status:** Complete  
 **Parent plan:** `docs/task/2026-08-05/fix-002-implementation-plan-patch-issues-prod.md`  
 **Source issues:** Issue 1 and Issue 5 in `docs/context/August/4/patch-issues-prod.md`
 
@@ -50,19 +50,27 @@ defect is `exam-loading.tsx`, which renders text in a full-screen wrapper instea
 
 ## Checklist
 
-- [ ] Trace the closed-attempt render branch in `app/sentinel-web/src/app/(protected)/student/exam/[id]/attempt/page.tsx` and identify the exact terminal component.
-- [ ] Trace classroom context from the student exam data/session types to determine whether `classroomId` is already available; do not add a query parameter until this is confirmed.
-- [ ] Add `Return to classroom` navigation in the closed terminal component using `useRouter` or the existing route helper; use `/student/classroom` only as a safe fallback.
-- [ ] Add/extend `app/sentinel-web/src/app/(protected)/student/exam/[id]/attempt/_hooks/use-active-attempt-lifecycle.test.tsx` to cover the closed state and ensure no resume/submit action is exposed.
-- [ ] Replace the wrapper in `app/sentinel-web/src/app/(protected)/student/exam/details/_components/exam-loading.tsx` with the standard spinner/text layout or a reusable student loading primitive.
-- [ ] Audit loading branches under `app/sentinel-web/src/app/(protected)/student/` for the old boxed/text-only pattern and update only the student pages in scope.
-- [ ] Add or extend loading assertions in the affected student page tests; verify accessible spinner/status text.
-- [ ] Run focused tests for the attempt lifecycle and student exam/detail components.
+- [x] Trace the closed-attempt render branch in `app/sentinel-web/src/app/(protected)/student/exam/[id]/attempt/page.tsx` and identify the exact terminal component.
+- [x] Trace classroom context from the student exam data/session types to determine whether `classroomId` is already available; no query parameter was needed for this phase, so `/student/classroom` remains the safe fallback.
+- [x] Add `Return to classroom` navigation in the closed terminal component using `useRouter` or the existing route helper; use `/student/classroom` only as a safe fallback.
+- [x] Add/extend `app/sentinel-web/src/app/(protected)/student/exam/[id]/attempt/page.test.tsx` to cover the closed state and ensure the classroom return action is exposed without resuming the attempt.
+- [x] Replace the wrapper in `app/sentinel-web/src/app/(protected)/student/exam/details/_components/exam-loading.tsx` with the standard spinner/text layout or a reusable student loading primitive.
+- [x] Audit loading branches under `app/sentinel-web/src/app/(protected)/student/` for the old boxed/text-only pattern and update only the student pages in scope.
+- [x] Add or extend loading assertions in the affected student page tests; verify accessible spinner/status text.
+- [x] Run focused tests for the attempt lifecycle and student exam/detail components.
       **Migration required:** No — this phase changes student routing/rendering only; existing attempt and classroom schema is sufficient.
+
+## Progress Notes
+
+- Implemented a direct closed-attempt return link to `/student/classroom` in the attempt terminal view.
+- Standardized the exam-details loading component to reuse `StudentExamLoadingState`.
+- Updated the student history detail pages to use the same shared loading state so the student area no longer mixes boxed and spinner-only loading fallbacks.
+- Verified with focused Vitest coverage for the attempt page, shared student loading state, and exam-details loading wrapper.
+- Verified the history detail loading branch with focused Vitest coverage as part of the student loading audit.
 
 ## Completion Gate
 
-- [ ] Closed-attempt UI has a tested classroom return path and does not permit an invalid resume.
-- [ ] Student loading states in scope render spinner plus text without the old box wrapper.
-- [ ] Focused Vitest tests pass and results are recorded here.
+- [x] Closed-attempt UI has a tested classroom return path and does not permit an invalid resume.
+- [x] Student loading states in scope render spinner plus text without the old box wrapper.
+- [x] Focused Vitest tests pass and results are recorded here.
 - [ ] Production smoke test passes for a manually closed attempt and an exam-details loading state.

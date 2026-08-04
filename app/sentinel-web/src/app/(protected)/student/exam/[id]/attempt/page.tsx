@@ -1,11 +1,13 @@
 'use client';
 
+import Link from 'next/link';
 import { StudentExamLoadingState } from '@/app/(protected)/student/exam/[id]/_components/student-exam-loading-state';
 import { StudentLiveInspectionBridge } from '@/app/(protected)/student/exam/[id]/_components/student-live-inspection-bridge';
 import { AttemptView } from '@/app/(protected)/student/exam/[id]/attempt/_components/attempt-view';
 import { useStudentExamAttempt } from '@/app/(protected)/student/exam/[id]/attempt/_hooks/use-student-exam-attempt';
 import { StudentFlowShell } from '../_components/student-flow-shell';
 import { StudentFlowPageHeader } from '../../_components/student-flow-primitives';
+import { Button } from '@sentinel/ui';
 
 /**
  * The main container page for a student's active exam attempt.
@@ -36,6 +38,15 @@ export default function StudentExamAttemptPage() {
                             blockedState.message ?? 'This exam cannot be entered right now.'
                         }
                     />
+                    {blockedState.code === 'CLOSED' ? (
+                        <div className="flex">
+                            <Button asChild size="lg" className="w-fit">
+                                <Link href="/student/classroom" replace>
+                                    Return to classroom
+                                </Link>
+                            </Button>
+                        </div>
+                    ) : null}
                 </div>
             </StudentFlowShell>
         );
