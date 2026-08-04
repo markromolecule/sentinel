@@ -463,7 +463,7 @@ describe('Examination Flow Integration', () => {
             manualReviewQuestionCount: 0,
             requiresManualReview: false,
         });
-        expect(SessionRepository.completeSession).toHaveBeenCalledWith(mockDb, {
+        expect(SessionRepository.completeSession).toHaveBeenCalledWith(expect.any(Object), {
             sessionId: '8e08d10d-a25f-4d6d-9b5f-8ca176fb8bc6',
             score: 5,
             initialScore: 5,
@@ -478,6 +478,10 @@ describe('Examination Flow Integration', () => {
                 scoringVersion: 'fix-001-student-score-integrity-v1',
                 score: 5,
                 totalScore: 5,
+                rubric: expect.objectContaining({
+                    id: 'legacy-standard-v1',
+                    source: 'LEGACY',
+                }),
             }),
             scoringVersion: 'fix-001-student-score-integrity-v1',
         });
@@ -557,7 +561,7 @@ describe('Examination Flow Integration', () => {
             manualReviewQuestionCount: 1,
             requiresManualReview: true,
         });
-        expect(SessionRepository.completeSession).toHaveBeenCalledWith(mockDb, {
+        expect(SessionRepository.completeSession).toHaveBeenCalledWith(expect.any(Object), {
             sessionId: '8e08d10d-a25f-4d6d-9b5f-8ca176fb8bc6',
             score: 0,
             initialScore: 0,
@@ -574,6 +578,10 @@ describe('Examination Flow Integration', () => {
                 score: 0,
                 totalScore: 15,
                 requiresManualReview: true,
+                rubric: expect.objectContaining({
+                    id: 'legacy-standard-v1',
+                    source: 'LEGACY',
+                }),
             }),
             scoringVersion: 'fix-001-student-score-integrity-v1',
         });
@@ -715,6 +723,22 @@ describe('Examination Flow Integration', () => {
             percentage: 100,
             answeredCount: 1,
         });
+        expect(SessionRepository.completeSession).toHaveBeenCalledWith(
+            expect.any(Object),
+            expect.objectContaining({
+                sessionId: '8e08d10d-a25f-4d6d-9b5f-8ca176fb8bc6',
+                scoreSnapshot: expect.objectContaining({
+                    version: 'attempt-score.v1',
+                    scoringVersion: 'fix-001-student-score-integrity-v1',
+                    score: 5,
+                    totalScore: 5,
+                    rubric: expect.objectContaining({
+                        id: 'legacy-standard-v1',
+                        source: 'LEGACY',
+                    }),
+                }),
+            }),
+        );
         expect(appendExamAttemptLifecycleEvent).not.toHaveBeenCalled();
     });
 

@@ -8,7 +8,8 @@ export function respondWithRouteError(
     fallbackMessage = 'Internal Server Error',
 ) {
     const status = typeof error?.status === 'number' ? error.status : 500;
-    const message = error?.message || fallbackMessage;
+    const message =
+        status >= 500 ? fallbackMessage : (error?.message || fallbackMessage);
 
     if (status >= 500) {
         console.error(label, error);

@@ -1,28 +1,11 @@
 import { HTTPException } from 'hono/http-exception';
 import { type ExamAttemptAnswers } from '@sentinel/shared';
+import { executeTransaction, type DbClient } from '@sentinel/db';
 import { SessionRepository } from '../../data/session.repository';
 import { appendExamAttemptLifecycleEvent } from '../../../lifecycle/services/lifecycle-event.service';
 import { ATTEMPT_SCORING_VERSION, parseScoreSnapshot } from '../attempt-snapshot.service';
-import type { DbClient } from '@sentinel/db';
 import type { CompletedAttemptResult, PersistCompleteSessionArgs } from './complete-session.types';
 import { assertCompletedAttemptTimestamp } from './complete-session.guards';
-
-async function executeInTransactionIfAvailable<T>(
-    dbClient: DbClient,
-    callback: (trx: DbClient) => Promise<T>,
-) {
-    const maybeTransactional = dbClient as DbClient & {
-        transaction?: () => {
-            execute: <R>(cb: (trx: DbClient) => Promise<R>) => Promise<R>;
-        };
-    };
-
-    if (typeof maybeTransactional.transaction === 'function') {
-        return maybeTransactional.transaction().execute(callback);
-    }
-
-    return callback(dbClient);
-}
 
 export async function persistCompletedSession(
     args: PersistCompleteSessionArgs,
@@ -38,7 +21,7 @@ export async function persistCompletedSession(
     } = args;
     const { attempt, examId, studentId } = attemptContext;
 
-    return executeInTransactionIfAvailable(dbClient, async (trx) => {
+    return executeTransaction(async (trx) => {
         const updatedAttempt = await SessionRepository.completeSession(trx, {
             sessionId: body.sessionId,
             score: summary.score,
