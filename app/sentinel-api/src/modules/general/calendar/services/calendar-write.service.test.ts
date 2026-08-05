@@ -175,6 +175,34 @@ describe('calendar-write.service', () => {
             );
         });
 
+        it('persists NOTE calendar events with the authenticated creator id', async () => {
+            const payload = {
+                title: 'Private study note',
+                startDate: '2026-05-20T08:00:00Z',
+                targetAudience: 'STUDENTS',
+                eventType: 'NOTE',
+            } as any;
+            vi.mocked(dataLayer.createCalendarEventData).mockResolvedValue({
+                event_id: 'event-note-1',
+            } as any);
+            vi.mocked(queryService.getCalendarEventById).mockResolvedValue({
+                event_id: 'event-note-1',
+            } as any);
+
+            await createCalendarEvent({
+                dbClient: mockDbClient,
+                payload,
+                userId: 'student-user',
+                institutionId: 'inst-1',
+            });
+
+            expect(dataLayer.createCalendarEventData).toHaveBeenCalledWith(mockDbClient, {
+                payload,
+                createdBy: 'student-user',
+                institutionId: 'inst-1',
+            });
+        });
+
         it('should create an event and return fully hydrated record', async () => {
             const payload = {
                 title: 'New Event',

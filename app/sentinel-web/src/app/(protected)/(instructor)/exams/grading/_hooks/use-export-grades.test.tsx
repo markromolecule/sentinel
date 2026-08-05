@@ -36,7 +36,7 @@ describe('useExportGrades', () => {
                 name: 'Zara Student',
                 studentId: '2026-0002',
                 sectionId: '33333333-3333-3333-3333-333333333333',
-                sectionName: 'BSCS 3A',
+                sectionName: 'BSCS 3B',
                 submissionDate: '2026-04-18T09:30:00.000Z',
                 score: 92,
                 maxScore: 100,
@@ -66,7 +66,8 @@ describe('useExportGrades', () => {
 
         const exportedRows = mockJsonToSheet.mock.calls[0]?.[0] as Record<string, unknown>[];
         expect(exportedRows.map((row) => row.Name)).toEqual(['Alice Student', 'Zara Student']);
-        expect(exportedRows[0]?.Section).toBe('BSCS 3A');
+        expect(exportedRows.map((row) => row.Section)).toEqual(['BSCS 3A', 'BSCS 3B']);
+        expect(exportedRows[0]?.Section).not.toBe('N/A');
         expect(exportedRows[0]?.['Student ID']).toBe('2026-0001');
         expect(mockBookAppendSheet).toHaveBeenCalledWith(
             mockBookNew.mock.results[0]?.value,

@@ -50,7 +50,7 @@ export default function StudentHeader() {
 
     return (
         <header className="border-border/40 bg-background/80 sticky top-0 z-50 w-full border-b backdrop-blur-md">
-            <div className="text-foreground relative container mx-auto flex h-16 max-w-7xl items-center justify-between px-0">
+            <div className="text-foreground relative container mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
                 {/* Logo */}
                 <div className="relative z-10 flex shrink-0 items-center gap-2">
                     <Link href="/student/classroom" className="flex items-center gap-2">
@@ -96,7 +96,7 @@ export default function StudentHeader() {
                 </div>
 
                 {/* Actions & Profile */}
-                <div className="relative z-10 flex shrink-0 items-center gap-2 md:gap-4">
+                <div className="relative z-10 flex shrink-0 items-center gap-2 pr-1 md:gap-4 sm:pr-0">
                     <UserSearchBar redirectPath="/student/message" iconOnly={true} />
 
                     <WebNotificationDropdown

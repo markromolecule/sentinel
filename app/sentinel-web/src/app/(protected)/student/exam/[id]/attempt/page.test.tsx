@@ -16,6 +16,8 @@ const {
     mockUseExamSessionStatusQuery,
     mockStudentLiveInspectionBridge,
     mockPrepareExamSession,
+    mockExamAttemptShell,
+    mockExamAttemptRuntimeHeader,
 } = vi.hoisted(() => ({
     mockRouterReplace: vi.fn(),
     mockStudentExamData: vi.fn(),
@@ -27,6 +29,8 @@ const {
     mockUseExamSessionStatusQuery: vi.fn(),
     mockStudentLiveInspectionBridge: vi.fn(() => null),
     mockPrepareExamSession: vi.fn(),
+    mockExamAttemptShell: vi.fn(),
+    mockExamAttemptRuntimeHeader: vi.fn(),
 }));
 
 vi.mock('next/navigation', () => ({
@@ -132,6 +136,7 @@ vi.mock('@sentinel/ui', async () => {
 vi.mock('@/features/exams/_components/engine', () => ({
     ExamAttemptShell: ({
         title,
+        timerLabel,
         status,
         toolbar,
         questionRail,
@@ -140,23 +145,37 @@ vi.mock('@/features/exams/_components/engine', () => ({
         children,
     }: {
         title: string;
+        timerLabel: string;
         status: ReactNode;
         toolbar: ReactNode;
         questionRail: ReactNode;
         passagePanel: ReactNode;
         footer: ReactNode;
         children: ReactNode;
-    }) => (
-        <div>
-            <h1>{title}</h1>
-            <div>{status}</div>
-            <div>{toolbar}</div>
-            <div>{questionRail}</div>
-            <div>{passagePanel}</div>
-            <div>{children}</div>
-            <div>{footer}</div>
-        </div>
-    ),
+    }) => {
+        mockExamAttemptShell({
+            title,
+            timerLabel,
+            status,
+            toolbar,
+            questionRail,
+            passagePanel,
+            footer,
+            children,
+        });
+
+        return (
+            <div>
+                <h1>{title}</h1>
+                <div>{status}</div>
+                <div>{toolbar}</div>
+                <div>{questionRail}</div>
+                <div>{passagePanel}</div>
+                <div>{children}</div>
+                <div>{footer}</div>
+            </div>
+        );
+    },
     type: {},
     hasAnswer: (value: unknown) => value !== null && value !== undefined && value !== '',
     formatTimer: (seconds: number) => `${seconds}s`,
@@ -175,25 +194,56 @@ vi.mock('@/features/exams/_components/engine', () => ({
                 : (questionPassageContent ?? ''),
     }),
     ExamAttemptRuntimeHeader: ({
+        answeredCount,
+        totalQuestions,
+        flaggedCount,
         onSubmit,
         onTogglePassagePanel,
+        onToggleCompactPassage,
         showPassagePanel,
         hasPassage,
+        isSubmitting,
     }: {
+        answeredCount: number;
+        totalQuestions: number;
+        flaggedCount: number;
         onSubmit: () => void;
         onTogglePassagePanel: () => void;
+        onToggleCompactPassage: () => void;
         showPassagePanel: boolean;
         hasPassage?: boolean;
-    }) => (
-        <div>
-            {hasPassage ? (
-                <button onClick={onTogglePassagePanel}>
-                    {showPassagePanel ? 'Hide passage panel' : 'Show passage panel'}
+        isSubmitting?: boolean;
+    }) => {
+        mockExamAttemptRuntimeHeader({
+            answeredCount,
+            totalQuestions,
+            flaggedCount,
+            onSubmit,
+            onTogglePassagePanel,
+            onToggleCompactPassage,
+            showPassagePanel,
+            hasPassage,
+            isSubmitting,
+        });
+
+        return (
+            <div>
+                <div>
+                    {answeredCount}/{totalQuestions} answered
+                </div>
+                <div>{flaggedCount} flagged</div>
+                {hasPassage ? <button onClick={onToggleCompactPassage}>Show passage</button> : null}
+                {hasPassage ? (
+                    <button onClick={onTogglePassagePanel}>
+                        {showPassagePanel ? 'Hide passage panel' : 'Show passage panel'}
+                    </button>
+                ) : null}
+                <button onClick={onSubmit} disabled={isSubmitting}>
+                    {isSubmitting ? 'Preparing...' : 'Turn in exam'}
                 </button>
-            ) : null}
-            <button onClick={onSubmit}>Turn in exam</button>
-        </div>
-    ),
+            </div>
+        );
+    },
     ExamAttemptRuntimeFooter: ({
         currentQuestionIndex,
         totalQuestions,
@@ -441,6 +491,34 @@ describe('StudentExamAttemptPage', () => {
 
         expect(screen.getByText(/mediapipe off-screen/i)).toBeTruthy();
         expect(screen.getByRole('button', { name: /answer 4/i })).toBeTruthy();
+    });
+
+    it('passes the current timer label and runtime handlers into the attempt shell', () => {
+        render(<StudentExamAttemptPage />);
+
+        expect(mockExamAttemptShell).toHaveBeenCalled();
+        expect(mockExamAttemptShell).toHaveBeenCalledWith(
+            expect.objectContaining({
+                title: 'MediaPipe attempt',
+                timerLabel: '1800s',
+            }),
+        );
+
+        expect(mockExamAttemptRuntimeHeader).toHaveBeenCalled();
+        expect(mockExamAttemptRuntimeHeader).toHaveBeenCalledWith(
+            expect.objectContaining({
+                answeredCount: 0,
+                totalQuestions: 1,
+                flaggedCount: 0,
+                hasPassage: true,
+                showPassagePanel: true,
+                isSubmitting: false,
+            }),
+        );
+        const runtimeHeaderArgs = mockExamAttemptRuntimeHeader.mock.calls.at(-1)?.[0];
+        expect(typeof runtimeHeaderArgs?.onToggleCompactPassage).toBe('function');
+        expect(typeof runtimeHeaderArgs?.onTogglePassagePanel).toBe('function');
+        expect(typeof runtimeHeaderArgs?.onSubmit).toBe('function');
     });
 
     it('defers the phone question count to the attempt footer', () => {

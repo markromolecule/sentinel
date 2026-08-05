@@ -21,16 +21,18 @@ export class CalendarService {
         {
             institutionId,
             role,
+            userId,
             month,
             year,
         }: {
             institutionId: string;
             role?: string;
+            userId: string;
             month?: string;
             year?: string;
         },
     ) {
-        return await getCalendarEvents(dbClient, { institutionId, role, month, year });
+        return await getCalendarEvents(dbClient, { institutionId, role, userId, month, year });
     }
 
     /**

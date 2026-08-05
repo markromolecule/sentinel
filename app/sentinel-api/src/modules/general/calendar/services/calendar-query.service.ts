@@ -10,16 +10,18 @@ export async function getCalendarEvents(
     {
         institutionId,
         role,
+        userId,
         month,
         year,
     }: {
         institutionId: string;
         role?: string;
+        userId: string;
         month?: string;
         year?: string;
     },
 ) {
-    return await getCalendarEventsData(dbClient, { institutionId, role, month, year });
+    return await getCalendarEventsData(dbClient, { institutionId, role, userId, month, year });
 }
 
 /**

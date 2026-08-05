@@ -9,11 +9,7 @@ import {
 } from '@/lib/routes/student-history-routes';
 
 function getHistoryHref(item: HistoryCardProps['item']) {
-    if (
-        item.status === 'upcoming' ||
-        item.status === 'available' ||
-        item.status === 'in-progress'
-    ) {
+    if (item.status === 'available' || item.status === 'in-progress') {
         return `/student/exam/${item.examId}`;
     }
 
@@ -27,12 +23,18 @@ function getHistoryHref(item: HistoryCardProps['item']) {
 export function HistoryCard({ item }: HistoryCardProps) {
     const href = getHistoryHref(item);
     const isActive = item.status === 'available' || item.status === 'in-progress';
+    const isUpcoming = item.status === 'upcoming';
+    const displayTimestamp = item.completedAt ?? item.availableAt ?? item.dueAt;
 
-    return (
-        <Link
-            href={href}
-            className="group bg-card border-border/50 hover:border-primary/30 hover:bg-accent/5 flex items-center gap-3 rounded-none border px-3 py-2 transition-all duration-200 sm:min-h-[80px] sm:gap-5 sm:px-4 sm:py-3"
-        >
+    const cardClasses = cn(
+        'bg-card border-border/50 flex items-center gap-3 rounded-none border px-3 py-2 transition-all duration-200 sm:min-h-[80px] sm:gap-5 sm:px-4 sm:py-3',
+        isUpcoming
+            ? 'border-border/40 bg-card cursor-default'
+            : 'group hover:border-primary/30 hover:bg-accent/5',
+    );
+
+    const content = (
+        <>
             {/* Unified Score Box - Sharp Edge */}
             <div className="border-border bg-muted/50 group-hover:bg-muted group-hover:border-primary/20 flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-none border transition-colors sm:h-14 sm:w-14">
                 <span className="text-foreground text-lg leading-none font-bold sm:text-xl">
@@ -82,7 +84,7 @@ export function HistoryCard({ item }: HistoryCardProps) {
                 <div className="text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs sm:text-[13px]">
                     <span className="flex items-center gap-1.5 whitespace-nowrap">
                         <Calendar className="h-3.5 w-3.5 shrink-0 opacity-70" />
-                        {formatDateTimeLabel(item.completedAt ?? item.dueAt ?? item.availableAt)}
+                        {formatDateTimeLabel(displayTimestamp)}
                     </span>
                     <span className="flex items-center gap-1.5 whitespace-nowrap">
                         <Clock className="h-3.5 w-3.5 shrink-0 opacity-70" />
@@ -113,8 +115,23 @@ export function HistoryCard({ item }: HistoryCardProps) {
                     {isActive ? 'Open Exam' : item.status.replace('_', ' ')}
                 </span>
 
-                <ChevronRight className="text-muted-foreground/30 group-hover:text-primary h-5 w-5 transition-all duration-300 group-hover:translate-x-1" />
+                {!isUpcoming ? (
+                    <ChevronRight
+                        data-testid="history-card-chevron"
+                        className="text-muted-foreground/30 group-hover:text-primary h-5 w-5 transition-all duration-300 group-hover:translate-x-1"
+                    />
+                ) : null}
             </div>
+        </>
+    );
+
+    if (isUpcoming) {
+        return <div className={cardClasses}>{content}</div>;
+    }
+
+    return (
+        <Link href={href} className={cardClasses}>
+            {content}
         </Link>
     );
 }

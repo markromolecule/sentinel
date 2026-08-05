@@ -28,6 +28,7 @@ describe('CalendarService Facade', () => {
         const result = await CalendarService.getCalendarEvents(mockDbClient, {
             institutionId: 'inst-1',
             role: 'student',
+            userId: 'user-1',
             month: '5',
             year: '2026',
         });
@@ -35,6 +36,7 @@ describe('CalendarService Facade', () => {
         expect(queryService.getCalendarEvents).toHaveBeenCalledWith(mockDbClient, {
             institutionId: 'inst-1',
             role: 'student',
+            userId: 'user-1',
             month: '5',
             year: '2026',
         });

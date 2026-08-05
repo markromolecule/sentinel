@@ -22,12 +22,14 @@ describe('calendar-query.service', () => {
 
             const result = await getCalendarEvents(mockDbClient, {
                 institutionId: 'inst-123',
+                userId: 'user-999',
                 month: '05',
                 year: '2026',
             });
 
             expect(dataLayer.getCalendarEventsData).toHaveBeenCalledWith(mockDbClient, {
                 institutionId: 'inst-123',
+                userId: 'user-999',
                 month: '05',
                 year: '2026',
             });
@@ -40,6 +42,7 @@ describe('calendar-query.service', () => {
             await getCalendarEvents(mockDbClient, {
                 institutionId: 'inst-123',
                 role: 'support',
+                userId: 'user-999',
                 month: '06',
                 year: '2026',
             });
@@ -47,6 +50,7 @@ describe('calendar-query.service', () => {
             expect(dataLayer.getCalendarEventsData).toHaveBeenCalledWith(mockDbClient, {
                 institutionId: 'inst-123',
                 role: 'support',
+                userId: 'user-999',
                 month: '06',
                 year: '2026',
             });

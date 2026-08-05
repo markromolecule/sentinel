@@ -53,11 +53,11 @@ const students: GradingStudent[] = [
 ];
 
 describe('GradingStudentList', () => {
-    it('renders a flat DataTable with all student rows', () => {
+    it('renders a flat DataTable with all student rows while search is active', () => {
         render(
             <GradingStudentList
                 students={students}
-                searchValue=""
+                searchValue="Charlie"
                 onSearchChange={() => {}}
                 onSectionChange={() => {}}
                 availableSections={[

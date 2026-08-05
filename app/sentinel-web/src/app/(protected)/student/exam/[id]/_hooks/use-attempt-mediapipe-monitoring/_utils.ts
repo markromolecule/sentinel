@@ -10,11 +10,15 @@ export function mapNormalizedLandmarksToMediaPipeLandmarks(
 ) {
     return landmarksByFace.map((landmarks) =>
         landmarks.map((landmark) => ({
-            x: landmark.x,
-            y: landmark.y,
-            z: landmark.z,
+            x: normalizeMediaPipeCoordinate(landmark.x),
+            y: normalizeMediaPipeCoordinate(landmark.y),
+            z: normalizeMediaPipeCoordinate(landmark.z),
         })),
     );
+}
+
+function normalizeMediaPipeCoordinate(value: number) {
+    return Math.round(value * 10000) / 10000;
 }
 
 /**

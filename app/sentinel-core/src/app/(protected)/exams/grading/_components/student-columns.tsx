@@ -28,7 +28,7 @@ export const studentColumns: ColumnDef<GradingStudent>[] = [
         accessorKey: 'sectionName',
         header: 'Section',
         cell: ({ row }) => {
-            const sectionName = row.getValue('sectionName') as string | null;
+            const sectionName = row.original.sectionName;
             return <div>{sectionName || <span className="text-muted-foreground">-</span>}</div>;
         },
     },

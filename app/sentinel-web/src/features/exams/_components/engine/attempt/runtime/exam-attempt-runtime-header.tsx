@@ -32,16 +32,16 @@ export function ExamAttemptRuntimeHeader({
     isSubmitting,
 }: ExamAttemptRuntimeHeaderProps) {
     return (
-        <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap lg:justify-end">
+        <div className="contents">
             <Badge
                 variant="secondary"
-                className="rounded-md px-2.5 py-1 text-[11px] sm:px-3 sm:text-xs"
+                className="order-2 rounded-md px-2.5 py-1 text-[11px] sm:order-none sm:px-3 sm:text-xs"
             >
                 {answeredCount}/{totalQuestions} answered
             </Badge>
             <Badge
                 variant="secondary"
-                className="rounded-md px-2.5 py-1 text-[11px] sm:px-3 sm:text-xs"
+                className="order-3 rounded-md px-2.5 py-1 text-[11px] sm:order-none sm:px-3 sm:text-xs"
             >
                 {flaggedCount} flagged
             </Badge>
@@ -52,7 +52,7 @@ export function ExamAttemptRuntimeHeader({
                     <Button
                         type="button"
                         variant="outline"
-                        className="h-10 gap-2 rounded-md px-3 md:hidden"
+                        className="order-4 h-10 gap-2 rounded-md px-3 md:hidden"
                         onClick={onToggleCompactPassage}
                     >
                         <PanelLeftOpen className="h-4 w-4" />
@@ -93,7 +93,7 @@ export function ExamAttemptRuntimeHeader({
                 type="button"
                 onClick={onSubmit}
                 disabled={isSubmitting}
-                className="rounded-md px-4"
+                className="order-5 basis-full rounded-md px-4 sm:order-none sm:basis-auto"
             >
                 {isSubmitting ? 'Preparing...' : 'Turn In'}
             </Button>
