@@ -5,6 +5,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useAuth } from './auth-provider';
 import { MESSAGES_QUERY_KEYS } from '@sentinel/shared/constants';
+import {
+    applyMessageRealtimePayload,
+} from './query/messages/message-cache';
 
 type UseMessageRealtimeArgs = {
     conversationId?: string;
@@ -49,18 +52,14 @@ export function useMessageRealtime(args: UseMessageRealtimeArgs = {}) {
                     table: 'messages',
                     filter: `conversation_id=eq.${conversationId}`,
                 },
-                () => {
-                    // Invalidate messages for this specific conversation
-                    void queryClient.invalidateQueries({
-                        queryKey: MESSAGES_QUERY_KEYS.messages(conversationId),
+                (payload) => {
+                    applyMessageRealtimePayload({
+                        queryClient,
+                        payload,
+                        currentUserId: user.id,
+                        conversationId,
+                        invalidateList,
                     });
-
-                    // Also invalidate the conversation list to update the preview
-                    if (invalidateList) {
-                        void queryClient.invalidateQueries({
-                            queryKey: MESSAGES_QUERY_KEYS.conversations(),
-                        });
-                    }
                 },
             );
         } else {
@@ -76,13 +75,13 @@ export function useMessageRealtime(args: UseMessageRealtimeArgs = {}) {
                     schema: 'public',
                     table: 'messages',
                 },
-                () => {
-                    // Invalidate conversation list preview
-                    if (invalidateList) {
-                        void queryClient.invalidateQueries({
-                            queryKey: MESSAGES_QUERY_KEYS.conversations(),
-                        });
-                    }
+                (payload) => {
+                    applyMessageRealtimePayload({
+                        queryClient,
+                        payload,
+                        currentUserId: user.id,
+                        invalidateList,
+                    });
                 },
             );
         }

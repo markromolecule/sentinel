@@ -83,9 +83,22 @@ export const MANAGEMENT_ITEMS: SidebarItem[] = [
     },
 ];
 
+export const COMMUNICATION_ITEMS: SidebarItem[] = [
+    {
+        title: 'Messages',
+        url: '/messages',
+        icon: MessageSquare,
+    },
+    {
+        title: 'Announcements',
+        url: '/announcements',
+        icon: Megaphone,
+    },
+];
+
 export const USER_MANAGEMENT_ITEMS: SidebarItem[] = [
     {
-        title: 'Identity & Access',
+        title: 'IAM',
         url: '/users',
         icon: Users,
     },
@@ -93,19 +106,19 @@ export const USER_MANAGEMENT_ITEMS: SidebarItem[] = [
 
 export const CONFIGURATION_ITEMS: SidebarItem[] = [
     {
-        title: 'Access Control',
+        title: 'RBAC',
         url: '/control',
         icon: ShieldCheck,
-    },
-    {
-        title: 'PDF Templates',
-        url: '/pdf-templates',
-        icon: FileStack,
     },
     {
         title: 'Telemetry',
         url: '/telemetry',
         icon: Activity,
+    },
+    {
+        title: 'Templates',
+        url: '/pdf-templates',
+        icon: FileStack,
     },
 ];
 
@@ -117,7 +130,7 @@ export const ANALYTICS_ITEMS: SidebarItem[] = [
     },
 
     {
-        title: 'System Logs',
+        title: 'Logs',
         url: '/logs',
         icon: FileText,
     },
@@ -125,19 +138,6 @@ export const ANALYTICS_ITEMS: SidebarItem[] = [
         title: 'Feedback',
         url: '/feedbacks',
         icon: ClipboardList,
-    },
-];
-
-export const COMMUNICATION_ITEMS: SidebarItem[] = [
-    {
-        title: 'Messages',
-        url: '/messages',
-        icon: MessageSquare,
-    },
-    {
-        title: 'Announcements',
-        url: '/announcements',
-        icon: Megaphone,
     },
 ];
 

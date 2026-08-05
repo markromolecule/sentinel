@@ -46,9 +46,9 @@ export function SuperAdminSidebar() {
         { label: 'Overview', items: DASHBOARD_ITEMS, showSeparator: true },
         { label: 'Management', items: MANAGEMENT_ITEMS, showSeparator: true },
         { label: 'User Management', items: USER_MANAGEMENT_ITEMS, showSeparator: true },
+        { label: 'Communication', items: COMMUNICATION_ITEMS, showSeparator: true },
         { label: 'Configuration', items: filteredConfigurationItems, showSeparator: true },
         { label: 'Analytics & Logs', items: ANALYTICS_ITEMS, showSeparator: true },
-        { label: 'Communication', items: COMMUNICATION_ITEMS, showSeparator: true },
         { label: 'Resources', items: RESOURCES_ITEMS, showSeparator: false },
     ].filter((section) => section.items.length > 0);
 

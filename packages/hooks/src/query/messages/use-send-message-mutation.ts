@@ -3,7 +3,9 @@ import { sendMessage } from '@sentinel/services';
 import { useApi } from '../../api-provider';
 import { type ConversationMessage } from '@sentinel/shared/types';
 import { MESSAGES_QUERY_KEYS } from '@sentinel/shared/constants';
+import { useAuth } from '../../auth-provider';
 import { toast } from 'sonner';
+import { applyMessageRealtimePayload } from './message-cache';
 
 export type UseSendMessageMutationArgs = UseMutationOptions<
     ConversationMessage,
@@ -21,6 +23,7 @@ export type UseSendMessageMutationArgs = UseMutationOptions<
 export function useSendMessageMutation(args: UseSendMessageMutationArgs = {}) {
     const queryClient = useQueryClient();
     const apiClient = useApi();
+    const { user } = useAuth();
 
     return useMutation<ConversationMessage, Error, { conversationId: string; content: string }>({
         ...args,
@@ -34,6 +37,14 @@ export function useSendMessageMutation(args: UseSendMessageMutationArgs = {}) {
             return sendMessage(apiClient, conversationId, normalizedContent);
         },
         onSuccess: async (data, variables, context) => {
+            applyMessageRealtimePayload({
+                queryClient,
+                payload: { eventType: 'INSERT', new: data },
+                currentUserId: user?.id ?? '',
+                conversationId: variables.conversationId,
+                invalidateList: false,
+            });
+
             await Promise.all([
                 queryClient.invalidateQueries({
                     queryKey: MESSAGES_QUERY_KEYS.messages(variables.conversationId),

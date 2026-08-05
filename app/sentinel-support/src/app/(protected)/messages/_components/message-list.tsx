@@ -32,6 +32,10 @@ interface MessageListProps {
     canCreateConversation?: boolean;
 }
 
+function getAvatarSrc(user: { avatar?: string | null; avatarUrl?: string | null }) {
+    return user.avatarUrl ?? user.avatar ?? undefined;
+}
+
 function SkeletonRow() {
     return (
         <div
@@ -138,7 +142,7 @@ export function MessageList({
                                     className="hover:bg-muted/50 border-border/50 flex w-full items-center gap-4 border-b p-4 text-left transition-colors duration-150"
                                 >
                                     <Avatar className="border-background h-10 w-10 border-2">
-                                        <AvatarImage src={user.avatarUrl ?? undefined} alt={name} />
+                                        <AvatarImage src={getAvatarSrc(user)} alt={name} />
                                         <AvatarFallback className="bg-primary/10 text-primary">
                                             {initials}
                                         </AvatarFallback>
@@ -182,7 +186,7 @@ export function MessageList({
                                 <div className="relative shrink-0">
                                     <Avatar className="border-background h-10 w-10 border-2 md:h-12 md:w-12">
                                         <AvatarImage
-                                            src={participant.avatar ?? undefined}
+                                            src={getAvatarSrc(participant)}
                                             alt={participant.name}
                                         />
                                         <AvatarFallback className="bg-primary/10 text-primary">

@@ -3,6 +3,7 @@ import { markConversationRead } from '@sentinel/services';
 import { useApi } from '../../api-provider';
 import { MESSAGES_QUERY_KEYS } from '@sentinel/shared/constants';
 import { toast } from 'sonner';
+import { clearConversationUnreadCount } from './message-cache';
 
 export type UseMarkConversationReadMutationArgs = UseMutationOptions<
     { success: boolean },
@@ -25,6 +26,11 @@ export function useMarkConversationReadMutation(args: UseMarkConversationReadMut
         ...args,
         mutationFn: ({ conversationId }) => markConversationRead(apiClient, conversationId),
         onSuccess: async (data, variables, context) => {
+            clearConversationUnreadCount({
+                queryClient,
+                conversationId: variables.conversationId,
+            });
+
             await queryClient.invalidateQueries({
                 queryKey: MESSAGES_QUERY_KEYS.conversations(),
             });

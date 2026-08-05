@@ -24,6 +24,10 @@ interface ChatWindowProps {
     isLoading?: boolean;
 }
 
+function getAvatarSrc(user: { avatar?: string | null; avatarUrl?: string | null }) {
+    return user.avatarUrl ?? user.avatar ?? undefined;
+}
+
 function ChatSkeleton() {
     return (
         <div className="bg-muted/5 custom-scrollbar min-h-0 flex-1 basis-0 animate-pulse space-y-4 overflow-y-auto p-4 md:space-y-6 md:p-6">
@@ -117,7 +121,7 @@ export function ChatWindow({
                     </Button>
                     <div className="relative shrink-0">
                         <Avatar className="border-border h-8 w-8 border md:h-10 md:w-10">
-                            <AvatarImage src={participant.avatar} />
+                            <AvatarImage src={getAvatarSrc(participant)} />
                             <AvatarFallback className="bg-primary/10 text-primary">
                                 {participant.name.slice(0, 2).toUpperCase()}
                             </AvatarFallback>
@@ -186,7 +190,7 @@ export function ChatWindow({
                                     <div className="w-8 flex-shrink-0">
                                         {showAvatar && (
                                             <Avatar className="border-border h-8 w-8 border">
-                                                <AvatarImage src={participant.avatar} />
+                                                <AvatarImage src={getAvatarSrc(participant)} />
                                                 <AvatarFallback>
                                                     {participant.name.charAt(0)}
                                                 </AvatarFallback>
