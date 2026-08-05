@@ -14,7 +14,7 @@ vi.mock('next/navigation', () => ({
 }));
 
 describe('GradingStudentList', () => {
-    it('renders grouped section cards with their student rows', () => {
+    it('keeps grouped section labels correct while a search filter is active', () => {
         const sections: GradingStudentSection[] = [
             {
                 sectionId: '11111111-1111-1111-1111-111111111111',
@@ -76,7 +76,7 @@ describe('GradingStudentList', () => {
             <GradingStudentList
                 examId="33333333-3333-3333-3333-333333333333"
                 sections={sections}
-                searchValue=""
+                searchValue="Charlie"
                 onSearchChange={() => {}}
                 onSectionChange={() => {}}
                 availableSections={[

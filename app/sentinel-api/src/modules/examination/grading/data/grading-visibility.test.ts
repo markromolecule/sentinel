@@ -11,7 +11,7 @@ import { buildGetGradingExamsQuery } from './get-grading-exams';
 import { buildGetGradingStudentsQuery } from './get-grading-students';
 import { buildStaffExamVisibilityPredicates } from '../../assign/services/exam-access.service';
 
-vi.mock('../../assign/services/exam-access', () => ({
+vi.mock('../../assign/services/exam-access.service', () => ({
     buildStaffExamVisibilityPredicates: vi.fn(),
 }));
 

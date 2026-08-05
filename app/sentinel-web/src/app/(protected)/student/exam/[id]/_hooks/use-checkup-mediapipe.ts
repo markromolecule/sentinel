@@ -24,6 +24,7 @@ import {
     type TelemetrySettings,
 } from '@sentinel/shared';
 import type { ExamConfiguration } from '@sentinel/shared/types';
+import { recordMediaPipeFrameDiagnostics } from '../_lib/mediapipe-diagnostics';
 
 const MEDIAPIPE_WASM_PATH = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.34/wasm';
 const MEDIAPIPE_MODEL_PATH =
@@ -343,6 +344,17 @@ export function useCheckupMediaPipe({
                     const landmarksByFace = mapNormalizedLandmarksToMediaPipeLandmarks(
                         result.faceLandmarks ?? [],
                     );
+
+                    recordMediaPipeFrameDiagnostics({
+                        stage: 'checkup',
+                        sessionToken: null,
+                        detectorToken: `checkup:${runtimeGeneration}`,
+                        runtimeGeneration,
+                        frameTimestampMs: now,
+                        videoWidth: videoRef.current.videoWidth,
+                        videoHeight: videoRef.current.videoHeight,
+                        faceCount: landmarksByFace.length,
+                    });
 
                     const activeConfidenceThreshold = Math.max(
                         0.35,

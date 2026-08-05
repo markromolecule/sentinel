@@ -13,6 +13,7 @@ import {
     isMediaPipeTelemetryEventEnabled,
     writeMonitoringEventTrace,
 } from '@/app/(protected)/student/exam/[id]/_lib/web-telemetry-client';
+import { recordMediaPipeFrameDiagnostics } from '@/app/(protected)/student/exam/[id]/_lib/mediapipe-diagnostics';
 import type { MediaPipeAttemptIncident, ResolvedMediaPipeSandbox } from '../_types';
 import {
     mapNormalizedLandmarksToMediaPipeLandmarks,
@@ -43,6 +44,7 @@ export type UseMediaPipeFrameProcessorArgs = {
     attemptId?: string;
     examSessionId?: string;
     studentId?: string;
+    runtimeGeneration: number;
     setActiveIncident: (incident: MediaPipeAttemptIncident | null) => void;
 };
 
@@ -72,6 +74,7 @@ export function useMediaPipeFrameProcessor({
     attemptId,
     examSessionId,
     studentId,
+    runtimeGeneration,
     setActiveIncident,
 }: UseMediaPipeFrameProcessorArgs): UseMediaPipeFrameProcessorResult {
     const processFrame = useCallback(
@@ -88,6 +91,17 @@ export function useMediaPipeFrameProcessor({
             const landmarksByFace = mapNormalizedLandmarksToMediaPipeLandmarks(
                 detectionResult.faceLandmarks ?? [],
             );
+
+            recordMediaPipeFrameDiagnostics({
+                stage: 'attempt',
+                sessionToken: examSessionId ?? null,
+                detectorToken: `attempt:${runtimeGeneration}`,
+                runtimeGeneration,
+                frameTimestampMs: now,
+                videoWidth: videoElement.videoWidth,
+                videoHeight: videoElement.videoHeight,
+                faceCount: landmarksByFace.length,
+            });
 
             const frameAnalysis = analyzeMediaPipeFrame({
                 landmarksByFace,
@@ -185,6 +199,7 @@ export function useMediaPipeFrameProcessor({
             attemptId,
             examSessionId,
             studentId,
+            runtimeGeneration,
             setActiveIncident,
         ],
     );

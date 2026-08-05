@@ -22,7 +22,6 @@ export async function buildGetGradingStudentsQuery({
     let query = dbClient
         .selectFrom('exams as e')
         .leftJoin('exam_assigned_sections as eas', 'eas.exam_id', 'e.exam_id')
-        .leftJoin('sections as sec', 'sec.section_id', 'eas.section_id')
         .innerJoin('class_groups as cg', (join) =>
             join.on((eb) =>
                 eb.or([
@@ -34,6 +33,7 @@ export async function buildGetGradingStudentsQuery({
                 ]),
             ),
         )
+        .leftJoin('sections as sec', 'sec.section_id', 'cg.section_id')
         .innerJoin('enrollments as enr', 'enr.class_group_id', 'cg.class_group_id')
         .innerJoin('students as st', 'st.student_id', 'enr.student_id')
         .innerJoin('user_profiles as up', 'up.user_id', 'st.user_id')
@@ -72,7 +72,7 @@ export async function buildGetGradingStudentsQuery({
             'st.student_id as id',
             sql<string>`trim(concat(up.first_name, ' ', up.last_name))`.as('name'),
             'st.student_number as studentId',
-            'eas.section_id as sectionId',
+            'cg.section_id as sectionId',
             'sec.section_name as sectionName',
             sql<string | null>`(
                 select latest_attempt.attempt_id
@@ -116,7 +116,7 @@ export async function buildGetGradingStudentsQuery({
             'up.first_name',
             'up.last_name',
             'st.student_number',
-            'eas.section_id',
+            'cg.section_id',
             'sec.section_name',
             'e.exam_id',
         ]);

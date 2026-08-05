@@ -103,6 +103,7 @@ export function useMediapipeCameraRuntime({
         attemptId,
         examSessionId,
         studentId,
+        runtimeGeneration: runtimeGenerationRef.current,
         setActiveIncident,
     });
 
