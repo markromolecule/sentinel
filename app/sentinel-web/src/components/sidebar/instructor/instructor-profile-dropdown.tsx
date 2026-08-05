@@ -50,7 +50,7 @@ export function InstructorProfileDropdown() {
                     {avatarUrl ? (
                         <Image
                             src={avatarUrl}
-                            alt={`${profile.firstName || ''} avatar`}
+                            alt={`${profile?.firstName || ''} avatar`}
                             fill
                             sizes="32px"
                             className="object-cover"
