@@ -1,7 +1,6 @@
 import { type DbClient } from '@sentinel/db';
 
-const UUID_PATTERN =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Resolves a notification actor to a live application user id.
@@ -20,7 +19,7 @@ export async function resolveNotificationActorUserId(
     }
 
     const actor = await dbClient
-        .selectFrom('users')
+        .selectFrom('auth.users')
         .select('id')
         .where('id', '=', actorUserId)
         .executeTakeFirst();

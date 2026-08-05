@@ -91,7 +91,7 @@ describe('createNotificationData', () => {
             resourceId: '44444444-4444-4444-4444-444444444444',
         });
 
-        expect(mockSelectFrom).toHaveBeenCalledWith('users');
+        expect(mockSelectFrom).toHaveBeenCalledWith('auth.users');
         const valuesCalled = mockInsertInto.mock.results[0].value.values.mock.calls[0][0];
         expect(valuesCalled.actor_user_id).toBe('33333333-3333-3333-3333-333333333333');
     });
@@ -140,7 +140,7 @@ describe('createNotificationData', () => {
             resourceId: '44444444-4444-4444-4444-444444444444',
         });
 
-        expect(mockSelectFrom).toHaveBeenCalledWith('users');
+        expect(mockSelectFrom).toHaveBeenCalledWith('auth.users');
         const valuesCalled = mockInsertInto.mock.results[0].value.values.mock.calls[0][0];
         expect(valuesCalled.actor_user_id).toBeNull();
     });
