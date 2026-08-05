@@ -73,7 +73,7 @@ export function AttemptReportView({
 
             {showActions ? (
                 <AttemptReportActions
-                    editable={editable}
+                    editable={isEditable}
                     hasSubmitHandler={Boolean(onSubmit)}
                     isSubmitting={isSubmitting}
                     onSaveOverrides={() => handleSubmit(false)}

@@ -74,15 +74,25 @@ export async function createExamAssignment(args: {
         scheduledAt: exam.scheduledDate ?? null,
     });
 
-    await ExamNotificationService.notifyExamAssignmentCreated({
-        dbClient,
-        recipientUserId: assignee.id!,
-        actorUserId: userId,
-        institutionId: exam.institutionId ?? institutionId,
-        examId: exam.id,
-        examTitle: exam.title,
-        assignerName: exam.assignerName,
-    });
+    try {
+        await ExamNotificationService.notifyExamAssignmentCreated({
+            dbClient,
+            recipientUserId: assignee.id!,
+            actorUserId: userId,
+            institutionId: exam.institutionId ?? institutionId,
+            examId: exam.id,
+            examTitle: exam.title,
+            assignerName: exam.assignerName,
+        });
+    } catch (notifErr) {
+        console.error('Failed to send exam assignment notification:', {
+            examId: exam.id,
+            assigneeId: assignee.id,
+            userId,
+            institutionId: exam.institutionId ?? institutionId ?? null,
+            notifErr,
+        });
+    }
 
     // Telemetry logging
     try {

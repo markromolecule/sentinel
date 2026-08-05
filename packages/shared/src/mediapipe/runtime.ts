@@ -2,7 +2,9 @@ import { MEDIAPIPE_CLIENT_CAPABILITIES, MEDIAPIPE_DEFAULT_THRESHOLDS } from './c
 import type {
     EvaluateMediaPipeSignalDispatchArgs,
     EvaluateMediaPipeSignalDispatchResult,
+    MediaPipeFrameAnalysis,
     MediaPipeRuntimeEnabledArgs,
+    MediaPipeMultipleFacesConfirmationState,
     MediaPipeSignalTrackerState,
     MediaPipeSupportedEventType,
     MediaPipeThresholdResolution,
@@ -52,6 +54,61 @@ export function createMediaPipeSignalTrackerState(): MediaPipeSignalTrackerState
         lastObservedAtMs: null,
         lastEmittedAtMs: null,
         occurrenceCount: 0,
+    };
+}
+
+export function createMediaPipeMultipleFacesConfirmationState(): MediaPipeMultipleFacesConfirmationState {
+    return {
+        consecutiveMultipleFacesFrames: 0,
+    };
+}
+
+export function evaluateMediaPipeMultipleFacesConfirmation(args: {
+    analysis: MediaPipeFrameAnalysis;
+    state: MediaPipeMultipleFacesConfirmationState;
+    minimumConsecutiveFrames?: number;
+}): {
+    analysis: MediaPipeFrameAnalysis;
+    state: MediaPipeMultipleFacesConfirmationState;
+    isConfirmed: boolean;
+} {
+    const minimumConsecutiveFrames = Math.max(1, args.minimumConsecutiveFrames ?? 2);
+
+    if (args.analysis.status !== 'multiple-faces' || args.analysis.faceCount <= 1) {
+        return {
+            analysis: args.analysis,
+            state: createMediaPipeMultipleFacesConfirmationState(),
+            isConfirmed: false,
+        };
+    }
+
+    const consecutiveMultipleFacesFrames = args.state.consecutiveMultipleFacesFrames + 1;
+    const isConfirmed = consecutiveMultipleFacesFrames >= minimumConsecutiveFrames;
+
+    if (!isConfirmed) {
+        return {
+            analysis: {
+                ...args.analysis,
+                status: 'ready',
+                signal: null,
+                reasons: [
+                    ...args.analysis.reasons,
+                    'Multiple faces were detected in the active camera frame. Waiting for a second consecutive frame before confirming the incident.',
+                ],
+            },
+            state: {
+                consecutiveMultipleFacesFrames,
+            },
+            isConfirmed: false,
+        };
+    }
+
+    return {
+        analysis: args.analysis,
+        state: {
+            consecutiveMultipleFacesFrames,
+        },
+        isConfirmed: true,
     };
 }
 

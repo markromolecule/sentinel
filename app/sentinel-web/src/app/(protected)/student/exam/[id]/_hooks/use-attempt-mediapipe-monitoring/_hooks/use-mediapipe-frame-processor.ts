@@ -2,10 +2,12 @@ import { useCallback } from 'react';
 import type { FaceLandmarker } from '@mediapipe/tasks-vision';
 import {
     analyzeMediaPipeFrame,
+    createMediaPipeMultipleFacesConfirmationState,
     evaluateMediaPipeSignalDispatch,
+    evaluateMediaPipeMultipleFacesConfirmation,
     resolveMediaPipeThresholds,
 } from '@sentinel/shared';
-import type { MediaPipeFrameAnalysis } from '@sentinel/shared';
+import type { MediaPipeFrameAnalysis, MediaPipeCalibrationProfile } from '@sentinel/shared';
 import type { ExamConfig } from '@sentinel/shared/types';
 import {
     isMediaPipeTelemetryEventEnabled,
@@ -18,19 +20,25 @@ import {
 } from '../_utils';
 import type { MediapipeRuntimeEligibility } from './use-mediapipe-runtime-eligibility';
 import { buildAttemptMediaPipeDevelopmentDiagnostics } from './use-mediapipe-runtime-thresholds';
+import type { DispatchIncidentArgs } from './use-incident-telemetry-dispatcher';
 
 export type MediapipeSignalThresholds = ReturnType<typeof resolveMediaPipeThresholds>;
 
 export type UseMediaPipeFrameProcessorArgs = {
     activeSandbox: ResolvedMediaPipeSandbox | undefined;
-    calibrationProfile: any;
+    calibrationProfile: MediaPipeCalibrationProfile | null;
     configuration: ExamConfig | undefined;
     thresholds: MediapipeSignalThresholds;
     trackerRef: React.MutableRefObject<
         ReturnType<typeof import('@sentinel/shared').createMediaPipeSignalTrackerState>
     >;
+    multipleFacesConfirmationRef: React.MutableRefObject<
+        ReturnType<typeof createMediaPipeMultipleFacesConfirmationState>
+    >;
     setAnalysis: (analysis: MediaPipeFrameAnalysis | null) => void;
-    dispatchIncidentRef: React.MutableRefObject<(args: any) => Promise<void>>;
+    dispatchIncidentRef: React.MutableRefObject<
+        (args: DispatchIncidentArgs) => Promise<void>
+    >;
     eligibility: MediapipeRuntimeEligibility;
     attemptId?: string;
     examSessionId?: string;
@@ -57,6 +65,7 @@ export function useMediaPipeFrameProcessor({
     configuration,
     thresholds,
     trackerRef,
+    multipleFacesConfirmationRef,
     setAnalysis,
     dispatchIncidentRef,
     eligibility,
@@ -86,9 +95,14 @@ export function useMediaPipeFrameProcessor({
                 calibrationProfile,
                 tolerateDownwardGaze,
             });
+            const multipleFacesConfirmation = evaluateMediaPipeMultipleFacesConfirmation({
+                analysis: frameAnalysis,
+                state: multipleFacesConfirmationRef.current,
+            });
+            multipleFacesConfirmationRef.current = multipleFacesConfirmation.state;
 
             const normalizedAnalysis = normalizeAttemptMediaPipeAnalysis({
-                analysis: frameAnalysis,
+                analysis: multipleFacesConfirmation.analysis,
                 configuration,
             });
 
@@ -164,6 +178,7 @@ export function useMediaPipeFrameProcessor({
             configuration,
             thresholds,
             trackerRef,
+            multipleFacesConfirmationRef,
             setAnalysis,
             dispatchIncidentRef,
             eligibility,

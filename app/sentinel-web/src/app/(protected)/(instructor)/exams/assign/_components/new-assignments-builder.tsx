@@ -44,6 +44,7 @@ export function NewAssignmentsBuilder({
     onCancel,
 }: NewAssignmentsBuilderProps) {
     const { profile } = useProfileQuery();
+    const [submitError, setSubmitError] = React.useState<string | null>(null);
 
     const { data: classrooms = [], isLoading: isClassroomsLoading } = useClassroomsQuery({
         institutionId: profile?.institutionId || undefined,
@@ -140,10 +141,16 @@ export function NewAssignmentsBuilder({
             return;
         }
 
-        await createMutation.mutateAsync({
-            examId,
-            payload,
-        });
+        setSubmitError(null);
+
+        try {
+            await createMutation.mutateAsync({
+                examId,
+                payload,
+            });
+        } catch (err) {
+            setSubmitError(err instanceof Error ? err.message : 'Failed to save assignments');
+        }
     };
 
     return (
@@ -157,6 +164,16 @@ export function NewAssignmentsBuilder({
                         {hasConflictsWithExisting &&
                             'Some selected classrooms (sections) are already assigned.'}
                     </span>
+                </div>
+            )}
+
+            {submitError && (
+                <div
+                    role="alert"
+                    className="mb-4 flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/20 dark:text-rose-300"
+                >
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                    <span>{submitError}</span>
                 </div>
             )}
 

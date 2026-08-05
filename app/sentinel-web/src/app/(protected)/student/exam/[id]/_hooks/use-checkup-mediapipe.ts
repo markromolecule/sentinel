@@ -11,10 +11,11 @@ import {
     analyzeMediaPipeFrame,
     buildMediaPipeCalibrationProfile,
     calculateMediaPipeFaceBounds,
+    createMediaPipeMultipleFacesConfirmationState,
     createMediaPipeCalibrationSample,
     evaluateMediaPipeCalibrationCandidate,
+    evaluateMediaPipeMultipleFacesConfirmation,
     getMediaPipeClientCapabilities,
-    isMediaPipeCalibrationCandidate,
     isMediaPipeRuntimeEnabled,
     type MediaPipeCalibrationProfile,
     type MediaPipeCalibrationSample,
@@ -204,6 +205,10 @@ export function useCheckupMediaPipe({
     const faceLandmarkerRef = useRef<FaceLandmarker | null>(null);
     const animationFrameRef = useRef<number | null>(null);
     const lastFrameAtRef = useRef(0);
+    const runtimeGenerationRef = useRef(0);
+    const multipleFacesConfirmationRef = useRef(
+        createMediaPipeMultipleFacesConfirmationState(),
+    );
     const [analysis, setAnalysis] = useState<MediaPipeFrameAnalysis | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [calibrationProgress, setCalibrationProgress] = useState(0);
@@ -226,7 +231,11 @@ export function useCheckupMediaPipe({
     );
 
     useEffect(() => {
+        const runtimeGeneration = ++runtimeGenerationRef.current;
+
         if (!isEnabled || !streamActive || !videoRef.current) {
+            runtimeGenerationRef.current += 1;
+
             if (animationFrameRef.current !== null) {
                 window.cancelAnimationFrame(animationFrameRef.current);
                 animationFrameRef.current = null;
@@ -249,6 +258,8 @@ export function useCheckupMediaPipe({
             setIsCalibrated(false);
             setCalibrationFeedback(null);
             lastFrameAtRef.current = 0;
+            multipleFacesConfirmationRef.current =
+                createMediaPipeMultipleFacesConfirmationState();
             drawOverlay({
                 canvas: overlayCanvasRef.current,
                 video: videoRef.current,
@@ -302,7 +313,12 @@ export function useCheckupMediaPipe({
                 );
 
                 const tick = () => {
-                    if (disposed || !videoRef.current || !faceLandmarkerRef.current) {
+                    if (
+                        disposed ||
+                        runtimeGeneration !== runtimeGenerationRef.current ||
+                        !videoRef.current ||
+                        !faceLandmarkerRef.current
+                    ) {
                         return;
                     }
 
@@ -338,19 +354,19 @@ export function useCheckupMediaPipe({
                         tolerateDownwardGaze: true,
                         calibrationProfile: completedCalibrationProfile,
                     });
+                    const multipleFacesConfirmation = evaluateMediaPipeMultipleFacesConfirmation({
+                        analysis: nextAnalysis,
+                        state: multipleFacesConfirmationRef.current,
+                    });
+                    multipleFacesConfirmationRef.current = multipleFacesConfirmation.state;
+                    const stabilizedAnalysis = multipleFacesConfirmation.analysis;
 
-                    setAnalysis(nextAnalysis);
-
-                    const bounds = calculateMediaPipeFaceBounds(landmarksByFace[0] ?? []);
-                    const isCentered =
-                        bounds &&
-                        Math.abs(bounds.centerX - 0.5) < 0.15 &&
-                        Math.abs(bounds.centerY - 0.45) < 0.2;
+                    setAnalysis(stabilizedAnalysis);
 
                     let currentFeedback: string | null = null;
                     if (!hasCompletedCalibration) {
                         const evaluation = evaluateMediaPipeCalibrationCandidate({
-                            analysis: nextAnalysis,
+                            analysis: stabilizedAnalysis,
                             landmarks: landmarksByFace[0] ?? [],
                             confidenceThreshold: activeConfidenceThreshold,
                         });
@@ -363,7 +379,7 @@ export function useCheckupMediaPipe({
                             evaluation.isValid && landmarksByFace[0]
                                 ? createMediaPipeCalibrationSample({
                                       landmarks: landmarksByFace[0],
-                                      confidenceScore: nextAnalysis.confidenceScore,
+                                      confidenceScore: stabilizedAnalysis.confidenceScore,
                                   })
                                 : null;
 
@@ -428,7 +444,7 @@ export function useCheckupMediaPipe({
                         canvas: overlayCanvasRef.current,
                         video: videoRef.current,
                         landmarksByFace,
-                        analysis: nextAnalysis,
+                        analysis: stabilizedAnalysis,
                         debugEnabled: mediaPipeSandbox.debugOverlayEnabled,
                         isCalibrated: hasCompletedCalibration,
                     });
@@ -456,6 +472,7 @@ export function useCheckupMediaPipe({
 
         return () => {
             disposed = true;
+            runtimeGenerationRef.current += 1;
 
             if (animationFrameRef.current !== null) {
                 window.cancelAnimationFrame(animationFrameRef.current);
@@ -469,6 +486,8 @@ export function useCheckupMediaPipe({
                 faceLandmarkerRef.current.close();
                 faceLandmarkerRef.current = null;
             }
+            multipleFacesConfirmationRef.current =
+                createMediaPipeMultipleFacesConfirmationState();
         };
     }, [configuration, isEnabled, mediaPipeSandbox, streamActive, videoRef]);
 

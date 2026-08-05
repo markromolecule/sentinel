@@ -57,23 +57,36 @@ export class NotificationService {
             };
         }
 
-        const record = await createNotificationData(args);
-        return mapNotification({
-            id: record.notification_id,
-            title: record.title,
-            message: record.message,
-            status: record.status,
-            actionType: record.action_type,
-            institutionId: record.institution_id,
-            actorId: record.actor_user_id,
-            actorName: null,
-            resourceType: record.resource_type,
-            resourceId: record.resource_id,
-            resourceLabel: record.resource_label,
-            metadata: (record.metadata as Record<string, unknown> | null) ?? null,
-            createdAt: record.created_at,
-            readAt: record.read_at,
-        });
+        try {
+            const record = await createNotificationData(args);
+            return mapNotification({
+                id: record.notification_id,
+                title: record.title,
+                message: record.message,
+                status: record.status,
+                actionType: record.action_type,
+                institutionId: record.institution_id,
+                actorId: record.actor_user_id,
+                actorName: null,
+                resourceType: record.resource_type,
+                resourceId: record.resource_id,
+                resourceLabel: record.resource_label,
+                metadata: (record.metadata as Record<string, unknown> | null) ?? null,
+                createdAt: record.created_at,
+                readAt: record.read_at,
+            });
+        } catch (error) {
+            console.error('Failed to create notification:', {
+                recipientUserId: args.recipientUserId,
+                actorUserId: args.actorUserId ?? null,
+                institutionId: args.institutionId ?? null,
+                actionType: args.actionType,
+                resourceType: args.resourceType,
+                resourceId: args.resourceId ?? null,
+                error,
+            });
+            throw error;
+        }
     }
 
     static async listNotifications(args: {

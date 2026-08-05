@@ -130,6 +130,10 @@ export type MediaPipeSignalTrackerState = {
     occurrenceCount: number;
 };
 
+export type MediaPipeMultipleFacesConfirmationState = {
+    consecutiveMultipleFacesFrames: number;
+};
+
 export type EvaluateMediaPipeSignalDispatchArgs = {
     currentSignal: MediaPipeSupportedEventType | null;
     tracker: MediaPipeSignalTrackerState;

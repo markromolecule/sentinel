@@ -117,6 +117,10 @@ function buildDownwardGazeFace() {
     return landmarks;
 }
 
+function buildMultiFaceFrame() {
+    return [buildCenteredFace(), buildCenteredFace()];
+}
+
 function createVideoElement() {
     const video = document.createElement('video');
 
@@ -329,6 +333,51 @@ describe('use-checkup-mediapipe', () => {
         });
     });
 
+    it('keeps a single duplicate-face frame transient until it repeats on the next frame', async () => {
+        mockDetectForVideo
+            .mockReturnValueOnce({
+                faceLandmarks: buildMultiFaceFrame(),
+            })
+            .mockReturnValueOnce({
+                faceLandmarks: buildMultiFaceFrame(),
+            })
+            .mockReturnValue({
+                faceLandmarks: [buildCenteredFace()],
+            });
+
+        const video = createVideoElement();
+        const videoRef = { current: video };
+        const configuration = createExamConfiguration();
+        const mediaPipeSandbox = createSandbox();
+
+        const { result } = renderHook(() =>
+            useCheckupMediaPipe({
+                videoRef,
+                streamActive: true,
+                configuration,
+                mediaPipeSandbox,
+            }),
+        );
+
+        await waitFor(() => {
+            expect(mockCreateFromOptions).toHaveBeenCalledTimes(1);
+        });
+
+        advanceAnimationFrame(600);
+
+        await waitFor(() => {
+            expect(result.current.analysis?.status).toBe('ready');
+            expect(result.current.analysis?.faceCount).toBe(2);
+        });
+
+        advanceAnimationFrame(1200);
+
+        await waitFor(() => {
+            expect(result.current.analysis?.status).toBe('multiple-faces');
+            expect(result.current.analysis?.faceCount).toBe(2);
+        });
+    });
+
     it('cleans up and resets calibration when the stream is disabled after startup', async () => {
         const video = createVideoElement();
         const videoRef = { current: video };
@@ -425,5 +474,71 @@ describe('use-checkup-mediapipe', () => {
             expect(result.current.analysis?.status).toBe('ready');
             expect(result.current.errorMessage).toBeNull();
         });
+    });
+
+    it('resets duplicate-face confirmation when the hook is torn down and started again', async () => {
+        const video = createVideoElement();
+        const videoRef = { current: video };
+        const configuration = createExamConfiguration();
+        const mediaPipeSandbox = createSandbox();
+
+        mockDetectForVideo
+            .mockReturnValueOnce({
+                faceLandmarks: buildMultiFaceFrame(),
+            })
+            .mockReturnValueOnce({
+                faceLandmarks: buildMultiFaceFrame(),
+            })
+            .mockReturnValue({
+                faceLandmarks: [buildCenteredFace()],
+            });
+
+        const { result, rerender } = renderHook(
+            ({ streamActive }: { streamActive: boolean }) =>
+                useCheckupMediaPipe({
+                    videoRef,
+                    streamActive,
+                    configuration,
+                    mediaPipeSandbox,
+                }),
+            {
+                initialProps: {
+                    streamActive: true,
+                },
+            },
+        );
+
+        await waitFor(() => {
+            expect(mockCreateFromOptions).toHaveBeenCalledTimes(1);
+        });
+
+        advanceAnimationFrame(600);
+        advanceAnimationFrame(1200);
+
+        await waitFor(() => {
+            expect(result.current.analysis?.status).toBe('multiple-faces');
+        });
+
+        rerender({ streamActive: false });
+
+        await waitFor(() => {
+            expect(result.current.isEnabled).toBe(false);
+        });
+
+        rerender({ streamActive: true });
+
+        mockDetectForVideo.mockReset();
+        mockDetectForVideo.mockReturnValue({
+            faceLandmarks: [buildCenteredFace()],
+        });
+
+        await waitFor(() => {
+            expect(mockCreateFromOptions).toHaveBeenCalledTimes(2);
+        });
+
+        expect(result.current.isEnabled).toBe(true);
+        expect(result.current.analysis).toBeNull();
+        expect(result.current.calibrationProgress).toBe(0);
+        expect(mockFaceLandmarkerClose).toHaveBeenCalledTimes(1);
     });
 });

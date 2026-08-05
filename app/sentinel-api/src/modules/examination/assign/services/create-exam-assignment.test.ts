@@ -220,4 +220,45 @@ describe('createExamAssignment', () => {
         });
         expect(result.id).toBe('assignment-2');
     });
+
+    it('returns the saved assignment even when notification delivery fails', async () => {
+        vi.mocked(findManageableExam).mockResolvedValue({
+            id: 'exam-1',
+            title: 'Midterm Exam',
+            subjectTitle: 'Physics',
+            scheduledDate: '2026-05-10T08:00:00.000Z',
+            endDateTime: '2026-05-10T10:00:00.000Z',
+            institutionId: 'institution-1',
+            assignerName: 'Jordan Instructor',
+        } as any);
+        vi.mocked(findAssigneeInstructor).mockResolvedValue({
+            id: 'assignee-1',
+            name: 'Alex Instructor',
+            institutionId: 'institution-1',
+        } as any);
+        vi.mocked(findExistingExamAssignment).mockResolvedValue(undefined);
+        vi.mocked(saveExamAssignment).mockResolvedValue({
+            id: 'assignment-3',
+            status: 'PENDING',
+            scheduledAt: '2026-05-10T08:00:00.000Z',
+            createdAt: '2026-05-09T13:00:00.000Z',
+            updatedAt: '2026-05-09T13:00:00.000Z',
+        } as any);
+        vi.mocked(ExamNotificationService.notifyExamAssignmentCreated).mockRejectedValueOnce(
+            new Error('notification failed'),
+        );
+
+        const result = await createExamAssignment({
+            dbClient,
+            body: {
+                examId: 'exam-1',
+                assigneeId: 'assignee-1',
+            },
+            institutionId: 'institution-1',
+            userId: 'assigner-1',
+        });
+
+        expect(result.id).toBe('assignment-3');
+        expect(saveExamAssignment).toHaveBeenCalled();
+    });
 });

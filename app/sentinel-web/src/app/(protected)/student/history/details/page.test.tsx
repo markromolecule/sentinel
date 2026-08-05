@@ -122,6 +122,20 @@ describe('HistoryDetailsContent', () => {
             examId: 'exam-route-1',
         });
     });
+
+    it('shows the shared student loading state while the history details load', () => {
+        mockUseExamDetails.mockReturnValue({
+            historyItem: null,
+            report: undefined,
+            reportAvailability: 'loading_report',
+            isLoading: true,
+        });
+
+        render(<HistoryDetailsContent examId="exam-route-2" />);
+
+        expect(screen.getByText('Loading exam flow...')).toBeTruthy();
+        expect(screen.getByLabelText('Loading exam flow')).toBeTruthy();
+    });
 });
 
 describe('HistoryDetailsPage', () => {

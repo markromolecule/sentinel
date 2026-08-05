@@ -173,6 +173,42 @@ describe('SectionAssignmentsService', () => {
         expect(ExamNotificationService.notifyExamAssignmentCreated).toHaveBeenCalled();
     });
 
+    it('returns the saved assignment even when notification delivery fails', async () => {
+        vi.mocked(createExamSectionAssignment).mockResolvedValue({ id: 'assignment-1' } as any);
+        vi.mocked(ExamNotificationService.notifyExamAssignmentCreated).mockRejectedValueOnce(
+            new Error('notification failed'),
+        );
+
+        const mockDbClient = {
+            selectFrom: vi.fn().mockImplementation(() => ({
+                select: vi.fn().mockImplementation(() => ({
+                    where: vi.fn().mockImplementation(() => ({
+                        executeTakeFirst: vi.fn().mockResolvedValue({
+                            title: 'Test Exam',
+                            institutionId: 'institution-1',
+                            fullName: 'Actor Name',
+                        }),
+                    })),
+                })),
+            })),
+        } as any;
+
+        const result = await SectionAssignmentsService.createExamSectionAssignment({
+            dbClient: mockDbClient,
+            examId: 'exam-1',
+            body: {
+                sectionId: 'section-1',
+                classGroupId: 'classroom-1',
+                roomId: 'room-1',
+                instructorId: 'instructor-1',
+            } as any,
+            actorUserId: 'actor-1',
+            activeInstitutionId: 'institution-1',
+        });
+
+        expect(result).toEqual({ id: 'assignment-1' });
+    });
+
     it('syncs the exam row after updating an assignment', async () => {
         vi.mocked(updateExamSectionAssignment).mockResolvedValue({ id: 'assignment-1' } as any);
 

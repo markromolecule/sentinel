@@ -1,7 +1,5 @@
+import { StudentExamLoadingState } from '@/app/(protected)/student/exam/[id]/_components/student-exam-loading-state';
+
 export function ExamLoading() {
-    return (
-        <div className="flex min-h-screen items-center justify-center text-white/40">
-            Loading exam details...
-        </div>
-    );
+    return <StudentExamLoadingState />;
 }
