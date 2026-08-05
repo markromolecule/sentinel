@@ -6,6 +6,7 @@ import { resolveCalendarRoleAudiences } from './resolve-calendar-role-audiences'
 export type GetCalendarEventsDataArgs = {
     institutionId: string;
     role?: string;
+    userId: string;
     month?: string;
     year?: string;
 };
@@ -16,7 +17,7 @@ export type GetCalendarEventsDataArgs = {
  */
 export async function getCalendarEventsData(
     dbClient: DbClient,
-    { institutionId, role, month, year }: GetCalendarEventsDataArgs,
+    { institutionId, role, userId, month, year }: GetCalendarEventsDataArgs,
 ) {
     const allowedInstitutionIds = await resolveCalendarScopeInstitutionIds(dbClient, institutionId);
 
@@ -64,6 +65,13 @@ export async function getCalendarEventsData(
     if (year) {
         query = query.where(sql<boolean>`extract(year from ce.start_date) = ${parseInt(year, 10)}`);
     }
+
+    query = query.where((eb) =>
+        eb.or([
+            eb('ce.event_type', '!=', 'NOTE'),
+            eb('ce.created_by', '=', userId),
+        ]),
+    );
 
     return await query.orderBy('ce.start_date', 'asc').execute();
 }

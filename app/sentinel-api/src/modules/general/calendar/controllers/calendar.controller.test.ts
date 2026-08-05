@@ -62,7 +62,10 @@ describe('Calendar Controllers', () => {
 
     describe('GET /calendar', () => {
         it('fetches list of calendar events when authorized', async () => {
-            const mockEvents = [{ eventId: 'e1', title: 'Midterm Exam' }];
+            const mockEvents = [
+                { eventId: 'e1', title: 'Midterm Exam' },
+                { eventId: 'e2', title: 'My note', eventType: 'NOTE', createdBy: 'user-123' },
+            ];
             vi.spyOn(CalendarService, 'getCalendarEvents').mockResolvedValue(mockEvents as any);
 
             const app = createTestApp(['calendar:view']);
@@ -73,6 +76,7 @@ describe('Calendar Controllers', () => {
             expect(CalendarService.getCalendarEvents).toHaveBeenCalledWith(expect.anything(), {
                 institutionId: 'inst-456',
                 role: 'admin',
+                userId: 'user-123',
                 month: '5',
                 year: '2026',
             });
@@ -81,6 +85,15 @@ describe('Calendar Controllers', () => {
                 message: 'Calendar events fetched successfully',
                 data: mockEvents,
             });
+            expect(body.data).not.toEqual(
+                expect.arrayContaining([
+                    expect.objectContaining({
+                        title: 'Other student note',
+                        eventType: 'NOTE',
+                        createdBy: 'user-999',
+                    }),
+                ]),
+            );
         });
 
         it('returns 403 Forbidden if caller lacks calendar:view permission', async () => {

@@ -47,11 +47,18 @@ export const getCalendarEventsRouteHandler: AppRouteHandler<typeof getCalendarEv
             return c.json({ error: 'Unauthorized. Institution ID not found.' }, 401 as any);
         }
 
+        const userId = c.get('user')?.id;
+
+        if (!userId) {
+            return c.json({ error: 'Unauthorized. User ID not found.' }, 401 as any);
+        }
+
         const { month, year } = c.req.valid('query');
 
         const events = await CalendarService.getCalendarEvents(c.get('dbClient'), {
             institutionId,
             role,
+            userId,
             month,
             year,
         });
