@@ -177,6 +177,7 @@ function SupportMessagesPageContent() {
             id: p.userId,
             name: p.name,
             avatar: p.avatarUrl || undefined,
+            avatarUrl: p.avatarUrl || undefined,
             status: onlineUserIds.has(p.userId) ? ('online' as const) : ('offline' as const),
             role: p.role as any,
             institution: p.institution ?? null,

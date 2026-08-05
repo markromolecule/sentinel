@@ -3,7 +3,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search } from 'lucide-react';
-import { CommandEmpty, CommandGroup, CommandItem, CommandList } from '@sentinel/ui';
+import {
+    Avatar,
+    AvatarFallback,
+    AvatarImage,
+    CommandEmpty,
+    CommandGroup,
+    CommandItem,
+    CommandList,
+} from '@sentinel/ui';
 import { Popover, PopoverContent, PopoverAnchor } from '@sentinel/ui';
 import { useUserSearch } from '@sentinel/hooks';
 import { Command as CommandPrimitive } from 'cmdk';
@@ -162,21 +170,19 @@ export function UserSearchBar({ redirectPath, className }: UserSearchBarProps) {
                                                         }}
                                                         className="group flex w-20 flex-shrink-0 cursor-pointer flex-col items-center gap-2 select-none"
                                                     >
-                                                        {user.avatarUrl ? (
-                                                            <div className="relative h-12 w-12 overflow-hidden rounded-full border transition-transform group-hover:scale-105">
-                                                                <img
+                                                        <Avatar className="h-12 w-12 transition-transform group-hover:scale-105">
+                                                            {user.avatarUrl ? (
+                                                                <AvatarImage
                                                                     src={user.avatarUrl}
                                                                     alt={`${user.firstName} ${user.lastName}`}
-                                                                    className="h-full w-full object-cover"
                                                                 />
-                                                            </div>
-                                                        ) : (
-                                                            <div
-                                                                className={`flex h-12 w-12 items-center justify-center rounded-full text-sm font-bold transition-transform group-hover:scale-105 ${pastelBgClass}`}
+                                                            ) : null}
+                                                            <AvatarFallback
+                                                                className={`${pastelBgClass} text-sm font-bold`}
                                                             >
                                                                 {initials}
-                                                            </div>
-                                                        )}
+                                                            </AvatarFallback>
+                                                        </Avatar>
                                                         <div className="flex w-full flex-col items-center text-center">
                                                             <span className="text-foreground line-clamp-1 text-[11px] leading-tight font-medium group-hover:underline">
                                                                 {user.firstName}
@@ -220,21 +226,19 @@ export function UserSearchBar({ redirectPath, className }: UserSearchBarProps) {
                                                 }}
                                                 className="flex cursor-pointer items-center gap-3 p-2"
                                             >
-                                                {user.avatarUrl ? (
-                                                    <div className="relative h-8 w-8 overflow-hidden rounded-full border">
-                                                        <img
+                                                <Avatar className="h-8 w-8">
+                                                    {user.avatarUrl ? (
+                                                        <AvatarImage
                                                             src={user.avatarUrl}
                                                             alt={`${user.firstName} ${user.lastName}`}
-                                                            className="h-full w-full object-cover"
                                                         />
-                                                    </div>
-                                                ) : (
-                                                    <div
-                                                        className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${pastelBgClass}`}
+                                                    ) : null}
+                                                    <AvatarFallback
+                                                        className={`${pastelBgClass} text-xs font-bold`}
                                                     >
                                                         {initials}
-                                                    </div>
-                                                )}
+                                                    </AvatarFallback>
+                                                </Avatar>
                                                 <div className="flex flex-col">
                                                     <span className="text-foreground text-sm font-semibold">
                                                         {user.firstName} {user.lastName}

@@ -59,11 +59,24 @@ const CORE_ADMIN_NAV_DEFINITIONS: Array<{
                 url: '/dashboard',
                 icon: LayoutDashboard,
             },
+
             {
                 pageId: 'calendar',
                 title: 'Calendar',
                 url: '/calendar',
                 icon: Calendar,
+            },
+        ],
+    },
+    {
+        label: 'Organization',
+        showSeparator: true,
+        items: [
+            {
+                pageId: 'departments',
+                title: 'Organization',
+                url: '/departments',
+                icon: Building2,
             },
         ],
     },
@@ -89,11 +102,23 @@ const CORE_ADMIN_NAV_DEFINITIONS: Array<{
                 url: '/courses',
                 icon: GraduationCap,
             },
+        ],
+    },
+    {
+        label: 'Classrooms',
+        showSeparator: true,
+        items: [
             {
                 pageId: 'classrooms',
                 title: 'Classrooms',
                 url: '/classrooms',
                 icon: School,
+            },
+            {
+                pageId: 'administrators',
+                title: 'IAM',
+                url: '/administrators',
+                icon: Users,
             },
         ],
     },
@@ -103,7 +128,7 @@ const CORE_ADMIN_NAV_DEFINITIONS: Array<{
         items: [
             {
                 pageId: 'exams',
-                title: 'Exams',
+                title: 'Examination',
                 url: '/exams',
                 icon: ClipboardList,
             },
@@ -112,43 +137,6 @@ const CORE_ADMIN_NAV_DEFINITIONS: Array<{
                 title: 'Question Bank',
                 url: '/question',
                 icon: Database,
-            },
-        ],
-    },
-    {
-        label: 'Organization',
-        showSeparator: true,
-        items: [
-            {
-                pageId: 'departments',
-                title: 'Organization',
-                url: '/departments',
-                icon: Building2,
-            },
-            {
-                pageId: 'administrators',
-                title: 'Identity & Access',
-                url: '/administrators',
-                icon: Users,
-            },
-        ],
-    },
-    {
-        label: 'Analytics & Logs',
-        showSeparator: true,
-        items: [
-            {
-                pageId: 'analytics',
-                title: 'Insights',
-                url: '/analytics',
-                icon: BarChart3,
-            },
-
-            {
-                pageId: 'logs',
-                title: 'System Logs',
-                url: '/logs',
-                icon: FileText,
             },
         ],
     },
@@ -167,6 +155,25 @@ const CORE_ADMIN_NAV_DEFINITIONS: Array<{
                 title: 'Announcements',
                 url: '/announcements',
                 icon: Megaphone,
+            },
+        ],
+    },
+    {
+        label: 'Analytics & Logs',
+        showSeparator: true,
+        items: [
+            {
+                pageId: 'analytics',
+                title: 'Insights',
+                url: '/analytics',
+                icon: BarChart3,
+            },
+
+            {
+                pageId: 'logs',
+                title: 'Logs',
+                url: '/logs',
+                icon: FileText,
             },
         ],
     },

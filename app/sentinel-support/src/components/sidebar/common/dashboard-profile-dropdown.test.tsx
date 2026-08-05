@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
-import { describe, expect, it, vi, afterEach } from 'vitest';
+import { describe, expect, it, vi, afterEach, beforeEach } from 'vitest';
 import { DashboardProfileDropdown } from './dashboard-profile-dropdown';
-import { useProfileQuery } from '@sentinel/hooks';
+import { useAuth, useProfileQuery } from '@sentinel/hooks';
 import React from 'react';
 
 vi.mock('@sentinel/hooks', () => ({
@@ -9,6 +9,7 @@ vi.mock('@sentinel/hooks', () => ({
         mutate: vi.fn(),
     }),
     useProfileQuery: vi.fn(),
+    useAuth: vi.fn(),
 }));
 
 vi.mock('next-themes', () => ({
@@ -38,6 +39,12 @@ afterEach(() => {
 });
 
 describe('DashboardProfileDropdown', () => {
+    beforeEach(() => {
+        vi.mocked(useAuth).mockReturnValue({
+            user: { user_metadata: {} },
+        } as unknown as ReturnType<typeof useAuth>);
+    });
+
     it('renders fallback skeleton when loading', () => {
         vi.mocked(useProfileQuery).mockReturnValue({
             profile: null,
@@ -96,6 +103,26 @@ describe('DashboardProfileDropdown', () => {
         const img = screen.getByAltText('Admin avatar');
         expect(img).toBeTruthy();
         expect(img.getAttribute('src')).toContain('avatar.png');
+    });
+
+    it('renders avatar image from auth metadata when profile avatarUrl is missing', () => {
+        vi.mocked(useAuth).mockReturnValue({
+            user: { user_metadata: { picture: 'https://example.com/auth-avatar.png' } },
+        } as unknown as ReturnType<typeof useAuth>);
+        vi.mocked(useProfileQuery).mockReturnValue({
+            profile: {
+                email: 'test@example.com',
+                firstName: 'Admin',
+                lastName: 'User',
+                avatarUrl: null,
+            },
+            isLoading: false,
+        } as unknown as ReturnType<typeof useProfileQuery>);
+
+        render(<DashboardProfileDropdown />);
+        const img = screen.getByAltText('Admin avatar');
+        expect(img).toBeTruthy();
+        expect(img.getAttribute('src')).toContain('auth-avatar.png');
     });
 
     it('falls back to initials when avatarUrl is null', () => {

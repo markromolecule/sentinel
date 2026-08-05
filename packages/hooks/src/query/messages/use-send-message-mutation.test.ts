@@ -4,11 +4,13 @@ import { sendMessage } from '@sentinel/services';
 import { MESSAGES_QUERY_KEYS } from '@sentinel/shared/constants';
 
 const mockInvalidateQueries = vi.fn();
+const mockSetQueryData = vi.fn();
 
 // Mock tanstack/react-query
 vi.mock('@tanstack/react-query', () => ({
     useQueryClient: vi.fn(() => ({
         invalidateQueries: mockInvalidateQueries,
+        setQueryData: mockSetQueryData,
     })),
     useMutation: vi.fn((options: any) => {
         const mutateAsync = async (variables: any) => {
@@ -40,6 +42,12 @@ vi.mock('../../api-provider', () => ({
     useApi: vi.fn(() => ({ mockClient: true })),
 }));
 
+vi.mock('../../auth-provider', () => ({
+    useAuth: vi.fn(() => ({
+        user: { id: 'user-uuid-111' },
+    })),
+}));
+
 describe('useSendMessageMutation Hook', () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -62,6 +70,14 @@ describe('useSendMessageMutation Hook', () => {
         expect(mockInvalidateQueries).toHaveBeenCalledWith({
             queryKey: MESSAGES_QUERY_KEYS.conversations(),
         });
+        expect(mockSetQueryData).toHaveBeenCalledWith(
+            MESSAGES_QUERY_KEYS.messages(payload.conversationId),
+            expect.any(Function),
+        );
+        expect(mockSetQueryData).toHaveBeenCalledWith(
+            MESSAGES_QUERY_KEYS.conversations(),
+            expect.any(Function),
+        );
     });
 
     it('rejects whitespace-only content before calling the API', async () => {

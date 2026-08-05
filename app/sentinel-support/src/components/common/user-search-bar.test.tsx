@@ -16,29 +16,45 @@ vi.mock('@sentinel/hooks', () => ({
     useUserSearch: (...args: any[]) => mockUseUserSearch(...args),
 }));
 
-vi.mock('@sentinel/ui', () => ({
-    CommandEmpty: ({ children }: { children: React.ReactNode }) => (
-        <div data-testid="command-empty">{children}</div>
-    ),
-    CommandGroup: ({ children, heading }: { children: React.ReactNode; heading?: string }) => (
-        <div data-testid="command-group" data-heading={heading}>
-            {children}
-        </div>
-    ),
-    CommandItem: ({ children, onSelect }: { children: React.ReactNode; onSelect?: () => void }) => (
-        <div data-testid="command-item" onClick={onSelect}>
-            {children}
-        </div>
-    ),
-    CommandList: ({ children }: { children: React.ReactNode }) => (
-        <div data-testid="command-list">{children}</div>
-    ),
-    Popover: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    PopoverContent: ({ children }: { children: React.ReactNode }) => (
-        <div data-testid="popover-content">{children}</div>
-    ),
-    PopoverAnchor: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-}));
+vi.mock('@sentinel/ui', async (importOriginal) => {
+    const actual = (await importOriginal()) as any;
+
+    return {
+        ...actual,
+        Avatar: ({ children, className }: { children: React.ReactNode; className?: string }) => (
+            <div data-testid="avatar" className={className}>
+                {children}
+            </div>
+        ),
+        AvatarImage: ({ src, alt }: { src?: string; alt?: string }) => (
+            <img data-testid="avatar-image" src={src} alt={alt} />
+        ),
+        AvatarFallback: ({ children }: { children: React.ReactNode }) => (
+            <div data-testid="avatar-fallback">{children}</div>
+        ),
+        CommandEmpty: ({ children }: { children: React.ReactNode }) => (
+            <div data-testid="command-empty">{children}</div>
+        ),
+        CommandGroup: ({ children, heading }: { children: React.ReactNode; heading?: string }) => (
+            <div data-testid="command-group" data-heading={heading}>
+                {children}
+            </div>
+        ),
+        CommandItem: ({ children, onSelect }: { children: React.ReactNode; onSelect?: () => void }) => (
+            <div data-testid="command-item" onClick={onSelect}>
+                {children}
+            </div>
+        ),
+        CommandList: ({ children }: { children: React.ReactNode }) => (
+            <div data-testid="command-list">{children}</div>
+        ),
+        Popover: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+        PopoverContent: ({ children }: { children: React.ReactNode }) => (
+            <div data-testid="popover-content">{children}</div>
+        ),
+        PopoverAnchor: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    };
+});
 
 vi.mock('cmdk', () => ({
     Command: Object.assign(({ children }: { children: React.ReactNode }) => <div>{children}</div>, {

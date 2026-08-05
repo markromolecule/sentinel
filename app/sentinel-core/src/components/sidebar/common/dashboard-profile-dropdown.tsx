@@ -1,6 +1,6 @@
 'use client';
 
-import { useLogoutMutation, useProfileQuery } from '@sentinel/hooks';
+import { useLogoutMutation, useProfileQuery, useAuth } from '@sentinel/hooks';
 import { useTheme } from 'next-themes';
 import { Settings, Sun, Moon, Monitor, LogOut, Check } from 'lucide-react';
 import Link from 'next/link';
@@ -23,6 +23,7 @@ import { toast } from 'sonner';
 export function DashboardProfileDropdown() {
     const { theme, setTheme } = useTheme();
     const { profile, isLoading } = useProfileQuery();
+    const { user } = useAuth();
     const router = useRouter();
 
     const { mutate: logout } = useLogoutMutation({
@@ -46,14 +47,21 @@ export function DashboardProfileDropdown() {
     const firstName = profile.firstName || 'User';
     const lastName = profile.lastName || '';
     const email = profile.email || '';
+    const avatarUrl =
+        profile.avatarUrl ??
+        (user?.user_metadata?.avatar_url as string | undefined) ??
+        (user?.user_metadata?.picture as string | undefined) ??
+        (user?.user_metadata?.avatar as string | undefined) ??
+        (user?.user_metadata?.image as string | undefined) ??
+        null;
 
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <div className="bg-primary text-primary-foreground relative flex h-8 w-8 cursor-pointer items-center justify-center overflow-hidden rounded-full text-xs font-bold shadow-sm transition-opacity hover:opacity-90">
-                    {profile.avatarUrl ? (
+                    {avatarUrl ? (
                         <Image
-                            src={profile.avatarUrl}
+                            src={avatarUrl}
                             alt={`${firstName} avatar`}
                             fill
                             sizes="32px"

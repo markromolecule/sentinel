@@ -41,7 +41,7 @@ export function AddAnnouncementDialog() {
         },
     });
 
-    if (!hasPermission('announcements:create')) {
+    if (!hasPermission('announcement:create')) {
         return null;
     }
 

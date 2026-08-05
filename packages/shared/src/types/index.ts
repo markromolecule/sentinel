@@ -524,6 +524,7 @@ export interface ChatUser {
     id: string;
     name: string;
     avatar?: string;
+    avatarUrl?: string | null;
     status: ChatUserStatus;
     role: 'admin' | 'proctor' | 'student' | 'instructor';
     institution?: { id: string; name: string } | null;

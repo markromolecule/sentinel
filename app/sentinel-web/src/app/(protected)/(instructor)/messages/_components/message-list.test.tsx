@@ -70,7 +70,7 @@ describe('MessageList - sentinel-core Replicated Tests', () => {
                     {
                         id: 'user-2',
                         name: 'John Doe',
-                        avatar: 'https://example.com/avatar.png',
+                        avatarUrl: 'https://example.com/avatar.png',
                         status: 'online' as const,
                         role: 'student' as const,
                     },
@@ -109,7 +109,7 @@ describe('MessageList - sentinel-core Replicated Tests', () => {
                     {
                         id: 'user-2',
                         name: 'John Doe',
-                        avatar: 'https://example.com/avatar.png',
+                        avatarUrl: 'https://example.com/avatar.png',
                         status: 'online' as const,
                         role: 'student' as const,
                     },
@@ -140,7 +140,7 @@ describe('MessageList - sentinel-core Replicated Tests', () => {
                     {
                         id: 'user-2',
                         name: 'John Doe',
-                        avatar: 'https://example.com/avatar.png',
+                        avatarUrl: 'https://example.com/avatar.png',
                         status: 'online' as const,
                         role: 'student' as const,
                         institution: { id: 'inst-1', name: 'National University' },
@@ -172,7 +172,7 @@ describe('MessageList - sentinel-core Replicated Tests', () => {
                     {
                         id: 'user-2',
                         name: 'John Doe',
-                        avatar: 'https://example.com/avatar.png',
+                        avatarUrl: 'https://example.com/avatar.png',
                         status: 'online' as const,
                         role: 'student' as const,
                         institution: null,
