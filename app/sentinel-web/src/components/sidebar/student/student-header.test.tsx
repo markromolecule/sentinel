@@ -62,6 +62,28 @@ describe('StudentHeader', () => {
         expect(screen.getByText('JD')).toBeTruthy();
     });
 
+    it('keeps the mobile header padded and the profile trigger reachable', () => {
+        vi.mocked(useProfileQuery).mockReturnValue({
+            profile: {
+                firstName: 'John',
+                lastName: 'Doe',
+                email: 'john.doe@example.com',
+            },
+            isLoading: false,
+        } as unknown as ReturnType<typeof useProfileQuery>);
+
+        const { container } = render(<StudentHeader />);
+
+        const headerRow = container.querySelector('header > div');
+        expect(headerRow).toBeTruthy();
+        expect(headerRow?.className).toContain('px-4');
+        expect(headerRow?.className).toContain('sm:px-6');
+        expect(headerRow?.className).toContain('lg:px-8');
+
+        const profileTrigger = container.querySelector('header .rounded-full.cursor-pointer');
+        expect(profileTrigger).toBeTruthy();
+    });
+
     it('renders dots/loading indicator when profile is loading', () => {
         vi.mocked(useProfileQuery).mockReturnValue({
             profile: null,

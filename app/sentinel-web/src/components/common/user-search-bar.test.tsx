@@ -188,21 +188,63 @@ describe('UserSearchBar', () => {
         }
     });
 
-    it('renders iconOnly mode and opens search popover on click', () => {
-        const { getByRole, getByPlaceholderText, queryByPlaceholderText } = render(
+    it('renders iconOnly mode with the mobile viewport width and all empty/search states', () => {
+        const pushMock = vi.fn();
+        vi.mocked(useRouter).mockReturnValue({
+            push: pushMock,
+        } as unknown as ReturnType<typeof useRouter>);
+
+        vi.mocked(useUserSearch).mockReturnValue({
+            users: [
+                {
+                    id: 'user-123',
+                    firstName: 'John',
+                    lastName: 'Doe',
+                    role: 'student',
+                },
+            ],
+            isLoading: false,
+        } as unknown as ReturnType<typeof useUserSearch>);
+
+        window.localStorage.setItem(
+            'sentinel_recent_searches',
+            JSON.stringify([
+                {
+                    id: 'user-rec-1',
+                    firstName: 'Jane',
+                    lastName: 'Smith',
+                    role: 'instructor',
+                },
+            ]),
+        );
+
+        const { getByRole, getByPlaceholderText, getByText, queryByText } = render(
             <UserSearchBar redirectPath="/student/message" iconOnly={true} />,
         );
 
-        // Input should not be visible before clicking trigger
-        expect(queryByPlaceholderText('Search users by name...')).toBeNull();
+        expect(queryByText('People')).toBeNull();
 
-        // Find and click the icon trigger button
-        const button = getByRole('button');
-        expect(button).toBeTruthy();
-        fireEvent.click(button);
+        fireEvent.click(getByRole('button'));
 
-        // Now the input should be visible in the popover
         const input = getByPlaceholderText('Search users by name...');
         expect(input).toBeTruthy();
+
+        const popoverContent = Array.from(document.querySelectorAll('div')).find((node) =>
+            node.className.includes('w-[calc(100svw-1rem)]'),
+        );
+        expect(popoverContent).toBeTruthy();
+        expect(popoverContent?.className).toContain('sm:w-96');
+
+        expect(getByText('People')).toBeTruthy();
+        expect(getByText('Jane')).toBeTruthy();
+        expect(getByText('Clear')).toBeTruthy();
+
+        fireEvent.click(getByText('Clear'));
+        expect(queryByText('People')).toBeNull();
+        expect(queryByText('Jane')).toBeNull();
+
+        fireEvent.change(input, { target: { value: 'Jo' } });
+        expect(getByText('John Doe')).toBeTruthy();
+        expect(getByText('student')).toBeTruthy();
     });
 });

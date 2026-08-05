@@ -29,11 +29,11 @@ export function ExamAttemptShellHeader({
                     </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap lg:justify-end">
-                    <div className="border-border/60 bg-muted/20 border px-4 py-2 text-sm font-semibold">
+                <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
+                    <div className="border-border/60 bg-muted/20 order-1 border px-4 py-2 text-sm font-semibold">
                         {timerLabel}
                     </div>
-                    {toolbar}
+                    <div className="order-2 min-w-0 flex-1 lg:flex-none">{toolbar}</div>
                 </div>
             </div>
         </header>

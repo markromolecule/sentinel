@@ -95,4 +95,59 @@ describe('ExamAttemptRuntimeHeader', () => {
         expect(onToggleCompactPassage).toHaveBeenCalledOnce();
         expect(onTogglePassagePanel).toHaveBeenCalledOnce();
     });
+
+    it('keeps the mobile controls ordered and preserves submit behavior', () => {
+        const onToggleCompactPassage = vi.fn();
+        const onTogglePassagePanel = vi.fn();
+        const onSubmit = vi.fn();
+
+        const { rerender } = render(
+            <ExamAttemptRuntimeHeader
+                answeredCount={8}
+                totalQuestions={12}
+                flaggedCount={3}
+                hasPassage
+                showPassagePanel={false}
+                onToggleCompactPassage={onToggleCompactPassage}
+                onTogglePassagePanel={onTogglePassagePanel}
+                onSubmit={onSubmit}
+            />,
+        );
+
+        const answeredBadge = screen.getByText('8/12 answered');
+        const flaggedBadge = screen.getByText('3 flagged');
+        const compactControl = screen.getByRole('button', { name: 'Show passage' });
+        const submitButton = screen.getByRole('button', { name: 'Turn In' });
+
+        expect(answeredBadge.className).toContain('order-2');
+        expect(flaggedBadge.className).toContain('order-3');
+        expect(compactControl.className).toContain('order-4');
+        expect(compactControl.className).toContain('md:hidden');
+        expect(submitButton.className).toContain('order-5');
+        expect(submitButton.className).toContain('basis-full');
+
+        fireEvent.click(compactControl);
+        fireEvent.click(submitButton);
+
+        expect(onToggleCompactPassage).toHaveBeenCalledOnce();
+        expect(onTogglePassagePanel).not.toHaveBeenCalled();
+        expect(onSubmit).toHaveBeenCalledOnce();
+
+        rerender(
+            <ExamAttemptRuntimeHeader
+                answeredCount={8}
+                totalQuestions={12}
+                flaggedCount={3}
+                hasPassage
+                showPassagePanel={false}
+                onToggleCompactPassage={onToggleCompactPassage}
+                onTogglePassagePanel={onTogglePassagePanel}
+                onSubmit={onSubmit}
+                isSubmitting
+            />,
+        );
+
+        const submittingButton = screen.getByRole('button', { name: 'Preparing...' });
+        expect(submittingButton).toBeDisabled();
+    });
 });
