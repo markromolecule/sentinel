@@ -8,7 +8,6 @@ import { GeminiProvider } from '../../gemini.provider';
 import {
     QuestionNormalizationError,
     PassageQualityValidationError,
-    normalizeGeneratedQuestion,
 } from '../question-normalizer';
 import type { QuestionGeneratorLlmProvider } from './types';
 import { createBatches } from './utils/create-batches';
@@ -181,20 +180,11 @@ export class QuestionGeneratorService {
                     );
                     if (slotIndex === -1) continue;
 
-                    if (rep.rawQuestion) {
-                        try {
-                            const normalized = normalizeGeneratedQuestion(
-                                rep.rawQuestion,
-                                args.config,
-                                sourceDocuments,
-                            );
-                            reconciliation.slots[slotIndex].question = normalized;
-                        } catch (error) {
-                            console.error(
-                                `Normalization failed for repaired slot ${rep.slotId}:`,
-                                error,
-                            );
-                        }
+                    if (rep.passageContent && reconciliation.slots[slotIndex].question) {
+                        reconciliation.slots[slotIndex].question = {
+                            ...reconciliation.slots[slotIndex].question,
+                            passageContent: rep.passageContent,
+                        };
                     }
                 }
 

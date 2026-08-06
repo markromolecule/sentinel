@@ -101,8 +101,9 @@ export function buildPrompt(args: {
             ? 'Set "sourceFileName" to one of the exact attached PDF file names listed below.'
             : 'Set "sourceFileName" to the exact file name of the supporting source document.',
         'Set "sourcePageNumber" to the exact 1-based PDF page number where the answer support appears.',
-        'Set "sourceEvidence" to a short verbatim excerpt copied from that exact page text to serve as private instructor provenance. It is allowed to contain the correct answer.',
         'Set "passageContent" to a non-empty plain-text passage that contains enough context for the student to solve the question. The passageContent MUST NOT contain the exact answer, key names, dates, numbers, formulas, or phrases that make the question a trivial copy-paste match. The student must use interpretation, comparison, calculation, application, or synthesis rather than pure recall of the passage content. Write the passageContent in plain text; do not generate HTML.',
+        'Set "sourceEvidence" to a short verbatim excerpt copied from that exact page text to serve as private instructor provenance. It is allowed to contain the correct answer.',
+        'Before finalizing each question, re-check its passageContent against its own content and answer fields. If the exact answer text or an obvious paraphrase of it appears, rewrite the passage so it does not.',
         hasExtractedSourceText
             ? 'Do not use a source page number that does not exist in the provided source documents.'
             : 'Use Gemini native PDF understanding for document structure, page text, tables, and embedded images. Do not invent page numbers.',
@@ -166,10 +167,10 @@ export function buildResponseJsonSchema(config: GenerateQuestionPreviewConfig) {
                         type: 'integer',
                         minimum: 1,
                     },
-                    sourceEvidence: {
+                    passageContent: {
                         type: 'string',
                     },
-                    passageContent: {
+                    sourceEvidence: {
                         type: 'string',
                     },
                     difficulty: {
@@ -199,8 +200,8 @@ export function buildResponseJsonSchema(config: GenerateQuestionPreviewConfig) {
                 required: [
                     'sourceFileName',
                     'sourcePageNumber',
-                    'sourceEvidence',
                     'passageContent',
+                    'sourceEvidence',
                     'difficulty',
                     'points',
                     'content',

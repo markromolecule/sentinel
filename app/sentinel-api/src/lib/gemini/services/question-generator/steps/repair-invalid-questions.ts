@@ -1,9 +1,10 @@
 import type { GenerateQuestionPreviewConfig } from '@sentinel/shared';
-import type { LlmFile, QuestionGeneratorLlmProvider, RawGeneratedQuestion } from '../types';
+import type { LlmFile, QuestionGeneratorLlmProvider } from '../types';
 import {
     buildPassageRepairBatchPrompt,
     buildPassageRepairBatchSchema,
 } from '../../prompt-builder/passage-quality-prompts';
+import { extractQuestionAnswerSignals } from '../../question-normalizer/passage-leak-validator';
 import { runWithConcurrencyLimit } from '../utils/concurrency';
 
 const REPAIR_BATCH_SIZE = 10;
@@ -19,12 +20,12 @@ export interface FailedSlotInput {
 
 export interface RepairedQuestionResult {
     slotId: string;
-    rawQuestion: RawGeneratedQuestion | null;
+    passageContent: string | null;
     error?: string;
 }
 
 /**
- * Step 7: Requests complete replacement questions in one call per question type.
+ * Step 7: Requests passage-only repairs in one call per question type.
  */
 export async function repairInvalidQuestions(args: {
     failedSlots: FailedSlotInput[];
@@ -35,6 +36,7 @@ export async function repairInvalidQuestions(args: {
     provider: QuestionGeneratorLlmProvider;
 }): Promise<RepairedQuestionResult[]> {
     const { failedSlots, config, files, uploadedFiles, model, provider } = args;
+    void uploadedFiles;
     const slotsByType = new Map<string, FailedSlotInput[]>();
 
     for (const slot of failedSlots) {
@@ -65,6 +67,9 @@ export async function repairInvalidQuestions(args: {
                     slot.question?.content?.acceptedAnswers ??
                     slot.question?.content?.blanks ??
                     '',
+                answerSignals: slot.question
+                    ? extractQuestionAnswerSignals(slot.type as any, slot.question.content)
+                    : [],
                 passageContent: slot.question?.passageContent || '',
                 sourceEvidence: slot.question?.sourceEvidence || '',
                 violations: slot.violations,
@@ -82,33 +87,27 @@ export async function repairInvalidQuestions(args: {
         const generated = await provider.generateStructuredJson<{
             repairs: Array<{
                 slotId: string;
-                question: Omit<RawGeneratedQuestion, 'type'>;
+                passageContent: string;
             }>;
         }>({
             model,
             prompt,
             responseJsonSchema,
-            files: uploadedFiles.map((file) => ({
-                uri: file.uri,
-                mimeType: file.mimeType,
-            })),
         });
 
         const repairsBySlotId = new Map(
-            (generated.repairs ?? []).map((repair) => [repair.slotId, repair.question]),
+            (generated.repairs ?? []).map((repair) => [
+                repair.slotId,
+                repair.passageContent?.trim() ?? '',
+            ]),
         );
 
         return slots.map((slot): RepairedQuestionResult => {
-            const repairedQuestion = repairsBySlotId.get(slot.slotId);
+            const repairedPassage = repairsBySlotId.get(slot.slotId);
             return {
                 slotId: slot.slotId,
-                rawQuestion: repairedQuestion
-                    ? {
-                          ...repairedQuestion,
-                          type,
-                      }
-                    : null,
-                ...(!repairedQuestion ? { error: 'Repair response omitted this slot.' } : {}),
+                passageContent: repairedPassage || null,
+                ...(!repairedPassage ? { error: 'Repair response omitted this slot.' } : {}),
             };
         });
     });

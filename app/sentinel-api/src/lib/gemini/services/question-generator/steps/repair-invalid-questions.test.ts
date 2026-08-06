@@ -31,28 +31,14 @@ describe('RepairInvalidQuestionsStep', () => {
             },
         ];
 
-        const mockProvider: Partial<QuestionGeneratorLlmProvider> = {
-            generateStructuredJson: vi.fn().mockResolvedValue({
-                repairs: [
-                    {
-                        slotId: 'slot-1',
-                        question: {
-                            sourceFileName: 'algebra.pdf',
-                            sourcePageNumber: 1,
-                            sourceEvidence: 'Verbatim evidence.',
-                            passageContent: 'Repaired passage content.',
-                            difficulty: 'MODERATE',
-                            points: 1,
-                            content: {
-                                prompt: 'What is 3+3?',
-                                options: ['5', '6'],
-                                correctAnswer: '6',
-                            },
-                        },
-                    },
-                ],
-            }),
-        };
+        const generateStructuredJson = vi.fn().mockResolvedValue({
+            repairs: [
+                {
+                    slotId: 'slot-1',
+                    passageContent: 'Repaired passage content.',
+                },
+            ],
+        });
 
         const result = await repairInvalidQuestions({
             failedSlots,
@@ -60,14 +46,16 @@ describe('RepairInvalidQuestionsStep', () => {
             files: [new File([], 'algebra.pdf')],
             uploadedFiles: [{ name: 'file1', uri: 'uri1', mimeType: 'pdf' }],
             model: 'gemini-model',
-            provider: mockProvider as QuestionGeneratorLlmProvider,
+            provider: {
+                generateStructuredJson,
+            } as unknown as QuestionGeneratorLlmProvider,
         });
 
         expect(result).toHaveLength(1);
         expect(result[0].slotId).toBe('slot-1');
-        expect(result[0].rawQuestion).not.toBeNull();
-        expect(result[0].rawQuestion?.passageContent).toBe('Repaired passage content.');
-        expect(result[0].rawQuestion?.type).toBe('MULTIPLE_CHOICE');
+        expect(result[0].passageContent).toBe('Repaired passage content.');
+        expect(generateStructuredJson).toHaveBeenCalledTimes(1);
+        expect(generateStructuredJson.mock.calls[0][0].files).toBeUndefined();
     });
 
     it('repairs multiple failed slots of the same type in one model call', async () => {
@@ -89,15 +77,7 @@ describe('RepairInvalidQuestionsStep', () => {
         const generateStructuredJson = vi.fn().mockResolvedValue({
             repairs: failedSlots.map((slot) => ({
                 slotId: slot.slotId,
-                question: {
-                    sourceFileName: 'algebra.pdf',
-                    sourcePageNumber: 1,
-                    sourceEvidence: 'Verbatim evidence.',
-                    passageContent: `Safe passage for ${slot.slotId}.`,
-                    difficulty: 'MODERATE',
-                    points: 1,
-                    content: slot.question.content,
-                },
+                passageContent: `Safe passage for ${slot.slotId}.`,
             })),
         });
 
@@ -115,6 +95,10 @@ describe('RepairInvalidQuestionsStep', () => {
         expect(generateStructuredJson).toHaveBeenCalledTimes(1);
         expect(result).toHaveLength(2);
         expect(result.map((repair) => repair.slotId)).toEqual(['slot-1', 'slot-2']);
+        expect(result.map((repair) => repair.passageContent)).toEqual([
+            'Safe passage for slot-1.',
+            'Safe passage for slot-2.',
+        ]);
     });
 
     it('stops repairing and propagates provider availability failures', async () => {
@@ -171,13 +155,7 @@ describe('RepairInvalidQuestionsStep', () => {
                 .filter((slot) => prompt.includes(slot.slotId))
                 .map((slot) => ({
                     slotId: slot.slotId,
-                    question: {
-                        sourceFileName: 'algebra.pdf',
-                        sourcePageNumber: 1,
-                        sourceEvidence: 'Evidence.',
-                        passageContent: 'Safe passage.',
-                        content: slot.question.content,
-                    },
+                    passageContent: 'Safe passage.',
                 }));
             activeCalls--;
             return { repairs };
@@ -197,5 +175,70 @@ describe('RepairInvalidQuestionsStep', () => {
         expect(generateStructuredJson).toHaveBeenCalledTimes(3);
         expect(maxActiveCalls).toBeGreaterThan(1);
         expect(result).toHaveLength(12);
+        expect(result.every((repair) => repair.passageContent === 'Safe passage.')).toBe(true);
+    });
+
+    it('marks omitted slot repairs with a slot-specific error', async () => {
+        const failedSlots = [
+            {
+                slotId: 'slot-1',
+                type: 'MULTIPLE_CHOICE',
+                question: {
+                    content: {
+                        prompt: 'What is 3+3?',
+                        options: ['5', '6'],
+                        correctAnswer: '6',
+                    },
+                    passageContent: 'Leaky passage.',
+                    sourceEvidence: 'Evidence.',
+                },
+                violations: ['ANSWER_EXACT_MATCH'],
+                reasons: ['Leaks answer.'],
+            },
+            {
+                slotId: 'slot-2',
+                type: 'MULTIPLE_CHOICE',
+                question: {
+                    content: {
+                        prompt: 'What is 4+4?',
+                        options: ['7', '8'],
+                        correctAnswer: '8',
+                    },
+                    passageContent: 'Leaky passage.',
+                    sourceEvidence: 'Evidence.',
+                },
+                violations: ['ANSWER_EXACT_MATCH'],
+                reasons: ['Leaks answer.'],
+            },
+        ];
+
+        const generateStructuredJson = vi.fn().mockResolvedValue({
+            repairs: [
+                {
+                    slotId: 'slot-1',
+                    passageContent: 'Safe passage.',
+                },
+            ],
+        });
+
+        const result = await repairInvalidQuestions({
+            failedSlots,
+            config,
+            files: [new File([], 'algebra.pdf')],
+            uploadedFiles: [{ name: 'file1', uri: 'uri1', mimeType: 'pdf' }],
+            model: 'gemini-model',
+            provider: {
+                generateStructuredJson,
+            } as unknown as QuestionGeneratorLlmProvider,
+        });
+
+        expect(result).toHaveLength(2);
+        expect(result.find((repair) => repair.slotId === 'slot-1')?.passageContent).toBe(
+            'Safe passage.',
+        );
+        expect(result.find((repair) => repair.slotId === 'slot-2')?.passageContent).toBeNull();
+        expect(result.find((repair) => repair.slotId === 'slot-2')?.error).toBe(
+            'Repair response omitted this slot.',
+        );
     });
 });

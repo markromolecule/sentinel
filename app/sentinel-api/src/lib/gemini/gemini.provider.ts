@@ -9,6 +9,8 @@ const DEFAULT_FLASH_MODEL =
 const MAX_QUOTA_RETRIES = 1;
 const DEFAULT_QUOTA_RETRY_DELAY_MS = 30_000;
 const MAX_QUOTA_RETRY_DELAY_MS = 60_000;
+const GEMINI_GENERATION_TIMEOUT_MS = 120_000;
+const GEMINI_REQUEST_FAILURE_MESSAGE = 'Gemini request timed out or failed to connect.';
 
 type GeminiJsonSchema = Record<string, unknown>;
 type UpstreamHttpStatus = 400 | 401 | 403 | 404 | 409 | 413 | 415 | 422 | 429 | 502;
@@ -293,6 +295,25 @@ export class GeminiProvider {
         return controller.signal;
     }
 
+    private static isTimeoutOrNetworkFailure(error: unknown) {
+        if (!error) return false;
+
+        if (error instanceof DOMException && error.name === 'AbortError') {
+            return true;
+        }
+
+        if (error instanceof TypeError) {
+            return true;
+        }
+
+        return (
+            typeof error === 'object' &&
+            error !== null &&
+            'name' in error &&
+            (error as { name?: unknown }).name === 'AbortError'
+        );
+    }
+
     private static async resolveQuotaRetryDelayMs(response: Response) {
         const retryAfter = response.headers.get('retry-after');
 
@@ -329,12 +350,22 @@ export class GeminiProvider {
 
     private static async fetchWithThrottle(input: string, init: RequestInit) {
         return await aiRequestThrottler.schedule(async () => {
-            const signal = this.createTimeoutSignal(120_000);
+            const signal = this.createTimeoutSignal(GEMINI_GENERATION_TIMEOUT_MS);
 
-            return await fetch(input, {
-                ...init,
-                ...(signal ? { signal } : {}),
-            });
+            try {
+                return await fetch(input, {
+                    ...init,
+                    ...(signal ? { signal } : {}),
+                });
+            } catch (error) {
+                if (this.isTimeoutOrNetworkFailure(error)) {
+                    throw new HTTPException(502, {
+                        message: GEMINI_REQUEST_FAILURE_MESSAGE,
+                    });
+                }
+
+                throw error;
+            }
         });
     }
 }
