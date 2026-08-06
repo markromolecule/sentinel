@@ -77,17 +77,14 @@ describe('PassageQualityPrompts', () => {
     });
 
     describe('buildPassageRepairSchema', () => {
-        it('constrains repair output to standard question fields', () => {
+        it('constrains repair output to slotId and passageContent only', () => {
             const schema = buildPassageRepairSchema({
                 type: 'MULTIPLE_CHOICE',
-                difficulty: 'MODERATE',
             });
 
             expect(schema.type).toBe('object');
-            expect(schema.properties.passageContent).toBeDefined();
-            expect(schema.properties.sourceEvidence).toBeDefined();
-            expect(schema.properties.difficulty.enum).toEqual(['MODERATE']);
-            expect(schema.required).toContain('passageContent');
+            expect(Object.keys(schema.properties)).toEqual(['slotId', 'passageContent']);
+            expect(schema.required).toEqual(['slotId', 'passageContent']);
         });
     });
 
@@ -125,6 +122,7 @@ describe('PassageQualityPrompts', () => {
             expect(prompt).toContain('slot-1');
             expect(prompt).toContain('slot-2');
             expect(prompt).toContain('Valid slot IDs: slot-1, slot-2');
+            expect(prompt).toContain('Return only { "slotId", "passageContent" } objects');
             expect(repairsSchema.minItems).toBeUndefined();
             expect(repairsSchema.maxItems).toBeUndefined();
             expect(repairsSchema.items.properties.slotId).toEqual({

@@ -13,31 +13,33 @@ const baseConfig: GenerateQuestionPreviewConfig = {
 
 describe('PromptBuilderService', () => {
     describe('buildPrompt', () => {
-        it('includes the semantic separation and passageContent requirements', () => {
+        it('keeps passageContent before sourceEvidence and adds a self-check', () => {
             const prompt = buildPrompt({ config: baseConfig });
 
-            // Check semantic separation
-            expect(prompt).toContain('sourceEvidence');
-            expect(prompt).toContain('passageContent');
+            expect(prompt).toContain('Set "passageContent"');
+            expect(prompt).toContain('Set "sourceEvidence"');
+            expect(prompt.indexOf('Set "passageContent"')).toBeLessThan(
+                prompt.indexOf('Set "sourceEvidence"'),
+            );
 
-            // Check instructions
             expect(prompt).toContain('private instructor provenance');
             expect(prompt).toContain('contains enough context for the student to solve');
             expect(prompt).toContain('MUST NOT contain the exact answer');
+            expect(prompt).toContain('Before finalizing each question, re-check its passageContent');
             expect(prompt).toContain('do not generate HTML');
         });
     });
 
     describe('buildResponseJsonSchema', () => {
-        it('adds passageContent to properties and required list for all allowed types', () => {
+        it('orders passageContent before sourceEvidence and requires both fields', () => {
             const schema = buildResponseJsonSchema(baseConfig);
 
-            // Check properties
             const mcProperties = schema.properties.MULTIPLE_CHOICE.items.properties;
-            expect(mcProperties.passageContent).toBeDefined();
-            expect(mcProperties.passageContent.type).toBe('string');
+            const propertyKeys = Object.keys(mcProperties);
+            expect(propertyKeys.indexOf('passageContent')).toBeLessThan(
+                propertyKeys.indexOf('sourceEvidence'),
+            );
 
-            // Check required fields
             const mcRequired = schema.properties.MULTIPLE_CHOICE.items.required;
             expect(mcRequired).toContain('passageContent');
             expect(mcRequired).toContain('sourceEvidence');
