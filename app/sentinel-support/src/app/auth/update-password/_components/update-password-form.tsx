@@ -5,6 +5,7 @@ import { Button } from '@sentinel/ui';
 import { ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { UpdatePasswordSchemaType } from '@sentinel/shared/schema';
 import { UseFormReturn } from 'react-hook-form';
+import { PasswordRequirements } from '@/app/auth/update-password/_components/password-requirements';
 
 interface UpdatePasswordFormProps {
     form: UseFormReturn<UpdatePasswordSchemaType>;
@@ -61,6 +62,7 @@ export function UpdatePasswordForm({
                         )}
                     </button>
                 </div>
+                <PasswordRequirements value={form.watch('password')} isVisible={true} />
                 {errors.password && (
                     <p className="text-[0.8rem] font-medium text-red-500">
                         {errors.password.message}
