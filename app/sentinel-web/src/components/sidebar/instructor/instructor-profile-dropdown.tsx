@@ -1,7 +1,7 @@
 'use client';
 
 import { useTheme } from 'next-themes';
-import { Settings, Sun, Moon, Monitor, LogOut, Check } from 'lucide-react';
+import { User, Sun, Moon, Monitor, LogOut, Check } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -75,9 +75,9 @@ export function InstructorProfileDropdown() {
 
                 <div className="space-y-0.5">
                     <DropdownMenuItem className="cursor-pointer gap-2 py-1.5" asChild>
-                        <Link href="/instructor/profile" className="flex w-full items-center gap-2">
-                            <Settings className="text-muted-foreground h-3.5 w-3.5" />
-                            <span className="text-sm">Account preferences</span>
+                        <Link href="/profile" className="flex w-full items-center gap-2">
+                            <User className="text-muted-foreground h-3.5 w-3.5" />
+                            <span className="text-sm">Profile</span>
                         </Link>
                     </DropdownMenuItem>
                 </div>

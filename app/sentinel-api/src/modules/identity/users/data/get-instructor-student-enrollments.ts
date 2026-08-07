@@ -17,6 +17,7 @@ type InstructorStudentEnrollmentRecord = {
     student_number: string | null;
     status: string | null;
     last_seen_at: Date | string | null;
+    avatar_url: string | null;
     department_code: string | null;
     institution_id: string | null;
     institution_name: string | null;
@@ -57,6 +58,7 @@ function mapInstructorStudentEnrollment(record: InstructorStudentEnrollmentRecor
         lastName: record.last_name ?? '',
         email: record.email ?? '',
         role: 'student' as const,
+        avatarUrl: record.avatar_url ?? null,
         department: record.department_code,
         departmentCode: record.department_code,
         institution: record.institution_name ?? record.institution_id ?? null,
@@ -102,6 +104,7 @@ export async function getInstructorStudentEnrollmentsData({
             'up.user_id',
             'up.first_name',
             'up.last_name',
+            'up.avatar_url',
             'u.email',
             's.student_number',
             'up.status',
@@ -125,6 +128,7 @@ export async function getInstructorStudentEnrollmentsData({
             'up.user_id',
             'up.first_name',
             'up.last_name',
+            'up.avatar_url',
             'u.email',
             's.student_number',
             'up.status',

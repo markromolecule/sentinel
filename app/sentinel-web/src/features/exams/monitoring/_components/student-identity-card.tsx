@@ -1,7 +1,7 @@
 'use client';
 
 import { StudentSession } from '@sentinel/shared/types';
-import { Card, Badge, Separator } from '@sentinel/ui';
+import { Card, Badge, Separator, Avatar, AvatarImage, AvatarFallback } from '@sentinel/ui';
 import { Activity, AlertTriangle, Clock } from 'lucide-react';
 import { cn } from '@sentinel/ui';
 import { statusConfig } from '@sentinel/shared/constants';
@@ -24,10 +24,13 @@ export function StudentIdentityCard({ student }: StudentIdentityCardProps) {
             <div className="h-1 bg-[#323d8f]" />
             <div className="p-5">
                 <div className="mb-5 flex items-center gap-4">
-                    <div className="ring-border/20 flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-[#323d8f] to-[#4a5bb8] text-lg font-bold text-white shadow-sm ring-1">
-                        {student.firstName[0]}
-                        {student.lastName[0]}
-                    </div>
+                    <Avatar className="ring-border/20 h-12 w-12 border-2 border-white shadow-sm ring-1">
+                        <AvatarImage src={student.avatarUrl || undefined} alt={`${student.firstName} ${student.lastName}`} className="object-cover" />
+                        <AvatarFallback className="bg-gradient-to-br from-[#323d8f] to-[#4a5bb8] text-lg font-bold text-white">
+                            {student.firstName?.[0] || ''}
+                            {student.lastName?.[0] || ''}
+                        </AvatarFallback>
+                    </Avatar>
                     <div className="min-w-0 flex-1">
                         <h2 className="text-foreground truncate text-lg leading-tight font-bold">
                             {student.firstName} {student.lastName}
