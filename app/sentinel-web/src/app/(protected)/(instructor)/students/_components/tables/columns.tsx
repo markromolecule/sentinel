@@ -2,7 +2,7 @@
 
 import { ColumnDef } from '@tanstack/react-table';
 import { Student } from '@sentinel/shared/types';
-import { DataTableColumnHeader, Checkbox } from '@sentinel/ui';
+import { DataTableColumnHeader, Checkbox, Avatar, AvatarImage, AvatarFallback } from '@sentinel/ui';
 import { StatusBadge } from '@/components/common/displays/status-badge';
 import { StudentActionCell } from './student-action-cell';
 
@@ -53,13 +53,16 @@ export const columns: ColumnDef<Student>[] = [
         header: ({ column }) => <DataTableColumnHeader column={column} title="Student" />,
         cell: ({ row }) => {
             const student = row.original;
-            const initials = `${student.firstName[0]}${student.lastName[0]}`;
+            const initials = `${student.firstName?.[0] || ''}${student.lastName?.[0] || ''}`;
 
             return (
                 <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#323d8f] to-[#4a5bb8] text-xs font-bold text-white">
-                        {initials}
-                    </div>
+                    <Avatar className="h-9 w-9 shrink-0">
+                        <AvatarImage src={student.avatarUrl || undefined} alt={`${student.firstName} ${student.lastName}`} className="object-cover" />
+                        <AvatarFallback className="bg-gradient-to-br from-[#323d8f] to-[#4a5bb8] text-xs font-bold text-white">
+                            {initials}
+                        </AvatarFallback>
+                    </Avatar>
                     <div>
                         <p className="text-foreground text-sm font-medium">
                             {student.firstName} {student.lastName}

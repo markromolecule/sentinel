@@ -108,6 +108,7 @@ export const instructorStudentEnrollmentSchemaOpenApi = z
         lastName: z.string(),
         email: z.string().email().or(z.literal('')),
         role: z.literal('student'),
+        avatarUrl: z.string().nullable().optional(),
         department: z.string().nullable().optional(),
         departmentCode: z.string().nullable().optional(),
         institution: z.string().nullable().optional(),

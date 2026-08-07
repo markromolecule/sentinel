@@ -55,7 +55,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             </div>
 
             {/* Right Column - Form Content */}
-            <div className="flex w-full flex-col items-center justify-start overflow-y-auto p-4 sm:p-12 lg:h-screen lg:justify-center lg:p-24">
+            <div className="flex w-full flex-col items-center justify-start overflow-y-scroll p-4 sm:p-12 lg:h-screen lg:justify-center lg:p-24 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <div className="mx-auto flex w-full max-w-[440px] flex-col items-center py-12 lg:py-0">
                     {/* Mobile Logo */}
                     <div className="mb-8 flex w-full justify-center lg:hidden">

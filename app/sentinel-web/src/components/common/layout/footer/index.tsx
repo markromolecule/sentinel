@@ -45,7 +45,7 @@ export function Footer() {
                                 alt="Sentinel"
                                 width={384}
                                 height={92}
-                                className="-ml-1 block h-10 w-auto"
+                                className="-ml-3 block h-10 w-auto"
                             />
                         </Link>
                         <p className="max-w-[18rem] text-sm leading-6 text-white/40">
