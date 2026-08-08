@@ -8,6 +8,7 @@ import { resolveLobbyRuntimeAccess } from './resolve-lobby-runtime-access';
 import { validateRemediationAccess } from './validate-remediation-access';
 import { validateStudentEnrollment } from './validate-student-enrollment';
 import { resolveStudentOverrideAccess } from './resolve-student-override-access';
+import { DEFAULT_EXAMINATION_GLOBAL_SETTINGS } from '@sentinel/shared/constants';
 
 export type EvaluateStudentExamEligibilityArgs = {
     dbClient: DbClient;
@@ -219,7 +220,9 @@ export async function evaluateStudentExamEligibilityService({
         now,
         hasActiveAttempt: hasResumableAttempt,
         reconnectAttemptCount: Number(latestAttempt?.reconnect_attempt_count ?? 0),
-        maxReconnectAttempts: resolvedExam.max_reconnect_attempts ?? undefined,
+        maxReconnectAttempts:
+            resolvedExam.max_reconnect_attempts ??
+            DEFAULT_EXAMINATION_GLOBAL_SETTINGS.defaultMaxReconnectAttempts,
     });
     const accessOverride = await StudentOverridesService.getActiveStudentExamOverride({
         dbClient,

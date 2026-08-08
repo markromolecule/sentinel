@@ -16,8 +16,21 @@ export function formatLobbyCountdown(milliseconds: number): string {
 }
 
 /**
- * Resolves reconnect copy for lobby summary and status surfaces without
- * presenting placeholder 0/0 runtime values as a confirmed nonzero policy.
+ * Resolves reconnect copy for lobby summary and status surfaces.
+ *
+ * Prefers live `runtimeAccess` values (`reconnectAttemptsRemaining` /
+ * `totalReconnectAttempts`) when they are available and trustworthy.  A
+ * "placeholder zero" situation arises when the server returns 0/0 for both
+ * fields but the exam configuration carries a positive limit — this happens
+ * transiently when the check-in has not yet propagated the attempt count back
+ * to the eligibility service.  In that case the configured total is used so
+ * the student never sees a misleading "0 left" display.
+ *
+ * @param runtimeAccess - Live runtime access object from the eligibility check.
+ * @param configuredMaxReconnectAttempts - The exam's configured reconnect
+ *   limit, sourced from `ExamConfig.maxReconnectAttempts`.
+ * @returns An object with `headerValue` (short badge copy) and an optional
+ *   `statusMessage` (longer sentence for the status info panel).
  */
 export function resolveReconnectDisplay(
     runtimeAccess?: ExamRuntimeAccess | null,
@@ -28,10 +41,14 @@ export function resolveReconnectDisplay(
     const configuredTotal = configuredMaxReconnectAttempts ?? null;
 
     if (typeof remaining === 'number' && typeof total === 'number') {
-        const isPlaceholderZeroPolicy = total === 0 && remaining === 0 && configuredTotal !== 0;
+        // Treat a 0/0 runtime result as a placeholder when the exam config
+        // carries a positive configured limit.  This can happen transiently
+        // before the eligibility service has seen the updated attempt count.
+        const isPlaceholderZeroPolicy =
+            total === 0 && remaining === 0 && typeof configuredTotal === 'number' && configuredTotal > 0;
 
         if (isPlaceholderZeroPolicy) {
-            const fallbackTotal = Math.max(0, configuredTotal ?? 0);
+            const fallbackTotal = configuredTotal;
 
             return {
                 headerValue: `0 used • ${fallbackTotal} left`,

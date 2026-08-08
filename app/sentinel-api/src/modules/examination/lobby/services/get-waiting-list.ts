@@ -1,8 +1,17 @@
 import { type DbClient } from '@sentinel/db';
+import { DEFAULT_EXAMINATION_GLOBAL_SETTINGS } from '@sentinel/shared/constants';
 
 /**
- * Returns the lobby waiting list with each student's latest attempt state and
- * the configured reconnect limit for instructor decisions.
+ * Returns the lobby waiting list for an exam, including each student's latest
+ * attempt state and the effective reconnect limit for instructor decisions.
+ *
+ * When `exam_configurations.max_reconnect_attempts` is null or unconfigured,
+ * falls back to the global default (`DEFAULT_EXAMINATION_GLOBAL_SETTINGS.defaultMaxReconnectAttempts`)
+ * so the instructor sees the correct limit in the waiting list row.
+ *
+ * @param dbClient - Kysely database client.
+ * @param examId - UUID of the exam whose lobby waiting list is requested.
+ * @returns Ordered lobby admission list with attempt state and reconnect metadata.
  */
 export const getWaitingList = async (dbClient: DbClient, examId: string) => {
     const examConfiguration = await dbClient
@@ -64,7 +73,9 @@ export const getWaitingList = async (dbClient: DbClient, examId: string) => {
             hasActiveAttempt: attemptStatus === 'IN_PROGRESS',
             attemptStatus: attemptStatus,
             reconnectCount: attempt?.reconnectCount ?? 0,
-            maxReconnectAttempts: Number(examConfiguration?.max_reconnect_attempts ?? 0),
+            maxReconnectAttempts:
+                examConfiguration?.max_reconnect_attempts ??
+                DEFAULT_EXAMINATION_GLOBAL_SETTINGS.defaultMaxReconnectAttempts,
         };
     });
 };
