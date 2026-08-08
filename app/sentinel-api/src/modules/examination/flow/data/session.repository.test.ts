@@ -426,6 +426,115 @@ describe('SessionRepository.createSession', () => {
         );
     });
 
+    it('resumes a CLOSED attempt when a REOPEN override references it', async () => {
+        const updateBuilder = {
+            set: vi.fn().mockReturnThis(),
+            where: vi.fn().mockReturnThis(),
+            execute: vi.fn().mockResolvedValue(undefined),
+        };
+        const dbClient = {
+            selectFrom: vi
+                .fn()
+                .mockReturnValueOnce(createRemediationSelect(undefined))
+                .mockReturnValueOnce(
+                    createExistingAttemptSelect({
+                        attempt_id: 'attempt-closed',
+                        completed_at: null,
+                        status: 'IN_PROGRESS',
+                        lifecycle_state: 'CLOSED',
+                        reopened_until: null,
+                        created_at: new Date('2026-04-13T05:00:00.000Z'),
+                        answer_snapshot: { 'question-1': 'B' },
+                        time_spent_minutes: 10,
+                        reconnect_attempt_count: 2,
+                    }),
+                ),
+            updateTable: vi.fn().mockReturnValue(updateBuilder),
+        } as unknown as DbClient;
+
+        const result = await SessionRepository.createSession(dbClient, {
+            examId: 'exam-1',
+            studentId: 'student-1',
+            maxReconnectAttempts: 3,
+            resumeRequestId: '55555555-5555-4555-8555-555555555555',
+            accessOverride: {
+                id: 'override-reopen',
+                examId: 'exam-1',
+                studentId: 'student-1',
+                grantedBy: 'instructor-1',
+                overrideType: 'REOPEN',
+                availableFrom: '2026-04-13T06:00:00.000Z',
+                availableUntil: '2026-04-13T08:00:00.000Z',
+                allowedAttempts: 1,
+                usedAttempts: 0,
+                usedAttemptIds: [],
+                sourceAttemptId: 'attempt-closed',
+                notes: null,
+                createdAt: '2026-04-13T06:00:00.000Z',
+                updatedAt: '2026-04-13T06:00:00.000Z',
+            },
+        });
+
+        expect(result).toMatchObject({
+            sessionId: 'attempt-closed',
+            isResumed: true,
+            reconnectAttemptCount: 2,
+        });
+        expect(updateBuilder.set).toHaveBeenCalledWith(
+            expect.objectContaining({
+                lifecycle_state: 'IN_PROGRESS',
+            }),
+        );
+    });
+
+    it('resumes a CLOSED attempt when reopened_until is a future timestamp', async () => {
+        const futureTime = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+        const updateBuilder = {
+            set: vi.fn().mockReturnThis(),
+            where: vi.fn().mockReturnThis(),
+            execute: vi.fn().mockResolvedValue(undefined),
+        };
+        const dbClient = {
+            selectFrom: vi
+                .fn()
+                .mockReturnValueOnce(createRemediationSelect(undefined))
+                .mockReturnValueOnce(
+                    createExistingAttemptSelect({
+                        attempt_id: 'attempt-closed-window',
+                        completed_at: null,
+                        status: 'IN_PROGRESS',
+                        lifecycle_state: 'CLOSED',
+                        reopened_until: futureTime,
+                        created_at: new Date('2026-04-13T05:00:00.000Z'),
+                        answer_snapshot: { 'question-1': 'C' },
+                        time_spent_minutes: 8,
+                        reconnect_attempt_count: 1,
+                    }),
+                ),
+            updateTable: vi.fn().mockReturnValue(updateBuilder),
+        } as unknown as DbClient;
+
+        const result = await SessionRepository.createSession(dbClient, {
+            examId: 'exam-1',
+            studentId: 'student-1',
+            maxReconnectAttempts: 3,
+            resumeRequestId: '66666666-6666-4666-8666-666666666666',
+        });
+
+        expect(result).toMatchObject({
+            sessionId: 'attempt-closed-window',
+            isResumed: true,
+            reconnectAttemptCount: 2,
+        });
+        expect(updateBuilder.set).toHaveBeenCalledWith(
+            expect.objectContaining({
+                lifecycle_state: 'IN_PROGRESS',
+            }),
+        );
+    });
+});
+
+describe('SessionRepository.updateSyncProgress', () => {
     it('guards progress sync with active-attempt predicates and reports the updated row count', async () => {
         const updateBuilder = {
             set: vi.fn().mockReturnThis(),
@@ -452,19 +561,9 @@ describe('SessionRepository.createSession', () => {
                 last_synced_at: expect.any(Date),
             }),
         );
-        expect(updateBuilder.where).toHaveBeenNthCalledWith(
-            1,
-            'attempt_id',
-            '=',
-            'attempt-sync-1',
-        );
+        expect(updateBuilder.where).toHaveBeenNthCalledWith(1, 'attempt_id', '=', 'attempt-sync-1');
         expect(updateBuilder.where).toHaveBeenNthCalledWith(2, 'status', '=', 'IN_PROGRESS');
         expect(updateBuilder.where).toHaveBeenNthCalledWith(3, 'completed_at', 'is', null);
-        expect(updateBuilder.where).toHaveBeenNthCalledWith(
-            4,
-            'lifecycle_state',
-            '=',
-            'IN_PROGRESS',
-        );
+        expect(updateBuilder.where).toHaveBeenNthCalledWith(4, 'lifecycle_state', '=', 'IN_PROGRESS');
     });
 });

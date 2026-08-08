@@ -50,21 +50,25 @@ function buildAttemptLifecycleRuntimeBlock(args: {
 
     if (args.lifecycleState === 'CLOSED') {
         return {
-            isBlocked: true,
-            isResumable: false,
-            runtimeAccess: {
-                state: 'closed' as const,
-                reasonCode: 'CLOSED' as const,
-                message:
-                    args.reason ??
-                    'This exam attempt has been closed and can no longer be resumed.',
-                canStart: false,
-                canResume: false,
-                hasActiveAttempt: false,
-                startsAt: null,
-                endsAt: null,
-                reopenedUntil: null,
-            },
+            // Allow resumption when there is an active reopen window so the
+            // REOPEN override path can grant the student a fresh entry.
+            isBlocked: !hasActiveReopenWindow,
+            isResumable: hasActiveReopenWindow,
+            runtimeAccess: hasActiveReopenWindow
+                ? null
+                : {
+                      state: 'closed' as const,
+                      reasonCode: 'CLOSED' as const,
+                      message:
+                          args.reason ??
+                          'This exam attempt has been closed and can no longer be resumed.',
+                      canStart: false,
+                      canResume: false,
+                      hasActiveAttempt: false,
+                      startsAt: null,
+                      endsAt: null,
+                      reopenedUntil: null,
+                  },
         };
     }
 
@@ -233,8 +237,10 @@ export async function evaluateStudentExamEligibilityService({
     const hasValidReopenOverride =
         accessOverride?.overrideType === 'REOPEN' &&
         accessOverride.sourceAttemptId === latestAttempt?.attempt_id &&
-        latestAttempt?.status === 'IN_PROGRESS' &&
-        latestAttemptLifecycle.isResumable;
+        latestAttempt?.status === 'IN_PROGRESS';
+        // NOTE: isResumable is intentionally excluded — a CLOSED attempt that
+        // receives a REOPEN override must still be treated as having a valid
+        // reopen override so the student can navigate to the lobby and resume.
     const runtimeAccess =
         (resolvedExam.lobby_admission_mode ?? 'INSTRUCTOR_GATED') === 'INSTRUCTOR_GATED' &&
         !latestAttempt?.completed_at &&

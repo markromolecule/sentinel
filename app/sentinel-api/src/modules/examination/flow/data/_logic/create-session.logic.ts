@@ -90,7 +90,8 @@ export async function executeCreateSession(
         reopenedUntil && !Number.isNaN(reopenedUntil.getTime()) && reopenedUntil >= new Date(),
     );
     const canResumeLockedAttempt =
-        existingAttempt?.lifecycle_state === 'LOCKED' &&
+        (existingAttempt?.lifecycle_state === 'LOCKED' ||
+            existingAttempt?.lifecycle_state === 'CLOSED') &&
         (hasActiveReopenWindow ||
             (accessOverride?.overrideType === 'REOPEN' &&
                 accessOverride.sourceAttemptId === existingAttempt.attempt_id));
@@ -177,6 +178,22 @@ async function handleResume(
     });
 }
 
+/**
+ * Validates and executes the resume of an existing attempt, handling reconnect
+ * counting, idempotency checks, and override marking.
+ *
+ * Allows resumption when the attempt's `lifecycle_state` is `IN_PROGRESS`,
+ * `LOCKED`, or `CLOSED` (the latter two only when a valid `REOPEN` override or
+ * an active `reopened_until` window is present).
+ *
+ * Throws HTTP 409 if the attempt is already completed, or HTTP 403 if the
+ * session is no longer resumable or reconnect limits are exceeded.
+ *
+ * @param db - Kysely database client.
+ * @param args - Resume parameters including existing attempt, reconnect limit,
+ *   access override, and the idempotency resume request ID.
+ * @returns A `CreateSessionResult` with `isResumed: true` on success.
+ */
 async function resumeLockedAttempt(
     db: DbClient,
     args: {
@@ -202,7 +219,8 @@ async function resumeLockedAttempt(
         reopenedUntil && !Number.isNaN(reopenedUntil.getTime()) && reopenedUntil >= new Date(),
     );
     const canResumeLockedAttempt =
-        existingAttempt.lifecycle_state === 'LOCKED' &&
+        (existingAttempt.lifecycle_state === 'LOCKED' ||
+            existingAttempt.lifecycle_state === 'CLOSED') &&
         (hasActiveReopenWindow ||
             (accessOverride?.overrideType === 'REOPEN' &&
                 accessOverride.sourceAttemptId === existingAttempt.attempt_id));
