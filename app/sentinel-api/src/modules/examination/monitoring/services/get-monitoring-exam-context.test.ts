@@ -113,4 +113,3 @@ describe('getMonitoringExamContext', () => {
         ).rejects.toThrow('Exam monitoring record not found.');
     });
 });
-

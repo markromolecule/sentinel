@@ -5,9 +5,7 @@ import { resolveReconnectDisplay } from './index';
 /**
  * Builds a minimal ExamRuntimeAccess stub for test purposes.
  */
-function buildRuntimeAccess(
-    overrides: Partial<ExamRuntimeAccess> = {},
-): ExamRuntimeAccess {
+function buildRuntimeAccess(overrides: Partial<ExamRuntimeAccess> = {}): ExamRuntimeAccess {
     return {
         state: 'open',
         reasonCode: 'OPEN',
@@ -34,9 +32,7 @@ describe('resolveReconnectDisplay', () => {
         const result = resolveReconnectDisplay(runtimeAccess, 2);
 
         expect(result.headerValue).toBe('1 used • 1 left');
-        expect(result.statusMessage).toBe(
-            'Reconnect attempts used: 1 of 2. Remaining: 1.',
-        );
+        expect(result.statusMessage).toBe('Reconnect attempts used: 1 of 2. Remaining: 1.');
     });
 
     it('shows "0 used • 3 left" when no reconnects have been used', () => {
@@ -48,9 +44,7 @@ describe('resolveReconnectDisplay', () => {
         const result = resolveReconnectDisplay(runtimeAccess, 3);
 
         expect(result.headerValue).toBe('0 used • 3 left');
-        expect(result.statusMessage).toBe(
-            'Reconnect attempts used: 0 of 3. Remaining: 3.',
-        );
+        expect(result.statusMessage).toBe('Reconnect attempts used: 0 of 3. Remaining: 3.');
     });
 
     it('shows "2 used • 0 left" when all reconnects are exhausted', () => {
@@ -62,9 +56,7 @@ describe('resolveReconnectDisplay', () => {
         const result = resolveReconnectDisplay(runtimeAccess, 2);
 
         expect(result.headerValue).toBe('2 used • 0 left');
-        expect(result.statusMessage).toBe(
-            'Reconnect attempts used: 2 of 2. Remaining: 0.',
-        );
+        expect(result.statusMessage).toBe('Reconnect attempts used: 2 of 2. Remaining: 0.');
     });
 
     it('falls back to configuredTotal when runtimeAccess carries a transient 0/0 placeholder and configuredTotal is positive', () => {
@@ -78,9 +70,7 @@ describe('resolveReconnectDisplay', () => {
         const result = resolveReconnectDisplay(runtimeAccess, 2);
 
         expect(result.headerValue).toBe('0 used • 2 left');
-        expect(result.statusMessage).toBe(
-            'Reconnect attempts used: 0 of 2. Remaining: 2.',
-        );
+        expect(result.statusMessage).toBe('Reconnect attempts used: 0 of 2. Remaining: 2.');
     });
 
     it('does NOT treat 0/0 as a placeholder when configuredTotal is also 0', () => {

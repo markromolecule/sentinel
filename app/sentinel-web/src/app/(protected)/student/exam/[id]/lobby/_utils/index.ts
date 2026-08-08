@@ -45,7 +45,10 @@ export function resolveReconnectDisplay(
         // carries a positive configured limit.  This can happen transiently
         // before the eligibility service has seen the updated attempt count.
         const isPlaceholderZeroPolicy =
-            total === 0 && remaining === 0 && typeof configuredTotal === 'number' && configuredTotal > 0;
+            total === 0 &&
+            remaining === 0 &&
+            typeof configuredTotal === 'number' &&
+            configuredTotal > 0;
 
         if (isPlaceholderZeroPolicy) {
             const fallbackTotal = configuredTotal;

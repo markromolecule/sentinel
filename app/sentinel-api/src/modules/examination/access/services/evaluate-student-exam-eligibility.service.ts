@@ -238,9 +238,9 @@ export async function evaluateStudentExamEligibilityService({
         accessOverride?.overrideType === 'REOPEN' &&
         accessOverride.sourceAttemptId === latestAttempt?.attempt_id &&
         latestAttempt?.status === 'IN_PROGRESS';
-        // NOTE: isResumable is intentionally excluded — a CLOSED attempt that
-        // receives a REOPEN override must still be treated as having a valid
-        // reopen override so the student can navigate to the lobby and resume.
+    // NOTE: isResumable is intentionally excluded — a CLOSED attempt that
+    // receives a REOPEN override must still be treated as having a valid
+    // reopen override so the student can navigate to the lobby and resume.
     const runtimeAccess =
         (resolvedExam.lobby_admission_mode ?? 'INSTRUCTOR_GATED') === 'INSTRUCTOR_GATED' &&
         !latestAttempt?.completed_at &&

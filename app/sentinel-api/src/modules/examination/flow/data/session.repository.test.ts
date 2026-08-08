@@ -564,6 +564,11 @@ describe('SessionRepository.updateSyncProgress', () => {
         expect(updateBuilder.where).toHaveBeenNthCalledWith(1, 'attempt_id', '=', 'attempt-sync-1');
         expect(updateBuilder.where).toHaveBeenNthCalledWith(2, 'status', '=', 'IN_PROGRESS');
         expect(updateBuilder.where).toHaveBeenNthCalledWith(3, 'completed_at', 'is', null);
-        expect(updateBuilder.where).toHaveBeenNthCalledWith(4, 'lifecycle_state', '=', 'IN_PROGRESS');
+        expect(updateBuilder.where).toHaveBeenNthCalledWith(
+            4,
+            'lifecycle_state',
+            '=',
+            'IN_PROGRESS',
+        );
     });
 });

@@ -112,11 +112,13 @@ describe('Telemetry Evidence Services', () => {
             .executeTakeFirstOrThrow();
 
         // 5. Config
-        const aiRules = overrides.aiRules ?? {
-            face_detection: true,
-            multiple_faces_detection: true,
-            gaze_tracking: true,
-        };
+        const aiRules = overrides.hasOwnProperty('aiRules')
+            ? overrides.aiRules
+            : {
+                  face_detection: true,
+                  multiple_faces_detection: true,
+                  gaze_tracking: true,
+              };
         await db
             .insertInto('exam_configurations')
             .values({
@@ -137,12 +139,25 @@ describe('Telemetry Evidence Services', () => {
             .returningAll()
             .executeTakeFirstOrThrow();
 
+        // 7. Flagged Incident (needed for telemetry_incident_evidence constraint)
+        const incident = await db
+            .insertInto('flagged_incidents')
+            .values({
+                attempt_id: attempt.attempt_id,
+                incident_type: 'FACE_NOT_VISIBLE',
+                severity: 'MEDIUM',
+                status: 'PENDING',
+            })
+            .returningAll()
+            .executeTakeFirstOrThrow();
+
         return {
             userId,
             studentId: student.student_id,
             institutionId,
             examId: exam.exam_id,
             attemptId: attempt.attempt_id,
+            incidentId: incident.incident_id,
         };
     }
 
@@ -192,6 +207,60 @@ describe('Telemetry Evidence Services', () => {
                 ),
             ).rejects.toThrow('AI proctoring rule for event type FACE_NOT_VISIBLE is disabled.');
         });
+
+        testWithDbClient(
+            'authorizes FACE_NOT_VISIBLE upload when ai_rules is null',
+            async ({ dbClient }) => {
+                (globalThis as any).activeTestTrx = dbClient;
+                const fix = await createTestFixture(dbClient, {
+                    aiRules: null,
+                });
+
+                const auth = await EvidenceAuthorizationService.authorizeStudentUpload(
+                    dbClient,
+                    fix.attemptId,
+                    fix.userId,
+                    'FACE_NOT_VISIBLE',
+                );
+
+                expect(auth.attemptId).toBe(fix.attemptId);
+            },
+        );
+
+        testWithDbClient('authorizes GAZE upload when ai_rules is null', async ({ dbClient }) => {
+            (globalThis as any).activeTestTrx = dbClient;
+            const fix = await createTestFixture(dbClient, {
+                aiRules: null,
+            });
+
+            const auth = await EvidenceAuthorizationService.authorizeStudentUpload(
+                dbClient,
+                fix.attemptId,
+                fix.userId,
+                'GAZE',
+            );
+
+            expect(auth.attemptId).toBe(fix.attemptId);
+        });
+
+        testWithDbClient(
+            'authorizes GAZE upload when ai_rules is empty object',
+            async ({ dbClient }) => {
+                (globalThis as any).activeTestTrx = dbClient;
+                const fix = await createTestFixture(dbClient, {
+                    aiRules: {},
+                });
+
+                const auth = await EvidenceAuthorizationService.authorizeStudentUpload(
+                    dbClient,
+                    fix.attemptId,
+                    fix.userId,
+                    'GAZE',
+                );
+
+                expect(auth.attemptId).toBe(fix.attemptId);
+            },
+        );
     });
 
     describe('EvidenceUploadService', () => {
@@ -199,7 +268,7 @@ describe('Telemetry Evidence Services', () => {
             (globalThis as any).activeTestTrx = dbClient;
             const fix = await createTestFixture(dbClient);
             const eventId = randomUUID();
-            const incidentId = randomUUID();
+            const incidentId = fix.incidentId;
 
             const result = await EvidenceUploadService.initializeUpload(dbClient, {
                 attemptId: fix.attemptId,
@@ -238,7 +307,7 @@ describe('Telemetry Evidence Services', () => {
 
                 const first = await EvidenceUploadService.initializeUpload(dbClient, {
                     attemptId: fix.attemptId,
-                    incidentId: randomUUID(),
+                    incidentId: fix.incidentId,
                     eventId,
                     eventType: 'FACE_NOT_VISIBLE',
                     capturedAt: new Date().toISOString(),
@@ -249,7 +318,7 @@ describe('Telemetry Evidence Services', () => {
 
                 const second = await EvidenceUploadService.initializeUpload(dbClient, {
                     attemptId: fix.attemptId,
-                    incidentId: randomUUID(),
+                    incidentId: fix.incidentId,
                     eventId,
                     eventType: 'FACE_NOT_VISIBLE',
                     capturedAt: new Date().toISOString(),
@@ -270,7 +339,7 @@ describe('Telemetry Evidence Services', () => {
 
             const init = await EvidenceUploadService.initializeUpload(dbClient, {
                 attemptId: fix.attemptId,
-                incidentId: randomUUID(),
+                incidentId: fix.incidentId,
                 eventId,
                 eventType: 'FACE_NOT_VISIBLE',
                 capturedAt: new Date().toISOString(),
@@ -307,7 +376,7 @@ describe('Telemetry Evidence Services', () => {
 
                 const first = await EvidenceUploadService.initializeUpload(dbClient, {
                     attemptId: fix.attemptId,
-                    incidentId: randomUUID(),
+                    incidentId: fix.incidentId,
                     eventId: firstEventId,
                     eventType: 'FACE_NOT_VISIBLE',
                     capturedAt: new Date().toISOString(),
@@ -330,7 +399,7 @@ describe('Telemetry Evidence Services', () => {
                 await expect(
                     EvidenceUploadService.initializeUpload(dbClient, {
                         attemptId: fix.attemptId,
-                        incidentId: randomUUID(),
+                        incidentId: fix.incidentId,
                         eventId: secondEventId,
                         eventType: 'FACE_NOT_VISIBLE',
                         capturedAt: new Date().toISOString(),
@@ -349,7 +418,7 @@ describe('Telemetry Evidence Services', () => {
 
             const init = await EvidenceUploadService.initializeUpload(dbClient, {
                 attemptId: fix.attemptId,
-                incidentId: randomUUID(),
+                incidentId: fix.incidentId,
                 eventId,
                 eventType: 'FACE_NOT_VISIBLE',
                 capturedAt: new Date().toISOString(),
@@ -382,7 +451,7 @@ describe('Telemetry Evidence Services', () => {
 
                 const init = await EvidenceUploadService.initializeUpload(dbClient, {
                     attemptId: fix.attemptId,
-                    incidentId: randomUUID(),
+                    incidentId: fix.incidentId,
                     eventId,
                     eventType: 'FACE_NOT_VISIBLE',
                     capturedAt: new Date().toISOString(),
@@ -396,7 +465,7 @@ describe('Telemetry Evidence Services', () => {
                 await expect(
                     EvidenceUploadService.initializeUpload(dbClient, {
                         attemptId: fix.attemptId,
-                        incidentId: randomUUID(),
+                        incidentId: fix.incidentId,
                         eventId,
                         eventType: 'FACE_NOT_VISIBLE',
                         capturedAt: new Date().toISOString(),
@@ -418,7 +487,7 @@ describe('Telemetry Evidence Services', () => {
                 const failedEventId = randomUUID();
                 const failed = await EvidenceUploadService.initializeUpload(dbClient, {
                     attemptId: fix.attemptId,
-                    incidentId: randomUUID(),
+                    incidentId: fix.incidentId,
                     eventId: failedEventId,
                     eventType: 'FACE_NOT_VISIBLE',
                     capturedAt: new Date().toISOString(),
@@ -434,7 +503,7 @@ describe('Telemetry Evidence Services', () => {
                 await expect(
                     EvidenceUploadService.initializeUpload(dbClient, {
                         attemptId: fix.attemptId,
-                        incidentId: randomUUID(),
+                        incidentId: fix.incidentId,
                         eventId: randomUUID(),
                         eventType: 'MULTIPLE_FACES',
                         capturedAt: new Date().toISOString(),
@@ -456,7 +525,7 @@ describe('Telemetry Evidence Services', () => {
             // Create available evidence
             const init = await EvidenceUploadService.initializeUpload(dbClient, {
                 attemptId: fix.attemptId,
-                incidentId: randomUUID(),
+                incidentId: fix.incidentId,
                 eventId,
                 eventType: 'FACE_NOT_VISIBLE',
                 capturedAt: new Date().toISOString(),

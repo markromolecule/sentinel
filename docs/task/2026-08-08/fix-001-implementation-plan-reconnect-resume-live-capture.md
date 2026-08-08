@@ -2,7 +2,7 @@
 
 ## Status
 
-- **Status:** Planning Mode / In Review
+- **Status:** Completed
 - **Target Date:** 2026-08-08
 - **Scope:** Monorepo (`app/sentinel-api`, `app/sentinel-web`, `packages/services`, `packages/shared`)
 
@@ -80,8 +80,8 @@ When students reconnect, reload, or exit during an active attempt, three key iss
 
 ## Done Criteria
 
-- [ ] Instructor lobby and monitoring overview correctly report configured max reconnect attempts (e.g. `1 / 2`) even when `exam_configurations.max_reconnect_attempts` is null.
-- [ ] Student lobby updates reconnect count accurately upon returning from interrupted/reloaded attempt.
-- [ ] Reopened attempts (previously `CLOSED` by HIGH flagging events) can be resumed without throwing `400 Bad Request` or `Missing resumeRequestId`.
-- [ ] `EvidenceAuthorizationService` permits live capture frame uploads when AI proctoring rules are null/unconfigured by defaulting to enabled.
-- [ ] All Vitest unit tests in touched modules pass cleanly.
+- [x] Instructor lobby and monitoring overview correctly report configured max reconnect attempts (e.g. `1 / 2`) even when `exam_configurations.max_reconnect_attempts` is null.
+- [x] Student lobby updates reconnect count accurately upon returning from interrupted/reloaded attempt.
+- [x] Reopened attempts (previously `CLOSED` by HIGH flagging events) can be resumed without throwing `400 Bad Request` or `Missing resumeRequestId`.
+- [x] `EvidenceAuthorizationService` permits live capture frame uploads when AI proctoring rules are null/unconfigured by defaulting to enabled.
+- [x] All Vitest unit tests in touched modules pass cleanly.
