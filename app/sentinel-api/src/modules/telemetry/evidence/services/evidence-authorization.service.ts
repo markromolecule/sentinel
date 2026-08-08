@@ -20,7 +20,13 @@ export class EvidenceAuthorizationService {
      * - The attempt exists and is IN_PROGRESS.
      * - The student owns the attempt.
      * - The student's institution is allowlisted.
-     * - The corresponding AI proctoring rule is enabled for the exam.
+     * - The corresponding AI proctoring rule is enabled (defaults to true if null/undefined).
+     *
+     * @param db - The database client instance.
+     * @param attemptId - The ID of the exam attempt.
+     * @param studentUserId - The user ID of the student.
+     * @param eventType - The type of evidence event (e.g., FACE_NOT_VISIBLE, GAZE).
+     * @returns A promise that resolves to the authorized upload details.
      */
     static async authorizeStudentUpload(
         db: DbClient,
@@ -66,16 +72,17 @@ export class EvidenceAuthorizationService {
             });
         }
 
-        // Validate corresponding AI proctoring rule is enabled
+        // Validate corresponding AI proctoring rule is enabled.
+        // If ai_rules is null or a rule is undefined, it defaults to enabled (true).
         const aiRules = attempt.ai_rules ? (attempt.ai_rules as any) : {};
         let isRuleEnabled = false;
 
         if (eventType === 'FACE_NOT_VISIBLE') {
-            isRuleEnabled = aiRules.face_detection === true;
+            isRuleEnabled = aiRules.face_detection !== false;
         } else if (eventType === 'MULTIPLE_FACES') {
-            isRuleEnabled = aiRules.multiple_faces_detection === true;
+            isRuleEnabled = aiRules.multiple_faces_detection !== false;
         } else if (eventType === 'GAZE') {
-            isRuleEnabled = aiRules.gaze_tracking === true;
+            isRuleEnabled = aiRules.gaze_tracking !== false;
         } else {
             throw new HTTPException(400, {
                 message: `Unsupported evidence event type: ${eventType}`,

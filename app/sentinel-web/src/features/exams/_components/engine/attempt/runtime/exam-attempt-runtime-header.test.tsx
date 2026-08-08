@@ -116,7 +116,7 @@ describe('ExamAttemptRuntimeHeader', () => {
 
         const answeredBadge = screen.getByText('8/12 answered');
         const flaggedBadge = screen.getByText('3 flagged');
-        const compactControl = screen.getByRole('button', { name: 'Show passage' });
+        const compactControl = screen.getAllByRole('button', { name: 'Show passage' }).find(el => el.className.includes('md:hidden'))!;
         const submitButton = screen.getByRole('button', { name: 'Turn In' });
 
         expect(answeredBadge.className).toContain('order-2');
@@ -148,6 +148,6 @@ describe('ExamAttemptRuntimeHeader', () => {
         );
 
         const submittingButton = screen.getByRole('button', { name: 'Preparing...' });
-        expect(submittingButton).toBeDisabled();
+        expect((submittingButton as HTMLButtonElement).disabled).toBe(true);
     });
 });

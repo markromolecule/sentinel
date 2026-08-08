@@ -112,10 +112,16 @@ export function useLobbyState(args: {
 
         if (!requiresInstructorAdmission) {
             void checkIntoExamLobby(apiClient, examId)
-                .then((admission) => {
-                    if (isMounted) {
-                        setAdmissionStatus(admission.status);
+                .then(async (admission) => {
+                    if (!isMounted) {
+                        return;
                     }
+
+                    setAdmissionStatus(admission.status);
+
+                    // Refresh exam data so reconnect attempt counts reflected in
+                    // runtimeAccess are up-to-date immediately after check-in.
+                    await refreshApprovedAccess();
                 })
                 .catch(() => null)
                 .finally(() => {

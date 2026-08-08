@@ -228,4 +228,55 @@ describe('useLobbyActions', () => {
         expect(mockWriteStoredExamSession).toHaveBeenCalledWith('exam-1', sessionResult);
         expect(mockRouterPush).toHaveBeenCalledWith('/student/exam/exam-1/attempt');
     });
+
+    it('generates a resumeRequestId when entering a reopened/closed attempt even if canResume was false', async () => {
+        const sessionResult = {
+            sessionId: 'session-closed-reopened',
+            examId: 'exam-1',
+            isResumed: true,
+            answers: {},
+            elapsedSeconds: 100,
+        };
+
+        mockStartExamSession.mockResolvedValue(sessionResult);
+        mockWriteStoredExamSession.mockReturnValue({
+            examId: 'exam-1',
+            sessionId: 'session-closed-reopened',
+            storedAt: new Date().toISOString(),
+        });
+
+        const { result } = renderHook(() =>
+            useLobbyActions(
+                createArgs({
+                    storedSession: null,
+                    canEnterExam: true,
+                    runtimeAccess: {
+                        state: 'open',
+                        reasonCode: 'OPEN',
+                        message: 'Open',
+                        canStart: false,
+                        canResume: false,
+                        hasActiveAttempt: true,
+                        startsAt: null,
+                        endsAt: null,
+                        reopenedUntil: null,
+                    },
+                }),
+            ),
+        );
+
+        await act(async () => {
+            await result.current.handleEnterExam();
+        });
+
+        expect(mockWriteStoredReconnectIntent).toHaveBeenCalledWith(
+            'exam-1',
+            undefined,
+            'navigation',
+        );
+        expect(mockStartExamSession).toHaveBeenCalledWith(expect.anything(), {
+            examId: 'exam-1',
+            resumeRequestId: '11111111-1111-4111-8111-111111111111',
+        });
+    });
 });

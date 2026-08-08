@@ -68,12 +68,29 @@ export function useLobbyActions({
         setIsStartingSession(true);
 
         const reconnectIntent = readStoredReconnectIntent(examId);
-        const resumeRequestId =
-            reconnectIntent?.resumeRequestId ??
-            (runtimeAccess?.canResume
-                ? writeStoredReconnectIntent(examId, storedSession?.sessionId, 'navigation')
-                      ?.resumeRequestId
-                : undefined);
+        let resumeRequestId = reconnectIntent?.resumeRequestId;
+
+        /**
+         * Guarantee resumeRequestId generation for active/reopened attempts:
+         * If the student is entering/resuming an existing attempt (indicated by
+         * hasActiveAttempt, canResume, a false canStart when allowed to enter,
+         * or a storedSession), we generate a resumeRequestId and persist it to prevent
+         * bad requests on session start.
+         */
+        const isResumingAttempt =
+            runtimeAccess?.hasActiveAttempt ||
+            runtimeAccess?.canResume ||
+            !runtimeAccess?.canStart ||
+            Boolean(storedSession?.sessionId);
+
+        if (!resumeRequestId && isResumingAttempt) {
+            const updatedIntent = writeStoredReconnectIntent(
+                examId,
+                storedSession?.sessionId ?? undefined,
+                'navigation',
+            );
+            resumeRequestId = updatedIntent?.resumeRequestId;
+        }
 
         try {
             // Call startExamSession regardless of existing storedSession so server validates access and counts reconnect.

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { type DbClient } from '@sentinel/db';
+import { DEFAULT_EXAMINATION_GLOBAL_SETTINGS } from '@sentinel/shared/constants';
 import { getWaitingList } from './get-waiting-list';
 
 function createSelectBuilder(result: unknown) {
@@ -92,5 +93,77 @@ describe('getWaitingList', () => {
                 maxReconnectAttempts: 3,
             },
         ]);
+    });
+
+    it('falls back to DEFAULT_EXAMINATION_GLOBAL_SETTINGS.defaultMaxReconnectAttempts when max_reconnect_attempts is null', async () => {
+        // exam_configurations row exists but max_reconnect_attempts is null (unconfigured)
+        const configSelect = createSelectBuilder({ max_reconnect_attempts: null });
+        const admissionsSelect = createSelectBuilder([
+            {
+                admission_id: 'admission-1',
+                student_id: 'student-1',
+                status: 'WAITING',
+                checked_in_at: new Date('2026-08-08T09:00:00.000Z'),
+                decided_at: null,
+                student_number: '2026-100',
+                first_name: 'Jane',
+                last_name: 'Reconnect',
+            },
+        ]);
+        const attemptsSelect = createSelectBuilder([
+            {
+                student_id: 'student-1',
+                status: 'IN_PROGRESS',
+                created_at: new Date('2026-08-08T09:05:00.000Z'),
+                reconnect_attempt_count: 1,
+            },
+        ]);
+        const dbClient = {
+            selectFrom: vi
+                .fn()
+                .mockReturnValueOnce(configSelect)
+                .mockReturnValueOnce(admissionsSelect)
+                .mockReturnValueOnce(attemptsSelect),
+        } as unknown as DbClient;
+
+        const result = await getWaitingList(dbClient, 'exam-2');
+
+        expect(result).toHaveLength(1);
+        expect(result[0].maxReconnectAttempts).toBe(
+            DEFAULT_EXAMINATION_GLOBAL_SETTINGS.defaultMaxReconnectAttempts,
+        );
+        expect(result[0].reconnectCount).toBe(1);
+    });
+
+    it('falls back to DEFAULT_EXAMINATION_GLOBAL_SETTINGS.defaultMaxReconnectAttempts when no exam configuration row exists', async () => {
+        // no exam_configurations row at all
+        const configSelect = createSelectBuilder(undefined);
+        const admissionsSelect = createSelectBuilder([
+            {
+                admission_id: 'admission-1',
+                student_id: 'student-1',
+                status: 'WAITING',
+                checked_in_at: new Date('2026-08-08T09:00:00.000Z'),
+                decided_at: null,
+                student_number: '2026-101',
+                first_name: 'Carlos',
+                last_name: 'NoConfig',
+            },
+        ]);
+        const attemptsSelect = createSelectBuilder([]);
+        const dbClient = {
+            selectFrom: vi
+                .fn()
+                .mockReturnValueOnce(configSelect)
+                .mockReturnValueOnce(admissionsSelect)
+                .mockReturnValueOnce(attemptsSelect),
+        } as unknown as DbClient;
+
+        const result = await getWaitingList(dbClient, 'exam-3');
+
+        expect(result).toHaveLength(1);
+        expect(result[0].maxReconnectAttempts).toBe(
+            DEFAULT_EXAMINATION_GLOBAL_SETTINGS.defaultMaxReconnectAttempts,
+        );
     });
 });

@@ -1,6 +1,7 @@
 import { type DbClient } from '@sentinel/db';
 import { HTTPException } from 'hono/http-exception';
 import { sql } from 'kysely';
+import { DEFAULT_EXAMINATION_GLOBAL_SETTINGS } from '@sentinel/shared/constants';
 import { buildStaffExamVisibilityPredicates } from '../../assign/services/exam-access.service';
 import type { AssessmentAllowedRole } from '../../assessment/assessment-access';
 import type { ExamRuntimeAccess } from '../../runtime-access/runtime-access.dto';
@@ -105,7 +106,9 @@ export async function getMonitoringExamContext({
         endDateTime: exam.end_date_time ? new Date(exam.end_date_time).toISOString() : null,
         durationMinutes: exam.duration_minutes ?? 0,
         questionCount: Number(exam.question_count ?? 0),
-        maxReconnectAttempts: Number(exam.max_reconnect_attempts ?? 0),
+        maxReconnectAttempts:
+            exam.max_reconnect_attempts ??
+            DEFAULT_EXAMINATION_GLOBAL_SETTINGS.defaultMaxReconnectAttempts,
         runtimeAccess,
         remediationContext: exam.remediation_id
             ? {
