@@ -50,9 +50,9 @@ export default function StudentHeader() {
 
     return (
         <header className="border-border/40 bg-background/80 sticky top-0 z-50 w-full border-b backdrop-blur-md">
-            <div className="text-foreground relative container mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+            <div className="text-foreground relative mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
                 {/* Logo */}
-                <div className="relative z-10 flex shrink-0 items-center gap-2">
+                <div className="relative z-10 flex shrink-0 items-center gap-2 -ml-3.5">
                     <Link href="/student/classroom" className="flex items-center gap-2">
                         <div className="relative h-12 w-40">
                             {/* Light Mode Logo (Dark Text) */}

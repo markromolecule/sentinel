@@ -230,7 +230,7 @@ describe('UserSearchBar', () => {
         expect(input).toBeTruthy();
 
         const popoverContent = Array.from(document.querySelectorAll('div')).find((node) =>
-            node.className.includes('w-[calc(100svw-1rem)]'),
+            node.className.includes('w-[calc(100vw-2rem)]'),
         );
         expect(popoverContent).toBeTruthy();
         expect(popoverContent?.className).toContain('sm:w-96');

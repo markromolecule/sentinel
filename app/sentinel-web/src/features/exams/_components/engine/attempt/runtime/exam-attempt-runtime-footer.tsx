@@ -39,7 +39,7 @@ export function ExamAttemptRuntimeFooter({
                 ) : null}
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 lg:flex-nowrap lg:justify-end">
+            <div className="flex flex-wrap items-center gap-2 min-[380px]:gap-3 lg:flex-nowrap lg:justify-end">
                 <Button
                     type="button"
                     variant="outline"
@@ -47,10 +47,10 @@ export function ExamAttemptRuntimeFooter({
                     disabled={totalQuestions === 0 || currentQuestionIndex === 0}
                     className="rounded-md"
                 >
-                    <ChevronLeft className="mr-2 h-4 w-4" />
-                    Previous
+                    <ChevronLeft className="h-4 w-4 min-[380px]:mr-2" />
+                    <span className="hidden min-[380px]:inline">Previous</span>
                 </Button>
-                <div className="border-border/60 bg-muted/20 border px-4 py-2 text-center text-sm font-medium">
+                <div className="border-border/60 bg-muted/20 border px-3 py-2 text-center text-xs font-medium min-[380px]:px-4 min-[380px]:text-sm">
                     Question {totalQuestions ? currentQuestionIndex + 1 : 0} of {totalQuestions}
                 </div>
                 <Button
@@ -59,8 +59,12 @@ export function ExamAttemptRuntimeFooter({
                     disabled={totalQuestions === 0 || isSubmitting}
                     className="rounded-md"
                 >
-                    {isLastQuestion ? (isSubmitting ? 'Preparing...' : 'Turn In') : 'Next'}
-                    <ChevronRight className="ml-2 h-4 w-4" />
+                    {isLastQuestion ? (
+                        isSubmitting ? 'Preparing...' : 'Turn In'
+                    ) : (
+                        <span className="hidden min-[380px]:inline">Next</span>
+                    )}
+                    <ChevronRight className={`h-4 w-4 ${!isLastQuestion ? 'min-[380px]:ml-2' : ''}`} />
                 </Button>
             </div>
         </div>

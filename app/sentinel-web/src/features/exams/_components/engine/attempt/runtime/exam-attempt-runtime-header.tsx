@@ -52,13 +52,13 @@ export function ExamAttemptRuntimeHeader({
                     <Button
                         type="button"
                         variant="outline"
-                        className="order-4 h-10 gap-2 rounded-md px-3 md:hidden"
+                        className="order-4 h-10 gap-2 rounded-md px-3 md:hidden flex-1"
                         onClick={onToggleCompactPassage}
                     >
                         <PanelLeftOpen className="h-4 w-4" />
                         <span>Show passage</span>
                     </Button>
-
+ 
                     {/* Tablets and larger screens: toggle the resizable passage panel. */}
                     <div className="hidden md:block">
                         <TooltipProvider delayDuration={150}>
@@ -88,12 +88,12 @@ export function ExamAttemptRuntimeHeader({
                     </div>
                 </>
             ) : null}
-
+ 
             <Button
                 type="button"
                 onClick={onSubmit}
                 disabled={isSubmitting}
-                className="order-5 basis-full rounded-md px-4 sm:order-none sm:basis-auto"
+                className="order-5 flex-1 rounded-md px-4 sm:order-none sm:flex-none sm:basis-auto"
             >
                 {isSubmitting ? 'Preparing...' : 'Turn In'}
             </Button>
