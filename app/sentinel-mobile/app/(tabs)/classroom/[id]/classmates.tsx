@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useClassroomQuery } from '@sentinel/hooks';
-import { filterClassmates } from '@/features/classroom/lib/classmates-filter';
+import { filterClassmates, type StudentClassmate } from '@/features/classroom/lib/classmates-filter';
 
 export default function ClassmatesScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -34,7 +34,13 @@ export default function ClassmatesScreen() {
 
     const classmates = useMemo(() => {
         if (!classroom || !classroom.students) return [];
-        return filterClassmates(classroom.students, searchQuery);
+        const mappedStudents: StudentClassmate[] = classroom.students.map((student) => ({
+            studentId: student.studentId,
+            fullName: student.fullName ?? '',
+            studentNumber: student.studentNumber,
+            courseCode: student.courseCode ?? undefined,
+        }));
+        return filterClassmates(mappedStudents, searchQuery);
     }, [classroom, searchQuery]);
 
     if (isLoading) {

@@ -60,12 +60,12 @@ The `sentinel-mobile` app currently has several incomplete UI elements, static m
 
 ### Task 3 [Folder]: Profile Avatar, Password Mutation & Schema Validation
 - **Path:** [docs/task/2026-08-10/task-3-profile-and-password/](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-3-profile-and-password/)
-  - [phase-1-profile-avatar-and-update-mutation.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-3-profile-and-password/phase-1-profile-avatar-and-update-mutation.md)
-  - [phase-2-password-requirements-validator.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-3-profile-and-password/phase-2-password-requirements-validator.md)
+  - **[Completed]** [phase-1-profile-avatar-and-update-mutation.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-3-profile-and-password/phase-1-profile-avatar-and-update-mutation.md)
+  - **[Completed]** [phase-2-password-requirements-validator.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-3-profile-and-password/phase-2-password-requirements-validator.md)
 
 ### Task 4 [Folder]: Exam Card Start Date Formatting
 - **Path:** [docs/task/2026-08-10/task-4-exam-card-start-date/](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-4-exam-card-start-date/)
-  - [phase-1-exam-card-start-date-display.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-4-exam-card-start-date/phase-1-exam-card-start-date-display.md)
+  - **[Completed]** [phase-1-exam-card-start-date-display.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-4-exam-card-start-date/phase-1-exam-card-start-date-display.md)
 
 ### Task 5 [Folder]: Calendar Notes Parity, Header Cleanup & Notifications
 - **Path:** [docs/task/2026-08-10/task-5-calendar-notes-and-notifications/](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-5-calendar-notes-and-notifications/)
