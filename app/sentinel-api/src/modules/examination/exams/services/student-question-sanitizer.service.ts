@@ -39,8 +39,8 @@ export function sanitizeQuestionForStudentAttempt(question: ExamQuestion): ExamQ
         const count = Array.isArray(originalAcceptedAnswers)
             ? originalAcceptedAnswers.length
             : Array.isArray(originalBlanks)
-                ? originalBlanks.length
-                : 0;
+              ? originalBlanks.length
+              : 0;
 
         if (count > 0) {
             sanitizedContent.acceptedAnswers = Array(count).fill('');

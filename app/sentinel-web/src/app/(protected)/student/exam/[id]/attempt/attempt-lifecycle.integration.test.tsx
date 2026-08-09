@@ -190,8 +190,7 @@ vi.mock('@/app/(protected)/student/exam/[id]/_lib/exam-session-storage', () => (
 vi.mock('../_lib/web-telemetry-client', () => ({
     emitMediaPipeEvidenceCandidate: (...args: unknown[]) =>
         mockEmitMediaPipeEvidenceCandidate(...args),
-    emitMediaPipeTelemetryEvent: (...args: unknown[]) =>
-        mockEmitMediaPipeTelemetryEvent(...args),
+    emitMediaPipeTelemetryEvent: (...args: unknown[]) => mockEmitMediaPipeTelemetryEvent(...args),
     writeMonitoringEventTrace: (...args: unknown[]) => mockWriteMonitoringEventTrace(...args),
 }));
 
@@ -201,9 +200,13 @@ vi.mock('../_hooks/use-attempt-mediapipe-monitoring/_hooks/use-incident-evidence
     }),
 }));
 
-vi.mock('../_hooks/use-attempt-mediapipe-monitoring/_utils/capture-incident-evidence-frame', () => ({
-    captureIncidentEvidenceFrame: (...args: unknown[]) => mockCaptureIncidentEvidenceFrame(...args),
-}));
+vi.mock(
+    '../_hooks/use-attempt-mediapipe-monitoring/_utils/capture-incident-evidence-frame',
+    () => ({
+        captureIncidentEvidenceFrame: (...args: unknown[]) =>
+            mockCaptureIncidentEvidenceFrame(...args),
+    }),
+);
 
 vi.mock('@mediapipe/tasks-vision', () => ({
     FilesetResolver: {
@@ -662,6 +665,8 @@ describe('attempt lifecycle integration', () => {
 
         expect(mockPrepareExamSession).toHaveBeenCalledTimes(1);
         expect(mockWriteStoredExamTurnInPreview).toHaveBeenCalledTimes(1);
-        expect(mockRouterReplace).toHaveBeenCalledWith('/student/exam/123e4567-e89b-12d3-a456-426614174999/result');
+        expect(mockRouterReplace).toHaveBeenCalledWith(
+            '/student/exam/123e4567-e89b-12d3-a456-426614174999/result',
+        );
     });
 });

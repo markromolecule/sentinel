@@ -56,7 +56,12 @@ export function useAttemptSubmission({
     const hasStartedTurnInTransitionRef = useRef(false);
 
     const proceedToTurnInReview = async () => {
-        if (isRedirectingToTurnIn || !sessionId || isBlocked || hasStartedTurnInTransitionRef.current) {
+        if (
+            isRedirectingToTurnIn ||
+            !sessionId ||
+            isBlocked ||
+            hasStartedTurnInTransitionRef.current
+        ) {
             return;
         }
 

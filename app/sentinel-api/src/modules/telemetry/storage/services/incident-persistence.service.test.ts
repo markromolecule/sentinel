@@ -1454,7 +1454,9 @@ test('IncidentPersistenceService keeps one row and occurrence count one for conc
             .where('attempt_id', '=', fixture.attemptId)
             .execute();
 
-        expect(results.filter((result) => result?.disposition !== 'duplicate-ignored')).toHaveLength(1);
+        expect(
+            results.filter((result) => result?.disposition !== 'duplicate-ignored'),
+        ).toHaveLength(1);
         expect(incidents).toHaveLength(1);
         expect(incidents[0]?.dedupe_key).toBe('attempt:right-click:bucket-concurrent');
         expect(parseIncidentDetails(incidents[0]?.details)).toMatchObject({

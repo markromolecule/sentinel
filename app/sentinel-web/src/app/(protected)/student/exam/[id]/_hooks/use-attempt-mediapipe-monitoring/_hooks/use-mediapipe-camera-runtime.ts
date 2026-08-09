@@ -63,9 +63,7 @@ export function useMediapipeCameraRuntime({
     const lastFrameAtRef = useRef(0);
     const lastSessionIdRef = useRef<string | null>(null);
     const trackerRef = useRef(createMediaPipeSignalTrackerState());
-    const multipleFacesConfirmationRef = useRef(
-        createMediaPipeMultipleFacesConfirmationState(),
-    );
+    const multipleFacesConfirmationRef = useRef(createMediaPipeMultipleFacesConfirmationState());
     const runtimeGenerationRef = useRef(0);
 
     const [analysis, setAnalysis] = useState<MediaPipeFrameAnalysis | null>(null);

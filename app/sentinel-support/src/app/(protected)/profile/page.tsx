@@ -88,7 +88,7 @@ export default function SupportProfilePage() {
             <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
                 {/* Left Column - Profile Summary */}
                 <div className="md:col-span-4">
-                    <Card className="border-border/50 border-t-[3px] border-t-[#323d8f] bg-card shadow-sm h-full">
+                    <Card className="border-border/50 bg-card h-full border-t-[3px] border-t-[#323d8f] shadow-sm">
                         <CardContent className="flex flex-col items-center px-6 pt-8 pb-6 text-center">
                             <Avatar className="border-background ring-border/20 h-24 w-24 border-4 shadow-xl ring-1">
                                 <AvatarImage
@@ -103,7 +103,7 @@ export default function SupportProfilePage() {
                             <h2 className="text-foreground mt-4 text-xl font-bold">
                                 {profile?.firstName} {profile?.lastName}
                             </h2>
-                            <p className="text-muted-foreground mt-1 break-all text-xs">
+                            <p className="text-muted-foreground mt-1 text-xs break-all">
                                 {profile?.email}
                             </p>
                             <Badge variant="secondary" className="mt-3 font-semibold capitalize">
@@ -136,7 +136,7 @@ export default function SupportProfilePage() {
                                 </h3>
                                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                     <div className="space-y-0.5">
-                                        <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">
+                                        <span className="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase">
                                             First Name
                                         </span>
                                         <p className="text-foreground text-base font-semibold">
@@ -144,7 +144,7 @@ export default function SupportProfilePage() {
                                         </p>
                                     </div>
                                     <div className="space-y-0.5">
-                                        <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">
+                                        <span className="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase">
                                             Last Name
                                         </span>
                                         <p className="text-foreground text-base font-semibold">
@@ -152,7 +152,7 @@ export default function SupportProfilePage() {
                                         </p>
                                     </div>
                                     <div className="space-y-0.5">
-                                        <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">
+                                        <span className="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase">
                                             Role
                                         </span>
                                         <p className="text-foreground text-base font-semibold capitalize">
@@ -182,7 +182,7 @@ export default function SupportProfilePage() {
                                                 placeholder="Enter new password"
                                                 value={password}
                                                 onChange={(e) => setPassword(e.target.value)}
-                                                className="border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-primary h-9 bg-muted/30"
+                                                className="border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-primary bg-muted/30 h-9"
                                             />
                                         </div>
                                         <div className="space-y-1.5">
@@ -195,7 +195,7 @@ export default function SupportProfilePage() {
                                                 placeholder="Confirm new password"
                                                 value={confirmPassword}
                                                 onChange={(e) => setConfirmPassword(e.target.value)}
-                                                className="border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-primary h-9 bg-muted/30"
+                                                className="border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-primary bg-muted/30 h-9"
                                             />
                                         </div>
                                     </div>

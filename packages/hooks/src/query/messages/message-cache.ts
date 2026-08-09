@@ -31,7 +31,8 @@ function normalizeMessageRow(row: MessageRowLike): ConversationMessage | null {
         senderId,
         content: row.content ?? '',
         status: (row.status as ConversationMessage['status']) ?? 'SENT',
-        createdAt: createdAt instanceof Date ? createdAt.toISOString() : new Date(createdAt).toISOString(),
+        createdAt:
+            createdAt instanceof Date ? createdAt.toISOString() : new Date(createdAt).toISOString(),
     };
 }
 

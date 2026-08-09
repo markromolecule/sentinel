@@ -207,9 +207,7 @@ export function useCheckupMediaPipe({
     const animationFrameRef = useRef<number | null>(null);
     const lastFrameAtRef = useRef(0);
     const runtimeGenerationRef = useRef(0);
-    const multipleFacesConfirmationRef = useRef(
-        createMediaPipeMultipleFacesConfirmationState(),
-    );
+    const multipleFacesConfirmationRef = useRef(createMediaPipeMultipleFacesConfirmationState());
     const [analysis, setAnalysis] = useState<MediaPipeFrameAnalysis | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [calibrationProgress, setCalibrationProgress] = useState(0);
@@ -259,8 +257,7 @@ export function useCheckupMediaPipe({
             setIsCalibrated(false);
             setCalibrationFeedback(null);
             lastFrameAtRef.current = 0;
-            multipleFacesConfirmationRef.current =
-                createMediaPipeMultipleFacesConfirmationState();
+            multipleFacesConfirmationRef.current = createMediaPipeMultipleFacesConfirmationState();
             drawOverlay({
                 canvas: overlayCanvasRef.current,
                 video: videoRef.current,
@@ -498,8 +495,7 @@ export function useCheckupMediaPipe({
                 faceLandmarkerRef.current.close();
                 faceLandmarkerRef.current = null;
             }
-            multipleFacesConfirmationRef.current =
-                createMediaPipeMultipleFacesConfirmationState();
+            multipleFacesConfirmationRef.current = createMediaPipeMultipleFacesConfirmationState();
         };
     }, [configuration, isEnabled, mediaPipeSandbox, streamActive, videoRef]);
 

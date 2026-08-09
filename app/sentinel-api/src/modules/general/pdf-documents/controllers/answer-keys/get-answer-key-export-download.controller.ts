@@ -89,7 +89,10 @@ export const getAnswerKeyExportDownloadHandler: AppRouteHandler<
         // Validate state transitions & coordinates
         if (row.status !== 'READY') {
             return c.json(
-                { success: false, error: `Lifecycle conflict: export status is ${row.status}, expected READY.` },
+                {
+                    success: false,
+                    error: `Lifecycle conflict: export status is ${row.status}, expected READY.`,
+                },
                 400 as any,
             );
         }

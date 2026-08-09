@@ -4,7 +4,9 @@ import { AnswerKeyExportsPanel } from './answer-key-exports-panel';
 import type { ExamAnswerKeyExportRecord } from '@/data';
 
 vi.mock('@/components/common/status-badge', () => ({
-    StatusBadge: ({ status }: { status: string }) => <span data-testid="status-badge">{status}</span>,
+    StatusBadge: ({ status }: { status: string }) => (
+        <span data-testid="status-badge">{status}</span>
+    ),
 }));
 
 vi.mock('@sentinel/ui', () => ({

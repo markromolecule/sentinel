@@ -143,7 +143,11 @@ describe('EvidenceCandidateService', () => {
             return uploadTarget;
         });
 
-        const result = await EvidenceCandidateService.process({} as any, payload, payload.studentId);
+        const result = await EvidenceCandidateService.process(
+            {} as any,
+            payload,
+            payload.studentId,
+        );
 
         expect(result).toMatchObject({
             telemetryDisposition: 'aggregated',

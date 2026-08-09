@@ -25,7 +25,11 @@ export function StudentIdentityCard({ student }: StudentIdentityCardProps) {
             <div className="p-5">
                 <div className="mb-5 flex items-center gap-4">
                     <Avatar className="ring-border/20 h-12 w-12 border-2 border-white shadow-sm ring-1">
-                        <AvatarImage src={student.avatarUrl || undefined} alt={`${student.firstName} ${student.lastName}`} className="object-cover" />
+                        <AvatarImage
+                            src={student.avatarUrl || undefined}
+                            alt={`${student.firstName} ${student.lastName}`}
+                            className="object-cover"
+                        />
                         <AvatarFallback className="bg-gradient-to-br from-[#323d8f] to-[#4a5bb8] text-lg font-bold text-white">
                             {student.firstName?.[0] || ''}
                             {student.lastName?.[0] || ''}

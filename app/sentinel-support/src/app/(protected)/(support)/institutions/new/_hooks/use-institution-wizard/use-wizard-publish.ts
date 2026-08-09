@@ -83,7 +83,7 @@ export function useWizardPublish({
                         institution_id: institutionId,
                     });
                     departmentIds.set(department.clientId, created.id);
-                })
+                }),
             );
 
             const courseRows = draft.courses.filter((row) => row.title.trim());
@@ -97,7 +97,7 @@ export function useWizardPublish({
                         institution_id: institutionId,
                     });
                     courseIds.set(course.clientId, created.id);
-                })
+                }),
             );
 
             const termRows = draft.terms.filter((row) => row.academicYear.trim());
@@ -110,8 +110,8 @@ export function useWizardPublish({
                         start_date: term.startDate || null,
                         end_date: term.endDate || null,
                         institution_id: institutionId,
-                    })
-                )
+                    }),
+                ),
             );
 
             const subjectRows = draft.subjects.filter((row) => row.title.trim());
@@ -124,8 +124,8 @@ export function useWizardPublish({
                             code: subject.code.trim(),
                             title: subject.title.trim(),
                             institution_id: institutionId,
-                        })
-                    )
+                        }),
+                    ),
                 );
             }
 

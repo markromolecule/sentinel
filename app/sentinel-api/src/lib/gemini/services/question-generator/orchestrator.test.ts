@@ -91,12 +91,14 @@ describe('QuestionGeneratorService quality failure classification', () => {
                     failedSlots: [],
                 } as any;
             });
-        const repairSpy = vi.spyOn(repairInvalidQuestionsModule, 'repairInvalidQuestions').mockResolvedValue([
-            {
-                slotId: 'slot-0',
-                passageContent: 'Safe passage without the answer.',
-            },
-        ] as any);
+        const repairSpy = vi
+            .spyOn(repairInvalidQuestionsModule, 'repairInvalidQuestions')
+            .mockResolvedValue([
+                {
+                    slotId: 'slot-0',
+                    passageContent: 'Safe passage without the answer.',
+                },
+            ] as any);
         const buildResponseSpy = vi
             .spyOn(buildResponseModule, 'buildResponseStep')
             .mockReturnValue({ target: 'QUESTION_BANK' } as any);

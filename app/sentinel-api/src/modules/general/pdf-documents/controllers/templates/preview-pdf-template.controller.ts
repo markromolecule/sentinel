@@ -262,26 +262,26 @@ export const previewPdfTemplateHandler: AppRouteHandler<typeof previewPdfTemplat
         } else if (document_kind === 'EXAM_ANSWER_KEY') {
             const mockData = exam_id
                 ? mapAnswerKeySourceToViewModel(
-                    await getAnswerKeySource(
-                        dbClient,
-                        exam_id,
-                        previewInstitutionId ?? (await getExamInstitutionId(dbClient, exam_id)),
-                    ),
-                    resolveUserDisplayIdentity(user),
-                )
+                      await getAnswerKeySource(
+                          dbClient,
+                          exam_id,
+                          previewInstitutionId ?? (await getExamInstitutionId(dbClient, exam_id)),
+                      ),
+                      resolveUserDisplayIdentity(user),
+                  )
                 : {
-                    ...mockExamAnswerKeyFixture,
-                    examId: 'sample-preview-exam-answer-key',
-                    title: `${mockExamAnswerKeyFixture.title} (Sample Preview)`,
-                    subjectName: `${mockExamAnswerKeyFixture.subjectName} (Sample Data)`,
-                    institutionName: `${mockExamAnswerKeyFixture.institutionName} (Sample Preview)`,
-                    generatedBy: resolveUserDisplayIdentity(user),
-                    questions: mockExamAnswerKeyFixture.questions.map((question) => ({
-                        ...question,
-                        questionId: `sample-${question.questionId}`,
-                        text: `${question.text} (Sample question)`,
-                    })),
-                };
+                      ...mockExamAnswerKeyFixture,
+                      examId: 'sample-preview-exam-answer-key',
+                      title: `${mockExamAnswerKeyFixture.title} (Sample Preview)`,
+                      subjectName: `${mockExamAnswerKeyFixture.subjectName} (Sample Data)`,
+                      institutionName: `${mockExamAnswerKeyFixture.institutionName} (Sample Preview)`,
+                      generatedBy: resolveUserDisplayIdentity(user),
+                      questions: mockExamAnswerKeyFixture.questions.map((question) => ({
+                          ...question,
+                          questionId: `sample-${question.questionId}`,
+                          text: `${question.text} (Sample question)`,
+                      })),
+                  };
             pdfBuffer = await renderExamAnswerKeyPdf(
                 header_config,
                 footer_config,

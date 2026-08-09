@@ -74,7 +74,10 @@ export function useIncidentTelemetryDispatcher(): UseIncidentTelemetryDispatcher
                 durationMs: dispatch.durationMs ?? undefined,
             };
 
-            const traceEvidence = (disposition: 'suppressed' | 'emitting' | 'accepted' | 'failed', reason: string) => {
+            const traceEvidence = (
+                disposition: 'suppressed' | 'emitting' | 'accepted' | 'failed',
+                reason: string,
+            ) => {
                 writeMonitoringEventTrace({
                     detectorSource: 'mediapipe',
                     eventType: telemetrySignal,
@@ -216,7 +219,10 @@ export function useIncidentTelemetryDispatcher(): UseIncidentTelemetryDispatcher
                             eventType: telemetrySignal,
                         });
 
-                        traceEvidence('accepted', `evidence:${decision.telemetryDisposition}:upload`);
+                        traceEvidence(
+                            'accepted',
+                            `evidence:${decision.telemetryDisposition}:upload`,
+                        );
                         return;
                     }
 

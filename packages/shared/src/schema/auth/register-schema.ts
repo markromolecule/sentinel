@@ -41,4 +41,3 @@ export const RegisterSchema = ApiRegisterSchema.extend({
 });
 
 export type RegisterSchemaType = z.infer<typeof RegisterSchema>;
-

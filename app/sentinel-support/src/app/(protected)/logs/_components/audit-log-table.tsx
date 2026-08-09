@@ -33,10 +33,7 @@ export function AuditLogTable({
     }
 
     const tableColumns = hideDetails
-        ? columns.filter(
-              (col) =>
-                  (col as any).accessorKey !== 'details' && col.id !== 'details',
-          )
+        ? columns.filter((col) => (col as any).accessorKey !== 'details' && col.id !== 'details')
         : columns;
 
     return (

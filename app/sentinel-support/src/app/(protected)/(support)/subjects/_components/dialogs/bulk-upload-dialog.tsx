@@ -23,10 +23,7 @@ import {
     Label,
 } from '@sentinel/ui';
 import { FileSpreadsheet, Loader2, PencilLine, Upload } from 'lucide-react';
-import {
-    parseSubjectManualText,
-    useSubjectBulkUpload,
-} from '../../_hooks/use-subject-bulk-upload';
+import { parseSubjectManualText, useSubjectBulkUpload } from '../../_hooks/use-subject-bulk-upload';
 import { ManualUploadTab } from './bulk-upload/manual-upload-tab';
 import { FileUploadTab } from './bulk-upload/file-upload-tab';
 import type { Institution } from '@sentinel/shared/types';
@@ -91,10 +88,7 @@ export function BulkUploadDialog({ institutions, defaultInstitutionId }: BulkUpl
     }
 
     const isImportDisabled =
-        isImporting ||
-        isParsing ||
-        previewRows.length === 0 ||
-        !targetInstitutionId;
+        isImporting || isParsing || previewRows.length === 0 || !targetInstitutionId;
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -114,7 +108,7 @@ export function BulkUploadDialog({ institutions, defaultInstitutionId }: BulkUpl
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="overflow-y-auto px-6 pt-4 pb-5 flex flex-col gap-4">
+                <div className="flex flex-col gap-4 overflow-y-auto px-6 pt-4 pb-5">
                     <div className="space-y-2">
                         <Label htmlFor="bulk-import-institution">Target Institution</Label>
                         <Select

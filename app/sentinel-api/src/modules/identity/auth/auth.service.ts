@@ -43,10 +43,12 @@ export class AuthService {
         }
 
         // 2. Sign in the user immediately to generate a session
-        const { data: sessionData, error: loginError } = await supabaseAnon.auth.signInWithPassword({
-            email: body.email,
-            password: body.password,
-        });
+        const { data: sessionData, error: loginError } = await supabaseAnon.auth.signInWithPassword(
+            {
+                email: body.email,
+                password: body.password,
+            },
+        );
 
         if (loginError) {
             throw loginError;

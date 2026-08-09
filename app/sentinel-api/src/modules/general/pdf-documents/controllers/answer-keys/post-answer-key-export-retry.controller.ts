@@ -66,13 +66,7 @@ export const postAnswerKeyExportRetryHandler: AppRouteHandler<
             }
 
             const userInstitutionId = c.get('institutionId');
-            if (
-                !(await canAccessPdfInstitutionScope(
-                    trx,
-                    userInstitutionId,
-                    row.institution_id,
-                ))
-            ) {
+            if (!(await canAccessPdfInstitutionScope(trx, userInstitutionId, row.institution_id))) {
                 return { success: false, status: 404, error: 'Export record not found.' };
             }
 

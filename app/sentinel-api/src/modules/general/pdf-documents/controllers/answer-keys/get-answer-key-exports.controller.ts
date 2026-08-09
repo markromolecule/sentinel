@@ -52,23 +52,35 @@ export const getAnswerKeyExportsHandler: AppRouteHandler<typeof getAnswerKeyExpo
     const { examId, institutionId, limit = 10, page = 1 } = c.req.valid('query');
     const userInstitutionId = c.get('institutionId');
 
-    const accessibleInstitutionIds = await resolvePdfAccessibleInstitutionIds(dbClient, userInstitutionId);
+    const accessibleInstitutionIds = await resolvePdfAccessibleInstitutionIds(
+        dbClient,
+        userInstitutionId,
+    );
 
     // If target institutionId is queried, validate access
     if (institutionId) {
         if (accessibleInstitutionIds) {
             if (!accessibleInstitutionIds.includes(institutionId)) {
-                return c.json({ success: false, error: 'Forbidden. Cannot access this institution.' }, 403 as any);
+                return c.json(
+                    { success: false, error: 'Forbidden. Cannot access this institution.' },
+                    403 as any,
+                );
             }
         } else {
             if (!hasCrossTenant) {
-                return c.json({ success: false, error: 'Forbidden. Mismatched tenant access.' }, 403 as any);
+                return c.json(
+                    { success: false, error: 'Forbidden. Mismatched tenant access.' },
+                    403 as any,
+                );
             }
         }
     } else {
         // No filter, check if user is allowed to list
         if (!userInstitutionId && !hasCrossTenant) {
-            return c.json({ success: false, error: 'Forbidden. Global listing not permitted.' }, 403 as any);
+            return c.json(
+                { success: false, error: 'Forbidden. Global listing not permitted.' },
+                403 as any,
+            );
         }
     }
 

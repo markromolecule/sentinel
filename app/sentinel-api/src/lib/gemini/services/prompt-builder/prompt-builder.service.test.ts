@@ -25,7 +25,9 @@ describe('PromptBuilderService', () => {
             expect(prompt).toContain('private instructor provenance');
             expect(prompt).toContain('contains enough context for the student to solve');
             expect(prompt).toContain('MUST NOT contain the exact answer');
-            expect(prompt).toContain('Before finalizing each question, re-check its passageContent');
+            expect(prompt).toContain(
+                'Before finalizing each question, re-check its passageContent',
+            );
             expect(prompt).toContain('do not generate HTML');
         });
     });

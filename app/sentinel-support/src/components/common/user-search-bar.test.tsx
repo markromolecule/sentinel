@@ -40,7 +40,13 @@ vi.mock('@sentinel/ui', async (importOriginal) => {
                 {children}
             </div>
         ),
-        CommandItem: ({ children, onSelect }: { children: React.ReactNode; onSelect?: () => void }) => (
+        CommandItem: ({
+            children,
+            onSelect,
+        }: {
+            children: React.ReactNode;
+            onSelect?: () => void;
+        }) => (
             <div data-testid="command-item" onClick={onSelect}>
                 {children}
             </div>

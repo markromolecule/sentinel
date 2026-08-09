@@ -5,9 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useAuth } from './auth-provider';
 import { MESSAGES_QUERY_KEYS } from '@sentinel/shared/constants';
-import {
-    applyMessageRealtimePayload,
-} from './query/messages/message-cache';
+import { applyMessageRealtimePayload } from './query/messages/message-cache';
 
 type UseMessageRealtimeArgs = {
     conversationId?: string;

@@ -147,9 +147,9 @@ describe('useIncidentTelemetryDispatcher', () => {
         expect(tracePayloads.some((trace) => JSON.stringify(trace).includes('upload-token'))).toBe(
             false,
         );
-        expect(tracePayloads.some((trace) => JSON.stringify(trace).includes('/object/upload/'))).toBe(
-            false,
-        );
+        expect(
+            tracePayloads.some((trace) => JSON.stringify(trace).includes('/object/upload/')),
+        ).toBe(false);
     });
 
     it('treats UNAVAILABLE as a terminal evidence decision without fallback telemetry', async () => {
@@ -179,8 +179,7 @@ describe('useIncidentTelemetryDispatcher', () => {
                         'abort',
                         () => {
                             reject(
-                                payload.signal?.reason ??
-                                    new DOMException('Aborted', 'AbortError'),
+                                payload.signal?.reason ?? new DOMException('Aborted', 'AbortError'),
                             );
                         },
                         { once: true },

@@ -61,7 +61,7 @@ export default function StudentProfilePage() {
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
                     <div className="md:col-span-4">
                         <Card className="border-border/50 bg-card overflow-hidden">
-                            <CardContent className="flex flex-col items-center p-6 space-y-4">
+                            <CardContent className="flex flex-col items-center space-y-4 p-6">
                                 <div className="bg-muted h-24 w-24 rounded-full" />
                                 <div className="bg-muted h-6 w-36 rounded" />
                                 <div className="bg-muted h-4 w-48 rounded" />
@@ -88,9 +88,9 @@ export default function StudentProfilePage() {
             <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
                 {/* Left Column - Compact Profile Summary */}
                 <div className="md:col-span-4">
-                    <Card className="border-border/50 border-t-[3px] border-t-[#323d8f] bg-card shadow-sm h-full">
+                    <Card className="border-border/50 bg-card h-full border-t-[3px] border-t-[#323d8f] shadow-sm">
                         <CardContent className="flex flex-col items-center px-6 pt-8 pb-6 text-center">
-                            <Avatar className="h-24 w-24 border-4 border-background shadow-xl ring-1 ring-border/20">
+                            <Avatar className="border-background ring-border/20 h-24 w-24 border-4 shadow-xl ring-1">
                                 <AvatarImage
                                     src={profile?.avatarUrl || undefined}
                                     alt={`${profile?.firstName || ''} avatar`}
@@ -100,18 +100,18 @@ export default function StudentProfilePage() {
                                     {initials}
                                 </AvatarFallback>
                             </Avatar>
-                            <h2 className="mt-4 text-xl font-bold text-foreground">
+                            <h2 className="text-foreground mt-4 text-xl font-bold">
                                 {profile?.firstName} {profile?.lastName}
                             </h2>
-                            <p className="text-muted-foreground text-xs break-all mt-1">
+                            <p className="text-muted-foreground mt-1 text-xs break-all">
                                 {profile?.email}
                             </p>
-                            <Badge variant="secondary" className="mt-3 capitalize font-semibold">
+                            <Badge variant="secondary" className="mt-3 font-semibold capitalize">
                                 {profile?.role || 'Student'}
                             </Badge>
                             {profile?.institution && (
-                                <p className="mt-4 text-xs text-muted-foreground font-medium">
-                                    <span className="text-[#323d8f] font-bold">@ </span>
+                                <p className="text-muted-foreground mt-4 text-xs font-medium">
+                                    <span className="font-bold text-[#323d8f]">@ </span>
                                     {profile.institution}
                                 </p>
                             )}
@@ -129,42 +129,42 @@ export default function StudentProfilePage() {
                             </CardDescription>
                         </CardHeader>
                         <Separator className="bg-border" />
-                        <CardContent className="p-5 space-y-5">
+                        <CardContent className="space-y-5 p-5">
                             {/* Personal Details */}
                             <div>
-                                <h3 className="text-sm font-semibold text-foreground mb-3">
+                                <h3 className="text-foreground mb-3 text-sm font-semibold">
                                     Personal Information
                                 </h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                     <div className="space-y-0.5">
-                                        <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">
+                                        <span className="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase">
                                             First Name
                                         </span>
-                                        <p className="text-base font-semibold text-foreground">
+                                        <p className="text-foreground text-base font-semibold">
                                             {profile?.firstName || '—'}
                                         </p>
                                     </div>
                                     <div className="space-y-0.5">
-                                        <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">
+                                        <span className="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase">
                                             Last Name
                                         </span>
-                                        <p className="text-base font-semibold text-foreground">
+                                        <p className="text-foreground text-base font-semibold">
                                             {profile?.lastName || '—'}
                                         </p>
                                     </div>
                                     <div className="space-y-0.5">
-                                        <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">
+                                        <span className="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase">
                                             Student Number
                                         </span>
-                                        <p className="text-base font-semibold text-foreground">
+                                        <p className="text-foreground text-base font-semibold">
                                             {profile?.studentNo || '—'}
                                         </p>
                                     </div>
                                     <div className="space-y-0.5">
-                                        <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">
+                                        <span className="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase">
                                             Department
                                         </span>
-                                        <p className="text-base font-semibold text-foreground">
+                                        <p className="text-foreground text-base font-semibold">
                                             {profile?.department || '—'}
                                         </p>
                                     </div>
@@ -175,14 +175,14 @@ export default function StudentProfilePage() {
 
                             {/* Security / Password Change */}
                             <div>
-                                <div className="flex items-center gap-2 mb-4">
+                                <div className="mb-4 flex items-center gap-2">
                                     <Lock className="text-muted-foreground h-4 w-4" />
-                                    <h3 className="text-sm font-semibold text-foreground">
+                                    <h3 className="text-foreground text-sm font-semibold">
                                         Security Settings
                                     </h3>
                                 </div>
                                 <form onSubmit={handleUpdatePassword} className="space-y-4">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                         <div className="space-y-1.5">
                                             <Label htmlFor="new-password">New Password</Label>
                                             <Input

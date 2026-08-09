@@ -177,7 +177,10 @@ export function MessageList({
                             >
                                 <div className="relative shrink-0">
                                     <Avatar className="border-background h-10 w-10 border-2 md:h-12 md:w-12">
-                                        <AvatarImage src={getAvatarSrc(participant)} alt={participant.name} />
+                                        <AvatarImage
+                                            src={getAvatarSrc(participant)}
+                                            alt={participant.name}
+                                        />
                                         <AvatarFallback className="bg-primary/10 text-primary">
                                             {participant.name.slice(0, 2).toUpperCase()}
                                         </AvatarFallback>

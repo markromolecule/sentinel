@@ -45,9 +45,7 @@ describe('getSessionStatusRouteHandler', () => {
         });
 
         const app = createApp();
-        const response = await app.request(
-            '/sessions/11111111-1111-4111-8111-111111111111/status',
-        );
+        const response = await app.request('/sessions/11111111-1111-4111-8111-111111111111/status');
 
         expect(response.status).toBe(200);
         await expect(response.json()).resolves.toEqual({
@@ -78,9 +76,7 @@ describe('getSessionStatusRouteHandler', () => {
         );
 
         const app = createApp();
-        const response = await app.request(
-            '/sessions/11111111-1111-4111-8111-111111111111/status',
-        );
+        const response = await app.request('/sessions/11111111-1111-4111-8111-111111111111/status');
 
         expect(response.status).toBe(404);
         await expect(response.json()).resolves.toEqual({

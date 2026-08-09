@@ -96,7 +96,7 @@ export default function StudentHeader() {
                 </div>
 
                 {/* Actions & Profile */}
-                <div className="relative z-10 flex shrink-0 items-center gap-2 pr-1 md:gap-4 sm:pr-0">
+                <div className="relative z-10 flex shrink-0 items-center gap-2 pr-1 sm:pr-0 md:gap-4">
                     <UserSearchBar redirectPath="/student/message" iconOnly={true} />
 
                     <WebNotificationDropdown

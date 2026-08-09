@@ -41,12 +41,12 @@ Give sync operations a stable callback so the two-second answer debounce expires
 
 - [x] Record focused command results here during implementation.
 
-  ```
-  Test Files  16 passed (16)
-  Tests  106 passed (106)
-  Start at  13:48:12
-  Duration  16.81s
-  ```
+    ```
+    Test Files  16 passed (16)
+    Tests  106 passed (106)
+    Start at  13:48:12
+    Duration  16.81s
+    ```
 
 - [x] Prove one answer change syncs within the configured debounce while the timer advances.
       → `calls syncProgress exactly once after the debounce window` test confirms this.

@@ -402,4 +402,3 @@ describe('useExamSession — timer and callback stability', () => {
         expect(result.current.elapsedSeconds).toBe(0);
     });
 });
-

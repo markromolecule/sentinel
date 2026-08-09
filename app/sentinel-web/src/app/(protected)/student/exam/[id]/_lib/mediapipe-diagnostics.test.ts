@@ -1,5 +1,8 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { buildMediaPipeFrameDiagnostics, recordMediaPipeFrameDiagnostics } from './mediapipe-diagnostics';
+import {
+    buildMediaPipeFrameDiagnostics,
+    recordMediaPipeFrameDiagnostics,
+} from './mediapipe-diagnostics';
 
 describe('mediapipe diagnostics', () => {
     beforeEach(() => {
