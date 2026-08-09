@@ -50,13 +50,13 @@ The `sentinel-mobile` app currently has several incomplete UI elements, static m
 
 ### Task 1 [Folder]: Classroom Navigation & Sub-routes
 - **Path:** [docs/task/2026-08-10/task-1-classroom-navigation/](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-1-classroom-navigation/)
-  - [phase-1-header-cleanup-and-route-setup.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-1-classroom-navigation/phase-1-header-cleanup-and-route-setup.md)
-  - [phase-2-classroom-exams-and-classmates-screens.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-1-classroom-navigation/phase-2-classroom-exams-and-classmates-screens.md)
+  - **[Completed]** [phase-1-header-cleanup-and-route-setup.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-1-classroom-navigation/phase-1-header-cleanup-and-route-setup.md)
+  - **[Completed]** [phase-2-classroom-exams-and-classmates-screens.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-1-classroom-navigation/phase-2-classroom-exams-and-classmates-screens.md)
 
 ### Task 2 [Folder]: Home Profile & Message Badge Counter
 - **Path:** [docs/task/2026-08-10/task-2-home-profile-and-badge/](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-2-home-profile-and-badge/)
-  - [phase-1-home-profile-avatar-display.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-2-home-profile-and-badge/phase-1-home-profile-avatar-display.md)
-  - [phase-2-message-tab-unread-badge.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-2-home-profile-and-badge/phase-2-message-tab-unread-badge.md)
+  - **[Completed]** [phase-1-home-profile-avatar-display.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-2-home-profile-and-badge/phase-1-home-profile-avatar-display.md)
+  - **[Completed]** [phase-2-message-tab-unread-badge.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-2-home-profile-and-badge/phase-2-message-tab-unread-badge.md)
 
 ### Task 3 [Folder]: Profile Avatar, Password Mutation & Schema Validation
 - **Path:** [docs/task/2026-08-10/task-3-profile-and-password/](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-3-profile-and-password/)

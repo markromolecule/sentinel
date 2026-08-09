@@ -131,9 +131,7 @@ export default function ClassroomDetailScreen() {
                                     {classroom.subjectCode} • {classroom.sectionName}
                                 </Text>
                             </View>
-                            <TouchableOpacity className="h-10 w-10 items-center justify-center rounded-full bg-white/10">
-                                <Ionicons name="ellipsis-horizontal" size={20} color="#fff" />
-                            </TouchableOpacity>
+                            <View className="w-10 h-10" />
                         </View>
                     </View>
                 </SafeAreaView>

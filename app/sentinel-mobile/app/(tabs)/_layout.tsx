@@ -3,10 +3,15 @@ import React from 'react';
 import { useColorScheme } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
+import { useConversationsQuery } from '@sentinel/hooks';
+import { getAggregateUnreadCount } from '@/features/messages/lib/unread-count';
 
 export default function TabLayout() {
     const colorScheme = useColorScheme();
     const colors = Colors[colorScheme ?? 'light'];
+
+    const { data: conversations = [] } = useConversationsQuery();
+    const unreadCount = getAggregateUnreadCount(conversations);
 
     return (
         <Tabs
@@ -67,11 +72,24 @@ export default function TabLayout() {
                     tabBarIcon: ({ color, size }) => (
                         <Ionicons name="chatbubbles" size={size} color={color} />
                     ),
+                    tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
                 }}
             />
             {/* --- HIDDEN ROUTES --- */}
             <Tabs.Screen
                 name="classroom/[id]/index"
+                options={{
+                    href: null,
+                }}
+            />
+            <Tabs.Screen
+                name="classroom/[id]/exams"
+                options={{
+                    href: null,
+                }}
+            />
+            <Tabs.Screen
+                name="classroom/[id]/classmates"
                 options={{
                     href: null,
                 }}

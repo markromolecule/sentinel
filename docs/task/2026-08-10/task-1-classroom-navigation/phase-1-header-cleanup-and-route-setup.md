@@ -4,9 +4,9 @@
 
 ## Tasks
 
-- [ ] Remove 3-dots header button (`ellipsis-horizontal`) from [app/(tabs)/classroom/[id]/index.tsx](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/app/sentinel-mobile/app/(tabs)/classroom/[id]/index.tsx)
-- [ ] Register `classroom/[id]/exams` and `classroom/[id]/classmates` as hidden sub-routes in [app/(tabs)/_layout.tsx](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/app/sentinel-mobile/app/(tabs)/_layout.tsx)
-- [ ] Add route navigation handlers for "Exams & Assessments" (`/classroom/${id}/exams`) and "Classmates" (`/classroom/${id}/classmates`) buttons in [app/(tabs)/classroom/[id]/index.tsx](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/app/sentinel-mobile/app/(tabs)/classroom/[id]/index.tsx)
-- [ ] Write unit test for classroom navigation path builder in `app/sentinel-mobile/features/classroom/classroom-navigation.test.ts`
+- [x] Remove 3-dots header button (`ellipsis-horizontal`) from [app/(tabs)/classroom/[id]/index.tsx](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/app/sentinel-mobile/app/(tabs)/classroom/[id]/index.tsx)
+- [x] Register `classroom/[id]/exams` and `classroom/[id]/classmates` as hidden sub-routes in [app/(tabs)/_layout.tsx](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/app/sentinel-mobile/app/(tabs)/_layout.tsx)
+- [x] Add route navigation handlers for "Exams & Assessments" (`/classroom/${id}/exams`) and "Classmates" (`/classroom/${id}/classmates`) buttons in [app/(tabs)/classroom/[id]/index.tsx](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/app/sentinel-mobile/app/(tabs)/classroom/[id]/index.tsx)
+- [x] Write unit test for classroom navigation path builder in `app/sentinel-mobile/features/classroom/classroom-navigation.test.ts`
 
 **Migration required:** No
