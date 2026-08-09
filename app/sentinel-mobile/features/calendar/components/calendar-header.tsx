@@ -10,6 +10,8 @@ interface CalendarHeaderProps {
     selectedDate: Date;
     weekDays: Date[];
     onSelectDate: (date: Date) => void;
+    unreadCount?: number;
+    onNotificationsPress?: () => void;
 }
 
 export const CalendarHeader = ({
@@ -17,6 +19,8 @@ export const CalendarHeader = ({
     selectedDate,
     weekDays,
     onSelectDate,
+    unreadCount = 0,
+    onNotificationsPress,
 }: CalendarHeaderProps) => {
     const colorScheme = useColorScheme();
     const colors = Colors[colorScheme ?? 'light'];
@@ -37,17 +41,25 @@ export const CalendarHeader = ({
 
                 <View className="flex-row items-center gap-2">
                     <TouchableOpacity
-                        className="h-10 w-10 items-center justify-center rounded-full"
+                        className="relative h-10 w-10 items-center justify-center rounded-full"
                         style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}
-                    >
-                        <Ionicons name="search" size={20} color="#fff" />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        className="h-10 w-10 items-center justify-center rounded-full"
-                        style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}
+                        onPress={onNotificationsPress}
+                        activeOpacity={0.8}
                     >
                         <Ionicons name="notifications-outline" size={20} color="#fff" />
+                        {unreadCount > 0 && (
+                            <View
+                                className="absolute -right-1.5 -top-1.5 h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5"
+                                style={{
+                                    borderWidth: 1.5,
+                                    borderColor: colors.primary,
+                                }}
+                            >
+                                <Text className="text-[9px] font-bold text-white leading-none">
+                                    {unreadCount > 99 ? '99+' : unreadCount}
+                                </Text>
+                            </View>
+                        )}
                     </TouchableOpacity>
                 </View>
             </View>

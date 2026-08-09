@@ -11,15 +11,18 @@ import {
     Alert,
     StatusBar,
     StyleSheet,
+    Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/theme';
-import { useAuth, useLogoutMutation, useProfileQuery } from '@sentinel/hooks';
+import { useAuth, useLogoutMutation, useProfileQuery, useUpdatePasswordMutation } from '@sentinel/hooks';
 import { ProfileInfoItem } from './profile-info-item';
 import { PasswordInput } from './password-input';
+import { validatePasswordUpdate } from '../lib/password-update-handler';
+import { isPasswordValid } from '../lib/password-requirements-validator';
 import styles from '@/features/profile/styles/profile-screen';
 
 const SENTINEL_BLUE = '#323d8f';
@@ -32,7 +35,6 @@ export default function ProfileScreen() {
     const router = useRouter();
     const { user } = useAuth();
 
-    const [isLoading, setIsLoading] = useState(false);
     const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' });
 
     const logoutMutation = useLogoutMutation({
@@ -41,17 +43,28 @@ export default function ProfileScreen() {
         },
     });
 
-    const handleUpdatePassword = () => {
-        if (!passwords.current || !passwords.new) {
-            Alert.alert('Missing Info', 'Please fill in all password fields.');
-            return;
-        }
-        setIsLoading(true);
-        setTimeout(() => {
-            setIsLoading(false);
+    const updatePasswordMutation = useUpdatePasswordMutation({
+        onSuccess: () => {
             Alert.alert('Success', 'Password updated successfully!');
             setPasswords({ current: '', new: '', confirm: '' });
-        }, 1500);
+        },
+        onError: (err: any) => {
+            Alert.alert('Error', err.message || 'Failed to update password.');
+        },
+    });
+
+    const isSaveDisabled =
+        updatePasswordMutation.isPending ||
+        !passwords.current ||
+        !isPasswordValid(passwords.new);
+
+    const handleUpdatePassword = () => {
+        const validation = validatePasswordUpdate(passwords);
+        if (!validation.isValid) {
+            Alert.alert('Validation Error', validation.error);
+            return;
+        }
+        updatePasswordMutation.mutate({ password: passwords.new });
     };
 
     const handleLogout = () => {
@@ -110,10 +123,18 @@ export default function ProfileScreen() {
 
                     <View style={styles.profileHeader}>
                         <View style={styles.avatarWrapper}>
-                            <View style={[styles.avatarRing]}>
-                                <Text style={[styles.avatarInitials, { color: SENTINEL_BLUE }]}>
-                                    {initials}
-                                </Text>
+                            <View style={[styles.avatarRing, { overflow: 'hidden' }]}>
+                                {profile?.avatarUrl ? (
+                                    <Image
+                                        source={{ uri: profile.avatarUrl }}
+                                        style={{ width: '100%', height: '100%' }}
+                                        resizeMode="cover"
+                                    />
+                                ) : (
+                                    <Text style={[styles.avatarInitials, { color: SENTINEL_BLUE }]}>
+                                        {initials}
+                                    </Text>
+                                )}
                             </View>
                             <TouchableOpacity
                                 style={[styles.cameraBtn, { backgroundColor: '#fff' }]}
@@ -203,18 +224,39 @@ export default function ProfileScreen() {
                                 placeholder="Min. 8 characters"
                                 value={passwords.new}
                                 onChangeText={(t) => setPasswords({ ...passwords, new: t })}
+                                showRequirements={true}
                             />
 
                             <TouchableOpacity
-                                style={[styles.primaryBtn, { backgroundColor: SENTINEL_BLUE }]}
+                                style={[
+                                    styles.primaryBtn,
+                                    {
+                                        backgroundColor: isSaveDisabled
+                                            ? isDark
+                                                ? 'rgba(255,255,255,0.06)'
+                                                : '#E2E8F0'
+                                            : SENTINEL_BLUE,
+                                    },
+                                ]}
                                 activeOpacity={0.8}
                                 onPress={handleUpdatePassword}
-                                disabled={isLoading}
+                                disabled={isSaveDisabled}
                             >
-                                {isLoading ? (
-                                    <ActivityIndicator color="#fff" />
+                                {updatePasswordMutation.isPending ? (
+                                    <ActivityIndicator color={isSaveDisabled ? colors.text : '#fff'} />
                                 ) : (
-                                    <Text style={styles.primaryBtnText}>Save Changes</Text>
+                                    <Text
+                                        style={[
+                                            styles.primaryBtnText,
+                                            isSaveDisabled && {
+                                                color: isDark
+                                                    ? 'rgba(255,255,255,0.2)'
+                                                    : '#94A3B8',
+                                            },
+                                        ]}
+                                    >
+                                        Save Changes
+                                    </Text>
                                 )}
                             </TouchableOpacity>
                         </View>

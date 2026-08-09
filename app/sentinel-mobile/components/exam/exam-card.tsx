@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/theme';
 import type { MobileExamDisplay } from '@/features/exam/lib/mobile-exam-adapter';
 import { getMobileExamActionLabel } from '@/features/exam/lib/mobile-exam-actions';
+import { formatExamStartDate } from '@/features/exam/lib/exam-start-date-format';
 
 interface ExamCardProps {
     exam: MobileExamDisplay;
@@ -12,6 +13,8 @@ interface ExamCardProps {
 export default function ExamCard({ exam, onPress }: ExamCardProps) {
     const colorScheme = useColorScheme();
     const colors = Colors[colorScheme ?? 'light'];
+
+    const formattedStartDate = formatExamStartDate(exam.startDate || exam.scheduledStartDate);
 
     const getStatusColor = (status: MobileExamDisplay['status']) => {
         switch (status) {
@@ -98,17 +101,23 @@ export default function ExamCard({ exam, onPress }: ExamCardProps) {
 
                 {/* Bottom Section: Metadata and Action */}
                 <View className="flex-row items-center justify-between">
-                    <View className="flex-row items-center gap-4">
-                        <View className="flex-row items-center gap-1.5">
-                            <Ionicons name="time-outline" size={14} color={colors.icon} />
-                            <Text className="text-xs font-medium" style={{ color: colors.icon }}>
+                    <View className="flex-row items-center gap-3">
+                        <View className="flex-row items-center gap-1">
+                            <Ionicons name="time-outline" size={12} color={colors.icon} />
+                            <Text className="text-[11px] font-medium" style={{ color: colors.icon }}>
                                 {exam.duration}m
                             </Text>
                         </View>
-                        <View className="flex-row items-center gap-1.5">
-                            <Ionicons name="person-outline" size={14} color={colors.icon} />
+                        <View className="flex-row items-center gap-1">
+                            <Ionicons name="calendar-outline" size={12} color={colors.icon} />
+                            <Text className="text-[11px] font-medium" style={{ color: colors.icon }}>
+                                {formattedStartDate}
+                            </Text>
+                        </View>
+                        <View className="flex-row items-center gap-1">
+                            <Ionicons name="person-outline" size={12} color={colors.icon} />
                             <Text
-                                className="max-w-[80px] text-xs font-medium"
+                                className="max-w-[70px] text-[11px] font-medium"
                                 style={{ color: colors.icon }}
                                 numberOfLines={1}
                             >

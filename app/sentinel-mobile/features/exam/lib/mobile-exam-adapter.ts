@@ -15,6 +15,8 @@ export type MobileExamDisplay = Omit<Exam, 'questions' | 'difficulty'> & {
     passingPercentage: number;
     difficulty: MobileDifficulty;
     instructions: string[];
+    startDate?: string;
+    scheduledStartDate?: string;
 };
 
 export type MobileSessionQuestion = {
@@ -70,6 +72,8 @@ export function adaptExamForMobile(exam: Exam): MobileExamDisplay {
         passingPercentage: exam.passingScore,
         difficulty: toDisplayDifficulty(exam.difficulty),
         instructions: buildInstructions(exam),
+        startDate: exam.scheduledDate || (exam as any).startDate || (exam as any).scheduledStartDate,
+        scheduledStartDate: (exam as any).scheduledStartDate || exam.scheduledDate || (exam as any).startDate,
     };
 }
 

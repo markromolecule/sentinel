@@ -8,6 +8,7 @@ import {
     StatusBar,
     RefreshControl,
     ActivityIndicator,
+    Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +17,7 @@ import { useMemo, useState } from 'react';
 import { Colors } from '@/constants/theme';
 import { useAuth, useStudentClassroomsQuery, useProfileQuery } from '@sentinel/hooks';
 import ClassroomCard from '@/components/classroom/classroom-card';
+import { getUserAvatarInitials } from '@/features/profile/lib/user-avatar';
 
 export default function ClassroomScreen() {
     const router = useRouter();
@@ -90,9 +92,23 @@ export default function ClassroomScreen() {
                         <TouchableOpacity
                             onPress={() => router.push('/profile' as any)}
                             activeOpacity={0.7}
-                            className="h-12 w-12 items-center justify-center rounded-full bg-white/20"
+                            className="h-12 w-12 items-center justify-center rounded-full bg-white/25 overflow-hidden"
                         >
-                            <Ionicons name="person" size={24} color="#fff" />
+                            {profile?.avatarUrl ? (
+                                <Image
+                                    source={{ uri: profile.avatarUrl }}
+                                    className="h-full w-full"
+                                    resizeMode="cover"
+                                />
+                            ) : (
+                                <Text className="text-white text-sm font-bold tracking-wider">
+                                    {getUserAvatarInitials(
+                                        profile?.firstName || user?.user_metadata?.first_name,
+                                        profile?.lastName || user?.user_metadata?.last_name,
+                                        user?.email
+                                    )}
+                                </Text>
+                            )}
                         </TouchableOpacity>
                     </View>
                 </SafeAreaView>

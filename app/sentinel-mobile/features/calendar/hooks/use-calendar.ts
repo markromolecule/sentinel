@@ -1,6 +1,9 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { FlatList, ViewToken, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '@sentinel/hooks';
 import { CalendarEvent, mockCalendarData } from '@/data/calendar';
+import { mergeEvents } from '../lib/calendar-helpers';
 
 // Helper to get dates
 const getDaysArray = (start: Date, days: number) => {
@@ -21,11 +24,34 @@ export const isSameDay = (d1: Date, d2: Date) =>
     d1.getFullYear() === d2.getFullYear();
 
 export const useCalendar = () => {
-    const [events, setEvents] = useState<Record<string, CalendarEvent[]>>(mockCalendarData);
+    const { user } = useAuth();
+    const userId = user?.id || 'guest';
+
+    const [events, setEvents] = useState<Record<string, CalendarEvent[]>>({});
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [isModalVisible, setModalVisible] = useState(false);
     const [noteText, setNoteText] = useState('');
     const [showTodayButton, setShowTodayButton] = useState(false);
+
+    // Load notes scoped to authenticated user ID
+    useEffect(() => {
+        const loadNotes = async () => {
+            try {
+                const key = `sentinel-mobile:calendar-notes:${userId}`;
+                const storedNotesRaw = await AsyncStorage.getItem(key);
+                const userNotes: Record<string, CalendarEvent[]> = storedNotesRaw
+                    ? JSON.parse(storedNotesRaw)
+                    : {};
+
+                const merged = mergeEvents(mockCalendarData, userNotes);
+                setEvents(merged);
+            } catch (err) {
+                console.error('Failed to load calendar notes:', err);
+            }
+        };
+
+        loadNotes();
+    }, [userId]);
 
     // Generate next 30 days for Agenda view
     const agendaDays = useMemo(() => getDaysArray(new Date(), 30), []);
@@ -77,10 +103,27 @@ export const useCalendar = () => {
             date: dateKey,
         };
 
-        setEvents((prev) => ({
-            ...prev,
-            [dateKey]: [...(prev[dateKey] || []), newNote],
-        }));
+        setEvents((prev) => {
+            const updated = {
+                ...prev,
+                [dateKey]: [...(prev[dateKey] || []), newNote],
+            };
+
+            const notesOnly: Record<string, CalendarEvent[]> = {};
+            Object.keys(updated).forEach((k) => {
+                const notes = updated[k].filter((e) => e.type === 'note');
+                if (notes.length > 0) {
+                    notesOnly[k] = notes;
+                }
+            });
+
+            AsyncStorage.setItem(
+                `sentinel-mobile:calendar-notes:${userId}`,
+                JSON.stringify(notesOnly)
+            ).catch((err) => console.error('Failed to save calendar notes:', err));
+
+            return updated;
+        });
 
         setNoteText('');
         setModalVisible(false);
@@ -93,10 +136,31 @@ export const useCalendar = () => {
                 text: 'Delete',
                 style: 'destructive',
                 onPress: () => {
-                    setEvents((prev) => ({
-                        ...prev,
-                        [dateKey]: prev[dateKey].filter((e) => e.id !== id),
-                    }));
+                    setEvents((prev) => {
+                        const updated = {
+                            ...prev,
+                            [dateKey]: (prev[dateKey] || []).filter((e) => e.id !== id),
+                        };
+
+                        if (updated[dateKey].length === 0) {
+                            delete updated[dateKey];
+                        }
+
+                        const notesOnly: Record<string, CalendarEvent[]> = {};
+                        Object.keys(updated).forEach((k) => {
+                            const notes = updated[k].filter((e) => e.type === 'note');
+                            if (notes.length > 0) {
+                                notesOnly[k] = notes;
+                            }
+                        });
+
+                        AsyncStorage.setItem(
+                            `sentinel-mobile:calendar-notes:${userId}`,
+                            JSON.stringify(notesOnly)
+                        ).catch((err) => console.error('Failed to save calendar notes:', err));
+
+                        return updated;
+                    });
                 },
             },
         ]);

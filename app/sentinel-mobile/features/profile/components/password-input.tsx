@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, useColorScheme, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography } from '@/constants/theme';
+import { PasswordRequirements } from './password-requirements';
 
 interface PasswordInputProps {
     label: string;
@@ -9,9 +10,16 @@ interface PasswordInputProps {
     onChangeText: (text: string) => void;
     placeholder: string;
     error?: string;
+    showRequirements?: boolean;
 }
 
-export const PasswordInput = ({ label, value, onChangeText, placeholder }: PasswordInputProps) => {
+export const PasswordInput = ({
+    label,
+    value,
+    onChangeText,
+    placeholder,
+    showRequirements = false,
+}: PasswordInputProps) => {
     const colorScheme = useColorScheme();
     const colors = Colors[colorScheme ?? 'light'];
     const isDark = colorScheme === 'dark';
@@ -39,13 +47,13 @@ export const PasswordInput = ({ label, value, onChangeText, placeholder }: Passw
                                 ? 'rgba(255,255,255,0.04)'
                                 : '#fff'
                             : isDark
-                              ? 'rgba(255,255,255,0.02)'
-                              : '#F8FAFC',
+                                ? 'rgba(255,255,255,0.02)'
+                                : '#F8FAFC',
                         borderColor: isFocused
                             ? colors.primary
                             : isDark
-                              ? 'rgba(255,255,255,0.08)'
-                              : '#E2E8F0',
+                                ? 'rgba(255,255,255,0.08)'
+                                : '#E2E8F0',
                         borderWidth: isFocused ? 2 : 1,
                     },
                 ]}
@@ -74,6 +82,10 @@ export const PasswordInput = ({ label, value, onChangeText, placeholder }: Passw
                     />
                 </TouchableOpacity>
             </View>
+
+            {showRequirements && (
+                <PasswordRequirements value={value} isVisible={isFocused} />
+            )}
         </View>
     );
 };
