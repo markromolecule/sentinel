@@ -27,9 +27,7 @@ describe('UserAuthService.deleteUserAuth', () => {
             },
         } as any);
 
-        await expect(
-            UserAuthService.deleteUserAuth({} as any, 'user-1'),
-        ).resolves.toBeUndefined();
+        await expect(UserAuthService.deleteUserAuth({} as any, 'user-1')).resolves.toBeUndefined();
     });
 
     it('throws a bad request exception for other auth deletion errors', async () => {

@@ -32,15 +32,15 @@ The production patch covers five defects across student mobile UX, calendar-note
 ## Task Organization
 
 1. [Task 1 — Student mobile and examination experience](task-1-student-mobile-and-examination-experience/)
-   - [Phase 1 — Header search and profile spacing](task-1-student-mobile-and-examination-experience/phase-1-header-search-and-profile-spacing.md)
-   - [Phase 2 — History time and upcoming access](task-1-student-mobile-and-examination-experience/phase-2-history-time-and-upcoming-access.md)
-   - [Phase 3 — Attempt control layout](task-1-student-mobile-and-examination-experience/phase-3-attempt-control-layout.md)
+    - [Phase 1 — Header search and profile spacing](task-1-student-mobile-and-examination-experience/phase-1-header-search-and-profile-spacing.md)
+    - [Phase 2 — History time and upcoming access](task-1-student-mobile-and-examination-experience/phase-2-history-time-and-upcoming-access.md)
+    - [Phase 3 — Attempt control layout](task-1-student-mobile-and-examination-experience/phase-3-attempt-control-layout.md)
 2. [Task 2 — Calendar note privacy](task-2-calendar-note-privacy/)
-   - [Phase 1 — Owner-scoped calendar reads](task-2-calendar-note-privacy/phase-1-owner-scoped-calendar-reads.md)
-   - [Phase 2 — Student calendar regression coverage](task-2-calendar-note-privacy/phase-2-student-calendar-regression-coverage.md)
+    - [Phase 1 — Owner-scoped calendar reads](task-2-calendar-note-privacy/phase-1-owner-scoped-calendar-reads.md)
+    - [Phase 2 — Student calendar regression coverage](task-2-calendar-note-privacy/phase-2-student-calendar-regression-coverage.md)
 3. [Task 3 — Grading student-section accuracy](task-3-grading-student-section-accuracy/)
-   - [Phase 1 — Canonical section source and API contract](task-3-grading-student-section-accuracy/phase-1-canonical-section-source-and-api-contract.md)
-   - [Phase 2 — Instructor views and Excel export](task-3-grading-student-section-accuracy/phase-2-instructor-views-and-excel-export.md)
+    - [Phase 1 — Canonical section source and API contract](task-3-grading-student-section-accuracy/phase-1-canonical-section-source-and-api-contract.md)
+    - [Phase 2 — Instructor views and Excel export](task-3-grading-student-section-accuracy/phase-2-instructor-views-and-excel-export.md)
 
 ## Cross-Task Release Requirements
 

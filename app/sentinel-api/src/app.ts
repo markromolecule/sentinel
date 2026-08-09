@@ -91,8 +91,7 @@ function resolveCorsOrigin(origin?: string | null) {
     if (!origin) return DEFAULT_CORS_ORIGIN;
     if (ALLOWED_CORS_ORIGINS.includes(origin)) return origin;
 
-    const isAllowedDomain =
-        origin.endsWith('.sentinelph.tech') || origin.endsWith('.vercel.app');
+    const isAllowedDomain = origin.endsWith('.sentinelph.tech') || origin.endsWith('.vercel.app');
     if (isAllowedDomain) return origin;
 
     return null;

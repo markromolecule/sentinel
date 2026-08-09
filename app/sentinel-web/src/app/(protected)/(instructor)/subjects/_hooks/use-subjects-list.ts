@@ -178,13 +178,13 @@ export function useSubjectsList(
         isError: isErrorEnrolled,
         error: enrolledError,
     } = useEnrolledSubjectsQuery(
-        (hasPagination
+        hasPagination
             ? {
                   search: params.search,
                   page: params.page,
                   limit: params.limit,
               }
-            : params.search),
+            : params.search,
     );
 
     const {
@@ -193,13 +193,13 @@ export function useSubjectsList(
         isError: isErrorRequests,
         error: requestsError,
     } = useEnrollmentRequestsQuery(
-        (hasPagination
+        hasPagination
             ? {
                   search: params.search,
                   page: params.page,
                   limit: params.limit,
               }
-            : undefined),
+            : undefined,
         hasPagination ? undefined : params.search,
     );
 

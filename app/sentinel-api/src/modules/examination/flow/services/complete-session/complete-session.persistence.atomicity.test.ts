@@ -109,7 +109,10 @@ async function deleteCommittedFixture() {
         .deleteFrom('exam_attempt_lifecycle_events')
         .where('attempt_id', '=', fixture.attemptId)
         .execute();
-    await dbClient.deleteFrom('exam_attempts').where('attempt_id', '=', fixture.attemptId).execute();
+    await dbClient
+        .deleteFrom('exam_attempts')
+        .where('attempt_id', '=', fixture.attemptId)
+        .execute();
     await dbClient.deleteFrom('students').where('student_id', '=', fixture.studentId).execute();
     await dbClient.deleteFrom('users').where('id', '=', fixture.userId).execute();
     await dbClient.deleteFrom('exams').where('exam_id', '=', fixture.examId).execute();
@@ -225,8 +228,12 @@ describe('persistCompletedSession atomicity', () => {
             answerChecksum: 'checksum-retry',
         } as const;
 
-        const firstResult = await transactionStorage.exit(() => persistCompletedSession(args as never));
-        const secondResult = await transactionStorage.exit(() => persistCompletedSession(args as never));
+        const firstResult = await transactionStorage.exit(() =>
+            persistCompletedSession(args as never),
+        );
+        const secondResult = await transactionStorage.exit(() =>
+            persistCompletedSession(args as never),
+        );
 
         expect(firstResult).toMatchObject({
             attempt_id: fixture.attemptId,

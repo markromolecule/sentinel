@@ -55,15 +55,7 @@ questions, answers, scores, or configuration.
 
 ## Completion Gate
 
-- [x] Record focused command results here during implementation.
-      - `pnpm --dir app/sentinel-api exec vitest run src/modules/examination/flow/services/get-session-status.service.test.ts src/modules/examination/flow/controllers/get-session-status.controller.test.ts` — passed (2 files, 9 tests).
-      - `pnpm --dir packages/services exec vitest run src/api/exams/flow.test.ts` — passed (1 file, 1 test).
-      - `pnpm --dir packages/hooks exec vitest run src/query/exams/use-exam-session-status-query.test.ts` — passed (1 file, 3 tests).
-      - `pnpm --dir packages/shared build` — passed; refreshed the package export used by hook tests.
-      - `pnpm --dir packages/services build` — passed.
-      - `pnpm --dir packages/hooks build` — passed.
-      - `pnpm --dir app/sentinel-api typecheck` — failed with Node heap out-of-memory at the script's 4096 MB limit before TypeScript diagnostics.
-      - `NODE_OPTIONS="--max-old-space-size=8192" pnpm --dir app/sentinel-api exec tsc --noEmit` — stopped after an extended no-output run; no diagnostics were emitted before interruption.
+- [x] Record focused command results here during implementation. - `pnpm --dir app/sentinel-api exec vitest run src/modules/examination/flow/services/get-session-status.service.test.ts src/modules/examination/flow/controllers/get-session-status.controller.test.ts` — passed (2 files, 9 tests). - `pnpm --dir packages/services exec vitest run src/api/exams/flow.test.ts` — passed (1 file, 1 test). - `pnpm --dir packages/hooks exec vitest run src/query/exams/use-exam-session-status-query.test.ts` — passed (1 file, 3 tests). - `pnpm --dir packages/shared build` — passed; refreshed the package export used by hook tests. - `pnpm --dir packages/services build` — passed. - `pnpm --dir packages/hooks build` — passed. - `pnpm --dir app/sentinel-api typecheck` — failed with Node heap out-of-memory at the script's 4096 MB limit before TypeScript diagnostics. - `NODE_OPTIONS="--max-old-space-size=8192" pnpm --dir app/sentinel-api exec tsc --noEmit` — stopped after an extended no-output run; no diagnostics were emitted before interruption.
 - [x] Confirm the response contains no answers, scores, configuration, or question content.
 - [x] Confirm cross-student access returns `404` without revealing attempt existence.
 - [x] Mark this phase complete only after tests pass.

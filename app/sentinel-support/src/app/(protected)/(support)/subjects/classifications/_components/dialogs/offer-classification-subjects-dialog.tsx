@@ -158,8 +158,8 @@ export function OfferClassificationSubjectsDialog({
     const subjectCount = classification?.subjectCount ?? classification?.subjects.length ?? 0;
     const hasOfferingScope = Boolean(
         classification?.department_id ||
-            (classification?.course_ids?.length ?? 0) > 0 ||
-            (classification?.year_levels?.length ?? 0) > 0,
+        (classification?.course_ids?.length ?? 0) > 0 ||
+        (classification?.year_levels?.length ?? 0) > 0,
     );
     const selectedSubjectLabel = classification
         ? `${classification.name} (${subjectCount} subject${subjectCount === 1 ? '' : 's'})`
@@ -255,8 +255,8 @@ export function OfferClassificationSubjectsDialog({
                                                         </Select>
                                                         <FormDescription className="text-xs leading-4">
                                                             One offering will be created per
-                                                            classification subject for this
-                                                            academic period.
+                                                            classification subject for this academic
+                                                            period.
                                                         </FormDescription>
                                                         <FormMessage />
                                                     </FormItem>
@@ -269,9 +269,7 @@ export function OfferClassificationSubjectsDialog({
                                         selectedSubjectLabel={selectedSubjectLabel}
                                         selectedTermLabel={offeringFormData.selectedTermLabel}
                                         selectedTermDates={offeringFormData.selectedTermDates}
-                                        selectedDepartments={
-                                            offeringFormData.selectedDepartments
-                                        }
+                                        selectedDepartments={offeringFormData.selectedDepartments}
                                         selectedCourses={offeringFormData.selectedCourses}
                                         selectedYearLevelLabels={
                                             offeringFormData.selectedYearLevelLabels
@@ -305,9 +303,7 @@ export function OfferClassificationSubjectsDialog({
                                     onSetCourseIds={offeringFormData.setCourseIds}
                                     onSetSectionIds={offeringFormData.setSectionIds}
                                     onSetYearLevels={offeringFormData.setYearLevels}
-                                    onSetDepartmentSearch={
-                                        offeringFormData.setDepartmentSearch
-                                    }
+                                    onSetDepartmentSearch={offeringFormData.setDepartmentSearch}
                                     onSetCourseSearch={offeringFormData.setCourseSearch}
                                     onSetSectionSearch={offeringFormData.setSectionSearch}
                                     onToggleDepartment={offeringFormData.toggleDepartment}
@@ -348,9 +344,7 @@ export function OfferClassificationSubjectsDialog({
                                     }
                                     className="bg-[#323d8f] hover:bg-[#323d8f]/90"
                                 >
-                                    {createOfferings.isPending
-                                        ? 'Creating...'
-                                        : 'Create Offerings'}
+                                    {createOfferings.isPending ? 'Creating...' : 'Create Offerings'}
                                 </Button>
                             </div>
                         </DialogFooter>

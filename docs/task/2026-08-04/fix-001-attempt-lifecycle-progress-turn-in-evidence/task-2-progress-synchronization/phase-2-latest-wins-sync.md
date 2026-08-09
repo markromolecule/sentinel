@@ -48,12 +48,12 @@ on an active attempt.
 ## Completion Gate
 
 - [x] Record focused command results here during implementation.
-  - `pnpm exec vitest run 'src/app/(protected)/student/exam/[id]/attempt/_hooks/use-student-exam-attempt/use-attempt-sync.test.tsx' --config vitest.config.ts -t 'heartbeat|online retry|one-in-flight coordinator'`
-    - `Test Files  1 passed (1)`
-    - `Tests  10 passed | 10 skipped (20)`
-  - `pnpm exec vitest run 'src/modules/examination/flow/flow.test.ts' 'src/modules/examination/flow/data/session.repository.test.ts' 'src/modules/examination/monitoring/services/map-monitoring-response.test.ts' --config vitest.config.ts -t 'syncs active attempt progress|converts a zero-row guarded sync update|guards progress sync'`
-    - `Test Files  2 passed | 1 skipped (3)`
-    - `Tests  3 passed | 31 skipped (34)`
+    - `pnpm exec vitest run 'src/app/(protected)/student/exam/[id]/attempt/_hooks/use-student-exam-attempt/use-attempt-sync.test.tsx' --config vitest.config.ts -t 'heartbeat|online retry|one-in-flight coordinator'`
+        - `Test Files  1 passed (1)`
+        - `Tests  10 passed | 10 skipped (20)`
+    - `pnpm exec vitest run 'src/modules/examination/flow/flow.test.ts' 'src/modules/examination/flow/data/session.repository.test.ts' 'src/modules/examination/monitoring/services/map-monitoring-response.test.ts' --config vitest.config.ts -t 'syncs active attempt progress|converts a zero-row guarded sync update|guards progress sync'`
+        - `Test Files  2 passed | 1 skipped (3)`
+        - `Tests  3 passed | 31 skipped (34)`
 - [x] Confirm monitoring receives the latest accepted count within debounce plus polling latency.
 - [x] Confirm concurrent closure cannot be followed by a successful progress write.
 - [x] Mark this phase complete only after tests pass.

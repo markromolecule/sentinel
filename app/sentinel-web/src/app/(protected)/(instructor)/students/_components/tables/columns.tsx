@@ -58,7 +58,11 @@ export const columns: ColumnDef<Student>[] = [
             return (
                 <div className="flex items-center gap-3">
                     <Avatar className="h-9 w-9 shrink-0">
-                        <AvatarImage src={student.avatarUrl || undefined} alt={`${student.firstName} ${student.lastName}`} className="object-cover" />
+                        <AvatarImage
+                            src={student.avatarUrl || undefined}
+                            alt={`${student.firstName} ${student.lastName}`}
+                            className="object-cover"
+                        />
                         <AvatarFallback className="bg-gradient-to-br from-[#323d8f] to-[#4a5bb8] text-xs font-bold text-white">
                             {initials}
                         </AvatarFallback>

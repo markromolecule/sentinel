@@ -6,8 +6,7 @@ import { useApi } from '../../api-provider';
 import { notifyPermissionDenied } from '../_shared/permission-errors';
 
 export type DeleteSubjectOfferingsMutationVariables =
-    | string[]
-    | { ids: string[]; institutionId?: string };
+    string[] | { ids: string[]; institutionId?: string };
 
 export type UseDeleteSubjectOfferingsMutationArgs = UseMutationOptions<
     void,

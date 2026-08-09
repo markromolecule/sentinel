@@ -68,7 +68,7 @@ export class SystemLogsService {
                 const token = process.env.GITHUB_TOKEN || process.env.GITHUB_PAT;
                 const headers: Record<string, string> = {
                     'User-Agent': 'sentinel-api',
-                    'Accept': 'application/vnd.github.v3+json',
+                    Accept: 'application/vnd.github.v3+json',
                 };
                 if (token) {
                     headers['Authorization'] = `Bearer ${token}`;
@@ -76,7 +76,7 @@ export class SystemLogsService {
 
                 const response = await fetch(
                     `https://api.github.com/repos/${repo}/actions/workflows/telemetry-flush.yml/runs?per_page=30`,
-                    { headers }
+                    { headers },
                 );
 
                 if (response.ok) {
@@ -86,9 +86,10 @@ export class SystemLogsService {
                     let githubLogs = runs.map((run: any) => {
                         let action = 'telemetry.flush_pending';
                         if (run.status === 'completed') {
-                            action = run.conclusion === 'success'
-                                ? 'telemetry.flush_success'
-                                : 'telemetry.flush_failure';
+                            action =
+                                run.conclusion === 'success'
+                                    ? 'telemetry.flush_success'
+                                    : 'telemetry.flush_failure';
                         }
 
                         let durationStr = '—';
@@ -114,7 +115,7 @@ export class SystemLogsService {
                                     commit: run.head_commit?.message?.trim() || '—',
                                     author: run.head_commit?.author?.name || '—',
                                     url: run.html_url,
-                                }
+                                },
                             },
                             ipAddress: null,
                             createdAt: run.created_at,
@@ -134,19 +135,19 @@ export class SystemLogsService {
                     if (filters.startDate) {
                         const start = new Date(filters.startDate).getTime();
                         githubLogs = githubLogs.filter(
-                            (log: any) => new Date(log.createdAt).getTime() >= start
+                            (log: any) => new Date(log.createdAt).getTime() >= start,
                         );
                     }
                     if (filters.endDate) {
                         const end = new Date(filters.endDate).getTime();
                         githubLogs = githubLogs.filter(
-                            (log: any) => new Date(log.createdAt).getTime() <= end
+                            (log: any) => new Date(log.createdAt).getTime() <= end,
                         );
                     }
 
                     // Merge and sort combined list by createdAt desc
                     const combinedItems = [...dbResult.items, ...githubLogs].sort(
-                        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
                     );
 
                     const paginatedItems = combinedItems.slice(0, pageSize);
@@ -162,7 +163,10 @@ export class SystemLogsService {
                     };
                 }
             } catch (error) {
-                console.error('[SystemLogsService] Failed to fetch or merge GitHub Action runs:', error);
+                console.error(
+                    '[SystemLogsService] Failed to fetch or merge GitHub Action runs:',
+                    error,
+                );
             }
         }
 

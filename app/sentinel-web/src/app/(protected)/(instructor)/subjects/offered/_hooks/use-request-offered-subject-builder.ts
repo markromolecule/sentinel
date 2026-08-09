@@ -86,10 +86,7 @@ export function useRequestOfferedSubjectBuilder(
         [offering.classifications],
     );
 
-    const allowedSections = useStableValue(
-        () => offering.sections ?? [],
-        [offering.sections],
-    );
+    const allowedSections = useStableValue(() => offering.sections ?? [], [offering.sections]);
 
     const availableDepartments = useStableValue(() => {
         if ((offering.departments ?? []).length > 0) {

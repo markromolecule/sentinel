@@ -57,11 +57,7 @@ storage cleanup, and route replacement.
 
 ## Completion Gate
 
-- [x] Record focused command results here during implementation.
-      - `pnpm --dir app/sentinel-web exec vitest run ...use-active-attempt-lifecycle.test.tsx` — passed (1 file, 4 tests).
-      - `pnpm --dir app/sentinel-web exec vitest run ...use-attempt-monitoring.test.tsx` — passed (1 file, 6 tests).
-      - `pnpm --dir app/sentinel-web exec vitest run ...student-exam-audio-provider.test.tsx ...student-exam-mediapipe-provider.test.tsx` — passed (2 files, 7 tests).
-      - `pnpm --dir app/sentinel-web exec vitest run ...attempt/page.test.tsx` — passed (1 file, 19 tests).
+- [x] Record focused command results here during implementation. - `pnpm --dir app/sentinel-web exec vitest run ...use-active-attempt-lifecycle.test.tsx` — passed (1 file, 4 tests). - `pnpm --dir app/sentinel-web exec vitest run ...use-attempt-monitoring.test.tsx` — passed (1 file, 6 tests). - `pnpm --dir app/sentinel-web exec vitest run ...student-exam-audio-provider.test.tsx ...student-exam-mediapipe-provider.test.tsx` — passed (2 files, 7 tests). - `pnpm --dir app/sentinel-web exec vitest run ...attempt/page.test.tsx` — passed (1 file, 19 tests).
 - [x] Confirm observation-to-teardown is no more than one status interval plus request latency.
 - [x] Confirm cleanup and route replacement occur at most once.
 - [x] Mark this phase complete only after tests pass.

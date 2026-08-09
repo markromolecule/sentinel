@@ -121,9 +121,7 @@ describe('useStudentHistory', () => {
         expect(allItems.map((i) => i.id)).toContain('exam-1');
         expect(allItems.map((i) => i.id)).toContain('exam-2');
         expect(allItems.map((i) => i.id)).toContain('exam-3');
-        expect(allItems.find((i) => i.id === 'exam-1')?.availableAt).toBe(
-            '2099-06-20T10:00:00Z',
-        );
+        expect(allItems.find((i) => i.id === 'exam-1')?.availableAt).toBe('2099-06-20T10:00:00Z');
         expect(allItems.map((i) => i.id)).not.toContain('exam-4');
         expect(allItems.map((i) => i.id)).not.toContain('exam-5');
         expect(allItems.map((i) => i.id)).not.toContain('exam-6');

@@ -32,7 +32,10 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
                     <SuperAdminSidebar />
                 </Suspense>
                 <SidebarInset
-                    className={cn('relative !ml-0', isFullScreen && 'min-h-0 flex-1 overflow-hidden')}
+                    className={cn(
+                        'relative !ml-0',
+                        isFullScreen && 'min-h-0 flex-1 overflow-hidden',
+                    )}
                 >
                     <main
                         data-app-scroll-container="support"

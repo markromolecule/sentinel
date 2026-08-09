@@ -16,9 +16,7 @@ export default async function StudentHistoryExamPage({
     const { examId } = await params;
 
     return (
-        <Suspense
-            fallback={<StudentExamLoadingState />}
-        >
+        <Suspense fallback={<StudentExamLoadingState />}>
             <HistoryDetailsContent examId={examId} />
         </Suspense>
     );

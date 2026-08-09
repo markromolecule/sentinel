@@ -177,7 +177,14 @@ export function useAttemptSync({
         if (Object.keys(selectedAnswers).length > 0) {
             saveAnswerDraft(selectedAnswers, elapsedSecondsRef.current);
         }
-    }, [isInitializingSession, isSuspended, saveAnswerDraft, selectedAnswers, sessionId, elapsedSecondsRef]);
+    }, [
+        isInitializingSession,
+        isSuspended,
+        saveAnswerDraft,
+        selectedAnswers,
+        sessionId,
+        elapsedSecondsRef,
+    ]);
 
     // ─── Debounced remote sync on answer change ───────────────────────────────
     useEffect(() => {
@@ -210,7 +217,15 @@ export function useAttemptSync({
         // selectedAnswers in deps: intentional — a new answer triggers a fresh debounce window.
         // sendSnapshot captured from outer scope — stable (does not close over reactive state).
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [sessionId, isInitializingSession, isSuspended, saveAnswerDraft, selectedAnswers, syncProgress, elapsedSecondsRef]);
+    }, [
+        sessionId,
+        isInitializingSession,
+        isSuspended,
+        saveAnswerDraft,
+        selectedAnswers,
+        syncProgress,
+        elapsedSecondsRef,
+    ]);
 
     // ─── Heartbeat — elapsed/lifecycle freshness, no redundant answer payload ─
     useEffect(() => {
@@ -267,12 +282,7 @@ export function useAttemptSync({
      * latest snapshot have both finished.
      */
     async function flushPendingProgress() {
-        if (
-            isInitializingSession ||
-            !sessionId ||
-            isSuspended ||
-            isTerminallyBlockedRef.current
-        ) {
+        if (isInitializingSession || !sessionId || isSuspended || isTerminallyBlockedRef.current) {
             return;
         }
 

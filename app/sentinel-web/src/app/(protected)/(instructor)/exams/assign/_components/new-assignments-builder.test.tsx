@@ -110,27 +110,25 @@ vi.mock('./row-instructor-combobox', () => ({
 }));
 
 vi.mock('./row-room-combobox', () => ({
-    RowRoomCombobox: React.forwardRef(
-        ({ value, onValueChange, rooms }: any, ref: any) => (
-            <div data-testid="mock-room-combobox">
-                <input
-                    ref={ref}
-                    data-testid="room-input"
-                    value={value}
-                    onChange={(e) => onValueChange(e.target.value)}
-                />
-                {rooms.map((room: any) => (
-                    <button
-                        key={room.id}
-                        data-testid={`room-select-${room.id}`}
-                        onClick={() => onValueChange(room.id)}
-                    >
-                        {room.name}
-                    </button>
-                ))}
-            </div>
-        ),
-    ),
+    RowRoomCombobox: React.forwardRef(({ value, onValueChange, rooms }: any, ref: any) => (
+        <div data-testid="mock-room-combobox">
+            <input
+                ref={ref}
+                data-testid="room-input"
+                value={value}
+                onChange={(e) => onValueChange(e.target.value)}
+            />
+            {rooms.map((room: any) => (
+                <button
+                    key={room.id}
+                    data-testid={`room-select-${room.id}`}
+                    onClick={() => onValueChange(room.id)}
+                >
+                    {room.name}
+                </button>
+            ))}
+        </div>
+    )),
 }));
 
 vi.mock('@sentinel/ui', async (importOriginal) => {

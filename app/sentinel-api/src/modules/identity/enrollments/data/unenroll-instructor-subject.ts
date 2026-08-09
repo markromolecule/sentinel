@@ -32,14 +32,13 @@ export const unenrollInstructorSubjectData = async ({
         .select('class_group_id')
         .where('subject_offering_id', '=', subjectId)
         .where((eb) =>
-            eb.or([
-                eb('class_group_id', 'in', requestedIds),
-                eb('section_id', 'in', requestedIds),
-            ]),
+            eb.or([eb('class_group_id', 'in', requestedIds), eb('section_id', 'in', requestedIds)]),
         )
         .execute();
 
-    const resolvedClassGroupIds = resolvedClassGroups.map((classGroup) => classGroup.class_group_id);
+    const resolvedClassGroupIds = resolvedClassGroups.map(
+        (classGroup) => classGroup.class_group_id,
+    );
 
     if (resolvedClassGroupIds.length === 0) {
         return {

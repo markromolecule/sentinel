@@ -37,9 +37,7 @@ export type UseMediaPipeFrameProcessorArgs = {
         ReturnType<typeof createMediaPipeMultipleFacesConfirmationState>
     >;
     setAnalysis: (analysis: MediaPipeFrameAnalysis | null) => void;
-    dispatchIncidentRef: React.MutableRefObject<
-        (args: DispatchIncidentArgs) => Promise<void>
-    >;
+    dispatchIncidentRef: React.MutableRefObject<(args: DispatchIncidentArgs) => Promise<void>>;
     eligibility: MediapipeRuntimeEligibility;
     attemptId?: string;
     examSessionId?: string;

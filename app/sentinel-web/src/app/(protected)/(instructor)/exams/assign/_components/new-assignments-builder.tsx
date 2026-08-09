@@ -1,10 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import {
-    Button,
-    Label,
-} from '@sentinel/ui';
+import { Button, Label } from '@sentinel/ui';
 import {
     useClassroomsQuery,
     useRoomsQuery,
@@ -308,9 +305,7 @@ export function NewAssignmentsBuilder({
                                             rooms={activeRooms}
                                             disabled={isPending}
                                             placeholder="Search room..."
-                                            aria-invalid={
-                                                submitAttempted && !!rowErrs.roomId
-                                            }
+                                            aria-invalid={submitAttempted && !!rowErrs.roomId}
                                             aria-describedby={
                                                 submitAttempted && rowErrs.roomId
                                                     ? `err-room-${row.localId}`

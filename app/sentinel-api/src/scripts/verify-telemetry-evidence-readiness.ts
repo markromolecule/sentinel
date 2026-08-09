@@ -13,9 +13,7 @@ async function main() {
         console.log(`webSupabaseUrl: ${result.webSupabaseUrl ?? 'missing'}`);
 
         if (result.bucketReadiness) {
-            console.log(
-                `bucketReadiness: ${result.bucketReadiness.ready ? 'ready' : 'not-ready'}`,
-            );
+            console.log(`bucketReadiness: ${result.bucketReadiness.ready ? 'ready' : 'not-ready'}`);
             console.log(`bucketExists: ${result.bucketReadiness.exists ? 'yes' : 'no'}`);
         } else {
             console.log('bucketReadiness: skipped');

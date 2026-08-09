@@ -237,7 +237,11 @@ describe('useAttemptSync', () => {
         await vi.advanceTimersByTimeAsync(HEARTBEAT_INTERVAL_MS);
         expect(syncProgress).toHaveBeenCalledTimes(1);
         // Heartbeat passes undefined answers
-        expect(syncProgress).toHaveBeenCalledWith(expect.any(Number), undefined, expect.any(Number));
+        expect(syncProgress).toHaveBeenCalledWith(
+            expect.any(Number),
+            undefined,
+            expect.any(Number),
+        );
     });
 
     it('heartbeat reads the latest elapsed value from the ref', async () => {
@@ -554,7 +558,11 @@ describe('useAttemptSync — one-in-flight coordinator', () => {
         const syncProgress = vi
             .fn()
             // First call is still in flight while second is debouncing
-            .mockReturnValueOnce(new Promise<void>((res) => { resolveFirst = res; }))
+            .mockReturnValueOnce(
+                new Promise<void>((res) => {
+                    resolveFirst = res;
+                }),
+            )
             .mockRejectedValueOnce(lifecycleError)
             .mockResolvedValue(undefined);
 

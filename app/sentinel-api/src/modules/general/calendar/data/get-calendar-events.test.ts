@@ -39,9 +39,7 @@ describe('getCalendarEventsData', () => {
     });
 
     it('keeps the institution and audience filters while excluding foreign NOTE records', async () => {
-        const query = createMockQuery([
-            { eventId: 'event-1', title: 'Public event' },
-        ]);
+        const query = createMockQuery([{ eventId: 'event-1', title: 'Public event' }]);
         const dbClient = {
             selectFrom: vi.fn(() => query),
         } as any;

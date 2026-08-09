@@ -265,16 +265,12 @@ describe('SubjectOfferingsService.createSubjectOfferingsFromClassification', () 
         );
         expect(result.created_count).toBe(1);
         expect(result.skipped_count).toBe(1);
-        expect(mocks.updateAll).toHaveBeenCalledWith(
-            { tx: true },
-            'offering-b',
-            {
-                department_ids: ['department-a'],
-                course_ids: ['course-a'],
-                section_ids: ['section-a'],
-                year_levels: [1],
-            },
-        );
+        expect(mocks.updateAll).toHaveBeenCalledWith({ tx: true }, 'offering-b', {
+            department_ids: ['department-a'],
+            course_ids: ['course-a'],
+            section_ids: ['section-a'],
+            year_levels: [1],
+        });
         expect(result.skipped).toEqual([
             {
                 subject_id: 'subject-b',

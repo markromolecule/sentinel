@@ -16,9 +16,7 @@ export default async function StudentHistoryAttemptPage({
     const { attemptId } = await params;
 
     return (
-        <Suspense
-            fallback={<StudentExamLoadingState />}
-        >
+        <Suspense fallback={<StudentExamLoadingState />}>
             <HistoryDetailsContent attemptId={attemptId} />
         </Suspense>
     );

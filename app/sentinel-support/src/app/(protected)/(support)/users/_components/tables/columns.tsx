@@ -97,9 +97,7 @@ export const columns = (
             const date = row.getValue<string | Date>('createdAt');
             if (!date) return <div className="text-muted-foreground">—</div>;
             return (
-                <div className="text-muted-foreground">
-                    {format(new Date(date), 'MMM d, yyyy')}
-                </div>
+                <div className="text-muted-foreground">{format(new Date(date), 'MMM d, yyyy')}</div>
             );
         },
     },

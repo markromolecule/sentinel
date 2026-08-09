@@ -88,10 +88,8 @@ export function useWizardValidation({ draft, summary }: UseWizardValidationArgs)
 
                 if (summary.subjects === 0) nextErrors.push('Add at least one subject.');
                 if (invalidSubject) nextErrors.push('Every subject needs a subject code.');
-                if (tooLongCode)
-                    nextErrors.push('Subject codes must be 50 characters or less.');
-                if (tooLongTitle)
-                    nextErrors.push('Subject titles must be 255 characters or less.');
+                if (tooLongCode) nextErrors.push('Subject codes must be 50 characters or less.');
+                if (tooLongTitle) nextErrors.push('Subject titles must be 255 characters or less.');
             }
 
             if (stepName === 'Naming conventions') {

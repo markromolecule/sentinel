@@ -63,21 +63,23 @@ vi.mock('@/features/calendar', () => ({
             </div>
         );
     },
-        DayDetailsSheet: ({
-            selectedDate,
-            getEventsForDate,
-            renderActions,
-        }: {
-            selectedDate: Date | null;
-            getEventsForDate: (date: Date) => Array<{ title: string; createdBy: string }>;
-            renderActions?: () => ReactNode;
-        }) => (
+    DayDetailsSheet: ({
+        selectedDate,
+        getEventsForDate,
+        renderActions,
+    }: {
+        selectedDate: Date | null;
+        getEventsForDate: (date: Date) => Array<{ title: string; createdBy: string }>;
+        renderActions?: () => ReactNode;
+    }) => (
         <div data-testid="day-details-sheet">
             <div data-testid="selected-date">
                 {selectedDate ? selectedDate.toISOString() : 'none'}
             </div>
             <div data-testid="sheet-events">
-                {getEventsForDate(selectedDate ?? new Date()).map((event) => event.title).join(', ')}
+                {getEventsForDate(selectedDate ?? new Date())
+                    .map((event) => event.title)
+                    .join(', ')}
             </div>
             {renderActions ? renderActions() : null}
         </div>
@@ -102,7 +104,12 @@ vi.mock('@sentinel/ui', async () => {
             variant?: string;
             className?: string;
         }) => (
-            <button data-variant={variant} className={className} onClick={onClick} disabled={disabled}>
+            <button
+                data-variant={variant}
+                className={className}
+                onClick={onClick}
+                disabled={disabled}
+            >
                 {children}
             </button>
         ),
@@ -157,7 +164,15 @@ vi.mock('@sentinel/ui', async () => {
                 className={className}
             />
         ),
-        Label: ({ children, htmlFor, className }: { children: ReactNode; htmlFor?: string; className?: string }) => (
+        Label: ({
+            children,
+            htmlFor,
+            className,
+        }: {
+            children: ReactNode;
+            htmlFor?: string;
+            className?: string;
+        }) => (
             <label htmlFor={htmlFor} className={className}>
                 {children}
             </label>
@@ -167,15 +182,21 @@ vi.mock('@sentinel/ui', async () => {
         DialogContent: ({ children, className }: { children: ReactNode; className?: string }) => (
             <div className={className}>{children}</div>
         ),
-        DialogDescription: ({ children, className }: { children: ReactNode; className?: string }) => (
-            <p className={className}>{children}</p>
-        ),
+        DialogDescription: ({
+            children,
+            className,
+        }: {
+            children: ReactNode;
+            className?: string;
+        }) => <p className={className}>{children}</p>,
         DialogFooter: ({ children }: { children: ReactNode }) => <div>{children}</div>,
         DialogHeader: ({ children }: { children: ReactNode }) => <div>{children}</div>,
         DialogTitle: ({ children, className }: { children: ReactNode; className?: string }) => (
             <h2 className={className}>{children}</h2>
         ),
-        Skeleton: ({ className }: { className?: string }) => <div data-testid="skeleton" className={className} />,
+        Skeleton: ({ className }: { className?: string }) => (
+            <div data-testid="skeleton" className={className} />
+        ),
     };
 });
 
@@ -248,15 +269,25 @@ describe('StudentCalendarPage', () => {
     });
 
     it('submits a personal note as a STUDENTS-scoped NOTE with the selected date and times', () => {
-        const mutateMock = vi.fn(({ title, description, startDate, startTime, endTime, eventType, targetAudience }: any) => {
-            expect(title).toBe('Study Session');
-            expect(description).toBe('Review chapter 3');
-            expect(startDate).toBe('2026-08-05T00:00:00.000Z');
-            expect(startTime).toBe('08:30');
-            expect(endTime).toBe('09:15');
-            expect(eventType).toBe('NOTE');
-            expect(targetAudience).toBe('STUDENTS');
-        });
+        const mutateMock = vi.fn(
+            ({
+                title,
+                description,
+                startDate,
+                startTime,
+                endTime,
+                eventType,
+                targetAudience,
+            }: any) => {
+                expect(title).toBe('Study Session');
+                expect(description).toBe('Review chapter 3');
+                expect(startDate).toBe('2026-08-05T00:00:00.000Z');
+                expect(startTime).toBe('08:30');
+                expect(endTime).toBe('09:15');
+                expect(eventType).toBe('NOTE');
+                expect(targetAudience).toBe('STUDENTS');
+            },
+        );
         mockUseCalendarEventsQuery.mockReturnValue({
             data: [],
             isLoading: false,

@@ -67,10 +67,7 @@ export async function getCalendarEventsData(
     }
 
     query = query.where((eb) =>
-        eb.or([
-            eb('ce.event_type', '!=', 'NOTE'),
-            eb('ce.created_by', '=', userId),
-        ]),
+        eb.or([eb('ce.event_type', '!=', 'NOTE'), eb('ce.created_by', '=', userId)]),
     );
 
     return await query.orderBy('ce.start_date', 'asc').execute();
