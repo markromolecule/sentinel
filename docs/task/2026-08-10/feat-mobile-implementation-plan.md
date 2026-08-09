@@ -69,13 +69,13 @@ The `sentinel-mobile` app currently has several incomplete UI elements, static m
 
 ### Task 5 [Folder]: Calendar Notes Parity, Header Cleanup & Notifications
 - **Path:** [docs/task/2026-08-10/task-5-calendar-notes-and-notifications/](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-5-calendar-notes-and-notifications/)
-  - [phase-1-calendar-header-cleanup-and-note-scoping.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-5-calendar-notes-and-notifications/phase-1-calendar-header-cleanup-and-note-scoping.md)
-  - [phase-2-calendar-notifications-query-and-modal.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-5-calendar-notes-and-notifications/phase-2-calendar-notifications-query-and-modal.md)
+  - **[Completed]** [phase-1-calendar-header-cleanup-and-note-scoping.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-5-calendar-notes-and-notifications/phase-1-calendar-header-cleanup-and-note-scoping.md)
+  - **[Completed]** [phase-2-calendar-notifications-query-and-modal.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-5-calendar-notes-and-notifications/phase-2-calendar-notifications-query-and-modal.md)
 
 ### Task 6 [Folder]: Student Messaging Workflow & Thread Details
 - **Path:** [docs/task/2026-08-10/task-6-student-messaging-workflow/](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-6-student-messaging-workflow/)
-  - [phase-1-live-conversations-and-search.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-6-student-messaging-workflow/phase-1-live-conversations-and-search.md)
-  - [phase-2-new-message-modal-and-thread-screen.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-6-student-messaging-workflow/phase-2-new-message-modal-and-thread-screen.md)
+  - **[Completed]** [phase-1-live-conversations-and-search.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-6-student-messaging-workflow/phase-1-live-conversations-and-search.md)
+  - **[Completed]** [phase-2-new-message-modal-and-thread-screen.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-6-student-messaging-workflow/phase-2-new-message-modal-and-thread-screen.md)
 
 ---
 

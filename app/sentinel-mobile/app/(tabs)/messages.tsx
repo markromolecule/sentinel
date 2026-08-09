@@ -8,83 +8,85 @@ import {
     useColorScheme,
     StatusBar,
     Keyboard,
+    ActivityIndicator,
+    RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
-import { MessageItem, Message } from '@/features/messages';
+import { useAuth, useConversationsQuery } from '@sentinel/hooks';
+import { MessageItem, type Message, NewMessageModal } from '@/features/messages';
+import { filterConversations } from '@/features/messages/lib/conversation-search';
 
-// Mock Data
-const MOCK_MESSAGES: Message[] = [
-    {
-        id: '1',
-        senderIndex: 0,
-        name: 'Dr. Sarah Wilson',
-        lastMessage: 'Your test results are ready for review.',
-        time: '10:30 AM',
-        unreadCount: 2,
-        isOnline: true,
-    },
-    {
-        id: '2',
-        senderIndex: 1,
-        name: 'Clinic Support',
-        lastMessage: 'Please confirm your appointment for tomorrow.',
-        time: 'Yesterday',
-        unreadCount: 0,
-    },
-    {
-        id: '3',
-        senderIndex: 2,
-        name: 'Pharmacy',
-        lastMessage: 'Your prescription is ready for pickup at the main branch.',
-        time: 'Tue',
-        unreadCount: 1,
-    },
-    {
-        id: '4',
-        senderIndex: 3,
-        name: 'Dr. James Chen',
-        lastMessage: "Thanks for the update. Let's schedule a follow-up next week.",
-        time: 'Mon',
-        unreadCount: 0,
-        isOnline: true,
-    },
-    {
-        id: '5',
-        senderIndex: 4,
-        name: 'Lab Services',
-        lastMessage: 'Blood work appointment confirmed for 9:00 AM.',
-        time: 'Last week',
-        unreadCount: 0,
-    },
-    {
-        id: '6',
-        senderIndex: 5,
-        name: 'Emergency Contact',
-        lastMessage: 'Call me when you are free.',
-        time: '2 weeks ago',
-        unreadCount: 0,
-    },
-];
+function formatMessageTime(dateStr?: string | null) {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    if (Number.isNaN(date.getTime())) return '';
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const eventDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const diffMs = today.getTime() - eventDate.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else if (diffDays === 1) {
+        return 'Yesterday';
+    } else if (diffDays < 7) {
+        return date.toLocaleDateString([], { weekday: 'short' });
+    } else {
+        return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    }
+}
 
 export default function MessagesRoute() {
+    const router = useRouter();
     const colorScheme = useColorScheme();
     const colors = Colors[colorScheme ?? 'light'];
     const isDark = colorScheme === 'dark';
 
+    const { user } = useAuth();
     const [searchQuery, setSearchQuery] = useState('');
+    const [isNewMessageVisible, setNewMessageVisible] = useState(false);
 
-    // Use useMemo for filtering to avoid unnecessary state updates and potential mount issues
+    const { data: rawConversations, isLoading, refetch, isFetching } = useConversationsQuery();
+
+    const mappedMessages = useMemo<Message[]>(() => {
+        if (!rawConversations) return [];
+
+        return rawConversations.map((conv) => {
+            const otherParticipant =
+                conv.participants.find((p) => p.userId !== user?.id) || conv.participants[0];
+            const name = otherParticipant?.name || 'Unknown';
+            const initials = name
+                .split(' ')
+                .map((n) => n[0])
+                .join('')
+                .toUpperCase();
+
+            // Deterministic senderIndex for avatar color stability
+            const senderIndex = name ? name.charCodeAt(0) : 0;
+
+            return {
+                id: conv.conversationId,
+                senderIndex,
+                name,
+                avatar: otherParticipant?.avatarUrl || undefined,
+                lastMessage: conv.lastMessage?.content || 'No messages yet',
+                time: formatMessageTime(
+                    conv.lastMessage?.createdAt || conv.updatedAt || conv.createdAt
+                ),
+                unreadCount: conv.unreadCount,
+                isOnline: otherParticipant?.active || false,
+            };
+        });
+    }, [rawConversations, user]);
+
     const filteredMessages = useMemo(() => {
-        if (!searchQuery.trim()) return MOCK_MESSAGES;
-        const query = searchQuery.toLowerCase();
-        return MOCK_MESSAGES.filter(
-            (msg) =>
-                msg.name.toLowerCase().includes(query) ||
-                msg.lastMessage.toLowerCase().includes(query),
-        );
-    }, [searchQuery]);
+        return filterConversations(mappedMessages, searchQuery);
+    }, [mappedMessages, searchQuery]);
 
     const handleClearSearch = () => {
         setSearchQuery('');
@@ -114,6 +116,7 @@ export default function MessagesRoute() {
                         <TouchableOpacity
                             activeOpacity={0.7}
                             className="h-12 w-12 items-center justify-center rounded-full bg-white/20"
+                            onPress={() => setNewMessageVisible(true)}
                         >
                             <Ionicons name="create-outline" size={24} color="#fff" />
                         </TouchableOpacity>
@@ -146,45 +149,67 @@ export default function MessagesRoute() {
 
             {/* Content Section */}
             <View className="flex-1">
-                <View className="px-6 pb-2 pt-6">
-                    <Text className="text-xl font-bold" style={{ color: colors.text }}>
-                        All Conversations
-                    </Text>
-                    <Text className="text-sm font-medium" style={{ color: colors.icon }}>
-                        {filteredMessages.length} Active Conversations
-                    </Text>
-                </View>
-
-                {/* Messages List */}
-                <FlatList
-                    data={filteredMessages}
-                    keyExtractor={(item) => item.id}
-                    renderItem={({ item }) => (
-                        <MessageItem message={item} onPress={(id) => console.log(id)} />
-                    )}
-                    contentContainerStyle={{ paddingBottom: 100, paddingTop: 8 }}
-                    ItemSeparatorComponent={() => (
-                        <View
-                            className="ml-[80px] mr-6 h-[0.5px]"
-                            style={{ backgroundColor: isDark ? '#27272a' : '#f1f1f1' }}
-                        />
-                    )}
-                    ListEmptyComponent={() => (
-                        <View className="flex-1 items-center justify-center px-10 pt-20 opacity-60">
-                            <Ionicons
-                                name="chatbubble-ellipses-outline"
-                                size={64}
-                                color={colors.icon}
-                            />
-                            <Text
-                                className="mt-4 text-center text-lg font-semibold"
-                                style={{ color: colors.text }}
-                            >
-                                No messages found
+                {isLoading ? (
+                    <View className="flex-1 items-center justify-center">
+                        <ActivityIndicator size="large" color={colors.primary} />
+                        <Text className="mt-4 text-sm font-medium" style={{ color: colors.icon }}>
+                            Loading messages...
+                        </Text>
+                    </View>
+                ) : (
+                    <>
+                        <View className="px-6 pb-2 pt-6">
+                            <Text className="text-xl font-bold" style={{ color: colors.text }}>
+                                All Conversations
+                            </Text>
+                            <Text className="text-sm font-medium" style={{ color: colors.icon }}>
+                                {filteredMessages.length} Active Conversations
                             </Text>
                         </View>
-                    )}
-                />
+
+                        {/* Messages List */}
+                        <FlatList
+                            data={filteredMessages}
+                            keyExtractor={(item) => item.id}
+                            renderItem={({ item }) => (
+                                <MessageItem
+                                    message={item}
+                                    onPress={(id) => router.push(`/messages/${id}`)}
+                                />
+                            )}
+                            refreshControl={
+                                <RefreshControl
+                                    refreshing={isFetching}
+                                    onRefresh={refetch}
+                                    colors={[colors.primary]}
+                                    tintColor={colors.primary}
+                                />
+                            }
+                            contentContainerStyle={{ paddingBottom: 100, paddingTop: 8 }}
+                            ItemSeparatorComponent={() => (
+                                <View
+                                    className="ml-[80px] mr-6 h-[0.5px]"
+                                    style={{ backgroundColor: isDark ? '#27272a' : '#f1f1f1' }}
+                                />
+                            )}
+                            ListEmptyComponent={() => (
+                                <View className="flex-1 items-center justify-center px-10 pt-20 opacity-60">
+                                    <Ionicons
+                                        name="chatbubble-ellipses-outline"
+                                        size={64}
+                                        color={colors.icon}
+                                    />
+                                    <Text
+                                        className="mt-4 text-center text-lg font-semibold"
+                                        style={{ color: colors.text }}
+                                    >
+                                        No messages found
+                                    </Text>
+                                </View>
+                            )}
+                        />
+                    </>
+                )}
             </View>
 
             {/* Floating Action Button (Consistent with recent modernization) */}
@@ -199,9 +224,15 @@ export default function MessagesRoute() {
                     elevation: 8,
                 }}
                 activeOpacity={0.8}
+                onPress={() => setNewMessageVisible(true)}
             >
                 <Ionicons name="add" size={32} color="#fff" />
             </TouchableOpacity>
+
+            <NewMessageModal
+                visible={isNewMessageVisible}
+                onClose={() => setNewMessageVisible(false)}
+            />
         </View>
     );
 }

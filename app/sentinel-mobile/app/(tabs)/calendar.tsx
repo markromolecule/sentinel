@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, StatusBar, useColorScheme } from 'react-native';
 import { Colors } from '@/constants/theme';
 import { useCalendar } from '@/features/calendar/hooks/use-calendar';
@@ -7,10 +7,13 @@ import { CalendarAgenda } from '@/features/calendar/components/calendar-agenda';
 import { AddNoteModal } from '@/features/calendar/components/add-note-modal';
 import { CalendarFab } from '@/features/calendar/components/calendar-fab';
 import { TodayButton } from '@/features/calendar/components/today-button';
+import { useNotificationsQuery } from '@sentinel/hooks';
+import { NotificationsModal } from '@/features/calendar/components/notifications-modal';
 
 export default function CalendarScreen() {
     const colorScheme = useColorScheme();
     const colors = Colors[colorScheme ?? 'light'];
+    const [isNotificationsVisible, setNotificationsVisible] = useState(false);
 
     const {
         events,
@@ -30,6 +33,13 @@ export default function CalendarScreen() {
         handleDeleteNote,
     } = useCalendar();
 
+    const { data: notificationData } = useNotificationsQuery({
+        queryKey: ['notifications'],
+    });
+
+    const unreadCount = notificationData?.unreadCount ?? 0;
+    const notifications = notificationData?.items ?? [];
+
     const monthYear = selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
     return (
@@ -41,6 +51,8 @@ export default function CalendarScreen() {
                 selectedDate={selectedDate}
                 weekDays={weekDays}
                 onSelectDate={handleDateSelect}
+                unreadCount={unreadCount}
+                onNotificationsPress={() => setNotificationsVisible(true)}
             />
 
             <CalendarAgenda
@@ -62,6 +74,12 @@ export default function CalendarScreen() {
                 selectedDate={selectedDate}
                 noteText={noteText}
                 onChangeText={setNoteText}
+            />
+
+            <NotificationsModal
+                visible={isNotificationsVisible}
+                onClose={() => setNotificationsVisible(false)}
+                notifications={notifications}
             />
         </View>
     );

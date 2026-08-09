@@ -4,9 +4,9 @@
 
 ## Tasks
 
-- [ ] Remove search icon button (`search`) from top action row in [features/calendar/components/calendar-header.tsx](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/app/sentinel-mobile/features/calendar/components/calendar-header.tsx)
-- [ ] Update [features/calendar/hooks/use-calendar.ts](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/app/sentinel-mobile/features/calendar/hooks/use-calendar.ts) to scope calendar notes per authenticated user ID in local storage/state
-- [ ] Ensure created notes are visible only to their creator matching `sentinel-web` implementation
-- [ ] Write unit test for user-scoped note storage and filtering in `app/sentinel-mobile/features/calendar/hooks/user-note-scoping.test.ts`
+- [x] Remove search icon button (`search`) from top action row in [features/calendar/components/calendar-header.tsx](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/app/sentinel-mobile/features/calendar/components/calendar-header.tsx)
+- [x] Update [features/calendar/hooks/use-calendar.ts](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/app/sentinel-mobile/features/calendar/hooks/use-calendar.ts) to scope calendar notes per authenticated user ID in local storage/state
+- [x] Ensure created notes are visible only to their creator matching `sentinel-web` implementation
+- [x] Write unit test for user-scoped note storage and filtering in `app/sentinel-mobile/features/calendar/hooks/user-note-scoping.test.ts`
 
 **Migration required:** No
