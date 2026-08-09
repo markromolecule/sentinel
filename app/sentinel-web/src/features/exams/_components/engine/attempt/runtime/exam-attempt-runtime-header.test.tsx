@@ -126,7 +126,7 @@ describe('ExamAttemptRuntimeHeader', () => {
         expect(compactControl.className).toContain('order-4');
         expect(compactControl.className).toContain('md:hidden');
         expect(submitButton.className).toContain('order-5');
-        expect(submitButton.className).toContain('basis-full');
+        expect(submitButton.className).toContain('flex-1');
 
         fireEvent.click(compactControl);
         fireEvent.click(submitButton);
