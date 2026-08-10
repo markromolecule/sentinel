@@ -23,7 +23,7 @@ describe('buildCreateDirectConversationPayload utility', () => {
         } as any;
 
         expect(() => buildCreateDirectConversationPayload(invalidRecipient)).toThrow(
-            'Recipient must have a valid userId'
+            'Recipient must have a valid userId',
         );
     });
 });

@@ -77,7 +77,7 @@ export default function MessagesRoute() {
                 avatar: resolveAvatarUrl(otherParticipant?.avatarUrl) || undefined,
                 lastMessage: conv.lastMessage?.content || 'No messages yet',
                 time: formatMessageTime(
-                    conv.lastMessage?.createdAt || conv.updatedAt || conv.createdAt
+                    conv.lastMessage?.createdAt || conv.updatedAt || conv.createdAt,
                 ),
                 unreadCount: conv.unreadCount,
                 isOnline: otherParticipant?.active || false,

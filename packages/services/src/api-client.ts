@@ -106,8 +106,9 @@ export const createApiClient = (defaultOptions: ApiClientOptions = {}) => {
         }
 
         const mappedEndpoint = mapEndpointQueryParams(endpoint);
+        const cleanedBaseUrl = finalBaseUrl.replace(/\/+$/, '');
 
-        const response = await fetch(`${finalBaseUrl}${mappedEndpoint}`, {
+        const response = await fetch(`${cleanedBaseUrl}${mappedEndpoint}`, {
             ...defaultRequestOptions,
             ...requestOptions,
             headers,

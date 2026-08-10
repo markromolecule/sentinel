@@ -14,6 +14,6 @@ export function filterConversations(messages: Message[], query: string): Message
     return messages.filter(
         (msg) =>
             msg.name.toLowerCase().includes(trimmed) ||
-            msg.lastMessage.toLowerCase().includes(trimmed)
+            msg.lastMessage.toLowerCase().includes(trimmed),
     );
 }

@@ -8,7 +8,7 @@
 export function getUserAvatarInitials(
     firstName?: string | null,
     lastName?: string | null,
-    email?: string | null
+    email?: string | null,
 ): string {
     const fName = firstName?.trim() || '';
     const lName = lastName?.trim() || '';

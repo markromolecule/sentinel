@@ -6,7 +6,7 @@ import type { MessageRecipient, CreateDirectConversationPayload } from '@sentine
  * @param recipient The selected message recipient.
  */
 export function buildCreateDirectConversationPayload(
-    recipient: MessageRecipient
+    recipient: MessageRecipient,
 ): CreateDirectConversationPayload {
     if (!recipient || !recipient.userId) {
         throw new Error('Recipient must have a valid userId');

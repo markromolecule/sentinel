@@ -34,7 +34,7 @@ function createMockExamSession(exam: Exam): MobileExamSessionResult {
 }
 
 export async function startMobileExamSession(exam: Exam): Promise<MobileExamSessionResult> {
-    const apiBaseUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
+    const apiBaseUrl = process.env.EXPO_PUBLIC_API_URL?.trim().replace(/\/+$/, '');
     const bearerToken = process.env.EXPO_PUBLIC_API_BEARER_TOKEN?.trim();
 
     if (!apiBaseUrl) {

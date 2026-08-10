@@ -119,7 +119,7 @@ export const useCalendar = () => {
 
             AsyncStorage.setItem(
                 `sentinel-mobile:calendar-notes:${userId}`,
-                JSON.stringify(notesOnly)
+                JSON.stringify(notesOnly),
             ).catch((err) => console.error('Failed to save calendar notes:', err));
 
             return updated;
@@ -156,7 +156,7 @@ export const useCalendar = () => {
 
                         AsyncStorage.setItem(
                             `sentinel-mobile:calendar-notes:${userId}`,
-                            JSON.stringify(notesOnly)
+                            JSON.stringify(notesOnly),
                         ).catch((err) => console.error('Failed to save calendar notes:', err));
 
                         return updated;

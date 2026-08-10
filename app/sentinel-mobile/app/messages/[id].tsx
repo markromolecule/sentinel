@@ -46,7 +46,11 @@ export default function MessageThreadScreen() {
     const flatListRef = useRef<FlatList>(null);
 
     // Queries & Mutations
-    const { data: messages, isLoading, refetch } = useConversationMessagesQuery({
+    const {
+        data: messages,
+        isLoading,
+        refetch,
+    } = useConversationMessagesQuery({
         conversationId: id as string,
     });
 
@@ -117,7 +121,7 @@ export default function MessageThreadScreen() {
                         {item.content}
                     </Text>
                     <Text
-                        className={`mt-1 text-[9px] ${isMe ? 'text-white/60 text-right' : 'text-slate-400'}`}
+                        className={`mt-1 text-[9px] ${isMe ? 'text-right text-white/60' : 'text-slate-400'}`}
                     >
                         {formatChatTime(item.createdAt)}
                     </Text>
@@ -148,22 +152,15 @@ export default function MessageThreadScreen() {
                             <Ionicons name="arrow-back" size={24} color="#fff" />
                         </TouchableOpacity>
 
-                        <View
-                            className="h-10 w-10 items-center justify-center rounded-full bg-white/20"
-                        >
-                            <Text className="text-sm font-bold text-white">
-                                {initials}
-                            </Text>
+                        <View className="h-10 w-10 items-center justify-center rounded-full bg-white/20">
+                            <Text className="text-sm font-bold text-white">{initials}</Text>
                         </View>
 
                         <View className="flex-1">
-                            <Text
-                                className="text-base font-bold text-white"
-                                numberOfLines={1}
-                            >
+                            <Text className="text-base font-bold text-white" numberOfLines={1}>
                                 {title}
                             </Text>
-                            <Text className="text-[10px] text-white/70 uppercase tracking-widest font-semibold">
+                            <Text className="text-[10px] font-semibold uppercase tracking-widest text-white/70">
                                 {otherParticipant?.role || 'Recipient'}
                             </Text>
                         </View>
@@ -189,7 +186,9 @@ export default function MessageThreadScreen() {
                             keyExtractor={(item) => item.messageId}
                             renderItem={renderMessageItem}
                             contentContainerStyle={{ paddingTop: 16, paddingBottom: 24 }}
-                            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+                            onContentSizeChange={() =>
+                                flatListRef.current?.scrollToEnd({ animated: true })
+                            }
                             onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
                             showsVerticalScrollIndicator={false}
                         />
@@ -198,15 +197,13 @@ export default function MessageThreadScreen() {
 
                 {/* Input Bar */}
                 <View
-                    className="border-t px-4 py-3 flex-row items-center gap-3 bg-white dark:bg-zinc-900"
+                    className="flex-row items-center gap-3 border-t bg-white px-4 py-3 dark:bg-zinc-900"
                     style={{
                         borderColor: colors.border,
                         paddingBottom: Platform.OS === 'ios' ? insets.bottom : 12,
                     }}
                 >
-                    <View
-                        className="flex-1 min-h-[40px] max-h-[100px] flex-row items-center rounded-2xl bg-slate-100 dark:bg-zinc-800 px-4 py-2"
-                    >
+                    <View className="max-h-[100px] min-h-[40px] flex-1 flex-row items-center rounded-2xl bg-slate-100 px-4 py-2 dark:bg-zinc-800">
                         <TextInput
                             className="flex-1 text-sm leading-5"
                             placeholder="Type a message..."
@@ -222,7 +219,9 @@ export default function MessageThreadScreen() {
                         disabled={!messageText.trim() || sendMessageMutation.isPending}
                         className="h-10 w-10 items-center justify-center rounded-full"
                         style={{
-                            backgroundColor: messageText.trim() ? colors.primary : 'rgba(128,128,128,0.1)',
+                            backgroundColor: messageText.trim()
+                                ? colors.primary
+                                : 'rgba(128,128,128,0.1)',
                         }}
                     >
                         {sendMessageMutation.isPending ? (

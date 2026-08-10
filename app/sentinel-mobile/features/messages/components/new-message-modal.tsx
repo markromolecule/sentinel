@@ -99,7 +99,7 @@ export function NewMessageModal({ visible, onClose }: NewMessageModalProps) {
                     <Text className="text-sm font-bold" style={{ color: colors.text }}>
                         {item.name}
                     </Text>
-                    <Text className="text-xs text-slate-400 capitalize">
+                    <Text className="text-xs capitalize text-slate-400">
                         {item.role.toLowerCase()} • {item.institution.name}
                     </Text>
                 </View>
@@ -111,12 +111,7 @@ export function NewMessageModal({ visible, onClose }: NewMessageModalProps) {
     };
 
     return (
-        <Modal
-            animationType="slide"
-            transparent={false}
-            visible={visible}
-            onRequestClose={onClose}
-        >
+        <Modal animationType="slide" transparent={false} visible={visible} onRequestClose={onClose}>
             <View className="flex-1" style={{ backgroundColor: colors.background }}>
                 <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
@@ -184,7 +179,10 @@ export function NewMessageModal({ visible, onClose }: NewMessageModalProps) {
                         renderItem={renderRecipientItem}
                         showsVerticalScrollIndicator={false}
                         style={{ flex: 1 }}
-                        contentContainerStyle={{ paddingTop: 16, paddingBottom: insets.bottom + 20 }}
+                        contentContainerStyle={{
+                            paddingTop: 16,
+                            paddingBottom: insets.bottom + 20,
+                        }}
                     />
                 ) : (
                     <View className="flex-1 items-center px-10" style={{ paddingTop: 60 }}>

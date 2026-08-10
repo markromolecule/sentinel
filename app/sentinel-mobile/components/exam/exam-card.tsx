@@ -104,13 +104,19 @@ export default function ExamCard({ exam, onPress }: ExamCardProps) {
                     <View className="flex-1 flex-row flex-wrap items-center gap-x-3 gap-y-1">
                         <View className="flex-row items-center gap-1">
                             <Ionicons name="time-outline" size={12} color={colors.icon} />
-                            <Text className="text-[11px] font-medium" style={{ color: colors.icon }}>
+                            <Text
+                                className="text-[11px] font-medium"
+                                style={{ color: colors.icon }}
+                            >
                                 {exam.duration}m
                             </Text>
                         </View>
                         <View className="flex-row items-center gap-1">
                             <Ionicons name="calendar-outline" size={12} color={colors.icon} />
-                            <Text className="text-[11px] font-medium" style={{ color: colors.icon }}>
+                            <Text
+                                className="text-[11px] font-medium"
+                                style={{ color: colors.icon }}
+                            >
                                 {formattedStartDate}
                             </Text>
                         </View>

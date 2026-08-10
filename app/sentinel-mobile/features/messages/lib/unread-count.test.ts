@@ -18,10 +18,7 @@ describe('getAggregateUnreadCount utility', () => {
     });
 
     it('handles negative unread counts by keeping mathematical sum', () => {
-        const mockConvs: ConversationWithUnread[] = [
-            { unreadCount: 3 },
-            { unreadCount: -1 },
-        ];
+        const mockConvs: ConversationWithUnread[] = [{ unreadCount: 3 }, { unreadCount: -1 }];
         expect(getAggregateUnreadCount(mockConvs)).toBe(2);
     });
 });

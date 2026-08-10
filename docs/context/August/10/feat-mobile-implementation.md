@@ -3,16 +3,16 @@
 - To implement / fix a feature for the mobile application
 
 1. Classroom page
-    -  Exams & Assessments button should navigate to the list of exams and assessments assigned to the classroom / subject
+    - Exams & Assessments button should navigate to the list of exams and assessments assigned to the classroom / subject
     - Classmate button should navigate to the page that will show list of students in the class
     - Remove the 3-dots button on the header
 
 2. Home page
     - The profile button on the header should fetch the actual profile / avatar of the user
-    - Is it possible to add a badge counter for the message footer button for messages? 
+    - Is it possible to add a badge counter for the message footer button for messages?
 
 3. Profile page
-    - The profile / avatar should show on the page 
+    - The profile / avatar should show on the page
     - Ensure that the update password is working and the password field should show the schema of the password field if it match the regex for password. This is similar on the register page on the web
 
 4. Exam page
@@ -25,8 +25,7 @@
 
 6. Message page
     - Ensure that it now fetches the actual data of the messages of the student
-    - Ensure that all the button are functioning this includes the 
+    - Ensure that all the button are functioning this includes the
         - the + button and the hedaer button should show a modal for new message similar on how it is implemented on the sentinel-web
         - the search bar should communicate on the backend check the mutation
         - when the message are clicked it should show a page that will display the content of the message similar on how it is implemented on the sentinel-web
-    

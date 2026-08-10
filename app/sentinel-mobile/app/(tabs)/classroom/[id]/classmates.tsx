@@ -15,7 +15,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useClassroomQuery } from '@sentinel/hooks';
-import { filterClassmates, type StudentClassmate } from '@/features/classroom/lib/classmates-filter';
+import {
+    filterClassmates,
+    type StudentClassmate,
+} from '@/features/classroom/lib/classmates-filter';
 import { resolveAvatarUrl } from '@/features/profile/lib/user-avatar';
 
 export default function ClassmatesScreen() {
@@ -27,12 +30,7 @@ export default function ClassmatesScreen() {
 
     const [searchQuery, setSearchQuery] = useState('');
 
-    const {
-        data: classroom,
-        isLoading,
-        isError,
-        refetch,
-    } = useClassroomQuery(id as string);
+    const { data: classroom, isLoading, isError, refetch } = useClassroomQuery(id as string);
 
     const classmates = useMemo(() => {
         if (!classroom || !classroom.students) return [];
@@ -114,7 +112,7 @@ export default function ClassmatesScreen() {
                                     {classroom.subjectCode} • {classroom.sectionName}
                                 </Text>
                             </View>
-                            <View className="w-10 h-10" />
+                            <View className="h-10 w-10" />
                         </View>
                     </View>
                 </SafeAreaView>
@@ -160,7 +158,12 @@ export default function ClassmatesScreen() {
                     <View className="gap-4">
                         {classmates.map((student: any) => {
                             const initials = student.fullName
-                                ? student.fullName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+                                ? student.fullName
+                                      .split(' ')
+                                      .map((n: string) => n[0])
+                                      .join('')
+                                      .slice(0, 2)
+                                      .toUpperCase()
                                 : 'S';
 
                             return (
@@ -173,17 +176,22 @@ export default function ClassmatesScreen() {
                                     }}
                                 >
                                     <View
-                                        className="h-12 w-12 items-center justify-center rounded-2xl overflow-hidden"
+                                        className="h-12 w-12 items-center justify-center overflow-hidden rounded-2xl"
                                         style={{ backgroundColor: `${colors.primary}10` }}
                                     >
                                         {student.avatarUrl ? (
                                             <Image
-                                                source={{ uri: resolveAvatarUrl(student.avatarUrl) }}
+                                                source={{
+                                                    uri: resolveAvatarUrl(student.avatarUrl),
+                                                }}
                                                 className="h-full w-full"
                                                 resizeMode="cover"
                                             />
                                         ) : (
-                                            <Text className="font-bold text-sm" style={{ color: colors.primary }}>
+                                            <Text
+                                                className="text-sm font-bold"
+                                                style={{ color: colors.primary }}
+                                            >
                                                 {initials}
                                             </Text>
                                         )}
@@ -196,7 +204,8 @@ export default function ClassmatesScreen() {
                                             {student.fullName}
                                         </Text>
                                         <Text className="text-xs text-slate-400">
-                                            {student.studentNumber} • {student.courseCode || 'Student'}
+                                            {student.studentNumber} •{' '}
+                                            {student.courseCode || 'Student'}
                                         </Text>
                                     </View>
                                 </View>

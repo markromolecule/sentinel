@@ -60,11 +60,17 @@ export function ExamAttemptRuntimeFooter({
                     className="rounded-md"
                 >
                     {isLastQuestion ? (
-                        isSubmitting ? 'Preparing...' : 'Turn In'
+                        isSubmitting ? (
+                            'Preparing...'
+                        ) : (
+                            'Turn In'
+                        )
                     ) : (
                         <span className="hidden min-[380px]:inline">Next</span>
                     )}
-                    <ChevronRight className={`h-4 w-4 ${!isLastQuestion ? 'min-[380px]:ml-2' : ''}`} />
+                    <ChevronRight
+                        className={`h-4 w-4 ${!isLastQuestion ? 'min-[380px]:ml-2' : ''}`}
+                    />
                 </Button>
             </div>
         </div>

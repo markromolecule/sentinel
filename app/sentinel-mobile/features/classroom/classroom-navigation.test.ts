@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-    getClassroomExamsRoute,
-    getClassroomClassmatesRoute,
-} from './lib/classroom-navigation';
+import { getClassroomExamsRoute, getClassroomClassmatesRoute } from './lib/classroom-navigation';
 
 describe('classroom navigation route path builders', () => {
     it('returns exams subroute path for a valid classroom ID', () => {

@@ -92,7 +92,7 @@ export default function ClassroomScreen() {
                         <TouchableOpacity
                             onPress={() => router.push('/profile' as any)}
                             activeOpacity={0.7}
-                            className="h-12 w-12 items-center justify-center rounded-full bg-white/25 overflow-hidden"
+                            className="h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-white/25"
                         >
                             {profile?.avatarUrl ? (
                                 <Image
@@ -101,11 +101,11 @@ export default function ClassroomScreen() {
                                     resizeMode="cover"
                                 />
                             ) : (
-                                <Text className="text-white text-sm font-bold tracking-wider">
+                                <Text className="text-sm font-bold tracking-wider text-white">
                                     {getUserAvatarInitials(
                                         profile?.firstName || user?.user_metadata?.first_name,
                                         profile?.lastName || user?.user_metadata?.last_name,
-                                        user?.email
+                                        user?.email,
                                     )}
                                 </Text>
                             )}

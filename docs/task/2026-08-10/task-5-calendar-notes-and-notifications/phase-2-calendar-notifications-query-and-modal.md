@@ -4,7 +4,7 @@
 
 ## Tasks
 
-- [x] Query notification data using `useNotificationsQuery` in [app/(tabs)/calendar.tsx](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/app/sentinel-mobile/app/(tabs)/calendar.tsx)
+- [x] Query notification data using `useNotificationsQuery` in [app/(tabs)/calendar.tsx](<file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/app/sentinel-mobile/app/(tabs)/calendar.tsx>)
 - [x] Pass `unreadCount` to [features/calendar/components/calendar-header.tsx](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/app/sentinel-mobile/features/calendar/components/calendar-header.tsx) and render badge count pill on notification button
 - [x] Create `[NEW]` [features/calendar/components/notifications-modal.tsx](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/app/sentinel-mobile/features/calendar/components/notifications-modal.tsx) displaying notification items, read states, and timestamps
 - [x] Wire notification icon button to open `NotificationsModal`

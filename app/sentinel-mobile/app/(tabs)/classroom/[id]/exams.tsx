@@ -29,10 +29,7 @@ export default function ClassroomExamsScreen() {
 
     const [searchQuery, setSearchQuery] = useState('');
 
-    const {
-        data: classroom,
-        isLoading: isClassroomLoading,
-    } = useClassroomQuery(id as string);
+    const { data: classroom, isLoading: isClassroomLoading } = useClassroomQuery(id as string);
 
     const {
         data: exams = [],
@@ -56,9 +53,10 @@ export default function ClassroomExamsScreen() {
             return list;
         }
 
-        return list.filter((exam) =>
-            exam.title.toLowerCase().includes(query) ||
-            exam.subject.toLowerCase().includes(query)
+        return list.filter(
+            (exam) =>
+                exam.title.toLowerCase().includes(query) ||
+                exam.subject.toLowerCase().includes(query),
         );
     }, [exams, classroom, searchQuery]);
 
@@ -134,7 +132,7 @@ export default function ClassroomExamsScreen() {
                                     {classroom.subjectCode} • {classroom.sectionName}
                                 </Text>
                             </View>
-                            <View className="w-10 h-10" />
+                            <View className="h-10 w-10" />
                         </View>
                     </View>
                 </SafeAreaView>
@@ -178,11 +176,7 @@ export default function ClassroomExamsScreen() {
 
                 {filteredExams.length > 0 ? (
                     filteredExams.map((exam) => (
-                        <ExamCard
-                            key={exam.id}
-                            exam={exam}
-                            onPress={() => handleExamPress(exam)}
-                        />
+                        <ExamCard key={exam.id} exam={exam} onPress={() => handleExamPress(exam)} />
                     ))
                 ) : (
                     <View className="items-center justify-center py-20">

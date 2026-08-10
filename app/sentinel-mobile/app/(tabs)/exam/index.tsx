@@ -51,8 +51,8 @@ export default function ExamScreen() {
             activeTab === 'available'
                 ? exam.status === 'available' || exam.status === 'upcoming'
                 : activeTab === 'past_due'
-                    ? exam.status === 'past_due'
-                    : exam.status === 'turned_in' || exam.status === 'completed';
+                  ? exam.status === 'past_due'
+                  : exam.status === 'turned_in' || exam.status === 'completed';
 
         return matchesSearch && matchesTab;
     });
@@ -122,8 +122,9 @@ export default function ExamScreen() {
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
                     <Pressable
                         onPress={() => setActiveTab('available')}
-                        className={`mr-3 rounded-full px-5 py-2.5 ${activeTab === 'available' ? 'bg-primary' : 'bg-slate-100'
-                            }`}
+                        className={`mr-3 rounded-full px-5 py-2.5 ${
+                            activeTab === 'available' ? 'bg-primary' : 'bg-slate-100'
+                        }`}
                         style={activeTab === 'available' ? { backgroundColor: colors.primary } : {}}
                     >
                         <Text
@@ -134,8 +135,9 @@ export default function ExamScreen() {
                     </Pressable>
                     <Pressable
                         onPress={() => setActiveTab('past_due')}
-                        className={`mr-3 rounded-full px-5 py-2.5 ${activeTab === 'past_due' ? 'bg-red-500' : 'bg-slate-100'
-                            }`}
+                        className={`mr-3 rounded-full px-5 py-2.5 ${
+                            activeTab === 'past_due' ? 'bg-red-500' : 'bg-slate-100'
+                        }`}
                         style={activeTab === 'past_due' ? { backgroundColor: '#EF4444' } : {}}
                     >
                         <Text
@@ -146,8 +148,9 @@ export default function ExamScreen() {
                     </Pressable>
                     <Pressable
                         onPress={() => setActiveTab('turned_in')}
-                        className={`mr-3 rounded-full px-5 py-2.5 ${activeTab === 'turned_in' ? 'bg-green-500' : 'bg-slate-100'
-                            }`}
+                        className={`mr-3 rounded-full px-5 py-2.5 ${
+                            activeTab === 'turned_in' ? 'bg-green-500' : 'bg-slate-100'
+                        }`}
                         style={activeTab === 'turned_in' ? { backgroundColor: '#22C55E' } : {}}
                     >
                         <Text
@@ -178,8 +181,8 @@ export default function ExamScreen() {
                             {activeTab === 'available'
                                 ? 'Your Schedule'
                                 : activeTab === 'past_due'
-                                    ? 'Overdue'
-                                    : 'Completed'}
+                                  ? 'Overdue'
+                                  : 'Completed'}
                         </Text>
                         <Text className="text-sm font-medium" style={{ color: colors.icon }}>
                             {filteredExams.length} Total

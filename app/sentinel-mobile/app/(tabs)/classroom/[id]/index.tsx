@@ -131,7 +131,7 @@ export default function ClassroomDetailScreen() {
                                     {classroom.subjectCode} • {classroom.sectionName}
                                 </Text>
                             </View>
-                            <View className="w-10 h-10" />
+                            <View className="h-10 w-10" />
                         </View>
                     </View>
                 </SafeAreaView>

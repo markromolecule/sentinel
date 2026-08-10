@@ -49,33 +49,39 @@ The `sentinel-mobile` app currently has several incomplete UI elements, static m
 ## Breakdown by Task Folders
 
 ### Task 1 [Folder]: Classroom Navigation & Sub-routes
+
 - **Path:** [docs/task/2026-08-10/task-1-classroom-navigation/](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-1-classroom-navigation/)
-  - **[Completed]** [phase-1-header-cleanup-and-route-setup.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-1-classroom-navigation/phase-1-header-cleanup-and-route-setup.md)
-  - **[Completed]** [phase-2-classroom-exams-and-classmates-screens.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-1-classroom-navigation/phase-2-classroom-exams-and-classmates-screens.md)
+    - **[Completed]** [phase-1-header-cleanup-and-route-setup.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-1-classroom-navigation/phase-1-header-cleanup-and-route-setup.md)
+    - **[Completed]** [phase-2-classroom-exams-and-classmates-screens.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-1-classroom-navigation/phase-2-classroom-exams-and-classmates-screens.md)
 
 ### Task 2 [Folder]: Home Profile & Message Badge Counter
+
 - **Path:** [docs/task/2026-08-10/task-2-home-profile-and-badge/](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-2-home-profile-and-badge/)
-  - **[Completed]** [phase-1-home-profile-avatar-display.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-2-home-profile-and-badge/phase-1-home-profile-avatar-display.md)
-  - **[Completed]** [phase-2-message-tab-unread-badge.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-2-home-profile-and-badge/phase-2-message-tab-unread-badge.md)
+    - **[Completed]** [phase-1-home-profile-avatar-display.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-2-home-profile-and-badge/phase-1-home-profile-avatar-display.md)
+    - **[Completed]** [phase-2-message-tab-unread-badge.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-2-home-profile-and-badge/phase-2-message-tab-unread-badge.md)
 
 ### Task 3 [Folder]: Profile Avatar, Password Mutation & Schema Validation
+
 - **Path:** [docs/task/2026-08-10/task-3-profile-and-password/](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-3-profile-and-password/)
-  - **[Completed]** [phase-1-profile-avatar-and-update-mutation.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-3-profile-and-password/phase-1-profile-avatar-and-update-mutation.md)
-  - **[Completed]** [phase-2-password-requirements-validator.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-3-profile-and-password/phase-2-password-requirements-validator.md)
+    - **[Completed]** [phase-1-profile-avatar-and-update-mutation.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-3-profile-and-password/phase-1-profile-avatar-and-update-mutation.md)
+    - **[Completed]** [phase-2-password-requirements-validator.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-3-profile-and-password/phase-2-password-requirements-validator.md)
 
 ### Task 4 [Folder]: Exam Card Start Date Formatting
+
 - **Path:** [docs/task/2026-08-10/task-4-exam-card-start-date/](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-4-exam-card-start-date/)
-  - **[Completed]** [phase-1-exam-card-start-date-display.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-4-exam-card-start-date/phase-1-exam-card-start-date-display.md)
+    - **[Completed]** [phase-1-exam-card-start-date-display.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-4-exam-card-start-date/phase-1-exam-card-start-date-display.md)
 
 ### Task 5 [Folder]: Calendar Notes Parity, Header Cleanup & Notifications
+
 - **Path:** [docs/task/2026-08-10/task-5-calendar-notes-and-notifications/](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-5-calendar-notes-and-notifications/)
-  - **[Completed]** [phase-1-calendar-header-cleanup-and-note-scoping.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-5-calendar-notes-and-notifications/phase-1-calendar-header-cleanup-and-note-scoping.md)
-  - **[Completed]** [phase-2-calendar-notifications-query-and-modal.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-5-calendar-notes-and-notifications/phase-2-calendar-notifications-query-and-modal.md)
+    - **[Completed]** [phase-1-calendar-header-cleanup-and-note-scoping.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-5-calendar-notes-and-notifications/phase-1-calendar-header-cleanup-and-note-scoping.md)
+    - **[Completed]** [phase-2-calendar-notifications-query-and-modal.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-5-calendar-notes-and-notifications/phase-2-calendar-notifications-query-and-modal.md)
 
 ### Task 6 [Folder]: Student Messaging Workflow & Thread Details
+
 - **Path:** [docs/task/2026-08-10/task-6-student-messaging-workflow/](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-6-student-messaging-workflow/)
-  - **[Completed]** [phase-1-live-conversations-and-search.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-6-student-messaging-workflow/phase-1-live-conversations-and-search.md)
-  - **[Completed]** [phase-2-new-message-modal-and-thread-screen.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-6-student-messaging-workflow/phase-2-new-message-modal-and-thread-screen.md)
+    - **[Completed]** [phase-1-live-conversations-and-search.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-6-student-messaging-workflow/phase-1-live-conversations-and-search.md)
+    - **[Completed]** [phase-2-new-message-modal-and-thread-screen.md](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/task-6-student-messaging-workflow/phase-2-new-message-modal-and-thread-screen.md)
 
 ---
 
