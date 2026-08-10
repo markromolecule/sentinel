@@ -34,6 +34,7 @@ interface ApiClassroomStudent {
     course_code: string | null;
     course_title: string | null;
     enrolled_at: string | null;
+    avatar_url?: string | null;
 }
 
 interface ApiClassroomInstructor {
@@ -108,6 +109,7 @@ function mapClassroomStudent(student: ApiClassroomStudent) {
         courseCode: student.course_code,
         courseTitle: student.course_title,
         enrolledAt: student.enrolled_at,
+        avatarUrl: student.avatar_url ?? null,
     };
 }
 

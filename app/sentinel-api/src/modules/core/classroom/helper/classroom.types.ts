@@ -43,6 +43,7 @@ export type RawClassroomStudentRecord = {
     course_code: string | null;
     course_title: string | null;
     enrolled_at: string | Date | null;
+    avatar_url: string | null;
 };
 
 export type ClassroomStudentAccessScope = ClassroomAccessScope & {

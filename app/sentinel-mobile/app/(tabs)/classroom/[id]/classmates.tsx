@@ -7,6 +7,7 @@ import {
     useColorScheme,
     StatusBar,
     ActivityIndicator,
+    Image,
 } from 'react-native';
 import React, { useState, useMemo } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,6 +16,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useClassroomQuery } from '@sentinel/hooks';
 import { filterClassmates, type StudentClassmate } from '@/features/classroom/lib/classmates-filter';
+import { resolveAvatarUrl } from '@/features/profile/lib/user-avatar';
 
 export default function ClassmatesScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -39,6 +41,7 @@ export default function ClassmatesScreen() {
             fullName: student.fullName ?? '',
             studentNumber: student.studentNumber,
             courseCode: student.courseCode ?? undefined,
+            avatarUrl: student.avatarUrl ?? null,
         }));
         return filterClassmates(mappedStudents, searchQuery);
     }, [classroom, searchQuery]);
@@ -95,7 +98,7 @@ export default function ClassmatesScreen() {
                     <View className="px-6 pb-6 pt-4">
                         <View className="flex-row items-center justify-between">
                             <TouchableOpacity
-                                onPress={() => router.back()}
+                                onPress={() => router.push(`/classroom/${id}` as any)}
                                 className="h-10 w-10 items-center justify-center rounded-full bg-white/10"
                             >
                                 <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -118,15 +121,16 @@ export default function ClassmatesScreen() {
 
                 {/* Search Input inside Header */}
                 <View className="px-6">
-                    <View className="h-12 flex-row items-center rounded-2xl bg-white px-4 shadow-xl">
+                    <View className="h-10 flex-row items-center rounded-2xl bg-white px-4 shadow-xl">
                         <Ionicons name="search" size={20} color={colors.icon} />
                         <TextInput
-                            className="ml-3 flex-1 text-base"
+                            className="ml-3 flex-1 text-sm"
                             placeholder="Search classmates..."
                             placeholderTextColor={colors.icon}
                             style={{
                                 color: colors.text,
-                                height: 48,
+                                height: 40,
+                                paddingVertical: 0,
                             }}
                             value={searchQuery}
                             onChangeText={setSearchQuery}
@@ -169,12 +173,20 @@ export default function ClassmatesScreen() {
                                     }}
                                 >
                                     <View
-                                        className="h-12 w-12 items-center justify-center rounded-2xl"
+                                        className="h-12 w-12 items-center justify-center rounded-2xl overflow-hidden"
                                         style={{ backgroundColor: `${colors.primary}10` }}
                                     >
-                                        <Text className="font-bold text-sm" style={{ color: colors.primary }}>
-                                            {initials}
-                                        </Text>
+                                        {student.avatarUrl ? (
+                                            <Image
+                                                source={{ uri: resolveAvatarUrl(student.avatarUrl) }}
+                                                className="h-full w-full"
+                                                resizeMode="cover"
+                                            />
+                                        ) : (
+                                            <Text className="font-bold text-sm" style={{ color: colors.primary }}>
+                                                {initials}
+                                            </Text>
+                                        )}
                                     </View>
                                     <View className="flex-1">
                                         <Text
@@ -184,7 +196,7 @@ export default function ClassmatesScreen() {
                                             {student.fullName}
                                         </Text>
                                         <Text className="text-xs text-slate-400">
-                                            SN: {student.studentNumber} • {student.courseCode || 'Student'}
+                                            {student.studentNumber} • {student.courseCode || 'Student'}
                                         </Text>
                                     </View>
                                 </View>

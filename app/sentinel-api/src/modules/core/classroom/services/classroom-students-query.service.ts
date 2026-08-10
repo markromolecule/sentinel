@@ -39,6 +39,7 @@ export async function getClassroomStudents(
             'course.code as course_code',
             'course.title as course_title',
             'enr.enrolled_at',
+            'up.avatar_url as avatar_url',
         ])
         .where('enr.class_group_id', '=', classGroupId)
         .where('st.institution_id', '=', institutionId)

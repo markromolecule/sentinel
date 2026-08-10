@@ -77,6 +77,7 @@ export const classroomStudentSchema = z.object({
     course_code: z.string().nullable(),
     course_title: z.string().nullable(),
     enrolled_at: z.union([z.coerce.date(), z.string()]).nullable(),
+    avatar_url: z.string().nullable().optional(),
 });
 
 export const classroomInstructorSchema = z.object({

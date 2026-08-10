@@ -3,6 +3,7 @@ export interface StudentClassmate {
     fullName: string;
     studentNumber: string;
     courseCode?: string;
+    avatarUrl?: string | null;
 }
 
 /**
