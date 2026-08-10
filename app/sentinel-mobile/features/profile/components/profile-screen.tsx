@@ -10,16 +10,15 @@ import {
     ActivityIndicator,
     Alert,
     StatusBar,
-    StyleSheet,
     Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/theme';
 import { useAuth, useLogoutMutation, useProfileQuery, useUpdatePasswordMutation } from '@sentinel/hooks';
 import { ProfileInfoItem } from './profile-info-item';
+import { resolveAvatarUrl } from '../lib/user-avatar';
 import { PasswordInput } from './password-input';
 import { validatePasswordUpdate } from '../lib/password-update-handler';
 import { isPasswordValid } from '../lib/password-requirements-validator';
@@ -126,7 +125,7 @@ export default function ProfileScreen() {
                             <View style={[styles.avatarRing, { overflow: 'hidden' }]}>
                                 {profile?.avatarUrl ? (
                                     <Image
-                                        source={{ uri: profile.avatarUrl }}
+                                        source={{ uri: resolveAvatarUrl(profile.avatarUrl) }}
                                         style={{ width: '100%', height: '100%' }}
                                         resizeMode="cover"
                                     />

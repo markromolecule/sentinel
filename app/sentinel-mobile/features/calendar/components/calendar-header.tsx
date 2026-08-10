@@ -49,13 +49,31 @@ export const CalendarHeader = ({
                         <Ionicons name="notifications-outline" size={20} color="#fff" />
                         {unreadCount > 0 && (
                             <View
-                                className="absolute -right-1.5 -top-1.5 h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5"
                                 style={{
+                                    position: 'absolute',
+                                    top: -4,
+                                    right: -4,
+                                    height: 22,
+                                    minWidth: 22,
+                                    borderRadius: 11,
+                                    backgroundColor: '#ef4444',
                                     borderWidth: 1.5,
-                                    borderColor: colors.primary,
+                                    borderColor: '#ef4444',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    paddingHorizontal: 4,
                                 }}
                             >
-                                <Text className="text-[9px] font-bold text-white leading-none">
+                                <Text
+                                    style={{
+                                        color: '#fff',
+                                        fontSize: 10,
+                                        fontWeight: 'bold',
+                                        textAlign: 'center',
+                                        includeFontPadding: false,
+                                        textAlignVertical: 'center',
+                                    }}
+                                >
                                     {unreadCount > 99 ? '99+' : unreadCount}
                                 </Text>
                             </View>

@@ -1,5 +1,6 @@
-import { View, Text, TouchableOpacity, useColorScheme } from 'react-native';
+import { View, Text, TouchableOpacity, useColorScheme, Image } from 'react-native';
 import { Colors } from '@/constants/theme';
+import { resolveAvatarUrl } from '@/features/profile/lib/user-avatar';
 
 export interface Message {
     id: string;
@@ -58,16 +59,25 @@ export const MessageItem = ({ message, onPress }: MessageItemProps) => {
                         width: 48,
                         height: 48,
                         borderRadius: 24,
+                        overflow: 'hidden',
                     }}
                 >
-                    <Text
-                        className="text-[16px] font-bold text-white"
-                        style={{
-                            opacity: 0.95,
-                        }}
-                    >
-                        {initials}
-                    </Text>
+                    {message.avatar ? (
+                        <Image
+                            source={{ uri: resolveAvatarUrl(message.avatar) }}
+                            style={{ width: '100%', height: '100%' }}
+                            resizeMode="cover"
+                        />
+                    ) : (
+                        <Text
+                            className="text-[16px] font-bold text-white"
+                            style={{
+                                opacity: 0.95,
+                            }}
+                        >
+                            {initials}
+                        </Text>
+                    )}
                 </View>
 
                 {/* Online Indicator with thick border */}

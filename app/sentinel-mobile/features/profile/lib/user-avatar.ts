@@ -29,3 +29,17 @@ export function getUserAvatarInitials(
 
     return 'U';
 }
+
+/**
+ * Intercepts Dicebear SVG avatar URLs and converts them to PNG.
+ * React Native does not natively support rendering SVG files using <Image />.
+ *
+ * @param url The avatar URL to process.
+ */
+export function resolveAvatarUrl(url?: string | null): string | undefined {
+    if (!url) return undefined;
+    if (url.includes('api.dicebear.com') && url.includes('/svg')) {
+        return url.replace('/svg', '/png');
+    }
+    return url;
+}
