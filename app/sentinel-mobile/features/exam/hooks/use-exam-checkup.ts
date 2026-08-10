@@ -32,12 +32,24 @@ export function useExamCheckup(): UseExamCheckupReturn {
     const [micDetected, setMicDetected] = useState(false);
     const [isStartingSession] = useState(false);
 
+    const hasCameraPermission = permission?.granted ?? false;
+    const isPermissionLoading = permission === null;
+
     // ── Camera Permissions ──
     useEffect(() => {
         if (requiresCamera && permission && !permission.granted && permission.canAskAgain) {
             requestPermission();
         }
     }, [permission, requestPermission, requiresCamera]);
+
+    // Safety fallback timer: Ensure cameraReady resolves if permission is granted but native event is delayed/missed
+    useEffect(() => {
+        if (!requiresCamera || !hasCameraPermission || cameraReady) return;
+        const timer = setTimeout(() => {
+            setCameraReady(true);
+        }, 2000);
+        return () => clearTimeout(timer);
+    }, [requiresCamera, hasCameraPermission, cameraReady]);
 
     // ── Audio Recorder Setup ──
     const audioRecorder = useAudioRecorder(
@@ -148,7 +160,14 @@ export function useExamCheckup(): UseExamCheckupReturn {
 
     // ── Camera Handlers ──
     const onCameraReady = () => setCameraReady(true);
-    const flipCamera = () => setCameraFacing((prev) => (prev === 'front' ? 'back' : 'front'));
+    const onCameraMountError = (error: any) => {
+        console.warn('Camera failed to mount:', error);
+        setCameraReady(true);
+    };
+    const flipCamera = () => {
+        setCameraReady(false);
+        setCameraFacing((prev) => (prev === 'front' ? 'back' : 'front'));
+    };
 
     // ── Navigation Handlers ──
     const handleGoBack = async () => {
@@ -170,12 +189,16 @@ export function useExamCheckup(): UseExamCheckupReturn {
         insets,
         cameraFacing,
         cameraReady,
+        hasCameraPermission,
+        isPermissionLoading,
+        requestCameraPermission: requestPermission,
         micLevel,
         micDetected,
         requiresCamera,
         requiresMicrophone,
         isStartingSession,
         onCameraReady,
+        onCameraMountError,
         flipCamera,
         handleGoBack,
         handleStartExam,

@@ -151,12 +151,16 @@ export type UseExamCheckupReturn = {
     insets: { top: number; bottom: number };
     cameraFacing: CameraFacing;
     cameraReady: boolean;
+    hasCameraPermission: boolean;
+    isPermissionLoading: boolean;
+    requestCameraPermission: () => Promise<any>;
     micLevel: number;
     micDetected: boolean;
     requiresCamera: boolean;
     requiresMicrophone: boolean;
     isStartingSession: boolean;
     onCameraReady: () => void;
+    onCameraMountError: (error: any) => void;
     flipCamera: () => void;
     handleGoBack: () => void;
     handleStartExam: () => Promise<void>;
@@ -173,7 +177,11 @@ export type CheckupHeaderProps = {
 export type CameraPreviewProps = {
     cameraFacing: CameraFacing;
     cameraReady: boolean;
+    hasPermission?: boolean;
+    isPermissionLoading?: boolean;
+    onRequestPermission?: () => void;
     onCameraReady: () => void;
+    onCameraMountError?: (error: any) => void;
     onFlip: () => void;
     colors: ThemeColors;
     isDark: boolean;

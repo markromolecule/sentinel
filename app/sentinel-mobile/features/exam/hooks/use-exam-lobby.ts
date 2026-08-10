@@ -27,7 +27,27 @@ export function useExamLobby() {
     const { data: lobbyCount, refetch: refetchLobbyCount } = useExamLobbyCountQuery(id);
     const exam = rawExam ? adaptExamForMobile(rawExam) : undefined;
     const [isStartingSession, setIsStartingSession] = useState(false);
-    const canEnterExam = Boolean(exam?.runtimeAccess?.canStart || exam?.runtimeAccess?.canResume);
+    const [admissionStatus, setAdmissionStatus] = useState<string | null>(null);
+
+    const requiresInstructorAdmission =
+        exam?.configuration?.lobbyAdmissionMode === 'INSTRUCTOR_GATED';
+    const isHardRuntimeBlock =
+        exam?.runtimeAccess?.state === 'closed' ||
+        exam?.runtimeAccess?.state === 'locked' ||
+        exam?.runtimeAccess?.state === 'before_start';
+
+    const hasApprovedInstructorAdmission =
+        admissionStatus === 'APPROVED' || exam?.runtimeAccess?.state === 'lobby_approved';
+
+    const canEnterExam = Boolean(
+        !isHardRuntimeBlock &&
+        (exam?.runtimeAccess?.canStart ||
+            exam?.runtimeAccess?.canResume ||
+            hasApprovedInstructorAdmission ||
+            (!requiresInstructorAdmission &&
+                (exam?.runtimeAccess?.canStart || exam?.runtimeAccess?.canResume))),
+    );
+
     const entryLabel = getMobileExamLobbyEntryLabel({
         isStartingSession,
         canEnterExam,
@@ -74,28 +94,49 @@ export function useExamLobby() {
         }
 
         void checkIntoExamLobby(apiClient, id)
-            .then(async () => {
+            .then(async (checkInResult) => {
+                if (checkInResult?.status) {
+                    setAdmissionStatus(checkInResult.status);
+                }
                 await refetchExam();
+                await refetchLobbyCount();
             })
             .catch(async () => {
-                await getExamLobbyAdmissionStatus(apiClient, id).catch(() => null);
+                const statusRes = await getExamLobbyAdmissionStatus(apiClient, id).catch(
+                    () => null,
+                );
+                if (statusRes?.status) {
+                    setAdmissionStatus(statusRes.status);
+                }
                 await refetchExam();
+                await refetchLobbyCount();
             });
-    }, [apiClient, id, refetchExam]);
+    }, [apiClient, id, refetchExam, refetchLobbyCount]);
 
     useEffect(() => {
         if (!id || canEnterExam) {
             return;
         }
 
+        const pollAdmission = async () => {
+            try {
+                const statusRes = await getExamLobbyAdmissionStatus(apiClient, id);
+                if (statusRes?.status) {
+                    setAdmissionStatus(statusRes.status);
+                    if (statusRes.status === 'APPROVED') {
+                        await refetchExam();
+                    }
+                }
+            } catch {
+                // Ignore error during polling
+            } finally {
+                void refetchLobbyCount();
+            }
+        };
+
         const interval = setInterval(() => {
-            void getExamLobbyAdmissionStatus(apiClient, id)
-                .catch(() => null)
-                .finally(() => {
-                    void refetchExam();
-                    void refetchLobbyCount();
-                });
-        }, 3000);
+            void pollAdmission();
+        }, 2000);
 
         return () => clearInterval(interval);
     }, [apiClient, canEnterExam, id, refetchExam, refetchLobbyCount]);
@@ -107,9 +148,16 @@ export function useExamLobby() {
             }
 
             void getExamLobbyAdmissionStatus(apiClient, id)
+                .then(async (statusRes) => {
+                    if (statusRes?.status) {
+                        setAdmissionStatus(statusRes.status);
+                        if (statusRes.status === 'APPROVED') {
+                            await refetchExam();
+                        }
+                    }
+                })
                 .catch(() => null)
                 .finally(() => {
-                    void refetchExam();
                     void refetchLobbyCount();
                 });
 
@@ -122,6 +170,7 @@ export function useExamLobby() {
         readyCount: lobbyCount?.count ?? 0,
         canEnterExam,
         entryLabel,
+        admissionStatus,
         colors,
         isDark,
         insets,

@@ -5,6 +5,7 @@ import { CameraPreview } from '@/features/exam/components/checkup/camera-preview
 import { MicLevelMeter } from '@/features/exam/components/checkup/mic-level-meter';
 import { CheckupCTA } from '@/features/exam/components/checkup/checkup-cta';
 
+import { getCameraStatusText } from '@/features/exam/lib/camera-checkup-state';
 import { Ionicons } from '@expo/vector-icons';
 
 function StatusRow({
@@ -78,12 +79,16 @@ export default function CheckupScreen() {
         insets,
         cameraFacing,
         cameraReady,
+        hasCameraPermission,
+        isPermissionLoading,
+        requestCameraPermission,
         micLevel,
         micDetected,
         requiresCamera,
         requiresMicrophone,
         isStartingSession,
         onCameraReady,
+        onCameraMountError,
         flipCamera,
         handleGoBack,
         handleStartExam,
@@ -92,6 +97,12 @@ export default function CheckupScreen() {
     const webOrMobileLock = exam?.configuration?.mobileSecurity.prevent_backgrounding
         ? 'Locked'
         : 'Monitor only';
+
+    const cameraStatusText = getCameraStatusText({
+        requiresCamera,
+        hasPermission: hasCameraPermission,
+        cameraReady,
+    });
 
     return (
         <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -153,7 +164,7 @@ export default function CheckupScreen() {
                             <StatusRow
                                 icon="camera"
                                 label="Camera"
-                                value={requiresCamera ? 'Required' : 'Optional'}
+                                value={cameraStatusText}
                                 colors={colors as any}
                                 isDark={isDark}
                             />
@@ -178,7 +189,11 @@ export default function CheckupScreen() {
                         <CameraPreview
                             cameraFacing={cameraFacing}
                             cameraReady={cameraReady}
+                            hasPermission={hasCameraPermission}
+                            isPermissionLoading={isPermissionLoading}
+                            onRequestPermission={requestCameraPermission}
                             onCameraReady={onCameraReady}
+                            onCameraMountError={onCameraMountError}
                             onFlip={flipCamera}
                             colors={colors}
                             isDark={isDark}
