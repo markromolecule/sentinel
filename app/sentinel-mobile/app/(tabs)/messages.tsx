@@ -18,6 +18,7 @@ import { Colors } from '@/constants/theme';
 import { useAuth, useConversationsQuery } from '@sentinel/hooks';
 import { MessageItem, type Message, NewMessageModal } from '@/features/messages';
 import { filterConversations } from '@/features/messages/lib/conversation-search';
+import { resolveAvatarUrl } from '@/features/profile/lib/user-avatar';
 
 function formatMessageTime(dateStr?: string | null) {
     if (!dateStr) return '';
@@ -73,7 +74,7 @@ export default function MessagesRoute() {
                 id: conv.conversationId,
                 senderIndex,
                 name,
-                avatar: otherParticipant?.avatarUrl || undefined,
+                avatar: resolveAvatarUrl(otherParticipant?.avatarUrl) || undefined,
                 lastMessage: conv.lastMessage?.content || 'No messages yet',
                 time: formatMessageTime(
                     conv.lastMessage?.createdAt || conv.updatedAt || conv.createdAt

@@ -17,7 +17,7 @@ import { useMemo, useState } from 'react';
 import { Colors } from '@/constants/theme';
 import { useAuth, useStudentClassroomsQuery, useProfileQuery } from '@sentinel/hooks';
 import ClassroomCard from '@/components/classroom/classroom-card';
-import { getUserAvatarInitials } from '@/features/profile/lib/user-avatar';
+import { getUserAvatarInitials, resolveAvatarUrl } from '@/features/profile/lib/user-avatar';
 
 export default function ClassroomScreen() {
     const router = useRouter();
@@ -96,7 +96,7 @@ export default function ClassroomScreen() {
                         >
                             {profile?.avatarUrl ? (
                                 <Image
-                                    source={{ uri: profile.avatarUrl }}
+                                    source={{ uri: resolveAvatarUrl(profile.avatarUrl) }}
                                     className="h-full w-full"
                                     resizeMode="cover"
                                 />

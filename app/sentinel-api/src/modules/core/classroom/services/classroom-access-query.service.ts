@@ -29,14 +29,14 @@ export async function buildAccessibleClassroomsQuery(
               where ex.class_group_id = cg.class_group_id
           )`
         : examColumnSupport.hasSectionId
-          ? sql<number>`(
+            ? sql<number>`(
                 select count(*)::int
                 from exams as ex
                 where ex.subject_id = cg.subject_id
                   and ex.section_id is not distinct from cg.section_id
                   and ex.institution_id is not distinct from cg.institution_id
             )`
-          : sql<number>`0`;
+            : sql<number>`0`;
 
     const studentCountSelect = sql<number>`(
         select count(*)::int
@@ -91,9 +91,22 @@ export async function buildAccessibleClassroomsQuery(
     // Apply role-based access filtering
     if (role !== ('admin' as any)) {
         query = query.where((eb) => {
-            const isInstructor = eb.and([
-                eb('cr.user_id', '=', userId),
-                eb('r.role_name', '=', 'instructor'),
+            const isInstructor = eb.or([
+                // If classroom is not configured, check class_roles
+                eb.and([
+                    eb('cg.class_name', 'is', null),
+                    eb('cr.user_id', '=', userId),
+                    eb('r.role_name', '=', 'instructor'),
+                ]),
+                // If classroom is configured, check classroom_instructor_assignments
+                eb.exists(
+                    eb
+                        .selectFrom('classroom_instructor_assignments as cia_access')
+                        .select('cia_access.assignment_id')
+                        .whereRef('cia_access.class_group_id', '=', 'cg.class_group_id')
+                        .where('cia_access.instructor_user_id', '=', userId)
+                        .where('cia_access.status', '!=', 'REMOVED'),
+                ),
             ]);
 
             const isStudent = eb('access_st.user_id', '=', userId);
@@ -138,20 +151,17 @@ export async function buildAccessibleClassroomsQuery(
         examCountSelect.as('exam_count'),
         classGroupColumnSupport.hasUpdatedBy
             ? sql<
-                  string | null
-              >`MAX(NULLIF(TRIM(CONCAT_WS(' ', updater_profile.first_name, updater_profile.last_name)), ''))`.as(
-                  'updated_by_name',
-              )
+                string | null
+            >`MAX(NULLIF(TRIM(CONCAT_WS(' ', updater_profile.first_name, updater_profile.last_name)), ''))`.as(
+                'updated_by_name',
+            )
             : sql<string | null>`null`.as('updated_by_name'),
         canManageSelect.as('can_manage'),
         sql<any>`(
             select coalesce(json_agg(distinct nullif(trim(concat_ws(' ', up.first_name, up.last_name)), '')), '[]'::json)
-            from (
-                select instructor_user_id as user_id from classroom_instructor_assignments where class_group_id = cg.class_group_id
-                union
-                select user_id from class_roles where class_group_id = cg.class_group_id and role_id = (select role_id from roles where role_name = 'instructor')
-            ) ids
-            join user_profiles up on up.user_id = ids.user_id
+            from classroom_instructor_assignments as cia_inst
+            join user_profiles up on up.user_id = cia_inst.instructor_user_id
+            where cia_inst.class_group_id = cg.class_group_id
         )`.as('instructors'),
     ]);
 
