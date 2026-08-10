@@ -164,6 +164,11 @@ export type UseExamCheckupReturn = {
     flipCamera: () => void;
     handleGoBack: () => void;
     handleStartExam: () => Promise<void>;
+    calibrationProgress: number;
+    isCalibrated: boolean;
+    calibrationFeedback: string | null;
+    calibrationProfile: any | null;
+    isFaceCentered: boolean;
 };
 
 export type CheckupHeaderProps = {
@@ -185,6 +190,10 @@ export type CameraPreviewProps = {
     onFlip: () => void;
     colors: ThemeColors;
     isDark: boolean;
+    calibrationProgress?: number;
+    isCalibrated?: boolean;
+    calibrationFeedback?: string | null;
+    isFaceCentered?: boolean;
 };
 
 export type MicLevelMeterProps = {
@@ -198,6 +207,7 @@ export type CheckupCTAProps = {
     colors: ThemeColors;
     isLoading?: boolean;
     onPress: () => void | Promise<void>;
+    disabled?: boolean;
 };
 
 // ─── Session Types ───

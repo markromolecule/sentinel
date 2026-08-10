@@ -92,6 +92,10 @@ export default function CheckupScreen() {
         flipCamera,
         handleGoBack,
         handleStartExam,
+        calibrationProgress,
+        isCalibrated,
+        calibrationFeedback,
+        isFaceCentered,
     } = useExamCheckup();
 
     const webOrMobileLock = exam?.configuration?.mobileSecurity.prevent_backgrounding
@@ -103,6 +107,13 @@ export default function CheckupScreen() {
         hasPermission: hasCameraPermission,
         cameraReady,
     });
+
+    const isMediaPipeConfigured = Boolean(
+        exam?.mediaPipeSandbox?.enabled &&
+        exam?.mediaPipeSandbox?.captureDuringCheckup,
+    );
+
+    const isStartDisabled = isMediaPipeConfigured && !isCalibrated;
 
     return (
         <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -197,6 +208,10 @@ export default function CheckupScreen() {
                             onFlip={flipCamera}
                             colors={colors}
                             isDark={isDark}
+                            calibrationProgress={calibrationProgress}
+                            isCalibrated={isCalibrated}
+                            calibrationFeedback={calibrationFeedback}
+                            isFaceCentered={isFaceCentered}
                         />
                     ) : null}
 
@@ -211,7 +226,12 @@ export default function CheckupScreen() {
                 </View>
             </ScrollView>
 
-            <CheckupCTA colors={colors} isLoading={isStartingSession} onPress={handleStartExam} />
+            <CheckupCTA
+                colors={colors}
+                isLoading={isStartingSession}
+                onPress={handleStartExam}
+                disabled={isStartDisabled}
+            />
         </View>
     );
 }

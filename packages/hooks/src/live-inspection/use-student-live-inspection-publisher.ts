@@ -275,16 +275,24 @@ export function useStudentLiveInspectionPublisher({
             void runReconcileNow();
         };
 
-        document.addEventListener('visibilitychange', handleVisibilityOrReconnect);
-        window.addEventListener('online', handleVisibilityOrReconnect);
+        if (typeof document !== 'undefined') {
+            document.addEventListener('visibilitychange', handleVisibilityOrReconnect);
+        }
+        if (typeof window !== 'undefined') {
+            window.addEventListener('online', handleVisibilityOrReconnect);
+        }
 
         return () => {
             requestSequenceRef.current += 1;
             if (reconcileTimerRef.current) {
                 window.clearTimeout(reconcileTimerRef.current);
             }
-            document.removeEventListener('visibilitychange', handleVisibilityOrReconnect);
-            window.removeEventListener('online', handleVisibilityOrReconnect);
+            if (typeof document !== 'undefined') {
+                document.removeEventListener('visibilitychange', handleVisibilityOrReconnect);
+            }
+            if (typeof window !== 'undefined') {
+                window.removeEventListener('online', handleVisibilityOrReconnect);
+            }
             void supabase.removeChannel(channel);
             cleanupPublication();
         };

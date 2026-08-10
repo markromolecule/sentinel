@@ -2,13 +2,15 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import {
     MOBILE_TELEMETRY_EVENT_TYPES,
+    SHARED_TELEMETRY_EVENT_TYPES,
     TELEMETRY_EVENT_DEFINITIONS,
     type TelemetryEventType,
 } from '@sentinel/shared/schema';
 import type { ExamConfiguration } from '@sentinel/shared/types';
 import { ingestTelemetryEvent, type ApiClientType } from '@sentinel/services';
 
-export type MobileTelemetryEventType = (typeof MOBILE_TELEMETRY_EVENT_TYPES)[number];
+export type MobileTelemetryEventType =
+    (typeof MOBILE_TELEMETRY_EVENT_TYPES)[number] | (typeof SHARED_TELEMETRY_EVENT_TYPES)[number];
 
 type MobileTelemetrySessionContext = {
     os?: string;
@@ -50,6 +52,10 @@ const MOBILE_TELEMETRY_RULE_ENABLED_READERS: Record<
     APP_PINNING_VIOLATION: (configuration) => configuration.mobileSecurity.app_pinning_required,
     NOTIFICATION_BLOCK_VIOLATION: (configuration) =>
         configuration.mobileSecurity.notification_block,
+    GAZE_OFF_SCREEN: (configuration) => configuration.aiRules.gaze_tracking ?? true,
+    MULTIPLE_FACES: (configuration) => configuration.aiRules.multiple_faces_detection ?? true,
+    NO_FACE_DETECTED: (configuration) => configuration.aiRules.face_detection ?? true,
+    AUDIO_ANOMALY: (configuration) => configuration.aiRules.audio_anomaly_detection ?? true,
 };
 
 export function isMobileTelemetryEventEnabled(

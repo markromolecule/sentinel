@@ -17,12 +17,12 @@
 The plan is divided into two primary tasks and four phases:
 
 - **Task 1: Mobile MediaPipe, Audio Anomaly & LiveKit Live Monitoring Engine**
-  - [`Task1/Phase1.md`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/feat-mediapipe-mobile/Task1/Phase1.md): MediaPipe Calibration, Center Alignment Guide, Audio Anomaly Setup & Lobby Readiness Gating.
-  - [`Task1/Phase2.md`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/feat-mediapipe-mobile/Task1/Phase2.md): Attempt Page AI Incident Detection, Automatic Frame Capture & LiveKit Proctoring Bridge.
+    - [`Task1/Phase1.md`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/feat-mediapipe-mobile/Task1/Phase1.md): MediaPipe Calibration, Center Alignment Guide, Audio Anomaly Setup & Lobby Readiness Gating.
+    - [`Task1/Phase2.md`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/feat-mediapipe-mobile/Task1/Phase2.md): Attempt Page AI Incident Detection, Automatic Frame Capture & LiveKit Proctoring Bridge.
 
 - **Task 2: Mobile Exam Attempt Flow, Question & Passage Rendering, Reconnection & Feedback**
-  - [`Task2/Phase1.md`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/feat-mediapipe-mobile/Task2/Phase1.md): Question & Passage Rendering Fixes & Attempt Screen UI 1:1 Parity.
-  - [`Task2/Phase2.md`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/feat-mediapipe-mobile/Task2/Phase2.md): Network Reconnection Guardrails, Exam Turn-In & Post-Exam Feedback Page Redirection.
+    - [`Task2/Phase1.md`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/feat-mediapipe-mobile/Task2/Phase1.md): Question & Passage Rendering Fixes & Attempt Screen UI 1:1 Parity.
+    - [`Task2/Phase2.md`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/task/2026-08-10/feat-mediapipe-mobile/Task2/Phase2.md): Network Reconnection Guardrails, Exam Turn-In & Post-Exam Feedback Page Redirection.
 
 ---
 
@@ -82,5 +82,5 @@ The plan is divided into two primary tasks and four phases:
 - All tasks reference concrete files and functions.
 - Every phase includes co-located unit/component tests (`*.test.ts` / `*.test.tsx`).
 - Verification commands:
-  - `pnpm --dir app/sentinel-mobile test`
-  - `pnpm --dir app/sentinel-mobile build`
+    - `pnpm --dir app/sentinel-mobile test`
+    - `pnpm --dir app/sentinel-mobile build`

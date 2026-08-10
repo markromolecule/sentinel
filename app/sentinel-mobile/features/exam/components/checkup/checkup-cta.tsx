@@ -1,7 +1,9 @@
 import { View, Text, TouchableOpacity } from 'react-native';
 import { type CheckupCTAProps } from '@/types/exam';
 
-export function CheckupCTA({ colors, isLoading, onPress }: CheckupCTAProps) {
+export function CheckupCTA({ colors, isLoading, onPress, disabled }: CheckupCTAProps) {
+    const isDisabled = isLoading || disabled;
+
     return (
         <View
             style={{
@@ -19,17 +21,17 @@ export function CheckupCTA({ colors, isLoading, onPress }: CheckupCTAProps) {
         >
             <TouchableOpacity
                 style={{
-                    backgroundColor: colors.primary,
+                    backgroundColor: isDisabled ? '#94a3b8' : colors.primary,
                     paddingVertical: 16,
                     borderRadius: 16,
-                    shadowColor: colors.primary,
-                    shadowOpacity: 0.3,
+                    shadowColor: isDisabled ? 'transparent' : colors.primary,
+                    shadowOpacity: isDisabled ? 0 : 0.3,
                     shadowRadius: 10,
                     shadowOffset: { width: 0, height: 4 },
-                    elevation: 6,
+                    elevation: isDisabled ? 0 : 6,
                 }}
                 onPress={onPress}
-                disabled={isLoading}
+                disabled={isDisabled}
                 accessibilityLabel="Start exam"
                 accessibilityRole="button"
                 activeOpacity={0.85}

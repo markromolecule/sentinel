@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView } from 'expo-camera';
+import Svg, { Ellipse } from 'react-native-svg';
 import { type CameraPreviewProps } from '@/types/exam';
 
 export function CameraPreview({
@@ -14,7 +16,13 @@ export function CameraPreview({
     onFlip,
     colors,
     isDark,
+    calibrationProgress,
+    isCalibrated = false,
+    calibrationFeedback,
+    isFaceCentered = false,
 }: CameraPreviewProps) {
+    const [layout, setLayout] = useState({ width: 0, height: 0 });
+
     return (
         <View style={{ marginBottom: 20 }}>
             <Text
@@ -40,6 +48,10 @@ export function CameraPreview({
             >
                 {/* Camera Feed */}
                 <View
+                    onLayout={(e) => {
+                        const { width, height } = e.nativeEvent.layout;
+                        setLayout({ width, height });
+                    }}
                     style={{
                         height: 300,
                         backgroundColor: isDark ? '#111' : '#f0f0f0',
@@ -67,7 +79,9 @@ export function CameraPreview({
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 padding: 24,
-                                backgroundColor: isDark ? 'rgba(0,0,0,0.3)' : 'rgba(240,240,240,0.5)',
+                                backgroundColor: isDark
+                                    ? 'rgba(0,0,0,0.3)'
+                                    : 'rgba(240,240,240,0.5)',
                             }}
                         >
                             <View
@@ -103,7 +117,8 @@ export function CameraPreview({
                                     lineHeight: 18,
                                 }}
                             >
-                                Please grant camera permission to verify your environment for this exam.
+                                Please grant camera permission to verify your environment for this
+                                exam.
                             </Text>
                             {onRequestPermission ? (
                                 <TouchableOpacity
@@ -115,7 +130,9 @@ export function CameraPreview({
                                         borderRadius: 12,
                                     }}
                                 >
-                                    <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13 }}>
+                                    <Text
+                                        style={{ color: '#fff', fontWeight: '600', fontSize: 13 }}
+                                    >
                                         Grant Permission
                                     </Text>
                                 </TouchableOpacity>
@@ -131,6 +148,101 @@ export function CameraPreview({
                                 onMountError={onCameraMountError}
                                 mirror={cameraFacing === 'front'}
                             />
+
+                            {/* Calibration Ellipse Guide Overlay */}
+                            {cameraReady && !isCalibrated && layout.width > 0 && (
+                                <View
+                                    style={{
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        right: 0,
+                                        bottom: 0,
+                                    }}
+                                    pointerEvents="none"
+                                >
+                                    <Svg
+                                        width={layout.width}
+                                        height={layout.height}
+                                        style={{ position: 'absolute', top: 0, left: 0 }}
+                                    >
+                                        <Ellipse
+                                            cx={layout.width * 0.5}
+                                            cy={layout.height * 0.45}
+                                            rx={layout.width * 0.22}
+                                            ry={layout.height * 0.32}
+                                            stroke={
+                                                isFaceCentered
+                                                    ? '#22c55e'
+                                                    : 'rgba(255, 255, 255, 0.4)'
+                                            }
+                                            strokeWidth={3}
+                                            strokeDasharray="8 4"
+                                            fill="transparent"
+                                        />
+                                    </Svg>
+
+                                    {/* Status Label */}
+                                    <View
+                                        style={{
+                                            position: 'absolute',
+                                            bottom: 30,
+                                            left: 0,
+                                            right: 0,
+                                            alignItems: 'center',
+                                        }}
+                                    >
+                                        <View
+                                            style={{
+                                                backgroundColor: 'rgba(15, 23, 42, 0.75)',
+                                                paddingHorizontal: 16,
+                                                paddingVertical: 6,
+                                                borderRadius: 20,
+                                                marginBottom: 10,
+                                            }}
+                                        >
+                                            <Text
+                                                style={{
+                                                    color: '#fff',
+                                                    fontSize: 13,
+                                                    fontWeight: '700',
+                                                    textAlign: 'center',
+                                                }}
+                                            >
+                                                {calibrationFeedback ||
+                                                    (isFaceCentered
+                                                        ? 'Hold still...'
+                                                        : 'Align face in guide')}
+                                            </Text>
+                                        </View>
+                                    </View>
+
+                                    {/* Progress Bar */}
+                                    {calibrationProgress !== undefined && (
+                                        <View
+                                            style={{
+                                                position: 'absolute',
+                                                top: 0,
+                                                left: 0,
+                                                right: 0,
+                                                height: 4,
+                                                backgroundColor: 'rgba(255,255,255,0.2)',
+                                            }}
+                                        >
+                                            <View
+                                                style={{
+                                                    height: '100%',
+                                                    width: `${calibrationProgress}%`,
+                                                    backgroundColor:
+                                                        calibrationProgress === 100
+                                                            ? '#22c55e'
+                                                            : colors.primary,
+                                                }}
+                                            />
+                                        </View>
+                                    )}
+                                </View>
+                            )}
 
                             {/* Loading overlay */}
                             {!cameraReady && (
@@ -210,11 +322,7 @@ export function CameraPreview({
                         style={{
                             fontSize: 14,
                             fontWeight: '600',
-                            color: !hasPermission
-                                ? '#ef4444'
-                                : cameraReady
-                                  ? '#10b981'
-                                  : '#f59e0b',
+                            color: !hasPermission ? '#ef4444' : cameraReady ? '#10b981' : '#f59e0b',
                         }}
                     >
                         {!hasPermission
