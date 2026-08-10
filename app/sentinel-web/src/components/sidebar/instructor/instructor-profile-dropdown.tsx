@@ -12,7 +12,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@sentinel/ui';
-import { useAuth, useProfileQuery } from '@sentinel/hooks';
+import { useProfileQuery } from '@sentinel/hooks';
 import { useInstructorNav } from './hooks/use-instructor-nav';
 
 /**
@@ -22,7 +22,6 @@ export function InstructorProfileDropdown() {
     const { theme, setTheme } = useTheme();
     const { handleLogout } = useInstructorNav();
     const { profile, isLoading } = useProfileQuery();
-    const { user } = useAuth();
 
     const themeOptions = [
         { name: 'Light', value: 'light', icon: Sun },
@@ -35,21 +34,14 @@ export function InstructorProfileDropdown() {
     }
 
     const initials = `${profile?.firstName?.[0] || ''}${profile?.lastName?.[0] || ''}`;
-    const avatarUrl =
-        profile?.avatarUrl ??
-        (user?.user_metadata?.avatar_url as string | undefined) ??
-        (user?.user_metadata?.picture as string | undefined) ??
-        (user?.user_metadata?.avatar as string | undefined) ??
-        (user?.user_metadata?.image as string | undefined) ??
-        null;
 
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <div className="bg-primary text-primary-foreground relative flex h-8 w-8 cursor-pointer items-center justify-center overflow-hidden rounded-full text-xs font-bold shadow-sm transition-opacity hover:opacity-90">
-                    {avatarUrl ? (
+                    {profile?.avatarUrl ? (
                         <Image
-                            src={avatarUrl}
+                            src={profile.avatarUrl}
                             alt={`${profile?.firstName || ''} avatar`}
                             fill
                             sizes="32px"
