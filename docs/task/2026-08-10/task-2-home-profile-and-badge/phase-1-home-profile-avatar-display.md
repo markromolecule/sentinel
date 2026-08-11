@@ -4,7 +4,7 @@
 
 ## Tasks
 
-- [x] Update header profile avatar button in [app/(tabs)/classroom/index.tsx](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/app/sentinel-mobile/app/(tabs)/classroom/index.tsx) to consume `useProfileQuery` avatar URL if present
+- [x] Update header profile avatar button in [app/(tabs)/classroom/index.tsx](<file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/app/sentinel-mobile/app/(tabs)/classroom/index.tsx>) to consume `useProfileQuery` avatar URL if present
 - [x] Implement image fallback showing formatted user initials when avatar image is unconfigured
 - [x] Write unit test for user avatar initial extraction in `app/sentinel-mobile/features/profile/lib/user-avatar.test.ts`
 

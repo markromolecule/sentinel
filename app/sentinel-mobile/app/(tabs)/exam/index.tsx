@@ -87,27 +87,32 @@ export default function ExamScreen() {
                     <Image
                         source={require('@/assets/images/sentinel-character.png')}
                         style={{
-                            width: 125,
-                            height: 125,
+                            width: 100,
+                            height: 100,
                             position: 'absolute',
-                            top: -80,
+                            top: -70,
                             right: 10,
                             zIndex: -1,
                         }}
                     />
                     <View
-                        className="flex-row items-center rounded-2xl bg-white px-4 py-3 shadow-lg"
+                        className="h-10 flex-row items-center rounded-2xl bg-white px-4 shadow-lg"
                         style={{ elevation: 5 }}
                     >
                         <Ionicons name="search" size={20} color={colors.icon} />
                         <TextInput
                             placeholder="Search assessments..."
                             placeholderTextColor={colors.icon}
-                            className="ml-3 flex-1 text-base"
-                            style={{ color: colors.text }}
+                            className="ml-3 flex-1 text-sm"
+                            style={{ color: colors.text, height: 40, paddingVertical: 0 }}
                             value={searchQuery}
                             onChangeText={setSearchQuery}
                         />
+                        {searchQuery.length > 0 && (
+                            <TouchableOpacity onPress={() => setSearchQuery('')}>
+                                <Ionicons name="close-circle" size={18} color={colors.icon} />
+                            </TouchableOpacity>
+                        )}
                     </View>
                 </View>
             </View>
@@ -161,7 +166,7 @@ export default function ExamScreen() {
                 <ScrollView
                     className="flex-1"
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingBottom: 40 }}
+                    contentContainerStyle={{ paddingBottom: 2 }}
                     refreshControl={
                         <RefreshControl
                             refreshing={isRefetching}

@@ -29,10 +29,7 @@ export default function ClassroomExamsScreen() {
 
     const [searchQuery, setSearchQuery] = useState('');
 
-    const {
-        data: classroom,
-        isLoading: isClassroomLoading,
-    } = useClassroomQuery(id as string);
+    const { data: classroom, isLoading: isClassroomLoading } = useClassroomQuery(id as string);
 
     const {
         data: exams = [],
@@ -56,9 +53,10 @@ export default function ClassroomExamsScreen() {
             return list;
         }
 
-        return list.filter((exam) =>
-            exam.title.toLowerCase().includes(query) ||
-            exam.subject.toLowerCase().includes(query)
+        return list.filter(
+            (exam) =>
+                exam.title.toLowerCase().includes(query) ||
+                exam.subject.toLowerCase().includes(query),
         );
     }, [exams, classroom, searchQuery]);
 
@@ -118,7 +116,7 @@ export default function ClassroomExamsScreen() {
                     <View className="px-6 pb-6 pt-4">
                         <View className="flex-row items-center justify-between">
                             <TouchableOpacity
-                                onPress={() => router.back()}
+                                onPress={() => router.push(`/classroom/${id}` as any)}
                                 className="h-10 w-10 items-center justify-center rounded-full bg-white/10"
                             >
                                 <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -134,22 +132,23 @@ export default function ClassroomExamsScreen() {
                                     {classroom.subjectCode} • {classroom.sectionName}
                                 </Text>
                             </View>
-                            <View className="w-10 h-10" />
+                            <View className="h-10 w-10" />
                         </View>
                     </View>
                 </SafeAreaView>
 
                 {/* Search Input inside Header */}
                 <View className="px-6">
-                    <View className="h-12 flex-row items-center rounded-2xl bg-white px-4 shadow-xl">
+                    <View className="h-10 flex-row items-center rounded-2xl bg-white px-4 shadow-xl">
                         <Ionicons name="search" size={20} color={colors.icon} />
                         <TextInput
-                            className="ml-3 flex-1 text-base"
+                            className="ml-3 flex-1 text-sm"
                             placeholder="Search assessments..."
                             placeholderTextColor={colors.icon}
                             style={{
                                 color: colors.text,
-                                height: 48,
+                                height: 40,
+                                paddingVertical: 0,
                             }}
                             value={searchQuery}
                             onChangeText={setSearchQuery}
@@ -177,11 +176,7 @@ export default function ClassroomExamsScreen() {
 
                 {filteredExams.length > 0 ? (
                     filteredExams.map((exam) => (
-                        <ExamCard
-                            key={exam.id}
-                            exam={exam}
-                            onPress={() => handleExamPress(exam)}
-                        />
+                        <ExamCard key={exam.id} exam={exam} onPress={() => handleExamPress(exam)} />
                     ))
                 ) : (
                     <View className="items-center justify-center py-20">

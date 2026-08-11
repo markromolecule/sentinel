@@ -16,7 +16,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
-import { useAuth, useLogoutMutation, useProfileQuery, useUpdatePasswordMutation } from '@sentinel/hooks';
+import {
+    useAuth,
+    useLogoutMutation,
+    useProfileQuery,
+    useUpdatePasswordMutation,
+} from '@sentinel/hooks';
 import { ProfileInfoItem } from './profile-info-item';
 import { resolveAvatarUrl } from '../lib/user-avatar';
 import { PasswordInput } from './password-input';
@@ -53,9 +58,7 @@ export default function ProfileScreen() {
     });
 
     const isSaveDisabled =
-        updatePasswordMutation.isPending ||
-        !passwords.current ||
-        !isPasswordValid(passwords.new);
+        updatePasswordMutation.isPending || !passwords.current || !isPasswordValid(passwords.new);
 
     const handleUpdatePassword = () => {
         const validation = validatePasswordUpdate(passwords);
@@ -242,15 +245,15 @@ export default function ProfileScreen() {
                                 disabled={isSaveDisabled}
                             >
                                 {updatePasswordMutation.isPending ? (
-                                    <ActivityIndicator color={isSaveDisabled ? colors.text : '#fff'} />
+                                    <ActivityIndicator
+                                        color={isSaveDisabled ? colors.text : '#fff'}
+                                    />
                                 ) : (
                                     <Text
                                         style={[
                                             styles.primaryBtnText,
                                             isSaveDisabled && {
-                                                color: isDark
-                                                    ? 'rgba(255,255,255,0.2)'
-                                                    : '#94A3B8',
+                                                color: isDark ? 'rgba(255,255,255,0.2)' : '#94A3B8',
                                             },
                                         ]}
                                     >

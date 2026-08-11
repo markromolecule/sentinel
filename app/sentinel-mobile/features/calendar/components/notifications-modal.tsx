@@ -110,7 +110,7 @@ export function NotificationsModal({ visible, onClose, notifications }: Notifica
                         });
                     },
                 },
-            ]
+            ],
         );
     };
 
@@ -136,7 +136,7 @@ export function NotificationsModal({ visible, onClose, notifications }: Notifica
                         });
                     },
                 },
-            ]
+            ],
         );
     };
 
@@ -155,16 +155,20 @@ export function NotificationsModal({ visible, onClose, notifications }: Notifica
                     paddingHorizontal: 24,
                     paddingVertical: 20,
                     backgroundColor: isSelected
-                        ? (isDark ? 'rgba(50, 61, 143, 0.25)' : 'rgba(50, 61, 143, 0.08)')
+                        ? isDark
+                            ? 'rgba(50, 61, 143, 0.25)'
+                            : 'rgba(50, 61, 143, 0.08)'
                         : isUnread
-                        ? (isDark ? 'rgba(50, 61, 143, 0.15)' : 'rgba(50, 61, 143, 0.05)')
-                        : 'transparent',
+                          ? isDark
+                              ? 'rgba(50, 61, 143, 0.15)'
+                              : 'rgba(50, 61, 143, 0.05)'
+                          : 'transparent',
                 }}
             >
                 {/* Checkbox Icon */}
                 <View className="mt-0.5 items-center justify-center">
                     <Ionicons
-                        name={isSelected ? "checkbox" : "square-outline"}
+                        name={isSelected ? 'checkbox' : 'square-outline'}
                         size={20}
                         color={isSelected ? colors.primary : colors.icon}
                     />
@@ -182,10 +186,7 @@ export function NotificationsModal({ visible, onClose, notifications }: Notifica
 
                 {/* Content */}
                 <View className="flex-1">
-                    <Text
-                        className="text-sm font-bold"
-                        style={{ color: colors.text }}
-                    >
+                    <Text className="text-sm font-bold" style={{ color: colors.text }}>
                         {item.title}
                     </Text>
                     <Text
@@ -194,9 +195,7 @@ export function NotificationsModal({ visible, onClose, notifications }: Notifica
                     >
                         {item.message}
                     </Text>
-                    <Text
-                        className="mt-2 text-[10px] font-medium text-slate-400"
-                    >
+                    <Text className="mt-2 text-[10px] font-medium text-slate-400">
                         {formatNotificationDate(item.createdAt)}
                     </Text>
                 </View>
@@ -205,15 +204,10 @@ export function NotificationsModal({ visible, onClose, notifications }: Notifica
     };
 
     return (
-        <Modal
-            animationType="slide"
-            transparent={false}
-            visible={visible}
-            onRequestClose={onClose}
-        >
+        <Modal animationType="slide" transparent={false} visible={visible} onRequestClose={onClose}>
             <View className="flex-1" style={{ backgroundColor: colors.background }}>
                 <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
-                
+
                 {/* Immersive Header matching system styles */}
                 <View
                     className="pb-4"
@@ -259,7 +253,7 @@ export function NotificationsModal({ visible, onClose, notifications }: Notifica
                             activeOpacity={0.7}
                         >
                             <Ionicons
-                                name={isAllSelected ? "checkbox" : "square-outline"}
+                                name={isAllSelected ? 'checkbox' : 'square-outline'}
                                 size={20}
                                 color={isAllSelected ? colors.primary : colors.icon}
                             />
@@ -270,16 +264,14 @@ export function NotificationsModal({ visible, onClose, notifications }: Notifica
 
                         <View className="flex-row items-center gap-3">
                             <Text style={{ color: colors.text, fontSize: 13, fontWeight: '600' }}>
-                                {selectedCount > 0
-                                    ? `${selectedCount} selected`
-                                    : 'Select items'}
+                                {selectedCount > 0 ? `${selectedCount} selected` : 'Select items'}
                             </Text>
                             <TouchableOpacity
                                 onPress={handleReadAll}
-                                className={`p-2 rounded-lg ${
-                                    hasUnread 
-                                        ? 'bg-blue-50 dark:bg-blue-950/20' 
-                                        : 'bg-slate-100 dark:bg-zinc-800 opacity-40'
+                                className={`rounded-lg p-2 ${
+                                    hasUnread
+                                        ? 'bg-blue-50 dark:bg-blue-950/20'
+                                        : 'bg-slate-100 opacity-40 dark:bg-zinc-800'
                                 }`}
                                 disabled={!hasUnread || readAllNotificationsMutation.isPending}
                                 activeOpacity={0.7}
@@ -296,21 +288,30 @@ export function NotificationsModal({ visible, onClose, notifications }: Notifica
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={handleDeleteSelected}
-                                className={`p-2 rounded-lg ${
-                                    selectedCount > 0 
-                                        ? 'bg-red-50 dark:bg-red-950/20' 
-                                        : 'bg-slate-100 dark:bg-zinc-800 opacity-40'
+                                className={`rounded-lg p-2 ${
+                                    selectedCount > 0
+                                        ? 'bg-red-50 dark:bg-red-950/20'
+                                        : 'bg-slate-100 opacity-40 dark:bg-zinc-800'
                                 }`}
-                                disabled={selectedCount === 0 || deleteNotificationsMutation.isPending}
+                                disabled={
+                                    selectedCount === 0 || deleteNotificationsMutation.isPending
+                                }
                                 activeOpacity={0.7}
                             >
                                 {deleteNotificationsMutation.isPending ? (
-                                    <ActivityIndicator size="small" color={colors.error || '#ef4444'} />
+                                    <ActivityIndicator
+                                        size="small"
+                                        color={colors.error || '#ef4444'}
+                                    />
                                 ) : (
                                     <Ionicons
                                         name="trash-outline"
                                         size={18}
-                                        color={selectedCount > 0 ? (colors.error || '#ef4444') : colors.icon}
+                                        color={
+                                            selectedCount > 0
+                                                ? colors.error || '#ef4444'
+                                                : colors.icon
+                                        }
                                     />
                                 )}
                             </TouchableOpacity>
@@ -336,16 +337,24 @@ export function NotificationsModal({ visible, onClose, notifications }: Notifica
                             )}
                         />
                     ) : (
-                        <View 
+                        <View
                             className="flex-1 items-center justify-center px-6"
                             style={{ paddingBottom: insets.bottom }}
                         >
-                            <Ionicons name="notifications-off-outline" size={64} color={colors.icon} />
-                            <Text className="mt-4 text-base font-bold" style={{ color: colors.text }}>
+                            <Ionicons
+                                name="notifications-off-outline"
+                                size={64}
+                                color={colors.icon}
+                            />
+                            <Text
+                                className="mt-4 text-base font-bold"
+                                style={{ color: colors.text }}
+                            >
                                 No Notifications Yet
                             </Text>
                             <Text className="mt-1 text-center text-xs text-slate-400">
-                                We'll notify you when classroom assignments, updates, and events occur.
+                                We'll notify you when classroom assignments, updates, and events
+                                occur.
                             </Text>
                         </View>
                     )}

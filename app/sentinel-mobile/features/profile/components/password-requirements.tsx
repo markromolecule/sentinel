@@ -30,19 +30,24 @@ export function PasswordRequirements({ value = '', isVisible = false }: Password
             {requirements.map((req, index) => {
                 const iconName = req.met ? 'checkmark-circle' : 'ellipse-outline';
                 const textColor = req.met
-                    ? (isDark ? '#4ADE80' : '#22C55E')
-                    : (isDark ? 'rgba(255,255,255,0.4)' : '#64748B');
+                    ? isDark
+                        ? '#4ADE80'
+                        : '#22C55E'
+                    : isDark
+                      ? 'rgba(255,255,255,0.4)'
+                      : '#64748B';
                 const iconColor = req.met
-                    ? (isDark ? '#4ADE80' : '#22C55E')
-                    : (isDark ? 'rgba(255,255,255,0.2)' : '#CBD5E1');
+                    ? isDark
+                        ? '#4ADE80'
+                        : '#22C55E'
+                    : isDark
+                      ? 'rgba(255,255,255,0.2)'
+                      : '#CBD5E1';
 
                 return (
                     <View key={index} className="w-[50%] flex-row items-center gap-1.5 py-0.5">
                         <Ionicons name={iconName} size={14} color={iconColor} />
-                        <Text
-                            style={{ color: textColor }}
-                            className="text-xs font-medium"
-                        >
+                        <Text style={{ color: textColor }} className="text-xs font-medium">
                             {req.text}
                         </Text>
                     </View>

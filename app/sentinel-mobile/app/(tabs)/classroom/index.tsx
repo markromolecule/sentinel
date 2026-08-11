@@ -92,7 +92,7 @@ export default function ClassroomScreen() {
                         <TouchableOpacity
                             onPress={() => router.push('/profile' as any)}
                             activeOpacity={0.7}
-                            className="h-12 w-12 items-center justify-center rounded-full bg-white/25 overflow-hidden"
+                            className="h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-white/25"
                         >
                             {profile?.avatarUrl ? (
                                 <Image
@@ -101,11 +101,11 @@ export default function ClassroomScreen() {
                                     resizeMode="cover"
                                 />
                             ) : (
-                                <Text className="text-white text-sm font-bold tracking-wider">
+                                <Text className="text-sm font-bold tracking-wider text-white">
                                     {getUserAvatarInitials(
                                         profile?.firstName || user?.user_metadata?.first_name,
                                         profile?.lastName || user?.user_metadata?.last_name,
-                                        user?.email
+                                        user?.email,
                                     )}
                                 </Text>
                             )}
@@ -115,19 +115,25 @@ export default function ClassroomScreen() {
 
                 <View className="px-6">
                     {/* Sleeker Search Bar */}
-                    <View className="h-12 flex-row items-center rounded-2xl bg-white px-4 shadow-xl">
+                    <View className="h-10 flex-row items-center rounded-2xl bg-white px-4 shadow-xl">
                         <Ionicons name="search" size={20} color={colors.icon} />
                         <TextInput
-                            className="ml-3 flex-1 text-base"
+                            className="ml-3 flex-1 text-sm"
                             placeholder="Search subjects..."
                             placeholderTextColor={colors.icon}
                             style={{
                                 color: colors.text,
-                                height: 48,
+                                height: 40,
+                                paddingVertical: 0,
                             }}
                             value={searchQuery}
                             onChangeText={setSearchQuery}
                         />
+                        {searchQuery.length > 0 && (
+                            <TouchableOpacity onPress={() => setSearchQuery('')}>
+                                <Ionicons name="close-circle" size={18} color={colors.icon} />
+                            </TouchableOpacity>
+                        )}
                     </View>
                 </View>
             </View>

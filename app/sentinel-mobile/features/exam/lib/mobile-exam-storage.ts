@@ -53,3 +53,29 @@ export async function writeStoredMobileExamPreview(
 export async function clearStoredMobileExamPreview(examId: string) {
     await AsyncStorage.removeItem(getPreviewKey(examId));
 }
+
+import type { MediaPipeCalibrationProfile } from '@sentinel/shared';
+
+const CALIBRATION_KEY_PREFIX = 'sentinel-mobile:calibration-profile:';
+
+function getCalibrationKey(examId: string) {
+    return `${CALIBRATION_KEY_PREFIX}${examId}`;
+}
+
+export async function readStoredMobileCalibrationProfile(
+    examId: string,
+): Promise<MediaPipeCalibrationProfile | null> {
+    const raw = await AsyncStorage.getItem(getCalibrationKey(examId));
+    return raw ? (JSON.parse(raw) as MediaPipeCalibrationProfile) : null;
+}
+
+export async function writeStoredMobileCalibrationProfile(
+    examId: string,
+    profile: MediaPipeCalibrationProfile,
+): Promise<void> {
+    await AsyncStorage.setItem(getCalibrationKey(examId), JSON.stringify(profile));
+}
+
+export async function clearStoredMobileCalibrationProfile(examId: string): Promise<void> {
+    await AsyncStorage.removeItem(getCalibrationKey(examId));
+}

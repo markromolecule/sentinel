@@ -21,6 +21,7 @@ export type ClassroomStudent = {
     courseCode: string | null;
     courseTitle: string | null;
     enrolledAt: string | null;
+    avatarUrl: string | null;
 };
 
 export type ClassroomInstructor = {

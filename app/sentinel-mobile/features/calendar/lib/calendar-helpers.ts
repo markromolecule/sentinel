@@ -8,7 +8,7 @@ import { CalendarEvent } from '@/data/calendar';
  */
 export function mergeEvents(
     globalData: Record<string, CalendarEvent[]>,
-    userNotes: Record<string, CalendarEvent[]>
+    userNotes: Record<string, CalendarEvent[]>,
 ): Record<string, CalendarEvent[]> {
     const merged: Record<string, CalendarEvent[]> = {};
 

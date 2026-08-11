@@ -151,15 +151,24 @@ export type UseExamCheckupReturn = {
     insets: { top: number; bottom: number };
     cameraFacing: CameraFacing;
     cameraReady: boolean;
+    hasCameraPermission: boolean;
+    isPermissionLoading: boolean;
+    requestCameraPermission: () => Promise<any>;
     micLevel: number;
     micDetected: boolean;
     requiresCamera: boolean;
     requiresMicrophone: boolean;
     isStartingSession: boolean;
     onCameraReady: () => void;
+    onCameraMountError: (error: any) => void;
     flipCamera: () => void;
     handleGoBack: () => void;
     handleStartExam: () => Promise<void>;
+    calibrationProgress: number;
+    isCalibrated: boolean;
+    calibrationFeedback: string | null;
+    calibrationProfile: any | null;
+    isFaceCentered: boolean;
 };
 
 export type CheckupHeaderProps = {
@@ -173,10 +182,18 @@ export type CheckupHeaderProps = {
 export type CameraPreviewProps = {
     cameraFacing: CameraFacing;
     cameraReady: boolean;
+    hasPermission?: boolean;
+    isPermissionLoading?: boolean;
+    onRequestPermission?: () => void;
     onCameraReady: () => void;
+    onCameraMountError?: (error: any) => void;
     onFlip: () => void;
     colors: ThemeColors;
     isDark: boolean;
+    calibrationProgress?: number;
+    isCalibrated?: boolean;
+    calibrationFeedback?: string | null;
+    isFaceCentered?: boolean;
 };
 
 export type MicLevelMeterProps = {
@@ -190,6 +207,7 @@ export type CheckupCTAProps = {
     colors: ThemeColors;
     isLoading?: boolean;
     onPress: () => void | Promise<void>;
+    disabled?: boolean;
 };
 
 // ─── Session Types ───

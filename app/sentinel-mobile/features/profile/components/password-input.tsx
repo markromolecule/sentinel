@@ -47,13 +47,13 @@ export const PasswordInput = ({
                                 ? 'rgba(255,255,255,0.04)'
                                 : '#fff'
                             : isDark
-                                ? 'rgba(255,255,255,0.02)'
-                                : '#F8FAFC',
+                              ? 'rgba(255,255,255,0.02)'
+                              : '#F8FAFC',
                         borderColor: isFocused
                             ? colors.primary
                             : isDark
-                                ? 'rgba(255,255,255,0.08)'
-                                : '#E2E8F0',
+                              ? 'rgba(255,255,255,0.08)'
+                              : '#E2E8F0',
                         borderWidth: isFocused ? 2 : 1,
                     },
                 ]}
@@ -83,9 +83,7 @@ export const PasswordInput = ({
                 </TouchableOpacity>
             </View>
 
-            {showRequirements && (
-                <PasswordRequirements value={value} isVisible={isFocused} />
-            )}
+            {showRequirements && <PasswordRequirements value={value} isVisible={isFocused} />}
         </View>
     );
 };
