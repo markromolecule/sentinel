@@ -23,31 +23,31 @@ In `sentinel-mobile`:
 
 ### Reconnection Guardrails & State Recovery
 
-- [ ] **Create** `app/sentinel-mobile/features/exam/lib/mobile-exam-reconnection.ts`
+- [x] **Create** `app/sentinel-mobile/features/exam/lib/mobile-exam-reconnection.ts`
     - Implement network connectivity listener (`@react-native-community/netinfo` or `AppState`).
     - Handle reconnection retries (3 attempts with exponential backoff).
     - Redirect safely to `/exam/[id]/lobby` with `isResumed: true` state on session disruption.
-- [ ] **Write unit tests** at `app/sentinel-mobile/features/exam/lib/mobile-exam-reconnection.test.ts`
+- [x] **Write unit tests** at `app/sentinel-mobile/features/exam/lib/mobile-exam-reconnection.test.ts`
     - Test offline detection, retry counter, and lobby redirect trigger.
 
 ### Turn-In & Server Submission Handler
 
-- [ ] **Update** `app/sentinel-mobile/features/exam/hooks/use-exam-session.ts`
+- [x] **Update** `app/sentinel-mobile/features/exam/hooks/use-exam-session.ts`
     - Call `submitExamAttempt` service API upon confirmation.
     - Send structured answers payload (`buildSessionAnswerPayload`).
     - Clear stored session token on successful turn-in.
     - Redirect to `/exam/[id]/result` with attempt response data.
-- [ ] **Update unit tests** at `app/sentinel-mobile/features/exam/hooks/use-exam-session.test.ts`
+- [x] **Update unit tests** at `app/sentinel-mobile/features/exam/hooks/use-exam-session.test.ts`
     - Test turn-in submit flow, payload creation, and submission failure fallback.
 
 ### Post-Exam Feedback / Result Screen 1:1 UI
 
-- [ ] **Update** `app/sentinel-mobile/app/exam/[id]/result/index.tsx` & `features/exam/components/detail/result-view.tsx`
+- [x] **Update** `app/sentinel-mobile/app/exam/[id]/result/index.tsx` & `features/exam/components/detail/result-view.tsx`
     - Display score percentage badge, pass/fail status, total points, and completion timestamp matching `sentinel-web`.
     - Render section/topic breakdown bars.
     - Display proctoring verification indicator ("Exam verified under security policy").
     - Provide "Return to Dashboard" action button.
-- [ ] **Write component tests** at `app/sentinel-mobile/features/exam/components/detail/result-view.test.tsx`
+- [x] **Write component tests** at `app/sentinel-mobile/features/exam/components/detail/result-view.test.tsx`
     - Test score summary rendering, pass/fail status colors, and navigation button.
 
 ---

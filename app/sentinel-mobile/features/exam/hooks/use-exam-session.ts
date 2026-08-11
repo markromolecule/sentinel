@@ -2,18 +2,20 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useApi, useAuth, useExamQuery } from '@sentinel/hooks';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Alert, AppState } from 'react-native';
-import { syncExamProgress } from '@sentinel/services';
+import { syncExamProgress, completeExamSession } from '@sentinel/services';
 import { emitMobileTelemetryEvent } from '@/features/exam/lib/mobile-telemetry-client';
 import {
     adaptExamForMobile,
     adaptExamQuestionsForMobile,
     buildExamResultPreview,
+    buildSessionAnswerPayload,
 } from '@/features/exam/lib/mobile-exam-adapter';
 import {
     clearStoredMobileExamSession,
     readStoredMobileExamSession,
     writeStoredMobileExamPreview,
 } from '@/features/exam/lib/mobile-exam-storage';
+import { MobileExamReconnection } from '@/features/exam/lib/mobile-exam-reconnection';
 
 export const useExamSession = () => {
     const { id, sessionId } = useLocalSearchParams<{ id: string; sessionId: string }>();
@@ -31,12 +33,34 @@ export const useExamSession = () => {
 
     // State
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [answers, setAnswers] = useState<Record<string, string>>({});
+    const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
     const [flagged, setFlagged] = useState<Record<string, boolean>>({});
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [timeLeft, setTimeLeft] = useState((exam?.duration || 60) * 60);
     const appStateRef = useRef(AppState.currentState);
     const lastNotificationViolationAtRef = useRef(0);
+
+    // Reconnection listener
+    const reconRef = useRef<MobileExamReconnection | null>(null);
+
+    useEffect(() => {
+        if (!id || !sessionId) {
+            return;
+        }
+
+        const recon = new MobileExamReconnection({
+            examId: id,
+            sessionId,
+        }, router);
+
+        recon.startListening();
+        reconRef.current = recon;
+
+        return () => {
+            recon.stopListening();
+            reconRef.current = null;
+        };
+    }, [id, sessionId, router]);
 
     // Helpers
     const currentQuestion = questions[currentIndex];
@@ -164,15 +188,19 @@ export const useExamSession = () => {
         }
 
         const answeredCount = Object.keys(answers).length;
+        const answerPayload = buildSessionAnswerPayload(questions, answers);
         void syncExamProgress(apiClient, {
             sessionId,
             answeredCount,
             elapsedSeconds: (exam?.duration || 60) * 60 - timeLeft,
-        }).catch(() => null);
-    }, [answers, apiClient, exam?.duration, sessionId, timeLeft]);
+            answers: answerPayload,
+        }).catch(() => {
+            reconRef.current?.triggerNetworkDisruption();
+        });
+    }, [answers, apiClient, exam?.duration, sessionId, timeLeft, questions]);
 
     // Handlers
-    const handleSelectOption = (optionId: string) => {
+    const handleSelectOption = (optionId: string | string[]) => {
         if (!currentQuestion) return;
         setAnswers((prev) => ({ ...prev, [currentQuestion.id]: optionId }));
     };
@@ -207,15 +235,33 @@ export const useExamSession = () => {
                                 return;
                             }
 
-                            const preview = buildExamResultPreview({
-                                questions,
-                                answers,
-                                elapsedSeconds: (exam?.duration || 60) * 60 - timeLeft,
-                                sessionId,
-                            });
+                            try {
+                                const answerPayload = buildSessionAnswerPayload(questions, answers);
+                                const elapsed = (exam?.duration || 60) * 60 - timeLeft;
 
-                            await writeStoredMobileExamPreview(id, preview);
-                            router.replace(`/exam/${id}/result`);
+                                const result = await completeExamSession(apiClient, {
+                                    sessionId,
+                                    answers: answerPayload,
+                                    elapsedSeconds: elapsed,
+                                });
+
+                                const preview = {
+                                    sessionId,
+                                    answers: answerPayload,
+                                    elapsedSeconds: elapsed,
+                                    summary: result,
+                                };
+
+                                await writeStoredMobileExamPreview(id, preview);
+                                await clearStoredMobileExamSession(id);
+
+                                router.replace(`/exam/${id}/result`);
+                            } catch (error: any) {
+                                Alert.alert(
+                                    'Submission Failed',
+                                    error?.message || 'Failed to submit exam. Please try again.'
+                                );
+                            }
                         },
                     },
                 ],
