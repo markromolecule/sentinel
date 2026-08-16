@@ -1,13 +1,14 @@
 import { LoginError, useLoginMutation } from '@sentinel/hooks';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { LoginSchema } from '@sentinel/shared/schema';
 import { LoginSchemaType } from '@sentinel/shared/schema';
 import { useRouter } from 'next/navigation';
 import { createSupabaseClient } from '@/data/supabase/client';
 import { toast } from 'sonner';
 import { resolveWebAuthState } from '@/lib/auth/resolve-web-auth-state';
+import { REMEMBERED_EMAIL_KEYS } from '@sentinel/shared/constants';
 
 /**
  * Handles manual login for the student/instructor web portal.
@@ -26,6 +27,16 @@ export function useLoginForm() {
         },
     });
 
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const savedEmail = localStorage.getItem(REMEMBERED_EMAIL_KEYS.WEB);
+            if (savedEmail) {
+                form.setValue('email', savedEmail);
+                form.setValue('remember', true);
+            }
+        }
+    }, [form]);
+
     const { mutate: login, isPending: isLoading } = useLoginMutation({
         onSuccess: async (data) => {
             const user = data.user;
@@ -33,6 +44,14 @@ export function useLoginForm() {
                 setAuthError('Could not verify your account after signing in.');
                 toast.error('Could not verify your access.');
                 return;
+            }
+
+            // Handle Remember Me persistence
+            const rememberMe = form.getValues('remember');
+            if (rememberMe) {
+                localStorage.setItem(REMEMBERED_EMAIL_KEYS.WEB, user.email || '');
+            } else {
+                localStorage.removeItem(REMEMBERED_EMAIL_KEYS.WEB);
             }
 
             const authState = await resolveWebAuthState(supabase, user);

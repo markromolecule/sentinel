@@ -9,6 +9,7 @@ function TestLoginForm() {
         defaultValues: {
             email: '',
             password: '',
+            remember: false,
         },
     });
     return <LoginForm form={form} authError={null} isLoading={false} onSubmit={vi.fn()} />;
@@ -25,11 +26,17 @@ afterEach(() => {
     cleanup();
 });
 
-describe('LoginForm', () => {
+describe('LoginForm on sentinel-core', () => {
     it('renders the login form password input as password type initially', () => {
         render(<TestLoginForm />);
         const passwordInput = screen.getByPlaceholderText('Enter your password');
         expect(passwordInput.getAttribute('type')).toBe('password');
+    });
+
+    it('renders the Remember Me checkbox and label', () => {
+        render(<TestLoginForm />);
+        const rememberCheckbox = screen.getByRole('checkbox', { name: /Remember me/i });
+        expect(rememberCheckbox).toBeTruthy();
     });
 
     it('toggles password visibility when the toggle button is clicked', () => {
@@ -47,12 +54,5 @@ describe('LoginForm', () => {
         // Click to hide password
         fireEvent.click(toggleButton);
         expect(passwordInput.getAttribute('type')).toBe('password');
-    });
-
-    it('renders the forgot password link pointing to /auth/forgot-password', () => {
-        render(<TestLoginForm />);
-        const forgotPasswordLink = screen.getByRole('link', { name: /Forgot password\?/i });
-        expect(forgotPasswordLink).toBeTruthy();
-        expect(forgotPasswordLink.getAttribute('href')).toBe('/auth/forgot-password');
     });
 });

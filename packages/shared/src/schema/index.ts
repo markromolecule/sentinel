@@ -162,6 +162,9 @@ export { LoginSchema } from './auth/login-schema';
 export type { LoginSchemaType } from './auth/login-schema';
 export { RegisterSchema, ApiRegisterSchema } from './auth/register-schema';
 export type { RegisterSchemaType, ApiRegisterSchemaType } from './auth/register-schema';
+export { ForgotPasswordSchema } from './auth/forgot-password-schema';
+export type { ForgotPasswordSchemaType } from './auth/forgot-password-schema';
+
 
 // Onboarding
 export { onboardingSchema } from './onboarding/onboarding-schema';
