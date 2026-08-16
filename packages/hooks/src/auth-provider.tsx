@@ -25,6 +25,10 @@ export type SentinelSupabaseClient = {
             refresh_token: string;
         }) => Promise<{ error: Error | null } | { data?: unknown; error: Error | null }>;
         signInWithOAuth: (...args: any[]) => Promise<any>;
+        resetPasswordForEmail: (
+            email: string,
+            options?: { redirectTo?: string },
+        ) => Promise<{ data: {} | null; error: any }>;
         signOut: (
             ...args: any[]
         ) => Promise<{ error: Error | null } | { data?: unknown; error: Error | null }>;

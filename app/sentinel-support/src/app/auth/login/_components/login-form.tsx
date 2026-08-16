@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Input } from '@sentinel/ui';
+import { Input, Checkbox } from '@sentinel/ui';
 import { Label } from '@sentinel/ui';
 import { Button } from '@sentinel/ui';
 import { ArrowRight, Eye, EyeOff } from 'lucide-react';
@@ -78,7 +78,22 @@ export function LoginForm({ form, authError, isLoading, onSubmit }: LoginFormPro
                         {errors.password.message}
                     </p>
                 )}
-                <div className="mb-8 flex items-center justify-end pt-2">
+                <div className="mb-8 flex items-center justify-between pt-2">
+                    <div className="flex items-center space-x-2">
+                        <Checkbox
+                            id="remember"
+                            onCheckedChange={(checked) =>
+                                form.setValue('remember', checked as boolean)
+                            }
+                            {...register('remember')}
+                        />
+                        <label
+                            htmlFor="remember"
+                            className="cursor-pointer text-sm leading-none font-medium text-gray-300 select-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                            Remember me
+                        </label>
+                    </div>
                     <Link
                         href="#"
                         className="text-sm font-medium text-blue-400 transition-colors hover:text-blue-300"

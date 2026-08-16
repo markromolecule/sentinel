@@ -131,3 +131,5 @@ export { ANALYTICS_QUERY_KEYS, ANALYTICS_MUTATION_KEYS } from './analytics';
 export { LOGS_QUERY_KEYS } from './logs';
 export { FEEDBACK_QUERY_KEYS } from './feedbacks';
 export { MOCK_SUPPORT_KPI_CARDS, MOCK_PLATFORM_ACTIVITY } from '../mock-data';
+export * from './auth';
+

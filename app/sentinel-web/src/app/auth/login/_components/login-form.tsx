@@ -96,7 +96,7 @@ export function LoginForm({ form, authError, isLoading, onSubmit }: LoginFormPro
                         </label>
                     </div>
                     <Link
-                        href="#"
+                        href="/auth/forgot-password"
                         className="text-sm font-medium text-blue-400 transition-colors hover:text-blue-300"
                     >
                         Forgot password?
