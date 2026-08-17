@@ -45,7 +45,9 @@ export function useGenerateQuestionsMutation(args: UseGenerateQuestionsMutationA
             });
 
             if (!response.data) {
-                throw new Error(response.error || 'Failed to generate questions');
+                throw new Error(
+                    response.error || response.message || 'Failed to generate questions',
+                );
             }
 
             return response.data;

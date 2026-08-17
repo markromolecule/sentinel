@@ -9,8 +9,8 @@ import {
 import { runWithConcurrencyLimit } from '../utils/concurrency';
 import { z } from 'zod';
 
-const CRITIC_BATCH_SIZE = 10;
-const CRITIC_CONCURRENCY_LIMIT = 3;
+const CRITIC_BATCH_SIZE = 20;
+const CRITIC_CONCURRENCY_LIMIT = 4;
 
 export interface AssessPassageQualityResult {
     passedSlots: Array<{ slotId: string; type: string; question: any }>;

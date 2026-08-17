@@ -168,7 +168,7 @@ describe('AssessPassageQualityStep', () => {
             generateStructuredJson,
         } as unknown as QuestionGeneratorLlmProvider);
 
-        expect(generateStructuredJson).toHaveBeenCalledTimes(3);
+        expect(generateStructuredJson).toHaveBeenCalledTimes(2);
         expect(result.failedSlots).toHaveLength(0);
         expect(result.passedSlots).toHaveLength(21);
     });

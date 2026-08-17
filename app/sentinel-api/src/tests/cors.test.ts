@@ -201,4 +201,32 @@ describe('CORS functionality', () => {
             message: 'Gemini request timed out or failed to connect.',
         });
     });
+
+    it('should return CORS headers for dynamic localhost ports', async () => {
+        const res = await app.request('/', {
+            method: 'OPTIONS',
+            headers: {
+                Origin: 'http://localhost:3004',
+                'Access-Control-Request-Method': 'GET',
+            },
+        });
+
+        expect(res.status).toBe(204);
+        expect(res.headers.get('Access-Control-Allow-Origin')).toBe('http://localhost:3004');
+        expect(res.headers.get('Access-Control-Allow-Credentials')).toBe('true');
+    });
+
+    it('should keep CORS headers on 404 responses', async () => {
+        const res = await app.request('/non-existent-route', {
+            method: 'GET',
+            headers: {
+                Origin: 'https://app.sentinelph.tech',
+            },
+        });
+
+        expect(res.status).toBe(404);
+        expect(res.headers.get('Access-Control-Allow-Origin')).toBe('https://app.sentinelph.tech');
+        expect(res.headers.get('Access-Control-Allow-Credentials')).toBe('true');
+    });
 });
+

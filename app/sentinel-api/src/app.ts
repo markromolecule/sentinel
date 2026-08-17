@@ -91,6 +91,10 @@ function resolveCorsOrigin(origin?: string | null) {
     if (!origin) return DEFAULT_CORS_ORIGIN;
     if (ALLOWED_CORS_ORIGINS.includes(origin)) return origin;
 
+    if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+        return origin;
+    }
+
     const isAllowedDomain = origin.endsWith('.sentinelph.tech') || origin.endsWith('.vercel.app');
     if (isAllowedDomain) return origin;
 
@@ -185,7 +189,10 @@ app.use(
     '/ai/*',
     bodyLimit({
         maxSize: 50 * 1024 * 1024,
-        onError: (c) => c.json({ success: false, error: 'Payload too large.' }, 413),
+        onError: (c) => {
+            applyCorsHeaders(c);
+            return c.json({ success: false, error: 'Payload too large.' }, 413);
+        },
     }),
 );
 app.route('/ai', aiRouter);
