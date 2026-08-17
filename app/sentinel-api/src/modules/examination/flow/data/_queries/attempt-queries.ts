@@ -44,7 +44,7 @@ export async function findExistingAttempt(
         )
         .orderBy('ea.created_at', 'desc');
 
-    return await (lockForUpdate ? query.forUpdate() : query).executeTakeFirst();
+    return await (lockForUpdate ? query.forUpdate('ea') : query).executeTakeFirst();
 }
 
 /**

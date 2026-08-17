@@ -22,24 +22,24 @@ export type CreateSessionArgs = {
 
 export type CreateSessionResult =
     | {
-          sessionId: string;
-          isResumed: false;
-          reconnectAttemptCount: number;
-          maxReconnectAttempts: number;
-      }
+        sessionId: string;
+        isResumed: false;
+        reconnectAttemptCount: number;
+        maxReconnectAttempts: number;
+    }
     | {
-          sessionId: string;
-          isResumed: true;
-          answers: ExamAttemptAnswers;
-          elapsedSeconds: number;
-          reconnectAttemptCount: number;
-          maxReconnectAttempts: number;
-      }
+        sessionId: string;
+        isResumed: true;
+        answers: ExamAttemptAnswers;
+        elapsedSeconds: number;
+        reconnectAttemptCount: number;
+        maxReconnectAttempts: number;
+    }
     | {
-          attemptId: string;
-          error: string;
-          errorCode: 'ATTEMPT_ALREADY_COMPLETED';
-      };
+        attemptId: string;
+        error: string;
+        errorCode: 'ATTEMPT_ALREADY_COMPLETED';
+    };
 
 // ---------------------------------------------------------------------------
 // Orchestration
@@ -159,23 +159,29 @@ async function handleResume(
         });
     }
 
-    return await executeTransaction(async (tx) => {
-        const existingAttempt = await findExistingAttempt(tx, examId, studentId, true);
+    return await executeTransaction(
+        async (tx) => {
+            const existingAttempt = await findExistingAttempt(tx, examId, studentId, true);
 
-        if (!existingAttempt) {
-            throw new HTTPException(409, {
-                message: 'The active exam session is no longer available to resume.',
+            if (!existingAttempt) {
+                throw new HTTPException(409, {
+                    message: 'The active exam session is no longer available to resume.',
+                });
+            }
+
+            return resumeLockedAttempt(tx, {
+                existingAttempt,
+                maxReconnectAttempts,
+                accessOverride,
+                updatedBy: args.updatedBy,
+                resumeRequestId,
             });
-        }
-
-        return resumeLockedAttempt(tx, {
-            existingAttempt,
-            maxReconnectAttempts,
-            accessOverride,
-            updatedBy: args.updatedBy,
-            resumeRequestId,
-        });
-    });
+        },
+        {
+            maxWait: 10000,
+            timeout: 15000,
+        },
+    );
 }
 
 /**
