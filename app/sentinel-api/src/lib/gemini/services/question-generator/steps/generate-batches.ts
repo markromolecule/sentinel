@@ -13,7 +13,7 @@ import {
 } from '../../prompt-builder';
 import { runWithConcurrencyLimit } from '../utils/concurrency';
 
-const CONCURRENCY_LIMIT = 3;
+const CONCURRENCY_LIMIT = 4;
 
 /**
  * Step 2: Concurrently generates raw questions for each batch using the injected provider.
