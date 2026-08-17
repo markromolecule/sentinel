@@ -70,4 +70,19 @@ describe('createApiClient', () => {
             },
         });
     });
+
+    it('translates Failed to fetch into a descriptive ApiError', async () => {
+        const fetchMock = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+        vi.stubGlobal('fetch', fetchMock);
+
+        const apiClient = createApiClient();
+
+        await expect(apiClient('/ai/generate-preview')).rejects.toMatchObject({
+            name: 'ApiError',
+            status: 0,
+            statusText: 'Network Error',
+            message:
+                'Unable to connect to the server. Please check your network connection or try again with a smaller file/question batch.',
+        });
+    });
 });

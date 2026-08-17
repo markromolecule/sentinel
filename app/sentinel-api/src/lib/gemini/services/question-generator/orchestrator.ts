@@ -52,7 +52,7 @@ export class QuestionGeneratorService {
         provider?: QuestionGeneratorLlmProvider;
     }): Promise<GenerateQuestionPreviewResponse> {
         const provider = args.provider ?? GeminiProvider;
-        const BATCH_SIZE = 25;
+        const BATCH_SIZE = 20;
         const batches = createBatches(args.config, BATCH_SIZE);
         const totalSizeBytes = args.files.reduce((total, file) => total + file.size, 0);
         const model = provider.resolveFlashModel();

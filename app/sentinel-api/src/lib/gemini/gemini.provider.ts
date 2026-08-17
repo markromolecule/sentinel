@@ -7,9 +7,12 @@ const DEFAULT_FLASH_MODEL =
     process.env.GEMINI_MODEL?.trim() ||
     'gemini-2.5-flash';
 const MAX_QUOTA_RETRIES = 1;
-const DEFAULT_QUOTA_RETRY_DELAY_MS = 30_000;
-const MAX_QUOTA_RETRY_DELAY_MS = 60_000;
-const GEMINI_GENERATION_TIMEOUT_MS = 120_000;
+const DEFAULT_QUOTA_RETRY_DELAY_MS = 10_000;
+const MAX_QUOTA_RETRY_DELAY_MS = 20_000;
+const GEMINI_GENERATION_TIMEOUT_MS =
+    Number(process.env.AI_GEMINI_TIMEOUT_MS) > 0
+        ? Number(process.env.AI_GEMINI_TIMEOUT_MS)
+        : 120_000;
 const GEMINI_REQUEST_FAILURE_MESSAGE = 'Gemini request timed out or failed to connect.';
 
 type GeminiJsonSchema = Record<string, unknown>;
@@ -126,11 +129,11 @@ export class GeminiProvider {
                         parts: [
                             ...(args.files?.length
                                 ? args.files.map((file) => ({
-                                      file_data: {
-                                          mime_type: file.mimeType,
-                                          file_uri: file.uri,
-                                      },
-                                  }))
+                                    file_data: {
+                                        mime_type: file.mimeType,
+                                        file_uri: file.uri,
+                                    },
+                                }))
                                 : []),
                             {
                                 text: args.prompt,
@@ -298,7 +301,10 @@ export class GeminiProvider {
     private static isTimeoutOrNetworkFailure(error: unknown) {
         if (!error) return false;
 
-        if (error instanceof DOMException && error.name === 'AbortError') {
+        if (
+            error instanceof DOMException &&
+            (error.name === 'AbortError' || error.name === 'TimeoutError')
+        ) {
             return true;
         }
 
@@ -310,7 +316,8 @@ export class GeminiProvider {
             typeof error === 'object' &&
             error !== null &&
             'name' in error &&
-            (error as { name?: unknown }).name === 'AbortError'
+            ((error as { name?: unknown }).name === 'AbortError' ||
+                (error as { name?: unknown }).name === 'TimeoutError')
         );
     }
 

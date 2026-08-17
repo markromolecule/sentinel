@@ -108,11 +108,34 @@ export const createApiClient = (defaultOptions: ApiClientOptions = {}) => {
         const mappedEndpoint = mapEndpointQueryParams(endpoint);
         const cleanedBaseUrl = finalBaseUrl.replace(/\/+$/, '');
 
-        const response = await fetch(`${cleanedBaseUrl}${mappedEndpoint}`, {
-            ...defaultRequestOptions,
-            ...requestOptions,
-            headers,
-        });
+        let response: Response;
+        try {
+            response = await fetch(`${cleanedBaseUrl}${mappedEndpoint}`, {
+                ...defaultRequestOptions,
+                ...requestOptions,
+                headers,
+            });
+        } catch (fetchError: unknown) {
+            if (fetchError instanceof ApiError) {
+                throw fetchError;
+            }
+
+            const errorMsg =
+                fetchError instanceof Error ? fetchError.message : String(fetchError);
+            const isFailedToFetch =
+                errorMsg.includes('Failed to fetch') ||
+                errorMsg.includes('NetworkError') ||
+                errorMsg.includes('fetch failed');
+
+            throw new ApiError({
+                message: isFailedToFetch
+                    ? 'Unable to connect to the server. Please check your network connection or try again with a smaller file/question batch.'
+                    : errorMsg || 'Network request failed',
+                status: 0,
+                statusText: 'Network Error',
+                body: { originalError: errorMsg },
+            });
+        }
 
         if (!response.ok) {
             let message = `API Error: ${response.status} ${response.statusText}`;
