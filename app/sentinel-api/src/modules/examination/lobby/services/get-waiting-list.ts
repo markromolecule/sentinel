@@ -14,28 +14,31 @@ import { DEFAULT_EXAMINATION_GLOBAL_SETTINGS } from '@sentinel/shared/constants'
  * @returns Ordered lobby admission list with attempt state and reconnect metadata.
  */
 export const getWaitingList = async (dbClient: DbClient, examId: string) => {
-    const examConfiguration = await dbClient
-        .selectFrom('exam_configurations')
-        .select('max_reconnect_attempts')
-        .where('exam_id', '=', examId)
-        .executeTakeFirst();
-    const admissions = await dbClient
-        .selectFrom('exam_lobby_admissions as ela')
-        .leftJoin('students as s', 'ela.student_id', 's.student_id')
-        .leftJoin('user_profiles as up', 's.user_id', 'up.user_id')
-        .select([
-            'ela.admission_id',
-            'ela.student_id',
-            'ela.status',
-            'ela.checked_in_at',
-            'ela.decided_at',
-            's.student_number',
-            'up.first_name',
-            'up.last_name',
-        ])
-        .where('ela.exam_id', '=', examId)
-        .orderBy('ela.checked_in_at', 'asc')
-        .execute();
+    const [examConfiguration, admissions] = await Promise.all([
+        dbClient
+            .selectFrom('exam_configurations')
+            .select('max_reconnect_attempts')
+            .where('exam_id', '=', examId)
+            .executeTakeFirst(),
+        dbClient
+            .selectFrom('exam_lobby_admissions as ela')
+            .leftJoin('students as s', 'ela.student_id', 's.student_id')
+            .leftJoin('user_profiles as up', 's.user_id', 'up.user_id')
+            .select([
+                'ela.admission_id',
+                'ela.student_id',
+                'ela.status',
+                'ela.checked_in_at',
+                'ela.decided_at',
+                's.student_number',
+                'up.first_name',
+                'up.last_name',
+            ])
+            .where('ela.exam_id', '=', examId)
+            .orderBy('ela.checked_in_at', 'asc')
+            .execute(),
+    ]);
+
 
     const studentIds = admissions.map((a) => a.student_id);
     let attempts: any[] = [];

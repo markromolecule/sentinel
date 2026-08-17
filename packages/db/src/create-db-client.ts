@@ -20,10 +20,8 @@ const globalForTransaction = globalThis as unknown as {
 
 export const transactionStorage =
     globalForTransaction.transactionStorage ?? new AsyncLocalStorage<DbClient>();
+globalForTransaction.transactionStorage = transactionStorage;
 
-if (process.env.NODE_ENV !== 'production') {
-    globalForTransaction.transactionStorage = transactionStorage;
-}
 
 /**
  * Execute a transaction using Prisma's $transaction while staying within the Kysely ecosystem

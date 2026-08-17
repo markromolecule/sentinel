@@ -25,13 +25,28 @@ const createClient = () => {
         connectionUrl.includes('@db:') ||
         connectionUrl.includes('sslmode=disable');
 
-    // 1. Initialize the standard connection pool with a strict limit
+    const maxConnections =
+        Number(process.env.DB_POOL_MAX) > 0 ? Number(process.env.DB_POOL_MAX) : 20;
+    const idleTimeoutMillis =
+        Number(process.env.DB_POOL_IDLE_TIMEOUT_MS) > 0
+            ? Number(process.env.DB_POOL_IDLE_TIMEOUT_MS)
+            : 30000;
+    const connectionTimeoutMillis =
+        Number(process.env.DB_POOL_CONNECTION_TIMEOUT_MS) > 0
+            ? Number(process.env.DB_POOL_CONNECTION_TIMEOUT_MS)
+            : 20000;
+
+    // 1. Initialize the standard connection pool with scalable limits
     const pool = new Pool({
         connectionString: connectionUrl,
-        max: 3, // allow multiple sequential queries per handler (create/update use 2 calls)
-        idleTimeoutMillis: 10000,
-        connectionTimeoutMillis: 10000,
+        max: maxConnections,
+        idleTimeoutMillis,
+        connectionTimeoutMillis,
         ssl: isLocal ? false : { rejectUnauthorized: false },
+    });
+
+    pool.on('error', (err) => {
+        console.error('Unexpected PG pool error on idle client:', err);
     });
 
     // 2. Initialize Prisma 7 strictly with the required adapter
@@ -64,7 +79,5 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 export const prisma = globalForPrisma.prisma ?? createClient();
+globalForPrisma.prisma = prisma;
 
-if (process.env.NODE_ENV !== 'production') {
-    globalForPrisma.prisma = prisma;
-}
