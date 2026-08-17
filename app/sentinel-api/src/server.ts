@@ -12,7 +12,7 @@ import {
     stopLiveInspectionReconciler,
 } from './modules/examination/live-inspection/services/live-inspection-reconciler.service';
 
-const port = Number(process.env.PORT) || 3001;
+const port = 3001;
 
 const PRODUCTION_DOMAIN = 'sentinelph.tech';
 const EXPECTED_PRODUCTION_URLS = {
@@ -80,7 +80,6 @@ startLiveInspectionReconciler();
 serve({
     fetch: app.fetch,
     port,
-    hostname: '0.0.0.0',
 });
 
 const isProduction = process.env.NODE_ENV === 'production';
