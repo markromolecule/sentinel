@@ -26,15 +26,15 @@ const createClient = () => {
         connectionUrl.includes('sslmode=disable');
 
     const maxConnections =
-        Number(process.env.DB_POOL_MAX) > 0 ? Number(process.env.DB_POOL_MAX) : 20;
+        Number(process.env.DB_POOL_MAX) > 0 ? Number(process.env.DB_POOL_MAX) : 5;
     const idleTimeoutMillis =
         Number(process.env.DB_POOL_IDLE_TIMEOUT_MS) > 0
             ? Number(process.env.DB_POOL_IDLE_TIMEOUT_MS)
-            : 30000;
+            : 10000;
     const connectionTimeoutMillis =
         Number(process.env.DB_POOL_CONNECTION_TIMEOUT_MS) > 0
             ? Number(process.env.DB_POOL_CONNECTION_TIMEOUT_MS)
-            : 20000;
+            : 10000;
 
     // 1. Initialize the standard connection pool with scalable limits
     const pool = new Pool({

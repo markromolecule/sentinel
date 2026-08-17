@@ -29,47 +29,56 @@ export const updateAdmissions = async (
             .executeTakeFirst();
 
         if (exam?.institution_id) {
-            await Promise.all(
-                studentIds.map(async (studentId) => {
-                    try {
-                        const student = await dbClient
-                            .selectFrom('students')
-                            .select(['user_id'])
-                            .where('student_id', '=', studentId)
-                            .executeTakeFirst();
+            let students: Array<{ student_id?: string; user_id?: string | null }> = [];
+            if (studentIds.length === 1) {
+                const single = await dbClient
+                    .selectFrom('students')
+                    .select(['user_id'])
+                    .where('student_id', '=', studentIds[0])
+                    .executeTakeFirst();
+                if (single?.user_id) {
+                    students = [{ student_id: studentIds[0], user_id: single.user_id }];
+                }
+            } else {
+                students = await dbClient
+                    .selectFrom('students')
+                    .select(['student_id', 'user_id'])
+                    .where('student_id', 'in', studentIds)
+                    .execute();
+            }
 
-                        if (student?.user_id) {
-                            await NotificationService.createNotification({
-                                dbClient,
-                                recipientUserId: student.user_id,
-                                actorUserId: instructorId ?? null,
-                                institutionId: exam.institution_id ?? null,
-                                title:
-                                    status === 'APPROVED'
-                                        ? 'Exam lobby approved'
-                                        : 'Exam lobby rejected',
-                                message:
-                                    status === 'APPROVED'
-                                        ? `You have been admitted to exam "${exam.title || 'Exam'}".`
-                                        : `Your request to enter exam "${exam.title || 'Exam'}" was declined.`,
-                                actionType: 'INSTITUTION_ACTIVITY_UPDATED',
-                                resourceType: 'EXAM_ASSIGNMENT',
-                                resourceId: examId,
-                                resourceLabel: exam.title || 'Exam',
-                                metadata: {
-                                    examId,
-                                    status,
-                                },
-                            });
-                        }
-                    } catch (notifErr) {
-                        console.error('Failed to notify student lobby admission:', notifErr);
-                    }
-                }),
-            );
+            for (const student of students) {
+                if (!student.user_id) continue;
+                try {
+                    await NotificationService.createNotification({
+                        dbClient,
+                        recipientUserId: student.user_id,
+                        actorUserId: instructorId ?? null,
+                        institutionId: exam.institution_id ?? null,
+                        title:
+                            status === 'APPROVED'
+                                ? 'Exam lobby approved'
+                                : 'Exam lobby rejected',
+                        message:
+                            status === 'APPROVED'
+                                ? `You have been admitted to exam "${exam.title || 'Exam'}".`
+                                : `Your request to enter exam "${exam.title || 'Exam'}" was declined.`,
+                        actionType: 'INSTITUTION_ACTIVITY_UPDATED',
+                        resourceType: 'EXAM_ASSIGNMENT',
+                        resourceId: examId,
+                        resourceLabel: exam.title || 'Exam',
+                        metadata: {
+                            examId,
+                            status,
+                        },
+                    });
+                } catch (notifErr) {
+                    console.error('Failed to notify student lobby admission:', notifErr);
+                }
+            }
         }
     } catch (examErr) {
-        console.error('Failed to resolve exam details for lobby admission notification:', examErr);
+        console.error('Failed to resolve exam/student details for lobby admission notification:', examErr);
     }
 
     return { updatedCount: Number(result.numUpdatedRows) };
