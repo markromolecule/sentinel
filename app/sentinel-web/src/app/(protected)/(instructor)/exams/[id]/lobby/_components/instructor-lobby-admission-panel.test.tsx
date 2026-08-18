@@ -190,8 +190,8 @@ describe('InstructorLobbyAdmissionPanel', () => {
         const { container } = renderPanel({ admissions: [] });
 
         expect(screen.getByText('No students waiting.')).toBeTruthy();
-        expect(screen.getByText('No approved students waiting.')).toBeTruthy();
-        expect(screen.getByText('No active attempts yet.')).toBeTruthy();
+        expect(screen.getByText('No approved students.')).toBeTruthy();
+        expect(screen.getByText('No active attempts.')).toBeTruthy();
         expect(screen.getByText('No rejected admissions.')).toBeTruthy();
         expect(container.firstElementChild?.className).not.toContain('h-[700px]');
     });

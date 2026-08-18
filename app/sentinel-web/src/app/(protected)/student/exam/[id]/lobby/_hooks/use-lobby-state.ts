@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useApi } from '@sentinel/hooks';
+import { useCallback, useEffect, useState } from 'react';
+import { useApi, useLobbyRealtime } from '@sentinel/hooks';
 import { checkIntoExamLobby, getExamLobbyAdmissionStatus } from '@sentinel/services';
 import { readStoredExamSession } from '../../_lib/exam-session-storage';
 import { useLobbyTimer } from './use-lobby-timer';
@@ -73,36 +73,46 @@ export function useLobbyState(args: {
             (hasFreshInstructorAdmission && (runtimeAccess?.canStart || isApprovedRuntimeAccess))),
     );
 
+    const refreshApprovedAccess = useCallback(async () => {
+        setIsAdmissionPendingRefresh(true);
+        try {
+            await refetchExam();
+        } finally {
+            setIsAdmissionPendingRefresh(false);
+        }
+    }, [refetchExam]);
+
+    const syncAdmission = useCallback(
+        async (skipCheckIn = false) => {
+            try {
+                const admission = skipCheckIn
+                    ? await getExamLobbyAdmissionStatus(apiClient, examId)
+                    : await checkIntoExamLobby(apiClient, examId);
+
+                setAdmissionStatus(admission.status);
+
+                if (admission.status === 'APPROVED') {
+                    await refreshApprovedAccess();
+                }
+            } catch {
+                // Ignore transient sync error
+            }
+        },
+        [apiClient, examId, refreshApprovedAccess],
+    );
+
+    // Real-time admission event listener for instant sub-second unlock
+    useLobbyRealtime({
+        examId,
+        enabled: !shouldSkipLobbySync,
+        onAdmissionChange: () => {
+            void syncAdmission(true);
+        },
+    });
+
     useEffect(() => {
         let isMounted = true;
         let intervalId: number | null = null;
-
-        const refreshApprovedAccess = async () => {
-            setIsAdmissionPendingRefresh(true);
-            try {
-                await refetchExam();
-            } finally {
-                if (isMounted) {
-                    setIsAdmissionPendingRefresh(false);
-                }
-            }
-        };
-
-        const syncAdmission = async (skipCheckIn = false) => {
-            const admission = skipCheckIn
-                ? await getExamLobbyAdmissionStatus(apiClient, examId)
-                : await checkIntoExamLobby(apiClient, examId);
-
-            if (!isMounted) {
-                return;
-            }
-
-            setAdmissionStatus(admission.status);
-
-            if (admission.status === 'APPROVED') {
-                await refreshApprovedAccess();
-            }
-        };
 
         if (shouldSkipLobbySync) {
             return () => {
@@ -118,9 +128,6 @@ export function useLobbyState(args: {
                     }
 
                     setAdmissionStatus(admission.status);
-
-                    // Refresh exam data so reconnect attempt counts reflected in
-                    // runtimeAccess are up-to-date immediately after check-in.
                     await refreshApprovedAccess();
                 })
                 .catch(() => null)
@@ -136,9 +143,11 @@ export function useLobbyState(args: {
         }
 
         void syncAdmission();
+
+        // 45-second low-priority background heartbeat fallback for WebSocket disconnection
         intervalId = window.setInterval(() => {
             void syncAdmission(true);
-        }, 5000);
+        }, 45000);
 
         return () => {
             isMounted = false;
@@ -147,7 +156,14 @@ export function useLobbyState(args: {
                 window.clearInterval(intervalId);
             }
         };
-    }, [apiClient, examId, refetchExam, requiresInstructorAdmission, shouldSkipLobbySync]);
+    }, [
+        apiClient,
+        examId,
+        refreshApprovedAccess,
+        requiresInstructorAdmission,
+        shouldSkipLobbySync,
+        syncAdmission,
+    ]);
 
     // 5. Actions Orchestration
     const { isStartingSession, handleEnterExam } = useLobbyActions({

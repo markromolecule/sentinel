@@ -3,6 +3,9 @@ export * from './use-exam-query';
 export * from './use-exam-report-query';
 export * from './use-attempt-report-query';
 export * from './use-exam-lobby-count-query';
+export * from './use-exam-lobby-waiting-list-query';
+export * from './use-exam-lobby-admission-status-query';
+export * from './use-update-exam-lobby-admissions-mutation';
 export * from './use-exam-monitoring-overview-query';
 export * from './use-exam-monitoring-student-query';
 

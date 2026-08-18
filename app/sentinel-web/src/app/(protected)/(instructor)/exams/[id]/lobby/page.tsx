@@ -19,6 +19,7 @@ export default function InstructorLobbyPage() {
         statusFilter,
         setStatusFilter,
         isUpdatingLobbyAdmissions,
+        updatingStudentIds,
         overridingStudentId,
         refreshLobbyAdmissions,
         handleUpdateLobbyAdmissions,
@@ -57,6 +58,7 @@ export default function InstructorLobbyPage() {
                 statusFilter={statusFilter}
                 onStatusFilterChange={setStatusFilter}
                 isUpdatingLobbyAdmissions={isUpdatingLobbyAdmissions}
+                updatingStudentIds={updatingStudentIds}
                 onUpdateLobbyAdmissions={handleUpdateLobbyAdmissions}
                 overridingStudentId={overridingStudentId}
                 onOverrideReconnect={handleOverrideReconnect}

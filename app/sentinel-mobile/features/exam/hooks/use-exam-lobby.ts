@@ -55,78 +55,6 @@ export function useExamLobby() {
         exam?.mediaPipeSandbox?.captureDuringCheckup,
     );
 
-    // Track calibration and audio readiness
-    useEffect(() => {
-        if (!id) return;
-
-        const checkReadiness = async () => {
-            const profile = await readStoredMobileCalibrationProfile(id);
-            const audioReadyStr = await AsyncStorage.getItem(`sentinel-mobile:audio-ready:${id}`);
-            const audioReady = audioReadyStr === 'true';
-
-            setIsMediaPipeCalibrated(!isMediaPipeConfigured || !!profile);
-            setIsAudioReady(!requiresMicrophone || audioReady);
-        };
-
-        void checkReadiness();
-
-        const interval = setInterval(checkReadiness, 1000);
-        return () => clearInterval(interval);
-    }, [id, isMediaPipeConfigured, requiresMicrophone]);
-
-    // Supabase Presence tracking for real-time count
-    useEffect(() => {
-        if (!supabase || !session?.user || !id) return;
-
-        const userId = session.user.id;
-        const channelName = `presence:lobby:${id}`;
-
-        const channel = supabase.channel(channelName, {
-            config: {
-                presence: {
-                    key: userId,
-                },
-            },
-        });
-
-        channel
-            .on('presence', { event: 'sync' }, () => {
-                const state = channel.presenceState<any>();
-                const uniqueUserIds = new Set<string>();
-
-                Object.values(state).forEach((presences) => {
-                    presences.forEach((p: any) => {
-                        if (p.user_id) uniqueUserIds.add(p.user_id);
-                    });
-                });
-
-                setPresenceCount(uniqueUserIds.size);
-            })
-            .subscribe(async (status) => {
-                if (status === 'SUBSCRIBED') {
-                    await channel.track({
-                        user_id: userId,
-                        online_at: new Date().toISOString(),
-                    });
-                }
-            });
-
-        return () => {
-            void supabase.removeChannel(channel);
-        };
-    }, [supabase, session?.user, id]);
-
-    // Continuous polling fallback for lobby count
-    useEffect(() => {
-        if (!id) return;
-
-        const interval = setInterval(() => {
-            void refetchLobbyCount();
-        }, 5000);
-
-        return () => clearInterval(interval);
-    }, [id, refetchLobbyCount]);
-
     const canEnterExam = Boolean(
         !isHardRuntimeBlock &&
         isMediaPipeCalibrated &&
@@ -194,6 +122,7 @@ export function useExamLobby() {
         }
     };
 
+    // Initial check-in on mount
     useEffect(() => {
         if (!id) {
             return;
@@ -219,12 +148,113 @@ export function useExamLobby() {
             });
     }, [apiClient, id, refetchExam, refetchLobbyCount]);
 
+    // Track calibration and audio readiness
+    useEffect(() => {
+        if (!id) return;
+
+        const checkReadiness = async () => {
+            const profile = await readStoredMobileCalibrationProfile(id);
+            const audioReadyStr = await AsyncStorage.getItem(`sentinel-mobile:audio-ready:${id}`);
+            const audioReady = audioReadyStr === 'true';
+
+            setIsMediaPipeCalibrated(!isMediaPipeConfigured || !!profile);
+            setIsAudioReady(!requiresMicrophone || audioReady);
+        };
+
+        void checkReadiness();
+
+        const interval = setInterval(checkReadiness, 1000);
+        return () => clearInterval(interval);
+    }, [id, isMediaPipeConfigured, requiresMicrophone]);
+
+    // Supabase Presence tracking for real-time count
+    useEffect(() => {
+        if (!supabase || !session?.user || !id) return;
+
+        const userId = session.user.id;
+        const channelName = `presence:lobby:${id}`;
+
+        const channel = supabase.channel(channelName, {
+            config: {
+                presence: {
+                    key: userId,
+                },
+            },
+        });
+
+        channel
+            .on('presence', { event: 'sync' }, () => {
+                const state = channel.presenceState<any>();
+                const uniqueUserIds = new Set<string>();
+
+                Object.values(state).forEach((presences) => {
+                    presences.forEach((p: any) => {
+                        if (p.user_id) uniqueUserIds.add(p.user_id);
+                    });
+                });
+
+                setPresenceCount(uniqueUserIds.size);
+            })
+            .subscribe(async (status) => {
+                if (status === 'SUBSCRIBED') {
+                    await channel.track({
+                        user_id: userId,
+                        online_at: new Date().toISOString(),
+                    });
+                }
+            });
+
+        return () => {
+            void supabase.removeChannel(channel);
+        };
+    }, [supabase, session?.user, id]);
+
+    // Real-time Postgres changes for instant admission approval
+    useEffect(() => {
+        if (!supabase || !session?.user || !id) return;
+
+        const channelName = `lobby:admissions:${id}`;
+        const channel = supabase.channel(channelName);
+
+        channel
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'exam_lobby_admissions',
+                    filter: `exam_id=eq.${id}`,
+                },
+                async () => {
+                    try {
+                        const statusRes = await getExamLobbyAdmissionStatus(apiClient, id);
+                        if (statusRes?.status) {
+                            setAdmissionStatus(statusRes.status);
+                            if (statusRes.status === 'APPROVED') {
+                                await refetchExam();
+                            }
+                        }
+                    } catch {
+                        // Ignore transient network errors
+                    } finally {
+                        void refetchLobbyCount();
+                    }
+                },
+            )
+            .subscribe();
+
+        return () => {
+            void supabase.removeChannel(channel);
+        };
+    }, [apiClient, id, refetchExam, refetchLobbyCount, session?.user, supabase]);
+
+    // Low-frequency (45s) background heartbeat fallback
     useEffect(() => {
         if (!id || canEnterExam) {
             return;
         }
 
-        const pollAdmission = async () => {
+        const fallbackSync = async () => {
             try {
                 const statusRes = await getExamLobbyAdmissionStatus(apiClient, id);
                 if (statusRes?.status) {
@@ -234,15 +264,15 @@ export function useExamLobby() {
                     }
                 }
             } catch {
-                // Ignore error during polling
+                // Ignore error during fallback check
             } finally {
                 void refetchLobbyCount();
             }
         };
 
         const interval = setInterval(() => {
-            void pollAdmission();
-        }, 2000);
+            void fallbackSync();
+        }, 45000);
 
         return () => clearInterval(interval);
     }, [apiClient, canEnterExam, id, refetchExam, refetchLobbyCount]);

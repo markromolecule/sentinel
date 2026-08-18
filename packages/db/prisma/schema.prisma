@@ -1698,6 +1698,7 @@ model exam_lobby_admissions {
   students      students                     @relation(fields: [student_id], references: [student_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([exam_id, student_id])
+  @@index([exam_id, status, checked_in_at(sort: Asc)], map: "exam_lobby_admissions_exam_status_idx")
   @@schema("public")
 }
 

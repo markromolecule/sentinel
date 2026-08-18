@@ -24,6 +24,7 @@ const {
 
 vi.mock('@sentinel/hooks', () => ({
     useApi: () => mockUseApi(),
+    useLobbyRealtime: vi.fn(),
 }));
 
 vi.mock('@sentinel/services', () => ({
@@ -161,7 +162,7 @@ describe('useLobbyState', () => {
         expect(mockCheckIntoExamLobby).toHaveBeenCalledTimes(1);
 
         await act(async () => {
-            await vi.advanceTimersByTimeAsync(5000);
+            await vi.advanceTimersByTimeAsync(45000);
             await Promise.resolve();
         });
 
@@ -213,7 +214,7 @@ describe('useLobbyState', () => {
         });
 
         await act(async () => {
-            await vi.advanceTimersByTimeAsync(5000);
+            await vi.advanceTimersByTimeAsync(45000);
             await Promise.resolve();
         });
 
@@ -285,7 +286,7 @@ describe('useLobbyState', () => {
         expect(result.current.canEnterExam).toBe(false);
 
         await act(async () => {
-            await vi.advanceTimersByTimeAsync(5000);
+            await vi.advanceTimersByTimeAsync(45000);
             await Promise.resolve();
         });
 
@@ -385,7 +386,7 @@ describe('useLobbyState', () => {
         expect(result.current.canEnterExam).toBe(false);
 
         await act(async () => {
-            await vi.advanceTimersByTimeAsync(5000);
+            await vi.advanceTimersByTimeAsync(45000);
             await Promise.resolve();
         });
 
