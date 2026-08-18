@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { CameraView } from 'expo-camera';
 import Svg, { Ellipse } from 'react-native-svg';
 import { type CameraPreviewProps } from '@/types/exam';
+import { MobileMediaPipeBridge } from './mobile-mediapipe-bridge';
 
 export function CameraPreview({
     cameraFacing,
@@ -20,6 +21,7 @@ export function CameraPreview({
     isCalibrated = false,
     calibrationFeedback,
     isFaceCentered = false,
+    onLandmarksDetected,
 }: CameraPreviewProps) {
     const [layout, setLayout] = useState({ width: 0, height: 0 });
 
@@ -140,14 +142,28 @@ export function CameraPreview({
                         </View>
                     ) : (
                         <>
-                            <CameraView
-                                key={`${cameraFacing}-${hasPermission}`}
-                                style={{ flex: 1 }}
-                                facing={cameraFacing}
-                                onCameraReady={onCameraReady}
-                                onMountError={onCameraMountError}
-                                mirror={cameraFacing === 'front'}
-                            />
+                            {onLandmarksDetected ? (
+                                <MobileMediaPipeBridge
+                                    onLandmarksDetected={onLandmarksDetected}
+                                    onStatusChange={(status) => {
+                                        if (status === 'ready' && onCameraReady) {
+                                            onCameraReady();
+                                        }
+                                    }}
+                                    onError={onCameraMountError}
+                                    facing={cameraFacing}
+                                    showPreview={true}
+                                />
+                            ) : (
+                                <CameraView
+                                    key={`${cameraFacing}-${hasPermission}`}
+                                    style={{ flex: 1 }}
+                                    facing={cameraFacing}
+                                    onCameraReady={onCameraReady}
+                                    onMountError={onCameraMountError}
+                                    mirror={cameraFacing === 'front'}
+                                />
+                            )}
 
                             {/* Calibration Ellipse Guide Overlay */}
                             {cameraReady && !isCalibrated && layout.width > 0 && (

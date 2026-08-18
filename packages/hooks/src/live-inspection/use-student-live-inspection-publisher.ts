@@ -275,10 +275,10 @@ export function useStudentLiveInspectionPublisher({
             void runReconcileNow();
         };
 
-        if (typeof document !== 'undefined') {
+        if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
             document.addEventListener('visibilitychange', handleVisibilityOrReconnect);
         }
-        if (typeof window !== 'undefined') {
+        if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
             window.addEventListener('online', handleVisibilityOrReconnect);
         }
 
@@ -287,10 +287,10 @@ export function useStudentLiveInspectionPublisher({
             if (reconcileTimerRef.current) {
                 window.clearTimeout(reconcileTimerRef.current);
             }
-            if (typeof document !== 'undefined') {
+            if (typeof document !== 'undefined' && typeof document.removeEventListener === 'function') {
                 document.removeEventListener('visibilitychange', handleVisibilityOrReconnect);
             }
-            if (typeof window !== 'undefined') {
+            if (typeof window !== 'undefined' && typeof window.removeEventListener === 'function') {
                 window.removeEventListener('online', handleVisibilityOrReconnect);
             }
             void supabase.removeChannel(channel);

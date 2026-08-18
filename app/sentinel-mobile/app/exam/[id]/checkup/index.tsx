@@ -96,6 +96,7 @@ export default function CheckupScreen() {
         isCalibrated,
         calibrationFeedback,
         isFaceCentered,
+        handleLandmarksDetected,
     } = useExamCheckup();
 
     const webOrMobileLock = exam?.configuration?.mobileSecurity.prevent_backgrounding
@@ -212,6 +213,7 @@ export default function CheckupScreen() {
                             isCalibrated={isCalibrated}
                             calibrationFeedback={calibrationFeedback}
                             isFaceCentered={isFaceCentered}
+                            onLandmarksDetected={handleLandmarksDetected}
                         />
                     ) : null}
 

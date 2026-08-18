@@ -169,6 +169,7 @@ export type UseExamCheckupReturn = {
     calibrationFeedback: string | null;
     calibrationProfile: any | null;
     isFaceCentered: boolean;
+    handleLandmarksDetected?: (landmarksByFace: any[][], confidenceScore: number) => void;
 };
 
 export type CheckupHeaderProps = {
@@ -194,6 +195,7 @@ export type CameraPreviewProps = {
     isCalibrated?: boolean;
     calibrationFeedback?: string | null;
     isFaceCentered?: boolean;
+    onLandmarksDetected?: (landmarksByFace: any[][], confidenceScore: number) => void;
 };
 
 export type MicLevelMeterProps = {

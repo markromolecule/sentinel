@@ -15,6 +15,7 @@ import { useApi, useAuth } from '@sentinel/hooks';
 import { useMobileMediaPipeMonitoring } from '../../hooks/use-mobile-mediapipe-monitoring';
 import { MobileLiveInspectionBridge } from './mobile-live-inspection-bridge';
 import { captureAndUploadEvidenceFrame } from '../../lib/mobile-frame-capture';
+import { MobileMediaPipeBridge } from '../checkup/mobile-mediapipe-bridge';
 
 export const ExamSessionScreen = () => {
     const {
@@ -40,7 +41,7 @@ export const ExamSessionScreen = () => {
     const apiClient = useApi();
     const { supabase, session } = useAuth();
     const cameraRef = useRef<any>(null);
-    const [landmarksByFace] = useState<any[][]>([]);
+    const [landmarksByFace, setLandmarksByFace] = useState<any[][]>([]);
 
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
@@ -69,11 +70,11 @@ export const ExamSessionScreen = () => {
     };
 
     const { warningStatus } = useMobileMediaPipeMonitoring({
-        examId: examId || '',
+        examId: typeof examId === 'string' ? examId : '',
         apiClient,
         configuration: exam?.configuration,
         mediaPipeSandbox: exam?.mediaPipeSandbox,
-        examSessionId: sessionId || '',
+        examSessionId: typeof sessionId === 'string' ? sessionId : '',
         studentId: session?.user?.id,
         landmarksByFace,
         onAnomalyDetected: handleAnomaly,
@@ -110,18 +111,30 @@ export const ExamSessionScreen = () => {
                 }}
             />
 
-            {/* Hidden CameraView for proctor streaming and image capture */}
+            {/* Hidden CameraView or MediaPipe Bridge for proctor streaming and image capture */}
             {exam.configuration?.cameraRequired !== false && (
-                <CameraView
-                    ref={cameraRef}
-                    facing="front"
-                    style={{
-                        position: 'absolute',
-                        width: 1,
-                        height: 1,
-                        opacity: 0,
-                    }}
-                />
+                Boolean(exam.mediaPipeSandbox?.enabled && exam.mediaPipeSandbox?.emitDuringExam) ? (
+                    <MobileMediaPipeBridge
+                        ref={cameraRef}
+                        onLandmarksDetected={(landmarks) => {
+                            setLandmarksByFace(landmarks);
+                        }}
+                        frameIntervalMs={exam.mediaPipeSandbox?.frameIntervalMs ?? 1000}
+                        facing="front"
+                        showPreview={false}
+                    />
+                ) : (
+                    <CameraView
+                        ref={cameraRef}
+                        facing="front"
+                        style={{
+                            position: 'absolute',
+                            width: 1,
+                            height: 1,
+                            opacity: 0,
+                        }}
+                    />
+                )
             )}
 
             <SessionHeader
@@ -184,7 +197,7 @@ export const ExamSessionScreen = () => {
                 questions={questions}
                 currentIndex={currentIndex}
                 onSelectQuestion={setCurrentIndex}
-                answers={answers}
+                answers={answers as Record<string, string>}
                 flaggedQuestions={flagged}
                 colors={colors}
                 isDark={isDark}

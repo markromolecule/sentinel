@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useColorScheme } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAudioRecorder, useAudioRecorderState, AudioModule, RecordingPresets } from 'expo-audio';
@@ -13,7 +14,11 @@ import {
     readStoredMobileCalibrationProfile,
     writeStoredMobileCalibrationProfile,
 } from '@/features/exam/lib/mobile-exam-storage';
-import { buildMobileCalibrationProfile } from '@/features/exam/lib/mobile-mediapipe-calibration';
+import {
+    buildMobileCalibrationProfile,
+    evaluateMobileCheckupFrame,
+    isMobileCalibrationStable,
+} from '@/features/exam/lib/mobile-mediapipe-calibration';
 
 const MIC_THRESHOLD = 0.15;
 const METERING_INTERVAL = 150;
@@ -43,6 +48,7 @@ export function useExamCheckup(): UseExamCheckupReturn {
     const [calibrationFeedback, setCalibrationFeedback] = useState<string | null>(null);
     const [calibrationProfile, setCalibrationProfile] = useState<any | null>(null);
     const [isFaceCentered, setIsFaceCentered] = useState(false);
+    const [calibrationSamples, setCalibrationSamples] = useState<any[]>([]);
 
     const hasCameraPermission = permission?.granted ?? false;
     const isPermissionLoading = permission === null;
@@ -182,7 +188,7 @@ export function useExamCheckup(): UseExamCheckupReturn {
         });
     }, [id]);
 
-    // Handle calibration simulation
+    // Auto-calibrate if MediaPipe is not configured for this exam
     useEffect(() => {
         if (!cameraReady || !hasCameraPermission || isCalibrated) {
             return;
@@ -196,69 +202,81 @@ export function useExamCheckup(): UseExamCheckupReturn {
         if (!isMediaPipeConfigured) {
             setIsCalibrated(true);
             setCalibrationProgress(100);
+        }
+    }, [cameraReady, hasCameraPermission, isCalibrated, exam]);
+
+    // Handle landmarks detected by the camera/WebView bridge
+    const handleLandmarksDetected = useCallback((landmarks: any[][], confidenceScore: number) => {
+        if (isCalibrated) return;
+
+        const isMediaPipeConfigured = Boolean(
+            exam?.mediaPipeSandbox?.enabled &&
+            exam?.mediaPipeSandbox?.captureDuringCheckup,
+        );
+
+        if (!isMediaPipeConfigured) {
+            setIsCalibrated(true);
+            setCalibrationProgress(100);
             return;
         }
 
-        setIsFaceCentered(true);
-        setCalibrationFeedback('Hold still to calibrate...');
+        const activeConfidenceThreshold = Math.max(
+            0.35,
+            (exam?.mediaPipeSandbox?.confidenceThreshold ?? 0.6) - 0.15,
+        );
 
-        let currentFrames = 0;
-        const requiredFrames = 6;
+        // Run evaluation wrapping evaluateMobileCheckupFrame
+        const { evaluation } = evaluateMobileCheckupFrame({
+            landmarksByFace: landmarks,
+            confidenceThreshold: activeConfidenceThreshold,
+            calibrationProfile: null,
+        });
 
-        const interval = setInterval(() => {
-            currentFrames += 1;
-            const progress = Math.min(100, Math.round((currentFrames / requiredFrames) * 100));
-            setCalibrationProgress(progress);
+        setIsFaceCentered(evaluation.isValid);
+        setCalibrationFeedback(
+            evaluation.isValid
+                ? 'Hold still to calibrate...'
+                : (evaluation.details ?? 'Align face in guide')
+        );
 
-            if (currentFrames >= requiredFrames) {
-                clearInterval(interval);
-                setIsFaceCentered(true);
-                setCalibrationFeedback(null);
-                setIsCalibrated(true);
+        if (evaluation.isValid && landmarks[0]) {
+            const sample = createMediaPipeCalibrationSample({
+                landmarks: landmarks[0],
+                confidenceScore: confidenceScore,
+            });
 
-                // Build and write profile
-                const mockLandmarks = Array.from({ length: 478 }, () => ({
-                    x: 0.5,
-                    y: 0.45,
-                    z: 0,
-                }));
-                mockLandmarks[160] = { x: 0.41, y: 0.452, z: 0 };
-                mockLandmarks[159] = { x: 0.43, y: 0.451, z: 0 };
-                mockLandmarks[158] = { x: 0.45, y: 0.452, z: 0 };
-                mockLandmarks[144] = { x: 0.41, y: 0.468, z: 0 };
-                mockLandmarks[145] = { x: 0.43, y: 0.469, z: 0 };
-                mockLandmarks[153] = { x: 0.45, y: 0.468, z: 0 };
-                mockLandmarks[387] = { x: 0.55, y: 0.452, z: 0 };
-                mockLandmarks[386] = { x: 0.57, y: 0.451, z: 0 };
-                mockLandmarks[385] = { x: 0.59, y: 0.452, z: 0 };
-                mockLandmarks[373] = { x: 0.55, y: 0.468, z: 0 };
-                mockLandmarks[374] = { x: 0.57, y: 0.469, z: 0 };
-                mockLandmarks[380] = { x: 0.59, y: 0.468, z: 0 };
-                [468, 469, 470, 471, 472].forEach((index) => {
-                    mockLandmarks[index] = { x: 0.43, y: 0.46, z: 0 };
-                });
-                [473, 474, 475, 476, 477].forEach((index) => {
-                    mockLandmarks[index] = { x: 0.57, y: 0.46, z: 0 };
-                });
+            if (sample) {
+                setCalibrationSamples((prev) => {
+                    const lastSample = prev[prev.length - 1] ?? null;
+                    const stable = isMobileCalibrationStable(lastSample, sample);
+                    let nextSamples = stable ? [...prev, sample] : prev.slice(0, Math.max(0, prev.length - 2));
 
-                const sample = createMediaPipeCalibrationSample({
-                    landmarks: mockLandmarks,
-                    confidenceScore: 0.95,
-                });
-                if (sample) {
-                    const profile = buildMobileCalibrationProfile({ samples: [sample] });
-                    if (profile && id) {
-                        setCalibrationProfile(profile);
-                        void writeStoredMobileCalibrationProfile(id as string, profile);
+                    const REQUIRED_FRAMES = 6;
+                    const progress = Math.min(100, Math.round((nextSamples.length / REQUIRED_FRAMES) * 100));
+                    setCalibrationProgress(progress);
+
+                    if (nextSamples.length >= REQUIRED_FRAMES) {
+                        const profile = buildMobileCalibrationProfile({ samples: nextSamples });
+                        if (profile && id) {
+                            setCalibrationProfile(profile);
+                            setIsCalibrated(true);
+                            setCalibrationFeedback(null);
+                            void writeStoredMobileCalibrationProfile(id as string, profile);
+                        }
                     }
-                }
+                    return nextSamples;
+                });
             }
-        }, 500);
-
-        return () => {
-            clearInterval(interval);
-        };
-    }, [cameraReady, hasCameraPermission, isCalibrated, exam, id]);
+        } else {
+            // Decelerate or reset progress on invalid frames
+            setCalibrationSamples((prev) => {
+                const nextSamples = prev.slice(0, Math.max(0, prev.length - 2));
+                const progress = Math.min(100, Math.round((nextSamples.length / 6) * 100));
+                setCalibrationProgress(progress);
+                return nextSamples;
+            });
+        }
+    }, [isCalibrated, exam, id]);
 
     // ── Camera Handlers ──
     const onCameraReady = () => setCameraReady(true);
@@ -290,6 +308,10 @@ export function useExamCheckup(): UseExamCheckupReturn {
             return;
         }
 
+        if (micDetected) {
+            await AsyncStorage.setItem(`sentinel-mobile:audio-ready:${id}`, 'true');
+        }
+
         await stopMicMetering();
         router.push(`/exam/${id}/lobby`);
     };
@@ -319,5 +341,6 @@ export function useExamCheckup(): UseExamCheckupReturn {
         calibrationFeedback,
         calibrationProfile,
         isFaceCentered,
+        handleLandmarksDetected,
     };
 }
