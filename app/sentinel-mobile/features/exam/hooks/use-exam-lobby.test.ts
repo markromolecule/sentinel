@@ -78,6 +78,15 @@ const mockAuth = vi.fn(() => ({
     session: { user: { id: 'test-user-id' } },
 }));
 
+const mockRuntimeAccess = vi.hoisted(() => ({
+    value: {
+        canStart: true,
+        canResume: false,
+        hasActiveAttempt: false,
+        state: 'lobby_waiting',
+    },
+}));
+
 vi.mock('@sentinel/hooks', () => ({
     useApi: () => ({}),
     useAuth: () => mockAuth(),
@@ -93,11 +102,7 @@ vi.mock('@sentinel/hooks', () => ({
                 enabled: true,
                 captureDuringCheckup: true,
             },
-            runtimeAccess: {
-                canStart: true,
-                canResume: false,
-                state: 'lobby_waiting',
-            },
+            runtimeAccess: mockRuntimeAccess.value,
         },
         refetch: vi.fn(),
     }),
@@ -134,6 +139,12 @@ describe('useExamLobby hook', () => {
         stateValues = [];
         stateIndex = 0;
         effectCallbacks = [];
+        mockRuntimeAccess.value = {
+            canStart: true,
+            canResume: false,
+            hasActiveAttempt: false,
+            state: 'lobby_waiting',
+        };
         vi.clearAllMocks();
     });
 
@@ -165,6 +176,23 @@ describe('useExamLobby hook', () => {
         // Try to enter the exam
         await result.handleEnterExam();
         expect(Alert.alert).not.toHaveBeenCalled();
+    });
+
+    it('should allow approved instructor-gated resume access when runtime access can resume', () => {
+        stateValues[0] = false; // isStartingSession
+        stateValues[1] = 'APPROVED'; // admissionStatus
+        stateValues[3] = true; // isMediaPipeCalibrated
+        stateValues[4] = true; // isAudioReady
+        mockRuntimeAccess.value = {
+            canStart: false,
+            canResume: true,
+            hasActiveAttempt: true,
+            state: 'lobby_approved',
+        };
+
+        const result = useExamLobby();
+
+        expect(result.canEnterExam).toBe(true);
     });
 
     it('should display the correct student count using query or presence fallback', () => {

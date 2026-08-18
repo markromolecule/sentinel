@@ -2,6 +2,7 @@ import type { ChangeEvent, ReactNode } from 'react';
 import { Activity, CheckCircle, Clock, Search, XCircle } from 'lucide-react';
 import {
     Avatar,
+    AvatarImage,
     AvatarFallback,
     Badge,
     Button,
@@ -78,6 +79,10 @@ function StudentLobbyRow({
         <div className="bg-background hover:border-primary/30 flex flex-col gap-2 rounded-md border p-3 transition-colors">
             <div className="flex items-center gap-3">
                 <Avatar size="sm" className="size-8">
+                    <AvatarImage
+                        src={student.avatarUrl ?? undefined}
+                        alt={student.studentName}
+                    />
                     <AvatarFallback className="bg-primary/5 text-primary text-[10px] font-bold">
                         {getInitials(student.studentName)}
                     </AvatarFallback>

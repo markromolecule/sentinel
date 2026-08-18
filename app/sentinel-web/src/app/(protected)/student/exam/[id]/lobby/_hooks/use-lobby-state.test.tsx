@@ -11,6 +11,7 @@ const {
     mockUseLobbyMediaPipe,
     mockUseLobbyReadiness,
     mockUseLobbyActions,
+    mockUseLobbyRealtime,
 } = vi.hoisted(() => ({
     mockUseApi: vi.fn(),
     mockCheckIntoExamLobby: vi.fn(),
@@ -20,11 +21,12 @@ const {
     mockUseLobbyMediaPipe: vi.fn(),
     mockUseLobbyReadiness: vi.fn(),
     mockUseLobbyActions: vi.fn(),
+    mockUseLobbyRealtime: vi.fn(),
 }));
 
 vi.mock('@sentinel/hooks', () => ({
     useApi: () => mockUseApi(),
-    useLobbyRealtime: vi.fn(),
+    useLobbyRealtime: (args: unknown) => mockUseLobbyRealtime(args),
 }));
 
 vi.mock('@sentinel/services', () => ({
@@ -293,6 +295,76 @@ describe('useLobbyState', () => {
         expect(mockGetExamLobbyAdmissionStatus).toHaveBeenCalledWith({ api: true }, 'exam-1');
         expect(refetchExam).toHaveBeenCalled();
         expect(result.current.admissionStatus).toBe('APPROVED');
+    });
+
+    it('optimistically unlocks an approved instructor-gated resume after realtime approval refreshes access', async () => {
+        const refetchExam = vi.fn().mockResolvedValue(undefined);
+
+        mockCheckIntoExamLobby.mockResolvedValueOnce({
+            status: 'WAITING',
+            checkedInAt: '2026-05-11T00:00:00.000Z',
+        });
+        mockGetExamLobbyAdmissionStatus.mockResolvedValueOnce({
+            status: 'APPROVED',
+            checkedInAt: '2026-05-11T00:00:00.000Z',
+            decidedAt: '2026-05-11T00:00:05.000Z',
+        });
+
+        const initialArgs = createArgs({
+            lobbyAdmissionMode: 'INSTRUCTOR_GATED',
+            runtimeAccess: {
+                state: 'lobby_waiting',
+                reasonCode: 'LOBBY_WAITING',
+                message: 'Waiting for instructor approval.',
+                canStart: false,
+                canResume: false,
+                hasActiveAttempt: true,
+            },
+        });
+        initialArgs.refetchExam = refetchExam;
+
+        const { result, rerender } = renderHook(({ hookArgs }) => useLobbyState(hookArgs), {
+            initialProps: { hookArgs: initialArgs },
+        });
+
+        await act(async () => {
+            await Promise.resolve();
+        });
+
+        expect(result.current.canEnterExam).toBe(false);
+
+        const realtimeArgs = mockUseLobbyRealtime.mock.calls.at(-1)?.[0] as
+            | { onAdmissionChange?: () => void }
+            | undefined;
+
+        await act(async () => {
+            realtimeArgs?.onAdmissionChange?.();
+            await Promise.resolve();
+        });
+
+        expect(result.current.admissionStatus).toBe('APPROVED');
+        expect(refetchExam).toHaveBeenCalled();
+
+        rerender({
+            hookArgs: createArgs({
+                lobbyAdmissionMode: 'INSTRUCTOR_GATED',
+                runtimeAccess: {
+                    state: 'lobby_approved',
+                    reasonCode: 'LOBBY_APPROVED',
+                    message: 'Approved for resume.',
+                    canStart: false,
+                    canResume: true,
+                    hasActiveAttempt: true,
+                },
+            }),
+        });
+
+        expect(result.current.canEnterExam).toBe(true);
+        expect(mockUseLobbyActions).toHaveBeenLastCalledWith(
+            expect.objectContaining({
+                canEnterExam: true,
+            }),
+        );
     });
 
     it('does not allow instructor-gated entry from open runtime access before approval is known', () => {

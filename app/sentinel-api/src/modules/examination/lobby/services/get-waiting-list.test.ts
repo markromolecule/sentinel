@@ -29,6 +29,7 @@ describe('getWaitingList', () => {
                 student_number: '2026-001',
                 first_name: 'Pat',
                 last_name: 'Student',
+                avatarUrl: 'https://example.com/pat-profile.png',
             },
             {
                 admission_id: 'admission-2',
@@ -39,6 +40,7 @@ describe('getWaitingList', () => {
                 student_number: '2026-002',
                 first_name: 'Alex',
                 last_name: 'Learner',
+                avatarUrl: 'https://example.com/alex-oauth.png',
             },
         ]);
         const attemptsSelect = createSelectBuilder([
@@ -71,6 +73,7 @@ describe('getWaitingList', () => {
                 studentId: 'student-1',
                 studentName: 'Pat Student',
                 studentNumber: '2026-001',
+                avatarUrl: 'https://example.com/pat-profile.png',
                 status: 'WAITING',
                 checkedInAt: '2026-07-28T09:00:00.000Z',
                 decidedAt: null,
@@ -84,6 +87,7 @@ describe('getWaitingList', () => {
                 studentId: 'student-2',
                 studentName: 'Alex Learner',
                 studentNumber: '2026-002',
+                avatarUrl: 'https://example.com/alex-oauth.png',
                 status: 'APPROVED',
                 checkedInAt: '2026-07-28T09:01:00.000Z',
                 decidedAt: '2026-07-28T09:02:00.000Z',
@@ -93,6 +97,11 @@ describe('getWaitingList', () => {
                 maxReconnectAttempts: 3,
             },
         ]);
+        expect(admissionsSelect.leftJoin).toHaveBeenCalledWith(
+            'auth.users as au',
+            's.user_id',
+            'au.id',
+        );
     });
 
     it('falls back to DEFAULT_EXAMINATION_GLOBAL_SETTINGS.defaultMaxReconnectAttempts when max_reconnect_attempts is null', async () => {

@@ -116,11 +116,11 @@ describe('StudentExamLobbyPage', () => {
         });
     });
 
-    it('prefers the API lobby count when presence is higher and shows reconnect used versus remaining', () => {
+    it('uses the higher count between API and presence and shows reconnect used versus remaining', () => {
         const refetch = vi.fn();
         mockLobbyCountQuery.mockReturnValue({
             data: { count: 3 },
-            isError: false,
+            isLoading: false,
             refetch,
         });
         mockLobbyPresence.mockReturnValue({
@@ -129,8 +129,8 @@ describe('StudentExamLobbyPage', () => {
 
         render(<StudentExamLobbyPage />);
 
-        expect(screen.getByText('3 students')).toBeTruthy();
-        expect(screen.queryByText('7 students')).toBeNull();
+        expect(screen.getByText('7 students')).toBeTruthy();
+        expect(screen.queryByText('3 students')).toBeNull();
         expect(screen.getByText('1 used • 2 left')).toBeTruthy();
         expect(screen.getByText('Reconnect attempts used: 1 of 3. Remaining: 2.')).toBeTruthy();
         expect(
@@ -139,10 +139,26 @@ describe('StudentExamLobbyPage', () => {
         expect(refetch).toHaveBeenCalled();
     });
 
+    it('prefers higher API count over presence count', () => {
+        mockLobbyCountQuery.mockReturnValue({
+            data: { count: 8 },
+            isLoading: false,
+            refetch: vi.fn(),
+        });
+        mockLobbyPresence.mockReturnValue({
+            presenceCount: 2,
+        });
+
+        render(<StudentExamLobbyPage />);
+
+        expect(screen.getByText('8 students')).toBeTruthy();
+        expect(screen.queryByText('2 students')).toBeNull();
+    });
+
     it('falls back to presence only when the API count is unavailable', () => {
         mockLobbyCountQuery.mockReturnValue({
             data: undefined,
-            isError: true,
+            isLoading: false,
             refetch: vi.fn(),
         });
         mockLobbyPresence.mockReturnValue({
@@ -157,7 +173,7 @@ describe('StudentExamLobbyPage', () => {
     it('uses presence count immediately while the API count is still loading', () => {
         mockLobbyCountQuery.mockReturnValue({
             data: undefined,
-            isError: false,
+            isLoading: true,
             refetch: vi.fn(),
         });
         mockLobbyPresence.mockReturnValue({
@@ -173,7 +189,7 @@ describe('StudentExamLobbyPage', () => {
     it('shows a syncing count fallback when neither API nor presence count is available', () => {
         mockLobbyCountQuery.mockReturnValue({
             data: undefined,
-            isError: false,
+            isLoading: true,
             refetch: vi.fn(),
         });
         mockLobbyPresence.mockReturnValue({

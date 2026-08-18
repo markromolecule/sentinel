@@ -22,8 +22,10 @@ export function resolveLobbyRuntimeAccess({
             state: 'lobby_approved' as const,
             reasonCode: 'LOBBY_APPROVED' as const,
             message: 'Instructor approval received. You may now continue to the exam attempt.',
-            canStart: true,
-            canResume: false,
+            canStart: Boolean(
+                scheduledRuntimeAccess.canStart || !scheduledRuntimeAccess.hasActiveAttempt,
+            ),
+            canResume: Boolean(scheduledRuntimeAccess.canResume),
         };
     }
 

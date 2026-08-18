@@ -24,19 +24,15 @@ export default function StudentExamLobbyPage() {
     } = useStudentExamStageGuard('lobby');
     const {
         data: lobbyCount,
-        isError,
+        isLoading: isLobbyCountLoading,
         refetch: refetchLobbyCount,
     } = useExamLobbyCountQuery(examId);
     const { presenceCount } = useLobbyPresence(examId);
 
+    const numericDbCount = typeof lobbyCount?.count === 'number' ? lobbyCount.count : 0;
+    const effectiveCount = Math.max(numericDbCount, presenceCount);
     const displayCount =
-        typeof lobbyCount?.count === 'number'
-            ? lobbyCount.count
-            : presenceCount > 0
-              ? presenceCount
-              : isError
-                ? 'Unavailable'
-                : 'Syncing';
+        effectiveCount > 0 ? effectiveCount : isResolving || isLobbyCountLoading ? 'Syncing' : 0;
 
     const {
         countdownLabel,

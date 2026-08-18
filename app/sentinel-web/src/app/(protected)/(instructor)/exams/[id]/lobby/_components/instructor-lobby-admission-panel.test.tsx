@@ -4,12 +4,22 @@ import type { ExamLobbyWaitingStudent } from '@sentinel/services';
 import { getLobbyAdmissionGroups } from '../_lib/lobby-admission-filters';
 import { InstructorLobbyAdmissionPanel } from './instructor-lobby-admission-panel';
 
+vi.mock('@sentinel/ui', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('@sentinel/ui')>();
+    return {
+        ...actual,
+        AvatarImage: ({ src, alt, className }: any) =>
+            src ? <img data-slot="avatar-image" src={src} alt={alt} className={className} /> : null,
+    };
+});
+
 function createAdmission(overrides: Partial<ExamLobbyWaitingStudent>): ExamLobbyWaitingStudent {
     return {
         admissionId: overrides.admissionId ?? 'admission-1',
         studentId: overrides.studentId ?? 'student-1',
         studentName: overrides.studentName ?? 'Pat Student',
         studentNumber: overrides.studentNumber ?? '2026-001',
+        avatarUrl: overrides.avatarUrl ?? null,
         status: overrides.status ?? 'WAITING',
         checkedInAt: overrides.checkedInAt ?? null,
         decidedAt: overrides.decidedAt ?? null,
@@ -186,6 +196,33 @@ describe('InstructorLobbyAdmissionPanel', () => {
         expect(screen.queryAllByRole('button', { name: 'Override Limit' })).toHaveLength(1);
     });
 
+    it('renders avatar image with provided avatarUrl and falls back to student initials', () => {
+        renderPanel({
+            admissions: [
+                createAdmission({
+                    admissionId: 'waiting-avatar-1',
+                    studentId: 'student-with-avatar',
+                    studentName: 'Pat Student',
+                    avatarUrl: 'https://example.com/pat.jpg',
+                    status: 'WAITING',
+                }),
+                createAdmission({
+                    admissionId: 'waiting-no-avatar-1',
+                    studentId: 'student-no-avatar',
+                    studentName: 'Alex Learner',
+                    avatarUrl: null,
+                    status: 'WAITING',
+                }),
+            ],
+        });
+
+        const img = screen.getByRole('img', { name: 'Pat Student' });
+        expect(img).toBeTruthy();
+        expect(img.getAttribute('src')).toBe('https://example.com/pat.jpg');
+
+        expect(screen.getByText('AL')).toBeTruthy();
+    });
+
     it('renders empty queues without fixed desktop height assumptions', () => {
         const { container } = renderPanel({ admissions: [] });
 
@@ -196,3 +233,4 @@ describe('InstructorLobbyAdmissionPanel', () => {
         expect(container.firstElementChild?.className).not.toContain('h-[700px]');
     });
 });
+

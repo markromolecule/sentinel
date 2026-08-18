@@ -1,5 +1,12 @@
 import { type DbClient } from '@sentinel/db';
 import { DEFAULT_EXAMINATION_GLOBAL_SETTINGS } from '@sentinel/shared/constants';
+import { sql } from 'kysely';
+
+type AttemptRecord = {
+    student_id: string;
+    status: string | null;
+    reconnect_attempt_count: number | null;
+};
 
 /**
  * Returns the lobby waiting list for an exam, including each student's latest
@@ -24,6 +31,7 @@ export const getWaitingList = async (dbClient: DbClient, examId: string) => {
             .selectFrom('exam_lobby_admissions as ela')
             .leftJoin('students as s', 'ela.student_id', 's.student_id')
             .leftJoin('user_profiles as up', 's.user_id', 'up.user_id')
+            .leftJoin('auth.users as au', 's.user_id', 'au.id')
             .select([
                 'ela.admission_id',
                 'ela.student_id',
@@ -33,15 +41,19 @@ export const getWaitingList = async (dbClient: DbClient, examId: string) => {
                 's.student_number',
                 'up.first_name',
                 'up.last_name',
+                sql<string | null>`coalesce(
+                    up.avatar_url,
+                    au.raw_user_meta_data->>'avatar_url',
+                    au.raw_user_meta_data->>'picture'
+                )`.as('avatarUrl'),
             ])
             .where('ela.exam_id', '=', examId)
             .orderBy('ela.checked_in_at', 'asc')
             .execute(),
     ]);
 
-
     const studentIds = admissions.map((a) => a.student_id);
-    let attempts: any[] = [];
+    let attempts: AttemptRecord[] = [];
     if (studentIds.length > 0) {
         attempts = await dbClient
             .selectFrom('exam_attempts')
@@ -70,6 +82,7 @@ export const getWaitingList = async (dbClient: DbClient, examId: string) => {
             studentId: a.student_id,
             studentName: `${a.first_name ?? 'Unknown'} ${a.last_name ?? 'Student'}`,
             studentNumber: a.student_number ?? null,
+            avatarUrl: a.avatarUrl ?? null,
             status: a.status ?? 'WAITING',
             checkedInAt: a.checked_in_at?.toISOString() ?? null,
             decidedAt: a.decided_at?.toISOString() ?? null,

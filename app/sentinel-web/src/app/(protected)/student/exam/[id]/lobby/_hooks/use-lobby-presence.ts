@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useAuth } from '@sentinel/hooks';
 import type { PresenceState } from '@sentinel/shared/types';
@@ -8,64 +8,69 @@ import type { PresenceState } from '@sentinel/shared/types';
 export function useLobbyPresence(examId: string) {
     const { supabase, session } = useAuth();
     const [presenceCount, setPresenceCount] = useState(0);
-    const channelRef = useRef<RealtimeChannel | null>(null);
+    const userId = session?.user?.id;
 
     useEffect(() => {
-        if (!supabase || !session?.user || !examId) return;
+        let isEffectActive = true;
 
-        const userId = session.user.id;
+        if (!supabase || !userId || !examId) {
+            setPresenceCount(0);
+            return () => {
+                isEffectActive = false;
+            };
+        }
+
+        if (!supabase.channel || !supabase.removeChannel) {
+            return () => {
+                isEffectActive = false;
+            };
+        }
+
         const channelName = `presence:lobby:${examId}`;
-
-        const cleanup = async () => {
-            if (channelRef.current) {
-                const ch = channelRef.current;
-                channelRef.current = null;
-                await supabase.removeChannel(ch);
-            }
-        };
-
-        const initPresence = async () => {
-            await cleanup();
-
-            const channel = supabase.channel(channelName, {
-                config: {
-                    presence: {
-                        key: userId,
-                    },
+        const channel: RealtimeChannel = supabase.channel(channelName, {
+            config: {
+                presence: {
+                    key: userId,
                 },
-            });
+            },
+        });
 
-            channel
-                .on('presence', { event: 'sync' }, () => {
-                    const state = channel.presenceState<PresenceState>();
-                    const uniqueUserIds = new Set<string>();
+        channel
+            .on('presence', { event: 'sync' }, () => {
+                if (!isEffectActive) {
+                    return;
+                }
 
-                    Object.values(state).forEach((presences) => {
-                        presences.forEach((p) => {
-                            if (p.user_id) uniqueUserIds.add(p.user_id);
-                        });
+                const state = channel.presenceState<PresenceState>() ?? {};
+                const uniqueUserIds = new Set<string>();
+
+                Object.values(state).forEach((presences) => {
+                    (presences ?? []).forEach((p) => {
+                        if (p?.user_id) uniqueUserIds.add(p.user_id);
                     });
+                });
 
-                    setPresenceCount(uniqueUserIds.size);
-                })
-                .subscribe(async (status) => {
-                    if (status === 'SUBSCRIBED') {
+                setPresenceCount(uniqueUserIds.size);
+            })
+            .subscribe(async (status) => {
+                if (status === 'SUBSCRIBED' && isEffectActive) {
+                    try {
                         await channel.track({
                             user_id: userId,
                             online_at: new Date().toISOString(),
                         });
+                    } catch {
+                        // ignore track errors if unmounted or channel closed
                     }
-                });
-
-            channelRef.current = channel;
-        };
-
-        void initPresence();
+                }
+            });
 
         return () => {
-            void cleanup();
+            isEffectActive = false;
+            void supabase.removeChannel(channel);
         };
-    }, [supabase, session?.user, examId]);
+    }, [supabase, userId, examId]);
 
     return { presenceCount };
 }
+
