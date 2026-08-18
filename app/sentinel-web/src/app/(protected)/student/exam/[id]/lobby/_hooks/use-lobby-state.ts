@@ -64,13 +64,16 @@ export function useLobbyState(args: {
         runtimeAccess?.state === 'before_start';
     const hasApprovedInstructorAdmission =
         admissionStatus === 'APPROVED' &&
-        (isApprovedRuntimeAccess || Boolean(runtimeAccess?.canStart));
+        (isApprovedRuntimeAccess ||
+            Boolean(runtimeAccess?.canStart) ||
+            Boolean(runtimeAccess?.canResume));
     const hasFreshInstructorAdmission =
         !requiresInstructorAdmission || (hasApprovedInstructorAdmission && !isHardRuntimeBlock);
     const canEnterExam = Boolean(
         !isAdmissionPendingRefresh &&
         ((hasResumableAttempt && !requiresInstructorAdmission) ||
-            (hasFreshInstructorAdmission && (runtimeAccess?.canStart || isApprovedRuntimeAccess))),
+            (hasFreshInstructorAdmission &&
+                (runtimeAccess?.canStart || runtimeAccess?.canResume || isApprovedRuntimeAccess))),
     );
 
     const refreshApprovedAccess = useCallback(async () => {
@@ -106,6 +109,7 @@ export function useLobbyState(args: {
         examId,
         enabled: !shouldSkipLobbySync,
         onAdmissionChange: () => {
+            setAdmissionStatus('APPROVED');
             void syncAdmission(true);
         },
     });

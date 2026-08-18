@@ -45,9 +45,13 @@ export function useExamLobby() {
         exam?.runtimeAccess?.state === 'closed' ||
         exam?.runtimeAccess?.state === 'locked' ||
         exam?.runtimeAccess?.state === 'before_start';
+    const isApprovedRuntimeAccess = exam?.runtimeAccess?.state === 'lobby_approved';
 
     const hasApprovedInstructorAdmission =
-        admissionStatus === 'APPROVED' || exam?.runtimeAccess?.state === 'lobby_approved';
+        admissionStatus === 'APPROVED' &&
+        (isApprovedRuntimeAccess ||
+            Boolean(exam?.runtimeAccess?.canStart) ||
+            Boolean(exam?.runtimeAccess?.canResume));
 
     const requiresMicrophone = exam?.configuration?.micRequired ?? true;
     const isMediaPipeConfigured = Boolean(

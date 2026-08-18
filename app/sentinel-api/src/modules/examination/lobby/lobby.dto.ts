@@ -59,6 +59,7 @@ export const getWaitingListSchema = {
                 studentId: z.string().uuid(),
                 studentName: z.string(),
                 studentNumber: z.string().nullable(),
+                avatarUrl: z.string().nullable().optional(),
                 status: examLobbyAdmissionStatusSchema,
                 checkedInAt: z.string().datetime().nullable(),
                 decidedAt: z.string().datetime().nullable(),

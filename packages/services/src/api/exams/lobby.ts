@@ -18,6 +18,7 @@ export type ExamLobbyWaitingStudent = {
     studentId: string;
     studentName: string;
     studentNumber: string | null;
+    avatarUrl?: string | null;
     status: ExamLobbyAdmissionStatus;
     checkedInAt: string | null;
     decidedAt: string | null;
