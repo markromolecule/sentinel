@@ -22,6 +22,7 @@ type InstructorLobbyAdmissionPanelProps = {
     statusFilter: LobbyAdmissionStatusFilter;
     onStatusFilterChange: (value: LobbyAdmissionStatusFilter) => void;
     isUpdatingLobbyAdmissions: boolean;
+    updatingStudentIds?: Set<string>;
     onUpdateLobbyAdmissions: (
         studentIds: string[],
         status: 'APPROVED' | 'REJECTED',
@@ -159,6 +160,7 @@ export function InstructorLobbyAdmissionPanel({
     statusFilter,
     onStatusFilterChange,
     isUpdatingLobbyAdmissions,
+    updatingStudentIds,
     onUpdateLobbyAdmissions,
     overridingStudentId,
     onOverrideReconnect,
@@ -222,51 +224,57 @@ export function InstructorLobbyAdmissionPanel({
                         </Button>
                     }
                 >
-                    {(student) => (
-                        <div className="flex flex-col gap-1">
-                            <div className="flex gap-1">
-                                <Button
-                                    size="sm"
-                                    className="flex-1 text-xs"
-                                    disabled={isUpdatingLobbyAdmissions}
-                                    onClick={() =>
-                                        void onUpdateLobbyAdmissions(
-                                            [student.studentId],
-                                            'APPROVED',
-                                        )
-                                    }
-                                >
-                                    Admit
-                                </Button>
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="flex-1 text-xs"
-                                    disabled={isUpdatingLobbyAdmissions}
-                                    onClick={() =>
-                                        void onUpdateLobbyAdmissions(
-                                            [student.studentId],
-                                            'REJECTED',
-                                        )
-                                    }
-                                >
-                                    Reject
-                                </Button>
+                    {(student) => {
+                        const isRowUpdating = updatingStudentIds
+                            ? updatingStudentIds.has(student.studentId)
+                            : isUpdatingLobbyAdmissions;
+
+                        return (
+                            <div className="flex flex-col gap-1">
+                                <div className="flex gap-1">
+                                    <Button
+                                        size="sm"
+                                        className="flex-1 text-xs"
+                                        disabled={isRowUpdating}
+                                        onClick={() =>
+                                            void onUpdateLobbyAdmissions(
+                                                [student.studentId],
+                                                'APPROVED',
+                                            )
+                                        }
+                                    >
+                                        Admit
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="flex-1 text-xs"
+                                        disabled={isRowUpdating}
+                                        onClick={() =>
+                                            void onUpdateLobbyAdmissions(
+                                                [student.studentId],
+                                                'REJECTED',
+                                            )
+                                        }
+                                    >
+                                        Reject
+                                    </Button>
+                                </div>
+                                {student.hasActiveAttempt &&
+                                    student.reconnectCount >= student.maxReconnectAttempts ? (
+                                    <Button
+                                        size="sm"
+                                        variant="secondary"
+                                        className="w-full text-xs"
+                                        disabled={overridingStudentId === student.studentId}
+                                        onClick={() => void onOverrideReconnect(student.studentId)}
+                                    >
+                                        Override Limit
+                                    </Button>
+                                ) : null}
                             </div>
-                            {student.hasActiveAttempt &&
-                            student.reconnectCount >= student.maxReconnectAttempts ? (
-                                <Button
-                                    size="sm"
-                                    variant="secondary"
-                                    className="w-full text-xs"
-                                    disabled={overridingStudentId === student.studentId}
-                                    onClick={() => void onOverrideReconnect(student.studentId)}
-                                >
-                                    Override Limit
-                                </Button>
-                            ) : null}
-                        </div>
-                    )}
+                        );
+                    }}
                 </QueueSection>
 
                 <QueueSection

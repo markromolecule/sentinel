@@ -1,12 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useApi, useDebounce, useOverrideReconnectLimitMutation } from '@sentinel/hooks';
+import { useMemo, useState } from 'react';
 import {
-    getExamLobbyWaitingList,
-    updateExamLobbyAdmissions,
-    type ExamLobbyWaitingStudent,
-} from '@sentinel/services';
+    useDebounce,
+    useExamLobbyWaitingListQuery,
+    useLobbyRealtime,
+    useOverrideReconnectLimitMutation,
+    useUpdateExamLobbyAdmissionsMutation,
+} from '@sentinel/hooks';
 import { toast } from 'sonner';
 import {
     filterLobbyAdmissions,
@@ -20,13 +21,22 @@ import {
  * @param examId - Exam id whose lobby admissions should be loaded and updated.
  */
 export function useInstructorLobby(examId: string) {
-    const apiClient = useApi();
-    const [isUpdatingLobbyAdmissions, setIsUpdatingLobbyAdmissions] = useState(false);
+    const [updatingStudentIds, setUpdatingStudentIds] = useState<Set<string>>(() => new Set());
     const [overridingStudentId, setOverridingStudentId] = useState<string | null>(null);
-    const [lobbyAdmissions, setLobbyAdmissions] = useState<ExamLobbyWaitingStudent[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<LobbyAdmissionStatusFilter>('all');
     const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
+    const {
+        data: lobbyAdmissions = [],
+        refetch: refreshLobbyAdmissions,
+        isLoading,
+    } = useExamLobbyWaitingListQuery(examId);
+
+    // Subscribe to real-time lobby admission changes
+    useLobbyRealtime({ examId });
+
+    const updateAdmissionsMutation = useUpdateExamLobbyAdmissionsMutation();
 
     const filteredLobbyAdmissions = useMemo(
         () =>
@@ -36,21 +46,12 @@ export function useInstructorLobby(examId: string) {
             }),
         [debouncedSearchTerm, lobbyAdmissions, statusFilter],
     );
+
     const lobbyAdmissionGroups = useMemo(
         () => getLobbyAdmissionGroups(filteredLobbyAdmissions),
         [filteredLobbyAdmissions],
     );
 
-    const refreshLobbyAdmissions = useCallback(async () => {
-        try {
-            const admissions = await getExamLobbyWaitingList(apiClient, examId);
-            setLobbyAdmissions(admissions);
-        } catch (error) {
-            const message =
-                error instanceof Error ? error.message : 'Failed to load lobby admissions.';
-            toast.error(message);
-        }
-    }, [apiClient, examId]);
     const overrideReconnectLimitMutation = useOverrideReconnectLimitMutation({
         onSuccess: async () => {
             toast.success('Reconnect override granted successfully.');
@@ -59,17 +60,7 @@ export function useInstructorLobby(examId: string) {
         onError: (error: Error) => toast.error(error.message),
     });
 
-    useEffect(() => {
-        void refreshLobbyAdmissions();
-
-        const intervalId = window.setInterval(() => {
-            void refreshLobbyAdmissions();
-        }, 5000);
-
-        return () => {
-            window.clearInterval(intervalId);
-        };
-    }, [refreshLobbyAdmissions]);
+    const isUpdatingLobbyAdmissions = updatingStudentIds.size > 0;
 
     const handleUpdateLobbyAdmissions = async (
         studentIds: string[],
@@ -79,22 +70,14 @@ export function useInstructorLobby(examId: string) {
             return;
         }
 
-        setIsUpdatingLobbyAdmissions(true);
-        const previousAdmissions = lobbyAdmissions;
-        setLobbyAdmissions((currentAdmissions) =>
-            currentAdmissions.map((student) =>
-                studentIds.includes(student.studentId)
-                    ? {
-                          ...student,
-                          status,
-                          decidedAt: new Date().toISOString(),
-                      }
-                    : student,
-            ),
-        );
+        setUpdatingStudentIds((prev) => {
+            const next = new Set(prev);
+            studentIds.forEach((id) => next.add(id));
+            return next;
+        });
 
         try {
-            const result = await updateExamLobbyAdmissions(apiClient, {
+            const result = await updateAdmissionsMutation.mutateAsync({
                 examId,
                 studentIds,
                 status,
@@ -103,14 +86,16 @@ export function useInstructorLobby(examId: string) {
             toast.success(
                 `${result.updatedCount} student${result.updatedCount === 1 ? '' : 's'} ${status === 'APPROVED' ? 'updated for entry' : 'returned to the lobby queue'}.`,
             );
-            await refreshLobbyAdmissions();
         } catch (error) {
-            setLobbyAdmissions(previousAdmissions);
             const message =
                 error instanceof Error ? error.message : 'Failed to update lobby admissions.';
             toast.error(message);
         } finally {
-            setIsUpdatingLobbyAdmissions(false);
+            setUpdatingStudentIds((prev) => {
+                const next = new Set(prev);
+                studentIds.forEach((id) => next.delete(id));
+                return next;
+            });
         }
     };
 
@@ -138,9 +123,11 @@ export function useInstructorLobby(examId: string) {
         statusFilter,
         setStatusFilter,
         isUpdatingLobbyAdmissions,
+        updatingStudentIds,
         overridingStudentId,
         refreshLobbyAdmissions,
         handleUpdateLobbyAdmissions,
         handleOverrideReconnect,
+        isLoading,
     };
 }

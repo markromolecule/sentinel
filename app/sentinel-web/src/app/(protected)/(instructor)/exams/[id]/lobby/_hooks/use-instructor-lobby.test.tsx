@@ -3,35 +3,36 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useInstructorLobby } from './use-instructor-lobby';
 
 const {
-    mockUseApi,
     mockUseDebounce,
-    mockGetExamLobbyWaitingList,
-    mockUpdateExamLobbyAdmissions,
+    mockUseExamLobbyWaitingListQuery,
+    mockUseUpdateExamLobbyAdmissionsMutation,
+    mockUpdateMutateAsync,
+    mockUseLobbyRealtime,
     mockUseOverrideReconnectLimitMutation,
     mockOverrideReconnectMutateAsync,
+    mockRefetchWaitingList,
     mockToastSuccess,
     mockToastError,
 } = vi.hoisted(() => ({
-    mockUseApi: vi.fn(),
     mockUseDebounce: vi.fn((value: string) => value),
-    mockGetExamLobbyWaitingList: vi.fn(),
-    mockUpdateExamLobbyAdmissions: vi.fn(),
+    mockUseExamLobbyWaitingListQuery: vi.fn(),
+    mockUseUpdateExamLobbyAdmissionsMutation: vi.fn(),
+    mockUpdateMutateAsync: vi.fn(),
+    mockUseLobbyRealtime: vi.fn(),
     mockUseOverrideReconnectLimitMutation: vi.fn(),
     mockOverrideReconnectMutateAsync: vi.fn(),
+    mockRefetchWaitingList: vi.fn(),
     mockToastSuccess: vi.fn(),
     mockToastError: vi.fn(),
 }));
 
 vi.mock('@sentinel/hooks', () => ({
-    useApi: () => mockUseApi(),
     useDebounce: (value: string, delay: number) => mockUseDebounce(value, delay),
+    useExamLobbyWaitingListQuery: (examId: string) => mockUseExamLobbyWaitingListQuery(examId),
+    useLobbyRealtime: (args: unknown) => mockUseLobbyRealtime(args),
+    useUpdateExamLobbyAdmissionsMutation: () => mockUseUpdateExamLobbyAdmissionsMutation(),
     useOverrideReconnectLimitMutation: (options: unknown) =>
         mockUseOverrideReconnectLimitMutation(options),
-}));
-
-vi.mock('@sentinel/services', () => ({
-    getExamLobbyWaitingList: (...args: unknown[]) => mockGetExamLobbyWaitingList(...args),
-    updateExamLobbyAdmissions: (...args: unknown[]) => mockUpdateExamLobbyAdmissions(...args),
 }));
 
 vi.mock('sonner', () => ({
@@ -44,36 +45,42 @@ vi.mock('sonner', () => ({
 describe('useInstructorLobby', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        mockUseApi.mockReturnValue({ api: true });
         mockUseDebounce.mockImplementation((value: string) => value);
-        mockGetExamLobbyWaitingList.mockResolvedValue([
-            {
-                admissionId: 'admission-1',
-                studentId: 'student-1',
-                studentName: 'Pat Student',
-                studentNumber: '2026-001',
-                status: 'WAITING',
-                checkedInAt: null,
-                decidedAt: null,
-                hasActiveAttempt: false,
-                attemptStatus: null,
-                reconnectCount: 1,
-                maxReconnectAttempts: 3,
-            },
-            {
-                admissionId: 'admission-2',
-                studentId: 'student-2',
-                studentName: 'Alex Learner',
-                studentNumber: '2026-002',
-                status: 'APPROVED',
-                checkedInAt: null,
-                decidedAt: null,
-                hasActiveAttempt: false,
-                attemptStatus: null,
-                reconnectCount: 0,
-                maxReconnectAttempts: 3,
-            },
-        ]);
+        mockUseExamLobbyWaitingListQuery.mockReturnValue({
+            data: [
+                {
+                    admissionId: 'admission-1',
+                    studentId: 'student-1',
+                    studentName: 'Pat Student',
+                    studentNumber: '2026-001',
+                    status: 'WAITING',
+                    checkedInAt: null,
+                    decidedAt: null,
+                    hasActiveAttempt: false,
+                    attemptStatus: null,
+                    reconnectCount: 1,
+                    maxReconnectAttempts: 3,
+                },
+                {
+                    admissionId: 'admission-2',
+                    studentId: 'student-2',
+                    studentName: 'Alex Learner',
+                    studentNumber: '2026-002',
+                    status: 'APPROVED',
+                    checkedInAt: null,
+                    decidedAt: null,
+                    hasActiveAttempt: false,
+                    attemptStatus: null,
+                    reconnectCount: 0,
+                    maxReconnectAttempts: 3,
+                },
+            ],
+            refetch: mockRefetchWaitingList,
+            isLoading: false,
+        });
+        mockUseUpdateExamLobbyAdmissionsMutation.mockReturnValue({
+            mutateAsync: mockUpdateMutateAsync,
+        });
         mockUseOverrideReconnectLimitMutation.mockImplementation((options) => ({
             mutateAsync: async (payload: unknown) => {
                 await mockOverrideReconnectMutateAsync(payload);
@@ -81,14 +88,13 @@ describe('useInstructorLobby', () => {
             },
         }));
         mockOverrideReconnectMutateAsync.mockResolvedValue(undefined);
+        mockUpdateMutateAsync.mockResolvedValue({ updatedCount: 1 });
     });
 
-    it('debounces the raw lobby search term', async () => {
+    it('subscribes to realtime events and debounces search input', async () => {
         const { result } = renderHook(() => useInstructorLobby('exam-1'));
 
-        await waitFor(() => {
-            expect(result.current.lobbyAdmissions).toHaveLength(2);
-        });
+        expect(mockUseLobbyRealtime).toHaveBeenCalledWith({ examId: 'exam-1' });
 
         act(() => {
             result.current.setSearchTerm('alex');
@@ -99,10 +105,6 @@ describe('useInstructorLobby', () => {
 
     it('returns filtered lobby admission groups', async () => {
         const { result } = renderHook(() => useInstructorLobby('exam-1'));
-
-        await waitFor(() => {
-            expect(result.current.lobbyAdmissions).toHaveLength(2);
-        });
 
         act(() => {
             result.current.setStatusFilter('approved');
@@ -115,10 +117,9 @@ describe('useInstructorLobby', () => {
         );
     });
 
-    it('optimistically updates admissions before reconciling with the server list', async () => {
+    it('tracks updatingStudentIds while mutations are in-flight and shows success toast', async () => {
         let resolveMutation: ((value: { updatedCount: number }) => void) | undefined;
-
-        mockUpdateExamLobbyAdmissions.mockImplementation(
+        mockUpdateMutateAsync.mockImplementation(
             () =>
                 new Promise<{ updatedCount: number }>((resolve) => {
                     resolveMutation = resolve;
@@ -127,27 +128,23 @@ describe('useInstructorLobby', () => {
 
         const { result } = renderHook(() => useInstructorLobby('exam-1'));
 
-        await waitFor(() => {
-            expect(result.current.lobbyAdmissions).toHaveLength(2);
-        });
-
         let pendingUpdate: Promise<void> | undefined;
 
         act(() => {
             pendingUpdate = result.current.handleUpdateLobbyAdmissions(['student-1'], 'APPROVED');
         });
 
-        await waitFor(() => {
-            expect(result.current.lobbyAdmissions[0]?.status).toBe('APPROVED');
-        });
+        expect(result.current.updatingStudentIds.has('student-1')).toBe(true);
+        expect(result.current.isUpdatingLobbyAdmissions).toBe(true);
 
         resolveMutation?.({ updatedCount: 1 });
         await act(async () => {
             await pendingUpdate;
         });
 
-        expect(mockToastSuccess).toHaveBeenCalled();
-        expect(mockGetExamLobbyWaitingList).toHaveBeenCalledTimes(2);
+        expect(result.current.updatingStudentIds.has('student-1')).toBe(false);
+        expect(result.current.isUpdatingLobbyAdmissions).toBe(false);
+        expect(mockToastSuccess).toHaveBeenCalledWith('1 student updated for entry.');
     });
 
     it('submits reconnect overrides with the lobby-specific reason and tracks pending state', async () => {
@@ -160,10 +157,6 @@ describe('useInstructorLobby', () => {
         );
 
         const { result } = renderHook(() => useInstructorLobby('exam-1'));
-
-        await waitFor(() => {
-            expect(result.current.lobbyAdmissions).toHaveLength(2);
-        });
 
         let pendingPromise: Promise<void> | undefined;
         act(() => {
@@ -183,7 +176,7 @@ describe('useInstructorLobby', () => {
         });
 
         expect(result.current.overridingStudentId).toBeNull();
-        expect(mockGetExamLobbyWaitingList).toHaveBeenCalledTimes(2);
+        expect(mockRefetchWaitingList).toHaveBeenCalledTimes(1);
         expect(mockToastSuccess).toHaveBeenCalledWith('Reconnect override granted successfully.');
     });
 });
