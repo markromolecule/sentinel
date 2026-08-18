@@ -158,7 +158,7 @@ describe('useExamSession Hook', () => {
         const submitButton = alertCalls[0][2]?.find((btn: any) => btn.text === 'Submit');
         expect(submitButton).toBeDefined();
 
-        await submitButton.onPress();
+        await submitButton?.onPress?.();
 
         expect(mockCompleteExamSession).toHaveBeenCalledWith(expect.any(Object), {
             sessionId: 'session-456',
@@ -184,7 +184,7 @@ describe('useExamSession Hook', () => {
 
         const alertCalls = vi.mocked(Alert.alert).mock.calls;
         const submitButton = alertCalls[0][2]?.find((btn: any) => btn.text === 'Submit');
-        await submitButton.onPress();
+        await submitButton?.onPress?.();
 
         expect(Alert.alert).toHaveBeenCalledWith(
             'Submission Failed',
