@@ -122,19 +122,26 @@ export const createApiClient = (defaultOptions: ApiClientOptions = {}) => {
 
             const errorMsg =
                 fetchError instanceof Error ? fetchError.message : String(fetchError);
+
             const isFailedToFetch =
                 errorMsg.includes('Failed to fetch') ||
                 errorMsg.includes('NetworkError') ||
                 errorMsg.includes('fetch failed');
 
+            const isAiEndpoint = endpoint.includes('/ai/');
+
             throw new ApiError({
                 message: isFailedToFetch
-                    ? 'Unable to connect to the server. Please check your network connection or try again with a smaller file/question batch.'
+                    ? (isAiEndpoint
+                        ? 'Unable to connect to the server. The uploaded files may exceed the 4.5MB serverless payload limit or the request exceeded the 60-second execution window. Please try again with smaller files or a smaller question batch.'
+                        : 'Unable to connect to the server. Please check your network connection or try again with a smaller file/question batch.')
                     : errorMsg || 'Network request failed',
                 status: 0,
                 statusText: 'Network Error',
                 body: { originalError: errorMsg },
             });
+
+
         }
 
         if (!response.ok) {

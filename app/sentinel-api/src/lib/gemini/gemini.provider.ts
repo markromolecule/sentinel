@@ -7,12 +7,14 @@ const DEFAULT_FLASH_MODEL =
     process.env.GEMINI_MODEL?.trim() ||
     'gemini-2.5-flash';
 const MAX_QUOTA_RETRIES = 1;
-const DEFAULT_QUOTA_RETRY_DELAY_MS = 10_000;
-const MAX_QUOTA_RETRY_DELAY_MS = 20_000;
+const DEFAULT_QUOTA_RETRY_DELAY_MS = 2_000;
+const MAX_QUOTA_RETRY_DELAY_MS = 3_000;
 const GEMINI_GENERATION_TIMEOUT_MS =
     Number(process.env.AI_GEMINI_TIMEOUT_MS) > 0
         ? Number(process.env.AI_GEMINI_TIMEOUT_MS)
-        : 120_000;
+        : 35_000;
+
+
 const GEMINI_REQUEST_FAILURE_MESSAGE = 'Gemini request timed out or failed to connect.';
 
 type GeminiJsonSchema = Record<string, unknown>;

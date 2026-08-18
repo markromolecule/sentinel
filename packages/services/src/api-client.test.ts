@@ -82,7 +82,23 @@ describe('createApiClient', () => {
             status: 0,
             statusText: 'Network Error',
             message:
+                'Unable to connect to the server. The uploaded files may exceed the 4.5MB serverless payload limit or the request exceeded the 60-second execution window. Please try again with smaller files or a smaller question batch.',
+        });
+    });
+
+    it('translates Failed to fetch into a descriptive ApiError for non-AI routes', async () => {
+        const fetchMock = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+        vi.stubGlobal('fetch', fetchMock);
+
+        const apiClient = createApiClient();
+
+        await expect(apiClient('/rooms')).rejects.toMatchObject({
+            name: 'ApiError',
+            status: 0,
+            statusText: 'Network Error',
+            message:
                 'Unable to connect to the server. Please check your network connection or try again with a smaller file/question batch.',
         });
     });
 });
+

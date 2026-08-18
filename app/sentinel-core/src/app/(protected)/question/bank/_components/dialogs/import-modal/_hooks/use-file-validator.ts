@@ -52,6 +52,14 @@ export function useFileValidator() {
                 ) === index,
         );
 
+        const totalSizeMB = uniqueFiles.reduce((sum, file) => sum + file.size, 0) / (1024 * 1024);
+        if (totalSizeMB > MAX_FILE_SIZE_MB) {
+            toast.error('Combined files too large', {
+                description: `Max combined size for AI analysis is ${MAX_FILE_SIZE_MB}MB. Selected files total ${totalSizeMB.toFixed(2)}MB.`,
+            });
+            return;
+        }
+
         setFiles(uniqueFiles);
         toast.success(`${uniqueFiles.length} file${uniqueFiles.length === 1 ? '' : 's'} ready`, {
             description:
@@ -59,6 +67,7 @@ export function useFileValidator() {
                     ? `${uniqueFiles[0].name} is ready for AI analysis.`
                     : 'Your lesson files are ready for AI analysis.',
         });
+
     };
 
     return {
