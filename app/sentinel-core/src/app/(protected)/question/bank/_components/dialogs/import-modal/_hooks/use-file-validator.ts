@@ -70,9 +70,34 @@ export function useFileValidator() {
 
     };
 
+    const handleRemoveFile = (fileToRemove: File | number) => {
+        const updatedFiles =
+            typeof fileToRemove === 'number'
+                ? files.filter((_, idx) => idx !== fileToRemove)
+                : files.filter(
+                      (file) =>
+                          file !== fileToRemove &&
+                          !(
+                              file.name === fileToRemove.name &&
+                              file.size === fileToRemove.size &&
+                              file.lastModified === fileToRemove.lastModified
+                          ),
+                  );
+
+        setFiles(updatedFiles);
+        const removedName =
+            typeof fileToRemove === 'number' ? files[fileToRemove]?.name : fileToRemove.name;
+        if (removedName) {
+            toast.info('File removed', {
+                description: `${removedName} was removed from selection.`,
+            });
+        }
+    };
+
     return {
         files,
         setFiles,
         handleFileChange,
+        handleRemoveFile,
     };
 }

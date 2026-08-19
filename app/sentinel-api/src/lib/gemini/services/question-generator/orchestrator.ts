@@ -53,7 +53,7 @@ export class QuestionGeneratorService {
     }): Promise<GenerateQuestionPreviewResponse> {
         const provider = args.provider ?? GeminiProvider;
         const BATCH_SIZE = 20;
-        const SERVERLESS_EXECUTION_BUDGET_MS = 48_000;
+        const SERVERLESS_EXECUTION_BUDGET_MS = 45_000;
         const startTime = Date.now();
 
         const batches = createBatches(args.config, BATCH_SIZE);
@@ -62,7 +62,13 @@ export class QuestionGeneratorService {
         const uploadedFiles = await uploadFilesStep(args.files, provider);
 
         try {
-            const [generationResult, pageCountResult] = await Promise.allSettled([
+            const [sourcePageCounts, generationResult] = await Promise.all([
+                resolvePageCountsStep({
+                    files: args.files,
+                    uploadedFiles,
+                    model,
+                    provider,
+                }),
                 generateBatchesStep({
                     batches,
                     files: args.files,
@@ -70,23 +76,9 @@ export class QuestionGeneratorService {
                     model,
                     provider,
                 }),
-                resolvePageCountsStep({
-                    files: args.files,
-                    uploadedFiles,
-                    model,
-                    provider,
-                }),
             ]);
 
-            if (generationResult.status === 'rejected') {
-                throw generationResult.reason;
-            }
-            if (pageCountResult.status === 'rejected') {
-                throw pageCountResult.reason;
-            }
-
-            const { rawQuestions: allRawQuestions } = generationResult.value;
-            const sourcePageCounts = pageCountResult.value;
+            const { rawQuestions: allRawQuestions } = generationResult;
 
             const sourceDocuments = buildSourceDocumentsStep(
                 args.files,

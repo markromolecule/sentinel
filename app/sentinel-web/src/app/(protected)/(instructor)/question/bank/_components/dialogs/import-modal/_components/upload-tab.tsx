@@ -1,11 +1,12 @@
 'use client';
 
 import { useRef, useState, useCallback } from 'react';
-import { Upload, FileText, AlertCircle } from 'lucide-react';
+import { Upload, FileText, AlertCircle, Trash2 } from 'lucide-react';
 
 interface UploadTabProps {
     files: File[];
     onFileChange: (files: File[] | null) => void;
+    onRemoveFile?: (file: File) => void;
 }
 
 function formatFileSize(size: number) {
@@ -18,7 +19,7 @@ function formatFileSize(size: number) {
     return `${(size / 1024).toFixed(0)} KB`;
 }
 
-export function UploadTab({ files, onFileChange }: UploadTabProps) {
+export function UploadTab({ files, onFileChange, onRemoveFile }: UploadTabProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isDragging, setIsDragging] = useState(false);
 
@@ -93,7 +94,7 @@ export function UploadTab({ files, onFileChange }: UploadTabProps) {
                     <p className="text-muted-foreground mx-auto mt-2 max-w-[250px] text-xs leading-relaxed">
                         Upload one or more{' '}
                         <span className="text-foreground font-medium">PDF lesson files</span> up to
-                        100MB each.
+                        4.5MB total.
                     </p>
                 </div>
             </div>
@@ -118,13 +119,29 @@ export function UploadTab({ files, onFileChange }: UploadTabProps) {
                                     key={`${file.name}-${file.lastModified}-${file.size}`}
                                     className="flex items-center justify-between gap-3 px-4 py-3 text-sm"
                                 >
-                                    <div className="min-w-0">
-                                        <p className="truncate font-medium">{file.name}</p>
-                                        <p className="text-muted-foreground text-xs">
-                                            {formatFileSize(file.size)}
-                                        </p>
+                                    <div className="flex min-w-0 items-center gap-3">
+                                        <FileText className="text-muted-foreground h-4 w-4 shrink-0" />
+                                        <div className="min-w-0">
+                                            <p className="truncate font-medium">{file.name}</p>
+                                            <p className="text-muted-foreground text-xs">
+                                                {formatFileSize(file.size)}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <FileText className="text-muted-foreground h-4 w-4 shrink-0" />
+                                    {onRemoveFile && (
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onRemoveFile(file);
+                                            }}
+                                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md p-1.5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                            aria-label={`Remove ${file.name}`}
+                                            title="Remove file"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    )}
                                 </div>
                             ))}
                         </div>
