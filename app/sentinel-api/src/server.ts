@@ -13,7 +13,21 @@ import {
 } from './modules/examination/live-inspection/services/live-inspection-reconciler.service';
 
 const port = Number(process.env.PORT) || 3001;
-const hostname = process.env.HOST || '0.0.0.0';
+
+function resolveBindHost(): string {
+    const rawHost = (process.env.BIND_HOST || process.env.HOST || '').trim();
+    if (!rawHost) return '0.0.0.0';
+    // Accept valid IPv4, IPv6 or localhost bind addresses
+    if (/^((\d{1,3}\.){3}\d{1,3}|\[?::[\da-f:]*\]?|localhost)$/i.test(rawHost)) {
+        return rawHost;
+    }
+    console.warn(
+        `[startup] HOST was set to "${rawHost}", which is not a valid network bind IP. Falling back to "0.0.0.0".`,
+    );
+    return '0.0.0.0';
+}
+
+const hostname = resolveBindHost();
 
 const PRODUCTION_DOMAIN = 'sentinelph.tech';
 const EXPECTED_PRODUCTION_URLS = {
