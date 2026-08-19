@@ -34,6 +34,7 @@ export function ImportModal({
         handleTypeCountChange,
         handleToggleBloomLevel,
         handleFileChange,
+        handleRemoveFile,
         handleAnalyze,
         handleGenerate,
         handleBack,
@@ -76,7 +77,11 @@ export function ImportModal({
 
                 <div className="mt-4 min-h-0 flex-1 overflow-y-auto">
                     {isUploadStep ? (
-                        <UploadTab files={files} onFileChange={handleFileChange} />
+                        <UploadTab
+                            files={files}
+                            onFileChange={handleFileChange}
+                            onRemoveFile={handleRemoveFile}
+                        />
                     ) : (
                         <ConfigureStep
                             filesCount={files.length}

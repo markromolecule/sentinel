@@ -84,23 +84,27 @@ describe('Question Generator steps modules', () => {
     });
 
     describe('resolvePageCountsStep', () => {
-        it('queries page counts', async () => {
-            const mockProvider: Partial<QuestionGeneratorLlmProvider> = {
-                generateStructuredJson: vi.fn().mockResolvedValue({
-                    documents: [{ fileName: 'lesson.pdf', pageCount: 12 }],
-                }),
-            };
+        it('extracts page counts from PDF buffers deterministically', async () => {
+            const pdfContent = '%PDF-1.4\n1 0 obj\n<< /Type /Pages /Count 5 >>\nendobj\n';
+            const mockFile = new File([pdfContent], 'lesson.pdf', { type: 'application/pdf' });
 
             const counts = await resolvePageCountsStep({
-                files: [new File([], 'lesson.pdf')],
-                uploadedFiles: [{ name: 'file1', uri: 'uri1', mimeType: 'pdf' }],
-                model: 'model',
-                provider: mockProvider as QuestionGeneratorLlmProvider,
+                files: [mockFile],
             });
 
             expect(counts).toHaveLength(1);
             expect(counts[0].fileName).toBe('lesson.pdf');
-            expect(counts[0].pageCount).toBe(12);
+            expect(counts[0].pageCount).toBe(5);
+        });
+
+        it('falls back to 1 for empty or unstructured files', async () => {
+            const counts = await resolvePageCountsStep({
+                files: [new File([], 'blank.pdf')],
+            });
+
+            expect(counts).toHaveLength(1);
+            expect(counts[0].fileName).toBe('blank.pdf');
+            expect(counts[0].pageCount).toBe(1);
         });
     });
 

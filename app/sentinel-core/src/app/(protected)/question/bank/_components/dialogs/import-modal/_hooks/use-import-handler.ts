@@ -17,7 +17,7 @@ export function useImportHandler(args: {
     const router = useRouter();
     const { setPreviewData, setIsGenerating, reset, setSaveTarget } = useAiImportStore();
 
-    const { files, handleFileChange } = useFileValidator();
+    const { files, handleFileChange, handleRemoveFile } = useFileValidator();
     const { questionTypeDistribution, questionCount, handleToggleType, handleTypeCountChange } =
         useTypeDistribution();
 
@@ -115,6 +115,7 @@ export function useImportHandler(args: {
         handleTypeCountChange,
         handleToggleBloomLevel,
         handleFileChange,
+        handleRemoveFile,
         handleAnalyze: () => handleAnalyze(files.length),
         handleGenerate,
         handleBack,

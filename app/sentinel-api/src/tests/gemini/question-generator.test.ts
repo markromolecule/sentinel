@@ -114,9 +114,13 @@ describe('Gemini question generator contracts', () => {
 
         const preview = await QuestionGeneratorService.generatePreviewFromPdf({
             files: [
-                new File(['%PDF-1.7 fake lesson'], 'lesson.pdf', {
-                    type: 'application/pdf',
-                }),
+                new File(
+                    ['%PDF-1.7\n1 0 obj\n<< /Type /Pages /Count 8 >>\nendobj\n'],
+                    'lesson.pdf',
+                    {
+                        type: 'application/pdf',
+                    },
+                ),
             ],
             config: {
                 ...baseConfig,
