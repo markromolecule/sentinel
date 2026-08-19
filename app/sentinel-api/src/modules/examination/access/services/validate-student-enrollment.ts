@@ -29,12 +29,12 @@ export async function validateStudentEnrollment(args: {
     const isEnrolled = isRemediationExam
         ? true
         : await EntitlementsRepository.hasStudentExamEnrollment(dbClient, {
-              studentId: resolvedStudent.student_id,
-              classGroupId: resolvedExam.class_group_id,
-              subjectId: resolvedExam.subject_id!,
-              sectionId: resolvedExam.section_id,
-              sectionIds: resolvedExam.assigned_section_ids,
-          });
+            studentId: resolvedStudent.student_id,
+            classGroupId: resolvedExam.class_group_id,
+            subjectId: resolvedExam.subject_id!,
+            sectionId: resolvedExam.section_id,
+            sectionIds: resolvedExam.assigned_section_ids,
+        });
 
     if (!isEnrolled) {
         return {

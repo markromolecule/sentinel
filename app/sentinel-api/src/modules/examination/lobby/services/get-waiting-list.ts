@@ -3,7 +3,7 @@ import { DEFAULT_EXAMINATION_GLOBAL_SETTINGS } from '@sentinel/shared/constants'
 import { sql } from 'kysely';
 
 type AttemptRecord = {
-    student_id: string;
+    student_id: string | null;
     status: string | null;
     reconnect_attempt_count: number | null;
 };
@@ -66,7 +66,7 @@ export const getWaitingList = async (dbClient: DbClient, examId: string) => {
 
     const attemptByStudent = new Map<string, { status: string | null; reconnectCount: number }>();
     for (const attempt of attempts) {
-        if (!attemptByStudent.has(attempt.student_id)) {
+        if (attempt.student_id && !attemptByStudent.has(attempt.student_id)) {
             attemptByStudent.set(attempt.student_id, {
                 status: attempt.status,
                 reconnectCount: Number(attempt.reconnect_attempt_count ?? 0),
