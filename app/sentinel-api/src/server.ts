@@ -12,7 +12,8 @@ import {
     stopLiveInspectionReconciler,
 } from './modules/examination/live-inspection/services/live-inspection-reconciler.service';
 
-const port = 3001;
+const port = Number(process.env.PORT) || 3001;
+const hostname = process.env.HOST || '0.0.0.0';
 
 const PRODUCTION_DOMAIN = 'sentinelph.tech';
 const EXPECTED_PRODUCTION_URLS = {
@@ -80,12 +81,15 @@ startLiveInspectionReconciler();
 serve({
     fetch: app.fetch,
     port,
+    hostname,
 });
 
 const isProduction = process.env.NODE_ENV === 'production';
 const baseUrl = isProduction ? 'https://api.sentinelph.tech' : `http://localhost:${port}`;
+const hasGeminiKey = Boolean(process.env.GEMINI_API_KEY?.trim());
 
-console.log(`Server is running on ${baseUrl}`);
+console.log(`[startup] Server is running on ${baseUrl} (listening on ${hostname}:${port})`);
+console.log(`[startup] Gemini AI integration: ${hasGeminiKey ? 'Configured (API key detected)' : 'Warning: GEMINI_API_KEY is not set'}`);
 
 const shutdown = async () => {
     if (startEmbeddedPdfWorker) {

@@ -94,7 +94,7 @@ export function UploadTab({ files, onFileChange, onRemoveFile }: UploadTabProps)
                     <p className="text-muted-foreground mx-auto mt-2 max-w-[250px] text-xs leading-relaxed">
                         Upload one or more{' '}
                         <span className="text-foreground font-medium">PDF lesson files</span> up to
-                        4.5MB total.
+                        25MB total.
                     </p>
                 </div>
             </div>
