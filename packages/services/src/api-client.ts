@@ -133,8 +133,8 @@ export const createApiClient = (defaultOptions: ApiClientOptions = {}) => {
             throw new ApiError({
                 message: isFailedToFetch
                     ? (isAiEndpoint
-                        ? 'Unable to connect to the server. The uploaded files may exceed the 4.5MB serverless payload limit or the request exceeded the 60-second execution window. Please try again with smaller files or a smaller question batch.'
-                        : 'Unable to connect to the server. Please check your network connection or try again with a smaller file/question batch.')
+                        ? 'Unable to connect to the AI generation service. Please check your network connection or try generating with a smaller question batch.'
+                        : 'Unable to connect to the server. Please check your network connection and try again.')
                     : errorMsg || 'Network request failed',
                 status: 0,
                 statusText: 'Network Error',

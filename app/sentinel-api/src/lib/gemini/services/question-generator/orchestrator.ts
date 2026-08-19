@@ -53,8 +53,6 @@ export class QuestionGeneratorService {
     }): Promise<GenerateQuestionPreviewResponse> {
         const provider = args.provider ?? GeminiProvider;
         const BATCH_SIZE = 20;
-        const SERVERLESS_EXECUTION_BUDGET_MS = 45_000;
-        const startTime = Date.now();
 
         const batches = createBatches(args.config, BATCH_SIZE);
         const totalSizeBytes = args.files.reduce((total, file) => total + file.size, 0);
@@ -100,10 +98,6 @@ export class QuestionGeneratorService {
                 reconciliation.deficits.length > 0 &&
                 replenishmentRound < MAX_DEFICIT_REPLENISHMENT_ROUNDS
             ) {
-                if (Date.now() - startTime > SERVERLESS_EXECUTION_BUDGET_MS) {
-                    console.warn('Exceeded serverless execution budget during deficit replenishment. Gracefully returning partial questions.');
-                    break;
-                }
                 replenishmentRound++;
                 const missingCount = reconciliation.deficits.reduce(
                     (total, deficit) => total + deficit.count,
@@ -146,10 +140,6 @@ export class QuestionGeneratorService {
                 assessResult.failedSlots.length > 0 &&
                 currentRound < MAX_PASSAGE_REPAIR_ROUNDS
             ) {
-                if (Date.now() - startTime > SERVERLESS_EXECUTION_BUDGET_MS) {
-                    console.warn('Exceeded serverless execution budget during passage quality repair. Gracefully returning current slots.');
-                    break;
-                }
                 const failedSlotsToRepair =
                     currentRound === 0
                         ? assessResult.failedSlots

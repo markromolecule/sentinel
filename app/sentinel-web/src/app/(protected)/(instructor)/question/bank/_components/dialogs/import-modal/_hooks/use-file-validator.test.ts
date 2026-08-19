@@ -21,7 +21,7 @@ describe('useFileValidator', () => {
         expect(result.current.files).toEqual([]);
     });
 
-    it('accepts valid PDF files under 4.5MB', () => {
+    it('accepts valid PDF files under 25MB', () => {
         const { result } = renderHook(() => useFileValidator());
         const validFile = new File(['dummy content'], 'lesson1.pdf', {
             type: 'application/pdf',
@@ -55,10 +55,10 @@ describe('useFileValidator', () => {
         );
     });
 
-    it('rejects single files exceeding 4.5MB', () => {
+    it('rejects single files exceeding 25MB', () => {
         const { result } = renderHook(() => useFileValidator());
-        // 5MB file
-        const largeFile = new File([new Uint8Array(5 * 1024 * 1024)], 'large.pdf', {
+        // 30MB file
+        const largeFile = new File([new Uint8Array(30 * 1024 * 1024)], 'large.pdf', {
             type: 'application/pdf',
         });
 
@@ -70,7 +70,7 @@ describe('useFileValidator', () => {
         expect(toast.error).toHaveBeenCalledWith(
             'File too large',
             expect.objectContaining({
-                description: expect.stringContaining('Max file size is 4.5MB'),
+                description: expect.stringContaining('Max file size is 25MB'),
             }),
         );
     });
