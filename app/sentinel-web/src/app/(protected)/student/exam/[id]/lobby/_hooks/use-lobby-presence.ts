@@ -27,15 +27,14 @@ export function useLobbyPresence(examId: string) {
         }
 
         const channelName = `presence:lobby:${examId}`;
-        const channel: RealtimeChannel = supabase.channel(channelName, {
-            config: {
-                presence: {
-                    key: userId,
+        const channel: RealtimeChannel = supabase
+            .channel(channelName, {
+                config: {
+                    presence: {
+                        key: userId,
+                    },
                 },
-            },
-        });
-
-        channel
+            })
             .on('presence', { event: 'sync' }, () => {
                 if (!isEffectActive) {
                     return;
@@ -67,7 +66,7 @@ export function useLobbyPresence(examId: string) {
 
         return () => {
             isEffectActive = false;
-            void supabase.removeChannel(channel);
+            supabase.removeChannel(channel);
         };
     }, [supabase, userId, examId]);
 

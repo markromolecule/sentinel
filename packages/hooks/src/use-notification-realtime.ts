@@ -34,9 +34,8 @@ export function useNotificationRealtime(args: UseNotificationRealtimeArgs) {
         }
 
         const channelName = buildChannelName(user.id, queryKey);
-        const channel: RealtimeChannel = supabase.channel(channelName);
-
-        channel
+        const channel: RealtimeChannel = supabase
+            .channel(channelName)
             .on(
                 'postgres_changes',
                 {
@@ -54,7 +53,7 @@ export function useNotificationRealtime(args: UseNotificationRealtimeArgs) {
             .subscribe();
 
         return () => {
-            void supabase.removeChannel(channel);
+            supabase.removeChannel(channel);
         };
     }, [enabled, queryClient, queryKey, supabase, user?.id]);
 }

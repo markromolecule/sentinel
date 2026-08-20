@@ -247,11 +247,10 @@ export function useStudentLiveInspectionPublisher({
         }
 
         const topic = `exam-attempt:${attemptId}:live-inspection`;
-        const channel: RealtimeChannel = supabase.channel(topic, {
-            config: { private: true },
-        });
-
-        channel
+        const channel: RealtimeChannel = supabase
+            .channel(topic, {
+                config: { private: true },
+            })
             .on('broadcast', { event: LIVE_INSPECTION_SIGNAL_EVENT }, () => {
                 void runReconcileNow();
             })

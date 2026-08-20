@@ -217,7 +217,7 @@ export function NewAssignmentsBuilder({
                                 key={row.localId}
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
                                 transition={{ duration: 0.2 }}
                                 className="relative flex flex-col gap-3 rounded-lg border bg-zinc-50/50 p-4 dark:bg-zinc-950/20"
                             >

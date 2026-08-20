@@ -1079,6 +1079,9 @@ ALTER TABLE "public"."departments" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."enrollments" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."institutions" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."exam_attempts" ENABLE ROW LEVEL SECURITY;
 
 

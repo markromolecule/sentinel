@@ -272,7 +272,7 @@ export const QuestionCard = ({
                             minHeight: type === 'ESSAY' ? 160 : 52,
                         }}
                     />
-                    {maxLength && (
+                    {Boolean(maxLength) && (
                         <Text
                             style={{ color: colors.icon }}
                             className="mt-1 self-end text-xs"

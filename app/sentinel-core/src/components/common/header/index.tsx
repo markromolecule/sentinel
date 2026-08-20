@@ -18,13 +18,16 @@ export function Header() {
 
     // Configure URLs for production subdomain routing
     const isProduction =
-        typeof window !== 'undefined' &&
-        !window.location.hostname.includes('localhost') &&
-        !window.location.hostname.includes('127.0.0.1');
+        process.env.NODE_ENV === 'production' &&
+        Boolean(
+            process.env.NEXT_PUBLIC_CORE_URL &&
+                !process.env.NEXT_PUBLIC_CORE_URL.includes('localhost') &&
+                !process.env.NEXT_PUBLIC_CORE_URL.includes('127.0.0.1'),
+        );
 
     const getAuthUrl = (path: string) => {
-        if (isProduction) {
-            return `https://core.sentinelph.tech${path}`;
+        if (isProduction && process.env.NEXT_PUBLIC_CORE_URL) {
+            return `${process.env.NEXT_PUBLIC_CORE_URL}${path}`;
         }
         return path;
     };

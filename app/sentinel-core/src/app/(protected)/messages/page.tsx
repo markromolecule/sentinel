@@ -131,15 +131,22 @@ function AdminMessagesPageContent() {
             c.participants.some((p) => p.userId === targetUserId),
         );
 
+        let timer: ReturnType<typeof setTimeout> | undefined;
         if (existingConversation) {
-            setTimeout(() => {
+            timer = setTimeout(() => {
                 setSelectedConversationId(existingConversation.conversationId);
             }, 0);
         } else {
-            setTimeout(() => {
+            timer = setTimeout(() => {
                 handleStartConversation(targetUserId);
             }, 0);
         }
+
+        return () => {
+            if (timer) {
+                clearTimeout(timer);
+            }
+        };
     }, [
         targetUserId,
         conversations,

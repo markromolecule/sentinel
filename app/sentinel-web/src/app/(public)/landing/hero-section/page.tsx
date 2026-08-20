@@ -40,13 +40,16 @@ function DownloadButton({
 export default function HeroSection() {
     const reduceMotion = useReducedMotion();
     const isProduction =
-        typeof window !== 'undefined' &&
-        !window.location.hostname.includes('localhost') &&
-        !window.location.hostname.includes('127.0.0.1');
+        process.env.NODE_ENV === 'production' &&
+        Boolean(
+            process.env.NEXT_PUBLIC_APP_URL &&
+                !process.env.NEXT_PUBLIC_APP_URL.includes('localhost') &&
+                !process.env.NEXT_PUBLIC_APP_URL.includes('127.0.0.1'),
+        );
 
     const getAuthUrl = (path: string) => {
-        if (isProduction) {
-            return `https://app.sentinelph.tech${path}`;
+        if (isProduction && process.env.NEXT_PUBLIC_APP_URL) {
+            return `${process.env.NEXT_PUBLIC_APP_URL}${path}`;
         }
 
         return path;

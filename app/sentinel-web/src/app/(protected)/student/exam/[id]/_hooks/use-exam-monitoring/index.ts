@@ -47,9 +47,6 @@ export function useExamMonitoring({
         monitoringPhase === 'submitting' ||
         monitoringPhase === 'navigating-to-turn-in';
 
-    monitoringPhaseRef.current = monitoringPhase;
-    isMonitoringSuspendedRef.current = resolvedMonitoringSuspended;
-
     useEffect(() => {
         monitoringPhaseRef.current = monitoringPhase;
         isMonitoringSuspendedRef.current = resolvedMonitoringSuspended;
