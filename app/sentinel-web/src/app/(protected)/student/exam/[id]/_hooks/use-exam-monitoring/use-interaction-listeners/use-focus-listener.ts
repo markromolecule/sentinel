@@ -98,11 +98,17 @@ export function useFocusListener(options: FocusListenerOptions) {
             }
         };
 
+        let blurTimeout: ReturnType<typeof setTimeout> | undefined;
+
         const handleWindowBlur = () => {
             if (!shouldMonitorVisibility) return;
             if (isMobile) return;
 
-            setTimeout(() => {
+            if (blurTimeout) {
+                clearTimeout(blurTimeout);
+            }
+
+            blurTimeout = setTimeout(() => {
                 // Policy: Window blur/loss of focus is tracked separately from fullscreen state.
                 if (!isMonitoringSuspended.current && !document.hasFocus() && !document.hidden) {
                     registerFocusIncident('focus-loss');
@@ -114,6 +120,9 @@ export function useFocusListener(options: FocusListenerOptions) {
         window.addEventListener('blur', handleWindowBlur);
 
         return () => {
+            if (blurTimeout) {
+                clearTimeout(blurTimeout);
+            }
             document.removeEventListener('visibilitychange', handleVisibilityChange);
             window.removeEventListener('blur', handleWindowBlur);
         };

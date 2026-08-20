@@ -21,9 +21,9 @@ ALTER TABLE public.rooms ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
 CREATE POLICY "Authenticated users can view rooms" ON public.rooms FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Authenticated users can insert rooms" ON public.rooms FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "Authenticated users can update rooms" ON public.rooms FOR UPDATE TO authenticated USING (true);
-CREATE POLICY "Authenticated users can delete rooms" ON public.rooms FOR DELETE TO authenticated USING (true);
+CREATE POLICY "Authenticated users can insert rooms" ON public.rooms FOR INSERT TO authenticated WITH CHECK (auth.uid() = created_by);
+CREATE POLICY "Authenticated users can update rooms" ON public.rooms FOR UPDATE TO authenticated USING (auth.uid() = created_by);
+CREATE POLICY "Authenticated users can delete rooms" ON public.rooms FOR DELETE TO authenticated USING (auth.uid() = created_by);
 
 -- Trigger for updated_at
 CREATE TRIGGER update_rooms_updated_at 

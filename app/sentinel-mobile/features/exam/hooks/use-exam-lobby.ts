@@ -178,15 +178,14 @@ export function useExamLobby() {
         const userId = session.user.id;
         const channelName = `presence:lobby:${id}`;
 
-        const channel = supabase.channel(channelName, {
-            config: {
-                presence: {
-                    key: userId,
+        const channel = supabase
+            .channel(channelName, {
+                config: {
+                    presence: {
+                        key: userId,
+                    },
                 },
-            },
-        });
-
-        channel
+            })
             .on('presence', { event: 'sync' }, () => {
                 const state = channel.presenceState<any>();
                 const uniqueUserIds = new Set<string>();
@@ -209,7 +208,7 @@ export function useExamLobby() {
             });
 
         return () => {
-            void supabase.removeChannel(channel);
+            supabase.removeChannel(channel);
         };
     }, [supabase, session?.user, id]);
 
@@ -218,9 +217,8 @@ export function useExamLobby() {
         if (!supabase || !session?.user || !id) return;
 
         const channelName = `lobby:admissions:${id}`;
-        const channel = supabase.channel(channelName);
-
-        channel
+        const channel = supabase
+            .channel(channelName)
             .on(
                 'postgres_changes',
                 {
@@ -248,7 +246,7 @@ export function useExamLobby() {
             .subscribe();
 
         return () => {
-            void supabase.removeChannel(channel);
+            supabase.removeChannel(channel);
         };
     }, [apiClient, id, refetchExam, refetchLobbyCount, session?.user, supabase]);
 

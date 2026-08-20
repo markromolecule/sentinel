@@ -41,16 +41,16 @@ export function AddAnnouncementDialog() {
         },
     });
 
-    if (!hasPermission('announcement:create')) {
-        return null;
-    }
-
     const mutation = useCreateAnnouncementMutation({
         onSuccess: () => {
             setOpen(false);
             form.reset();
         },
     });
+
+    if (!hasPermission('announcement:create')) {
+        return null;
+    }
 
     function onSubmit(values: AnnouncementFormValues) {
         mutation.mutate({

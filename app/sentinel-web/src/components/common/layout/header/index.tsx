@@ -19,21 +19,24 @@ export function Header() {
     });
 
     const isProduction =
-        typeof window !== 'undefined' &&
-        !window.location.hostname.includes('localhost') &&
-        !window.location.hostname.includes('127.0.0.1');
+        process.env.NODE_ENV === 'production' &&
+        Boolean(
+            process.env.NEXT_PUBLIC_APP_URL &&
+                !process.env.NEXT_PUBLIC_APP_URL.includes('localhost') &&
+                !process.env.NEXT_PUBLIC_APP_URL.includes('127.0.0.1'),
+        );
 
     const getAuthUrl = (path: string) => {
-        if (isProduction) {
-            return `https://app.sentinelph.tech${path}`;
+        if (isProduction && process.env.NEXT_PUBLIC_APP_URL) {
+            return `${process.env.NEXT_PUBLIC_APP_URL}${path}`;
         }
 
         return path;
     };
 
     const getHomeUrl = () => {
-        if (typeof window !== 'undefined' && window.location.hostname === 'app.sentinelph.tech') {
-            return 'https://sentinelph.tech';
+        if (isProduction && process.env.NEXT_PUBLIC_LANDING_URL) {
+            return process.env.NEXT_PUBLIC_LANDING_URL;
         }
 
         return '/';

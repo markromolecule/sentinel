@@ -83,6 +83,7 @@ export function useStudentLiveInspectionPublication({
             // Best-effort browser cleanup; authoritative state is handled by the backend API.
         }
         stopClonedInspectionTrack(publication.clonedTrack);
+        publication.room.removeAllListeners?.();
         publication.room.disconnect();
         setActiveLeaseId(null);
     }, []);
@@ -162,6 +163,7 @@ export function useStudentLiveInspectionPublication({
                 }
 
                 room = new Room({ dynacast: true });
+                // react-doctor-disable-next-line react-doctor/effect-needs-cleanup
                 room.on('disconnected', () => {
                     logLocalDiagnostic('room_disconnected', {
                         message: 'LiveKit room disconnected.',

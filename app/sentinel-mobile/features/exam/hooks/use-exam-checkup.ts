@@ -246,37 +246,34 @@ export function useExamCheckup(): UseExamCheckupReturn {
             });
 
             if (sample) {
-                setCalibrationSamples((prev) => {
-                    const lastSample = prev[prev.length - 1] ?? null;
-                    const stable = isMobileCalibrationStable(lastSample, sample);
-                    let nextSamples = stable ? [...prev, sample] : prev.slice(0, Math.max(0, prev.length - 2));
+                const prev = calibrationSamples;
+                const lastSample = prev[prev.length - 1] ?? null;
+                const stable = isMobileCalibrationStable(lastSample, sample);
+                const nextSamples = stable ? [...prev, sample] : prev.slice(0, Math.max(0, prev.length - 2));
 
-                    const REQUIRED_FRAMES = 6;
-                    const progress = Math.min(100, Math.round((nextSamples.length / REQUIRED_FRAMES) * 100));
-                    setCalibrationProgress(progress);
+                const REQUIRED_FRAMES = 6;
+                const progress = Math.min(100, Math.round((nextSamples.length / REQUIRED_FRAMES) * 100));
+                setCalibrationSamples(nextSamples);
+                setCalibrationProgress(progress);
 
-                    if (nextSamples.length >= REQUIRED_FRAMES) {
-                        const profile = buildMobileCalibrationProfile({ samples: nextSamples });
-                        if (profile && id) {
-                            setCalibrationProfile(profile);
-                            setIsCalibrated(true);
-                            setCalibrationFeedback(null);
-                            void writeStoredMobileCalibrationProfile(id as string, profile);
-                        }
+                if (nextSamples.length >= REQUIRED_FRAMES) {
+                    const profile = buildMobileCalibrationProfile({ samples: nextSamples });
+                    if (profile && id) {
+                        setCalibrationProfile(profile);
+                        setIsCalibrated(true);
+                        setCalibrationFeedback(null);
+                        void writeStoredMobileCalibrationProfile(id as string, profile);
                     }
-                    return nextSamples;
-                });
+                }
             }
         } else {
             // Decelerate or reset progress on invalid frames
-            setCalibrationSamples((prev) => {
-                const nextSamples = prev.slice(0, Math.max(0, prev.length - 2));
-                const progress = Math.min(100, Math.round((nextSamples.length / 6) * 100));
-                setCalibrationProgress(progress);
-                return nextSamples;
-            });
+            const nextSamples = calibrationSamples.slice(0, Math.max(0, calibrationSamples.length - 2));
+            const progress = Math.min(100, Math.round((nextSamples.length / 6) * 100));
+            setCalibrationSamples(nextSamples);
+            setCalibrationProgress(progress);
         }
-    }, [isCalibrated, exam, id]);
+    }, [isCalibrated, exam, id, calibrationSamples]);
 
     // ── Camera Handlers ──
     const onCameraReady = () => setCameraReady(true);

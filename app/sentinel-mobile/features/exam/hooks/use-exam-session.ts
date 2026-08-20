@@ -110,14 +110,7 @@ export const useExamSession = () => {
         if (!exam) return;
 
         const timer = setInterval(() => {
-            setTimeLeft((prev) => {
-                if (prev <= 1) {
-                    clearInterval(timer);
-                    // Auto-submit logic
-                    return 0;
-                }
-                return prev - 1;
-            });
+            setTimeLeft((prev) => Math.max(0, prev - 1));
         }, 1000);
         return () => clearInterval(timer);
     }, [exam]);

@@ -5,7 +5,6 @@ import type { QuestionRecord } from '@sentinel/services';
 import type { QuestionType } from '@sentinel/shared/types';
 import { ALL_COLLECTIONS_ID } from '../constants';
 import type { SelectedImportQuestionRecord } from '../utils';
-import { toggleAllSelectionIds, toggleSelectionId } from '../utils';
 
 export function useQuestionBankImportSelection(allowedQuestionType?: QuestionType) {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -24,20 +23,22 @@ export function useQuestionBankImportSelection(allowedQuestionType?: QuestionTyp
         if (allowedQuestionType) {
             setSelectedQuestionType(allowedQuestionType);
             setSelectedQuestionsById((currentQuestions) => {
-                const nextQuestions = { ...currentQuestions };
-                const nextIds: string[] = [];
-                Object.keys(nextQuestions).forEach((id) => {
-                    if (nextQuestions[id]?.question.type === allowedQuestionType) {
-                        nextIds.push(id);
-                    } else {
-                        delete nextQuestions[id];
+                const nextQuestions: Record<string, SelectedImportQuestionRecord> = {};
+                Object.keys(currentQuestions).forEach((id) => {
+                    const item = currentQuestions[id];
+                    if (item && item.question.type === allowedQuestionType) {
+                        nextQuestions[id] = item;
                     }
                 });
-                setSelectedIds(nextIds);
                 return nextQuestions;
             });
+            setSelectedIds((currentIds) =>
+                currentIds.filter(
+                    (id) => selectedQuestionsById[id]?.question.type === allowedQuestionType,
+                ),
+            );
         }
-    }, [allowedQuestionType]);
+    }, [allowedQuestionType, selectedQuestionsById]);
 
     const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
     const selectedQuestions = useMemo(
@@ -82,27 +83,24 @@ export function useQuestionBankImportSelection(allowedQuestionType?: QuestionTyp
             return;
         }
 
-        setSelectedIds((currentSelectedIds) => {
-            const isSelected = currentSelectedIds.includes(id);
+        const isSelected = selectedIds.includes(id);
 
-            setSelectedQuestionsById((currentSelectedQuestions) => {
-                if (isSelected) {
-                    const { [id]: _removedQuestion, ...remainingQuestions } =
-                        currentSelectedQuestions;
-                    return remainingQuestions;
-                }
-
-                return {
-                    ...currentSelectedQuestions,
-                    [id]: {
-                        question,
-                        sourceCollectionId,
-                    },
-                };
+        if (isSelected) {
+            setSelectedIds((current) => current.filter((item) => item !== id));
+            setSelectedQuestionsById((current) => {
+                const { [id]: _removedQuestion, ...remainingQuestions } = current;
+                return remainingQuestions;
             });
-
-            return toggleSelectionId(currentSelectedIds, id);
-        });
+        } else {
+            setSelectedIds((current) => [...current, id]);
+            setSelectedQuestionsById((current) => ({
+                ...current,
+                [id]: {
+                    question,
+                    sourceCollectionId,
+                },
+            }));
+        }
     };
 
     const toggleSelectAllFilteredQuestions = (
@@ -113,43 +111,38 @@ export function useQuestionBankImportSelection(allowedQuestionType?: QuestionTyp
             (question) => !alreadyAddedIdSet.has(question.id),
         );
         const importableQuestionIds = importableQuestions.map((question) => question.id);
+        if (importableQuestionIds.length === 0) {
+            return;
+        }
 
-        setSelectedIds((currentSelectedIds) => {
-            const allVisibleSelected =
-                importableQuestionIds.length > 0 &&
-                importableQuestionIds.every((questionId) =>
-                    currentSelectedIds.includes(questionId),
-                );
+        const allVisibleSelected = importableQuestionIds.every((questionId) =>
+            selectedIds.includes(questionId),
+        );
 
-            setSelectedQuestionsById((currentSelectedQuestions) => {
-                if (allVisibleSelected) {
-                    const remainingQuestions = { ...currentSelectedQuestions };
-
-                    importableQuestionIds.forEach((questionId) => {
-                        delete remainingQuestions[questionId];
-                    });
-
-                    return remainingQuestions;
-                }
-
-                const nextSelectedQuestions = { ...currentSelectedQuestions };
-
+        if (allVisibleSelected) {
+            const removeIdSet = new Set(importableQuestionIds);
+            setSelectedIds((current) => current.filter((id) => !removeIdSet.has(id)));
+            setSelectedQuestionsById((current) => {
+                const remainingQuestions = { ...current };
+                importableQuestionIds.forEach((questionId) => {
+                    delete remainingQuestions[questionId];
+                });
+                return remainingQuestions;
+            });
+        } else {
+            const newIdsToAdd = importableQuestionIds.filter((id) => !selectedIds.includes(id));
+            setSelectedIds((current) => [...current, ...newIdsToAdd]);
+            setSelectedQuestionsById((current) => {
+                const nextSelectedQuestions = { ...current };
                 importableQuestions.forEach((question) => {
                     nextSelectedQuestions[question.id] = {
                         question,
                         sourceCollectionId,
                     };
                 });
-
                 return nextSelectedQuestions;
             });
-
-            return toggleAllSelectionIds(
-                currentSelectedIds,
-                importableQuestionIds,
-                allVisibleSelected,
-            );
-        });
+        }
     };
 
     return {

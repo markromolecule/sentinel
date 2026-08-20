@@ -128,6 +128,7 @@ export function useLiveInspectionViewer({
     const cleanupRoom = useCallback(() => {
         clearPollTimer();
         detachLocalVideo();
+        roomRef.current?.removeAllListeners?.();
         roomRef.current?.disconnect();
         roomRef.current = null;
         setConnectionQuality(null);
@@ -191,6 +192,7 @@ export function useLiveInspectionViewer({
                 const room = new Room({ adaptiveStream: true });
                 roomRef.current = room;
 
+                // react-doctor-disable-next-line react-doctor/effect-needs-cleanup
                 room.on(RoomEvent.TrackSubscribed, (track: any, publication: any) => {
                     if (
                         !isExpectedRemoteCameraTrack(track, publication) ||

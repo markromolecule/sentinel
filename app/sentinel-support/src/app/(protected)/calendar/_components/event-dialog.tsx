@@ -49,10 +49,6 @@ export function EventDialog({
     const [startTime, setStartTime] = useState('');
     const [endTime, setEndTime] = useState('');
 
-    if (!canAddEvent) {
-        return null;
-    }
-
     useEffect(() => {
         if (open) {
             setDate(selectedDate || new Date());
@@ -116,6 +112,10 @@ export function EventDialog({
         }
         onOpenChange(newOpen);
     };
+
+    if (!canAddEvent) {
+        return null;
+    }
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>

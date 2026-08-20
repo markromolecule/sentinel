@@ -19,6 +19,8 @@
         "format": "prettier --write .",
         "format:check": "prettier --check .",
         "clean": "rm -rf node_modules",
+        "doctor": "react-doctor",
+        "doctor:verbose": "react-doctor --verbose",
         "context:resolve": "node context-factory/scripts/context.mjs resolve",
         "context:bundle": "node context-factory/scripts/context.mjs bundle",
         "context:doctor": "node context-factory/scripts/context.mjs doctor",
@@ -28,6 +30,7 @@
         "@types/react": "~19.1.10",
         "prettier": "latest",
         "prettier-plugin-tailwindcss": "^0.7.2",
+        "react-doctor": "^0.9.12",
         "turbo": "latest",
         "typescript": "~5.9.2"
     },

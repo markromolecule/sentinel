@@ -23,18 +23,13 @@ export function useLobbyRealtime(args: UseLobbyRealtimeArgs) {
     }, [onAdmissionChange]);
 
     useEffect(() => {
-        if (!enabled || !supabase || !session?.user || !examId) {
-            return;
-        }
-
-        if (!supabase.channel || !supabase.removeChannel) {
-            return;
+        if (!enabled || !supabase || !session?.user || !examId || !supabase.channel || !supabase.removeChannel) {
+            return () => {};
         }
 
         const channelName = `lobby:admissions:${examId}`;
-        const channel: RealtimeChannel = supabase.channel(channelName);
-
-        channel
+        const channel: RealtimeChannel = supabase
+            .channel(channelName)
             .on(
                 'postgres_changes',
                 {
@@ -63,7 +58,7 @@ export function useLobbyRealtime(args: UseLobbyRealtimeArgs) {
             .subscribe();
 
         return () => {
-            void supabase.removeChannel(channel);
+            supabase.removeChannel(channel);
         };
     }, [enabled, examId, queryClient, session?.user, supabase]);
 }

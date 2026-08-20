@@ -129,6 +129,8 @@ CREATE TABLE IF NOT EXISTS public.institution_naming_conventions (
 CREATE INDEX IF NOT EXISTS institution_naming_conventions_institution_id_idx
     ON public.institution_naming_conventions(institution_id);
 
+ALTER TABLE public.institution_naming_conventions ENABLE ROW LEVEL SECURITY;
+
 DO $$
 BEGIN
     ALTER TABLE public.institution_naming_conventions
