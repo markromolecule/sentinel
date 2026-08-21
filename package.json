@@ -24,7 +24,9 @@
         "context:resolve": "node context-factory/scripts/context.mjs resolve",
         "context:bundle": "node context-factory/scripts/context.mjs bundle",
         "context:doctor": "node context-factory/scripts/context.mjs doctor",
-        "context:update": "git submodule update --remote --merge context-factory && pnpm context:doctor"
+        "context:bridge": "node scripts/bridge-context.mjs",
+        "context:sync": "pnpm context:bridge && pnpm context:doctor",
+        "context:update": "git submodule update --remote --merge context-factory && pnpm context:bridge && pnpm context:doctor"
     },
     "devDependencies": {
         "@types/react": "~19.1.10",
