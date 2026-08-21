@@ -30,11 +30,10 @@ export async function previewStudentEnrollmentData({
         .where('student_number', 'in', normalizedStudentNumbers)
         .execute();
 
-    const whitelistMap = new Map(whitelistRecords.map((record) => [record.student_number, record]));
-    const claimedUserIds = whitelistRecords
-        .map((record) => record.claimed_user_id)
-        .filter((claimedUserId): claimedUserId is string => Boolean(claimedUserId));
-    const alreadyEnrolledUserIds = new Set<string>();
+    const whitelistMap = new Map(
+        whitelistRecords.map((record) => [record.student_number, record]),
+    );
+    const alreadyEnrolledStudentNumbers = new Set<string>();
 
     if (classGroupId) {
         await getAccessibleClassroomOrThrow(dbClient, {
@@ -43,20 +42,19 @@ export async function previewStudentEnrollmentData({
             institutionId,
             userRole,
         });
-    }
 
-    if (classGroupId && claimedUserIds.length > 0) {
         const existingEnrollments = await dbClient
             .selectFrom('enrollments as e')
             .innerJoin('students as s', 's.student_id', 'e.student_id')
-            .select('s.user_id')
+            .select('s.student_number')
             .where('e.class_group_id', '=', classGroupId)
-            .where('s.user_id', 'in', claimedUserIds)
+            .where('s.institution_id', '=', institutionId)
+            .where('s.student_number', 'in', normalizedStudentNumbers)
             .execute();
 
         existingEnrollments.forEach((record) => {
-            if (record.user_id) {
-                alreadyEnrolledUserIds.add(record.user_id);
+            if (record.student_number) {
+                alreadyEnrolledStudentNumbers.add(record.student_number);
             }
         });
     }
@@ -72,19 +70,19 @@ export async function previewStudentEnrollmentData({
             };
         }
 
-        if (!record.claimed_user_id) {
-            return {
-                studentNumber,
-                claimStatus: 'UNCLAIMED' as const,
-                reason: 'Account not yet claimed.',
-            };
-        }
-
-        if (classGroupId && alreadyEnrolledUserIds.has(record.claimed_user_id)) {
+        if (classGroupId && alreadyEnrolledStudentNumbers.has(studentNumber)) {
             return {
                 studentNumber,
                 claimStatus: 'ALREADY_ENROLLED' as const,
                 reason: 'Student is already enrolled in the selected classroom.',
+            };
+        }
+
+        if (!record.claimed_user_id) {
+            return {
+                studentNumber,
+                claimStatus: 'UNCLAIMED' as const,
+                reason: 'Account not yet claimed (ready to enroll).',
             };
         }
 

@@ -22,6 +22,8 @@ export type ClassroomStudent = {
     courseTitle: string | null;
     enrolledAt: string | null;
     avatarUrl: string | null;
+    isClaimed?: boolean;
+    claimStatus?: 'CLAIMED' | 'UNCLAIMED';
 };
 
 export type ClassroomInstructor = {

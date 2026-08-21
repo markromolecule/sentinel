@@ -11,6 +11,14 @@ export async function createStudentData({ dbClient, values }: CreateStudentDataA
     const createdRecord = await dbClient
         .insertInto('students')
         .values(values)
+        .onConflict((oc) =>
+            oc.columns(['institution_id', 'student_number']).doUpdateSet({
+                user_id: values.user_id,
+                department_id: values.department_id,
+                course_id: values.course_id,
+                updated_at: new Date(),
+            }),
+        )
         .returning([
             'student_id',
             'user_id',

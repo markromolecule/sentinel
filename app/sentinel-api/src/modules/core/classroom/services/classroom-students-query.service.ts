@@ -40,6 +40,12 @@ export async function getClassroomStudents(
             'course.title as course_title',
             'enr.enrolled_at',
             'up.avatar_url as avatar_url',
+            sql<boolean>`(st.user_id IS NOT NULL)`.as('is_claimed'),
+            sql<
+                'CLAIMED' | 'UNCLAIMED'
+            >`CASE WHEN st.user_id IS NOT NULL THEN 'CLAIMED' ELSE 'UNCLAIMED' END`.as(
+                'claim_status',
+            ),
         ])
         .where('enr.class_group_id', '=', classGroupId)
         .where('st.institution_id', '=', institutionId)

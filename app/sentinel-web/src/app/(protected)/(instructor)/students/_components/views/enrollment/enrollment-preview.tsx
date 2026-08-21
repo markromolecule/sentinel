@@ -9,64 +9,79 @@ type EnrollmentPreviewProps = {
     students: StudentImportRow[];
 };
 
+type FilterKey = 'ALL_READY' | 'CLAIMED' | 'UNCLAIMED' | 'SKIPPED' | 'NOT_WHITELISTED' | 'UNVERIFIED';
+
 export function EnrollmentPreview({ students }: EnrollmentPreviewProps) {
+    const readyCount = useStableValue(
+        () =>
+            students.filter(
+                (student) =>
+                    student.claimStatus === 'CLAIMED' || student.claimStatus === 'UNCLAIMED',
+            ).length,
+        [students],
+    );
     const claimedCount = useStableValue(
         () => students.filter((student) => student.claimStatus === 'CLAIMED').length,
+        [students],
+    );
+    const unclaimedCount = useStableValue(
+        () => students.filter((student) => student.claimStatus === 'UNCLAIMED').length,
         [students],
     );
     const skippedCount = useStableValue(
         () => students.filter((student) => student.claimStatus === 'ALREADY_ENROLLED').length,
         [students],
     );
-    const unclaimedCount = useStableValue(
-        () =>
-            students.filter(
-                (student) =>
-                    student.claimStatus === 'UNCLAIMED' ||
-                    student.claimStatus === 'NOT_WHITELISTED',
-            ).length,
+    const notWhitelistedCount = useStableValue(
+        () => students.filter((student) => student.claimStatus === 'NOT_WHITELISTED').length,
         [students],
     );
     const unverifiedCount = useStableValue(
         () => students.filter((student) => student.claimStatus === 'UNKNOWN').length,
         [students],
     );
-    const [filter, setFilter] = useState<'CLAIMED' | 'SKIPPED' | 'UNCLAIMED' | 'UNVERIFIED'>(
-        claimedCount > 0
-            ? 'CLAIMED'
-            : skippedCount > 0
-              ? 'SKIPPED'
-              : unclaimedCount > 0
-                ? 'UNCLAIMED'
-                : 'UNVERIFIED',
-    );
-    const effectiveFilter =
-        filter === 'CLAIMED' && claimedCount === 0
+
+    const [filter, setFilter] = useState<FilterKey>('ALL_READY');
+
+    const effectiveFilter: FilterKey =
+        filter === 'ALL_READY' && readyCount === 0
             ? skippedCount > 0
                 ? 'SKIPPED'
-                : unclaimedCount > 0
-                  ? 'UNCLAIMED'
+                : notWhitelistedCount > 0
+                  ? 'NOT_WHITELISTED'
                   : 'UNVERIFIED'
-            : filter === 'SKIPPED' && skippedCount === 0
-              ? unclaimedCount > 0
-                  ? 'UNCLAIMED'
-                  : 'UNVERIFIED'
+            : filter === 'CLAIMED' && claimedCount === 0
+              ? readyCount > 0
+                  ? 'ALL_READY'
+                  : 'SKIPPED'
               : filter === 'UNCLAIMED' && unclaimedCount === 0
-                ? 'UNVERIFIED'
+                ? readyCount > 0
+                    ? 'ALL_READY'
+                    : 'SKIPPED'
                 : filter;
 
     const filteredStudents = useStableValue(
         () =>
-            students.filter((student) =>
-                effectiveFilter === 'CLAIMED'
-                    ? student.claimStatus === 'CLAIMED'
-                    : effectiveFilter === 'SKIPPED'
-                      ? student.claimStatus === 'ALREADY_ENROLLED'
-                      : effectiveFilter === 'UNCLAIMED'
-                        ? student.claimStatus === 'UNCLAIMED' ||
-                          student.claimStatus === 'NOT_WHITELISTED'
-                        : student.claimStatus === 'UNKNOWN',
-            ),
+            students.filter((student) => {
+                if (effectiveFilter === 'ALL_READY') {
+                    return (
+                        student.claimStatus === 'CLAIMED' || student.claimStatus === 'UNCLAIMED'
+                    );
+                }
+                if (effectiveFilter === 'CLAIMED') {
+                    return student.claimStatus === 'CLAIMED';
+                }
+                if (effectiveFilter === 'UNCLAIMED') {
+                    return student.claimStatus === 'UNCLAIMED';
+                }
+                if (effectiveFilter === 'SKIPPED') {
+                    return student.claimStatus === 'ALREADY_ENROLLED';
+                }
+                if (effectiveFilter === 'NOT_WHITELISTED') {
+                    return student.claimStatus === 'NOT_WHITELISTED';
+                }
+                return student.claimStatus === 'UNKNOWN';
+            }),
         [effectiveFilter, students],
     );
 
@@ -78,53 +93,91 @@ export function EnrollmentPreview({ students }: EnrollmentPreviewProps) {
                 <Button
                     type="button"
                     size="sm"
-                    variant={effectiveFilter === 'CLAIMED' ? 'default' : 'outline'}
+                    variant={effectiveFilter === 'ALL_READY' ? 'default' : 'outline'}
                     className={
-                        effectiveFilter === 'CLAIMED' ? 'bg-[#323d8f] hover:bg-[#323d8f]/90' : ''
-                    }
-                    onClick={() => setFilter('CLAIMED')}
-                >
-                    Claimed ({claimedCount})
-                </Button>
-                <Button
-                    type="button"
-                    size="sm"
-                    variant={effectiveFilter === 'SKIPPED' ? 'default' : 'outline'}
-                    className={
-                        effectiveFilter === 'SKIPPED'
-                            ? 'bg-blue-600 text-white hover:bg-blue-600/90'
+                        effectiveFilter === 'ALL_READY'
+                            ? 'bg-[#323d8f] hover:bg-[#323d8f]/90'
                             : ''
                     }
-                    onClick={() => setFilter('SKIPPED')}
+                    onClick={() => setFilter('ALL_READY')}
                 >
-                    Skipped ({skippedCount})
+                    Ready to Import ({readyCount})
                 </Button>
-                <Button
-                    type="button"
-                    size="sm"
-                    variant={effectiveFilter === 'UNCLAIMED' ? 'default' : 'outline'}
-                    className={
-                        effectiveFilter === 'UNCLAIMED'
-                            ? 'bg-amber-600 text-white hover:bg-amber-600/90'
-                            : ''
-                    }
-                    onClick={() => setFilter('UNCLAIMED')}
-                >
-                    Unclaimed ({unclaimedCount})
-                </Button>
-                <Button
-                    type="button"
-                    size="sm"
-                    variant={effectiveFilter === 'UNVERIFIED' ? 'default' : 'outline'}
-                    className={
-                        effectiveFilter === 'UNVERIFIED'
-                            ? 'bg-slate-600 text-white hover:bg-slate-600/90'
-                            : ''
-                    }
-                    onClick={() => setFilter('UNVERIFIED')}
-                >
-                    Unverified ({unverifiedCount})
-                </Button>
+                {claimedCount > 0 && (
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant={effectiveFilter === 'CLAIMED' ? 'default' : 'outline'}
+                        className={
+                            effectiveFilter === 'CLAIMED'
+                                ? 'bg-emerald-600 text-white hover:bg-emerald-600/90'
+                                : ''
+                        }
+                        onClick={() => setFilter('CLAIMED')}
+                    >
+                        Claimed ({claimedCount})
+                    </Button>
+                )}
+                {unclaimedCount > 0 && (
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant={effectiveFilter === 'UNCLAIMED' ? 'default' : 'outline'}
+                        className={
+                            effectiveFilter === 'UNCLAIMED'
+                                ? 'bg-amber-600 text-white hover:bg-amber-600/90'
+                                : ''
+                        }
+                        onClick={() => setFilter('UNCLAIMED')}
+                    >
+                        Unclaimed ({unclaimedCount})
+                    </Button>
+                )}
+                {skippedCount > 0 && (
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant={effectiveFilter === 'SKIPPED' ? 'default' : 'outline'}
+                        className={
+                            effectiveFilter === 'SKIPPED'
+                                ? 'bg-blue-600 text-white hover:bg-blue-600/90'
+                                : ''
+                        }
+                        onClick={() => setFilter('SKIPPED')}
+                    >
+                        Already Enrolled ({skippedCount})
+                    </Button>
+                )}
+                {notWhitelistedCount > 0 && (
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant={effectiveFilter === 'NOT_WHITELISTED' ? 'default' : 'outline'}
+                        className={
+                            effectiveFilter === 'NOT_WHITELISTED'
+                                ? 'bg-red-600 text-white hover:bg-red-600/90'
+                                : ''
+                        }
+                        onClick={() => setFilter('NOT_WHITELISTED')}
+                    >
+                        Not Whitelisted ({notWhitelistedCount})
+                    </Button>
+                )}
+                {unverifiedCount > 0 && (
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant={effectiveFilter === 'UNVERIFIED' ? 'default' : 'outline'}
+                        className={
+                            effectiveFilter === 'UNVERIFIED'
+                                ? 'bg-slate-600 text-white hover:bg-slate-600/90'
+                                : ''
+                        }
+                        onClick={() => setFilter('UNVERIFIED')}
+                    >
+                        Unverified ({unverifiedCount})
+                    </Button>
+                )}
             </div>
 
             {filteredStudents.length === 0 ? (
@@ -167,22 +220,28 @@ export function EnrollmentPreview({ students }: EnrollmentPreviewProps) {
                                             <span
                                                 className={
                                                     student.claimStatus === 'CLAIMED'
-                                                        ? 'text-emerald-600'
-                                                        : student.claimStatus === 'ALREADY_ENROLLED'
-                                                          ? 'text-blue-600'
-                                                          : student.claimStatus === 'UNKNOWN'
-                                                            ? 'text-slate-600'
-                                                            : 'text-amber-700'
+                                                        ? 'font-medium text-emerald-600'
+                                                        : student.claimStatus === 'UNCLAIMED'
+                                                          ? 'font-medium text-amber-600'
+                                                          : student.claimStatus ===
+                                                              'ALREADY_ENROLLED'
+                                                            ? 'text-blue-600'
+                                                            : student.claimStatus ===
+                                                                'NOT_WHITELISTED'
+                                                              ? 'text-red-600'
+                                                              : 'text-slate-600'
                                                 }
                                             >
                                                 {student.claimStatus === 'CLAIMED'
-                                                    ? 'Claimed'
-                                                    : student.claimStatus === 'ALREADY_ENROLLED'
-                                                      ? student.reason || 'Already enrolled'
-                                                      : student.claimStatus === 'UNKNOWN'
-                                                        ? student.reason ||
-                                                          "Claim status couldn't be verified yet."
-                                                        : student.reason || 'Unclaimed'}
+                                                    ? 'Claimed (Ready)'
+                                                    : student.claimStatus === 'UNCLAIMED'
+                                                      ? 'Unclaimed (Ready)'
+                                                      : student.claimStatus === 'ALREADY_ENROLLED'
+                                                        ? student.reason || 'Already enrolled'
+                                                        : student.claimStatus === 'NOT_WHITELISTED'
+                                                          ? student.reason || 'Not in whitelist'
+                                                          : student.reason ||
+                                                            "Claim status couldn't be verified yet."}
                                             </span>
                                         </td>
                                     </tr>

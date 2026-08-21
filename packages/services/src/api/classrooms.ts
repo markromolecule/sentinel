@@ -35,6 +35,8 @@ interface ApiClassroomStudent {
     course_title: string | null;
     enrolled_at: string | null;
     avatar_url?: string | null;
+    is_claimed?: boolean;
+    claim_status?: 'CLAIMED' | 'UNCLAIMED';
 }
 
 interface ApiClassroomInstructor {
@@ -110,6 +112,8 @@ function mapClassroomStudent(student: ApiClassroomStudent) {
         courseTitle: student.course_title,
         enrolledAt: student.enrolled_at,
         avatarUrl: student.avatar_url ?? null,
+        isClaimed: student.is_claimed ?? Boolean(student.user_id),
+        claimStatus: student.claim_status ?? (student.user_id ? 'CLAIMED' : 'UNCLAIMED'),
     };
 }
 
