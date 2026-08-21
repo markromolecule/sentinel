@@ -6,8 +6,14 @@ import {
     type ColumnDef,
     type PaginationState,
     type RowSelectionState,
+    type VisibilityState,
 } from '@tanstack/react-table';
 import { columns as defaultColumns } from '@/app/(protected)/(instructor)/subjects/_components/tables/columns';
+
+const DEFAULT_INITIAL_COLUMN_VISIBILITY: VisibilityState = {
+    approved_at: false,
+    approved_by: false,
+};
 
 interface SubjectsTableProps {
     data: Subject[];
@@ -29,6 +35,7 @@ interface SubjectsTableProps {
     pageCount?: number;
     totalCount?: number;
     manualPagination?: boolean;
+    initialColumnVisibility?: VisibilityState;
     rowSelection?: RowSelectionState;
     onRowSelectionChange?: React.Dispatch<React.SetStateAction<RowSelectionState>>;
     toolbarActions?: React.ReactNode;
@@ -46,6 +53,7 @@ export function SubjectsTable({
     pageCount,
     totalCount,
     manualPagination = false,
+    initialColumnVisibility = DEFAULT_INITIAL_COLUMN_VISIBILITY,
     rowSelection,
     onRowSelectionChange,
     toolbarActions,
@@ -63,6 +71,7 @@ export function SubjectsTable({
             pageCount={pageCount}
             totalCount={totalCount}
             manualPagination={manualPagination}
+            initialColumnVisibility={initialColumnVisibility}
             rowSelection={rowSelection}
             onRowSelectionChange={onRowSelectionChange}
             toolbarActions={toolbarActions}

@@ -78,6 +78,8 @@ export const classroomStudentSchema = z.object({
     course_title: z.string().nullable(),
     enrolled_at: z.union([z.coerce.date(), z.string()]).nullable(),
     avatar_url: z.string().nullable().optional(),
+    is_claimed: z.boolean().optional(),
+    claim_status: z.enum(['CLAIMED', 'UNCLAIMED']).optional(),
 });
 
 export const classroomInstructorSchema = z.object({

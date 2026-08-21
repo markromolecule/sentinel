@@ -127,19 +127,29 @@ export function ClassroomStudentEnrollmentDialog({
         }
     };
 
-    const claimedStudentCount =
-        parseResult?.students.filter((student) => student.claimStatus === 'CLAIMED').length || 0;
+    const importableStudents =
+        parseResult?.students.filter(
+            (student) =>
+                student.claimStatus === 'CLAIMED' || student.claimStatus === 'UNCLAIMED',
+        ) || [];
+    const claimedStudentCount = importableStudents.filter(
+        (student) => student.claimStatus === 'CLAIMED',
+    ).length;
+    const unclaimedStudentCount = importableStudents.filter(
+        (student) => student.claimStatus === 'UNCLAIMED',
+    ).length;
     const hasUnverifiedStudents =
         parseResult?.students.some((student) => student.claimStatus === 'UNKNOWN') ?? false;
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>
-            <DialogContent className="flex max-h-[90vh] max-w-3xl flex-col overflow-y-auto">
+            <DialogContent className="flex max-h-[90vh] w-[calc(100vw-2rem)] flex-col overflow-y-auto sm:max-w-4xl lg:max-w-5xl">
                 <DialogHeader>
                     <DialogTitle>Add Students</DialogTitle>
                     <DialogDescription>
-                        Enroll claimed student accounts into{' '}
-                        <span className="font-medium">{classroomName}</span>.
+                        Enroll student accounts into{' '}
+                        <span className="font-medium">{classroomName}</span>. Both claimed and
+                        unclaimed whitelisted accounts will be added.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -165,8 +175,9 @@ export function ClassroomStudentEnrollmentDialog({
                                     onChange={(event) => setStudentNumber(event.target.value)}
                                 />
                                 <p className="text-muted-foreground text-xs">
-                                    The account must already be claimed in the student whitelist
-                                    before it can be enrolled.
+                                    The student must exist on the institutional whitelist.
+                                    Unclaimed accounts will automatically activate when the student
+                                    claims their account.
                                 </p>
                             </div>
 
@@ -228,7 +239,7 @@ export function ClassroomStudentEnrollmentDialog({
                                 onClick={() => enrollStudents(classroomId)}
                                 disabled={
                                     !parseResult ||
-                                    claimedStudentCount === 0 ||
+                                    importableStudents.length === 0 ||
                                     hasUnverifiedStudents ||
                                     isLoading
                                 }
@@ -236,7 +247,9 @@ export function ClassroomStudentEnrollmentDialog({
                             >
                                 {isLoading
                                     ? 'Processing...'
-                                    : `Import ${claimedStudentCount} Claimed Students`}
+                                    : importableStudents.length > 0
+                                      ? `Import ${importableStudents.length} Students (${claimedStudentCount} Claimed, ${unclaimedStudentCount} Unclaimed)`
+                                      : 'Import Students'}
                             </Button>
                         </div>
                     </TabsContent>

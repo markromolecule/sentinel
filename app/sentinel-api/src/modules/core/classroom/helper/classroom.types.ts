@@ -44,6 +44,8 @@ export type RawClassroomStudentRecord = {
     course_title: string | null;
     enrolled_at: string | Date | null;
     avatar_url: string | null;
+    is_claimed?: boolean;
+    claim_status?: 'CLAIMED' | 'UNCLAIMED';
 };
 
 export type ClassroomStudentAccessScope = ClassroomAccessScope & {

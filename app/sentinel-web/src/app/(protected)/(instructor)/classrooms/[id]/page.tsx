@@ -85,6 +85,28 @@ function buildStudentColumns(classroomId: string): ColumnDef<ClassroomStudent>[]
                 row.original.departmentCode || row.original.departmentName || 'No department',
         },
         {
+            id: 'status',
+            accessorFn: (row) => (row.isClaimed ?? Boolean(row.userId) ? 'CLAIMED' : 'UNCLAIMED'),
+            header: ({ column }) => <DataTableColumnHeader column={column} title="Account Status" />,
+            cell: ({ row }) => {
+                const isClaimed = row.original.isClaimed ?? Boolean(row.original.userId);
+                return isClaimed ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                        Claimed
+                    </span>
+                ) : (
+                    <span
+                        title="Account exists on whitelist; student has not completed registration yet. It will activate automatically upon student login."
+                        className="inline-flex cursor-help items-center gap-1.5 rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-600/20"
+                    >
+                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                        Pending Claim
+                    </span>
+                );
+            },
+        },
+        {
             accessorKey: 'enrolledAt',
             header: ({ column }) => <DataTableColumnHeader column={column} title="Enrolled" />,
             cell: ({ row }) =>

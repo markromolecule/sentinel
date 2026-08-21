@@ -76,9 +76,23 @@ export function StudentEnrollmentDialog({
     };
 
     const isLoading = isParsing || isEnrolling;
+    const importableStudentCount = useStableValue(
+        () =>
+            parseResult?.students.filter(
+                (student) =>
+                    student.claimStatus === 'CLAIMED' || student.claimStatus === 'UNCLAIMED',
+            ).length || 0,
+        [parseResult],
+    );
     const claimedStudentCount = useStableValue(
         () =>
             parseResult?.students.filter((student) => student.claimStatus === 'CLAIMED').length ||
+            0,
+        [parseResult],
+    );
+    const unclaimedStudentCount = useStableValue(
+        () =>
+            parseResult?.students.filter((student) => student.claimStatus === 'UNCLAIMED').length ||
             0,
         [parseResult],
     );
@@ -89,7 +103,7 @@ export function StudentEnrollmentDialog({
 
     return (
         <Dialog open={open} onOpenChange={handleClose} modal={true}>
-            <DialogContent className="flex max-h-[90vh] w-[calc(100vw-2rem)] max-w-[56rem] flex-col overflow-y-auto outline-hidden">
+            <DialogContent className="flex max-h-[90vh] w-[calc(100vw-2rem)] flex-col overflow-y-auto outline-hidden sm:max-w-4xl lg:max-w-5xl">
                 <DialogHeader className="shrink-0">
                     <DialogTitle>Add Students</DialogTitle>
                     <DialogDescription>
@@ -182,7 +196,7 @@ export function StudentEnrollmentDialog({
                                 onClick={handleImport}
                                 disabled={
                                     !parseResult ||
-                                    claimedStudentCount === 0 ||
+                                    importableStudentCount === 0 ||
                                     hasUnverifiedStudents ||
                                     !selectedSubjectId ||
                                     !section ||
@@ -193,7 +207,9 @@ export function StudentEnrollmentDialog({
                             >
                                 {isLoading
                                     ? 'Processing...'
-                                    : `Import ${claimedStudentCount} Claimed Students`}
+                                    : importableStudentCount > 0
+                                      ? `Import ${importableStudentCount} Students (${claimedStudentCount} Claimed, ${unclaimedStudentCount} Unclaimed)`
+                                      : 'Import Students'}
                             </Button>
                         </div>
                     </TabsContent>

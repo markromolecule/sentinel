@@ -22,6 +22,10 @@ export const paginationQuerySchema = z.object({
         description: 'Number of items per page.',
         example: 20,
     }),
+    limit: z.coerce.number().int().min(1).max(100).optional().openapi({
+        description: 'Alias for pageSize (number of items per page).',
+        example: 20,
+    }),
 });
 
 export const paginationMetadataSchema = z.object({

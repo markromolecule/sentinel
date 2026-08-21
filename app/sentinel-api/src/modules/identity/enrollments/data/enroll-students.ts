@@ -59,20 +59,18 @@ export async function enrollStudentsData({
         .where('institution_id', '=', institutionId)
         .where('student_number', 'in', studentNumbers)
         .execute();
-    const claimedUserIds = whitelistRecords
-        .map((record) => record.claimed_user_id)
-        .filter((claimedUserId): claimedUserId is string => Boolean(claimedUserId));
-    const studentRecords =
-        claimedUserIds.length > 0
-            ? await dbClient
-                  .selectFrom('students')
-                  .select(['student_id', 'user_id'])
-                  .where('user_id', 'in', claimedUserIds)
-                  .execute()
-            : [];
+
+    const studentRecords = await dbClient
+        .selectFrom('students')
+        .select(['student_id', 'user_id', 'student_number'])
+        .where('institution_id', '=', institutionId)
+        .where('student_number', 'in', studentNumbers)
+        .execute();
+
     const studentMap = new Map(
-        studentRecords.map((studentRecord) => [studentRecord.user_id, studentRecord]),
+        studentRecords.map((studentRecord) => [studentRecord.student_number, studentRecord]),
     );
+
     const existingEnrollmentRows =
         studentRecords.length > 0
             ? await dbClient
@@ -110,12 +108,6 @@ export async function enrollStudentsData({
         }
 
         // Validation: Existing on the course & department
-        // We check if the whitelist record's department/course matches the section's department/course
-        // Note: If section has no department/course, we might skip this or use subject's.
-        // For now, let's assume the whitelist record itself defines their valid department/course.
-        // The requirement says "existing on the course & department".
-        // We'll compare the whitelist's department_id with the section's department_id if present.
-
         if (
             classGroup.section_department_id &&
             whitelist.department_id !== classGroup.section_department_id
@@ -131,45 +123,64 @@ export async function enrollStudentsData({
             continue;
         }
 
-        // Validation: Claimed the account
-        if (!whitelist.claimed_user_id) {
-            results.push({ studentNumber, status: 'FAILED', reason: 'Account not yet claimed.' });
-            failedCount++;
-            continue;
-        }
+        // 3. Find or create student record
+        let student = studentMap.get(studentNumber);
 
-        // 3. Find student record
-        const student = studentMap.get(whitelist.claimed_user_id);
-
-        if (!student) {
-            results.push({
-                studentNumber,
-                status: 'FAILED',
-                reason: 'Student profile not found even though account is claimed.',
-            });
-            failedCount++;
-            continue;
-        }
-
-        if (existingEnrollmentStudentIds.has(student.student_id)) {
-            results.push({
-                studentNumber,
-                status: 'FAILED',
-                reason: 'Student is already enrolled in the selected classroom.',
-            });
-            failedCount++;
-            continue;
-        }
-
-        // 4. Enroll the student
         try {
+            if (!student) {
+                const created = await dbClient
+                    .insertInto('students')
+                    .values({
+                        student_number: whitelist.student_number,
+                        institution_id: whitelist.institution_id,
+                        department_id: whitelist.department_id,
+                        course_id: whitelist.course_id,
+                        user_id: whitelist.claimed_user_id ?? null,
+                    })
+                    .onConflict((oc) =>
+                        oc.columns(['institution_id', 'student_number']).doUpdateSet({
+                            department_id: whitelist.department_id,
+                            course_id: whitelist.course_id,
+                            user_id: whitelist.claimed_user_id ?? null,
+                            updated_at: new Date(),
+                        }),
+                    )
+                    .returning(['student_id', 'user_id', 'student_number'])
+                    .executeTakeFirstOrThrow();
+
+                student = created;
+                studentMap.set(studentNumber, student);
+            } else if (whitelist.claimed_user_id && !student.user_id) {
+                await dbClient
+                    .updateTable('students')
+                    .set({
+                        user_id: whitelist.claimed_user_id,
+                        updated_at: new Date(),
+                    })
+                    .where('student_id', '=', student.student_id)
+                    .execute();
+
+                student.user_id = whitelist.claimed_user_id;
+            }
+
+            if (existingEnrollmentStudentIds.has(student.student_id)) {
+                results.push({
+                    studentNumber,
+                    status: 'FAILED',
+                    reason: 'Student is already enrolled in the selected classroom.',
+                });
+                failedCount++;
+                continue;
+            }
+
+            // 4. Enroll the student
             await dbClient
                 .insertInto('enrollments')
                 .values({
                     class_group_id: classGroupId,
                     student_id: student.student_id,
                 })
-                .onConflict((oc) => oc.doNothing())
+                .onConflict((oc) => oc.columns(['class_group_id', 'student_id']).doNothing())
                 .execute();
 
             results.push({ studentNumber, status: 'SUCCESS' });

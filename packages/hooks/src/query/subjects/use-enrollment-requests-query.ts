@@ -65,6 +65,6 @@ export function useEnrollmentRequestsQuery(
             return Array.isArray(response) ? response : response.items;
         },
         enabled: isAuthenticatedQueryEnabled,
-        refetchInterval: 5000,
+        staleTime: 30_000,
     });
 }

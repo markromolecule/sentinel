@@ -19,7 +19,9 @@ import {
     buildRemainingNonClaimedParseResult,
     buildUnverifiedPreviewParseResult,
     getClaimedStudents,
+    getImportableStudents,
     getNonClaimedStudents,
+    getUnclaimedStudents,
 } from '@/app/(protected)/(instructor)/students/_hooks/student-enrollment/student-enrollment-result';
 import type { ParsedWorksheetResult } from '@/app/(protected)/(instructor)/students/_hooks/student-enrollment/student-enrollment.types';
 
@@ -135,12 +137,15 @@ export function useStudentEnrollment({ onSuccess }: UseStudentEnrollmentProps = 
 
             setIsLoading(true);
             try {
-                const importableStudents = getClaimedStudents(parseResult.students);
+                const importableStudents = getImportableStudents(parseResult.students);
 
                 if (importableStudents.length === 0) {
-                    toast.error('No claimed students are ready to enroll.');
+                    toast.error('No whitelisted students are ready to enroll.');
                     return;
                 }
+
+                const claimedCount = getClaimedStudents(importableStudents).length;
+                const unclaimedCount = getUnclaimedStudents(importableStudents).length;
 
                 const result = await enrollStudentNumbers({
                     studentNumbers: importableStudents.map((student) => student.studentNo),
@@ -165,25 +170,17 @@ export function useStudentEnrollment({ onSuccess }: UseStudentEnrollmentProps = 
                     );
 
                     if (result.enrolledCount > 0) {
-                        toast.success(`Enrolled ${result.enrolledCount} student(s).`);
+                        toast.success(
+                            `Enrolled ${result.enrolledCount} student(s) (${claimedCount} claimed, ${unclaimedCount} pending claim).`,
+                        );
                     }
 
                     toast.error(`Failed to enroll ${result.failedCount} student(s).`);
                 } else {
-                    const remainingNonClaimedStudents = getNonClaimedStudents(parseResult.students);
-
-                    if (remainingNonClaimedStudents.length > 0) {
-                        setParseResult((current) =>
-                            current ? buildRemainingNonClaimedParseResult(current) : current,
-                        );
-                        toast.success(`Enrolled ${result.enrolledCount} claimed student(s).`);
-                        toast.info(
-                            `${remainingNonClaimedStudents.length} student(s) still need claimed accounts.`,
-                        );
-                    } else {
-                        toast.success('Students enrolled successfully');
-                        onSuccess?.();
-                    }
+                    toast.success(
+                        `Enrolled ${result.enrolledCount} student(s) successfully (${claimedCount} claimed, ${unclaimedCount} pending claim).`,
+                    );
+                    onSuccess?.();
                 }
             } catch (error: unknown) {
                 const message =

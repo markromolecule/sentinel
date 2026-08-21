@@ -1,15 +1,52 @@
 import { type DbClient } from '@sentinel/db';
 import { sql } from 'kysely';
+import { type PaginatedResult } from '../../../../lib/pagination';
+
+export type GetEnrolledSubjectsDataArgs = {
+    dbClient: DbClient;
+    userId: string;
+    search?: string;
+    page?: number;
+    pageSize?: number;
+    limit?: number;
+};
+
+export type EnrolledSubjectRecord = {
+    subject_offering_id: string;
+    subject_id: string;
+    code: string;
+    title: string;
+    term_id: string;
+    term_academic_year: string;
+    term_semester: string;
+    department_ids: string[];
+    department_codes: string[];
+    department_code: string | null;
+    course_ids: string[];
+    course_codes: string[];
+    course_code: string | null;
+    year_levels: number[];
+    sections: any;
+    requested_at: string;
+    approved_at: string;
+    approved_by_name: string | null;
+};
 
 export const getEnrolledSubjectsData = async ({
     dbClient,
     userId,
     search,
-}: {
-    dbClient: DbClient;
-    userId: string;
-    search?: string;
-}) => {
+    page,
+    pageSize,
+    limit,
+}: GetEnrolledSubjectsDataArgs): Promise<
+    EnrolledSubjectRecord[] | PaginatedResult<EnrolledSubjectRecord>
+> => {
+    const isPaginated = page !== undefined || pageSize !== undefined || limit !== undefined;
+    const resolvedPage = page ?? 1;
+    const resolvedPageSize = limit ?? pageSize ?? 20;
+    const offset = (resolvedPage - 1) * resolvedPageSize;
+
     let query = dbClient
         .selectFrom('class_roles')
         .innerJoin('class_groups', 'class_groups.class_group_id', 'class_roles.class_group_id')
@@ -115,7 +152,7 @@ export const getEnrolledSubjectsData = async ({
         );
     }
 
-    return await query
+    query = query
         .groupBy([
             'subject_offerings.subject_offering_id',
             'subjects.subject_id',
@@ -124,8 +161,57 @@ export const getEnrolledSubjectsData = async ({
             'terms.term_id',
             'terms.academic_year',
             'terms.semester',
+            'terms.start_date',
         ])
         .orderBy('terms.start_date', 'desc')
-        .orderBy('subjects.subject_code', 'asc')
-        .execute();
+        .orderBy('subjects.subject_code', 'asc');
+
+    if (!isPaginated) {
+        return (await query.execute()) as EnrolledSubjectRecord[];
+    }
+
+    let countQuery = dbClient
+        .selectFrom('class_roles')
+        .innerJoin('class_groups', 'class_groups.class_group_id', 'class_roles.class_group_id')
+        .innerJoin(
+            'subject_offerings',
+            'subject_offerings.subject_offering_id',
+            'class_groups.subject_offering_id',
+        )
+        .innerJoin('subjects', 'subjects.subject_id', 'subject_offerings.subject_id')
+        .innerJoin('terms', 'terms.term_id', 'subject_offerings.term_id')
+        .innerJoin('roles', 'roles.role_id', 'class_roles.role_id')
+        .where('class_roles.user_id', '=', userId)
+        .where('roles.role_name', '=', 'instructor')
+        .select(sql<number>`count(distinct subject_offerings.subject_offering_id)::int`.as('count'));
+
+    if (search) {
+        countQuery = countQuery.where((eb) =>
+            eb.or([
+                eb('subjects.subject_code', 'ilike', `%${search}%`),
+                eb('subjects.subject_title', 'ilike', `%${search}%`),
+                eb('terms.academic_year', 'ilike', `%${search}%`),
+                eb('terms.semester', 'ilike', `%${search}%`),
+            ]),
+        );
+    }
+
+    const [items, countResult] = await Promise.all([
+        query.limit(resolvedPageSize).offset(offset).execute(),
+        countQuery.executeTakeFirst(),
+    ]);
+
+    const total = countResult?.count ?? 0;
+    const totalPages = Math.ceil(total / resolvedPageSize) || 1;
+
+    return {
+        items: items as EnrolledSubjectRecord[],
+        pagination: {
+            page: resolvedPage,
+            pageSize: resolvedPageSize,
+            total,
+            totalPages,
+            hasMore: offset + items.length < total,
+        },
+    };
 };

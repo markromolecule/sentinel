@@ -134,7 +134,7 @@ export function ClassroomStudentEnrollmentDialog({
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>
-            <DialogContent className="flex max-h-[90vh] max-w-3xl flex-col overflow-y-auto">
+            <DialogContent className="flex max-h-[90vh] w-[calc(100vw-2rem)] flex-col overflow-y-auto sm:max-w-4xl lg:max-w-5xl">
                 <DialogHeader>
                     <DialogTitle>Add Students</DialogTitle>
                     <DialogDescription>

@@ -54,6 +54,7 @@ export const getEnrollmentRequestsRouteHandler: AppRouteHandler<
             institutionId: requestedInstitutionId,
             page,
             pageSize,
+            limit,
         } = c.req.valid('query');
 
         // If instructor, only show their own requests
@@ -76,7 +77,7 @@ export const getEnrollmentRequestsRouteHandler: AppRouteHandler<
             departmentId: role === 'instructor' ? undefined : queryScope.departmentId,
             courseId: role === 'instructor' ? undefined : queryScope.courseId,
             page,
-            pageSize,
+            pageSize: limit ?? pageSize,
         });
         const responseData = Array.isArray(data) ? data : data.items;
 

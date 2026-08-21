@@ -48,6 +48,6 @@ export function useEnrolledSubjectsQuery(searchOrParams?: string | UseEnrolledSu
             return Array.isArray(response) ? response : response.items;
         },
         enabled: isAuthenticatedQueryEnabled,
-        refetchInterval: 5000,
+        staleTime: 30_000,
     });
 }

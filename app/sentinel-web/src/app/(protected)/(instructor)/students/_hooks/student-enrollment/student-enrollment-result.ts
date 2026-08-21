@@ -25,8 +25,8 @@ export function buildPreviewParseResult(
 
             return {
                 ...student,
-                claimStatus: preview?.claimStatus ?? 'NOT_WHITELISTED',
-                reason: preview?.reason ?? 'Student not found in whitelist.',
+                claimStatus: preview ? preview.claimStatus : 'NOT_WHITELISTED',
+                reason: preview ? preview.reason : 'Student not found in whitelist.',
             };
         }),
     };
@@ -49,8 +49,18 @@ export function buildUnverifiedPreviewParseResult(
     };
 }
 
+export function getImportableStudents(students: StudentImportRow[]) {
+    return students.filter(
+        (student) => student.claimStatus === 'CLAIMED' || student.claimStatus === 'UNCLAIMED',
+    );
+}
+
 export function getClaimedStudents(students: StudentImportRow[]) {
     return students.filter((student) => student.claimStatus === 'CLAIMED');
+}
+
+export function getUnclaimedStudents(students: StudentImportRow[]) {
+    return students.filter((student) => student.claimStatus === 'UNCLAIMED');
 }
 
 export function getNonClaimedStudents(students: StudentImportRow[]) {
