@@ -10,6 +10,7 @@ import {
     type ColumnDef,
     type PaginationState,
     type RowSelectionState,
+    type VisibilityState,
 } from '@tanstack/react-table';
 import { columns as defaultColumns } from '@/app/(protected)/(instructor)/subjects/_components/tables/columns';
 import { SubjectsTable } from '@/app/(protected)/(instructor)/subjects/_components/tables/subjects-table';
@@ -37,6 +38,7 @@ type SubjectsListProps = {
     pageCount?: number;
     totalCount?: number;
     manualPagination?: boolean;
+    initialColumnVisibility?: VisibilityState;
 };
 
 export function SubjectsList({
@@ -49,6 +51,7 @@ export function SubjectsList({
     pageCount,
     totalCount,
     manualPagination = false,
+    initialColumnVisibility,
 }: SubjectsListProps) {
     const { data: departments = [] } = useDepartmentsQuery();
     const { data: courses = [] } = useCoursesQuery();
@@ -133,6 +136,7 @@ export function SubjectsList({
                 pageCount={pageCount}
                 totalCount={totalCount}
                 manualPagination={manualPagination}
+                initialColumnVisibility={initialColumnVisibility}
                 rowSelection={rowSelection}
                 onRowSelectionChange={setRowSelection}
                 toolbarActions={toolbarActions}

@@ -529,6 +529,7 @@ model class_roles {
   users          users        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([class_group_id, user_id, role_id])
+  @@index([user_id, role_id])
   @@schema("public")
 }
 
@@ -625,6 +626,8 @@ model enrollment_requests {
   class_groups   class_groups              @relation(fields: [class_group_id], references: [class_group_id], onDelete: Cascade, onUpdate: NoAction)
   users          users                     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
+  @@index([user_id, status, created_at(sort: Desc)])
+  @@index([class_group_id, user_id])
   @@schema("public")
 }
 

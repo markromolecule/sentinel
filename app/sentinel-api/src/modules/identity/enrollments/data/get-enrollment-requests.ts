@@ -1,5 +1,19 @@
 import { type DbClient } from '@sentinel/db';
 import { sql } from 'kysely';
+import { type PaginatedResult } from '../../../../lib/pagination';
+
+export type GetEnrollmentRequestsDataArgs = {
+    dbClient: DbClient;
+    status?: 'PENDING' | 'APPROVED' | 'REJECTED';
+    userId?: string;
+    institutionId?: string;
+    departmentId?: string;
+    courseId?: string;
+    search?: string;
+    page?: number;
+    pageSize?: number;
+    limit?: number;
+};
 
 export const getEnrollmentRequestsData = async ({
     dbClient,
@@ -9,15 +23,15 @@ export const getEnrollmentRequestsData = async ({
     departmentId,
     courseId,
     search,
-}: {
-    dbClient: DbClient;
-    status?: 'PENDING' | 'APPROVED' | 'REJECTED';
-    userId?: string;
-    institutionId?: string;
-    departmentId?: string;
-    courseId?: string;
-    search?: string;
-}) => {
+    page,
+    pageSize,
+    limit,
+}: GetEnrollmentRequestsDataArgs) => {
+    const isPaginated = page !== undefined || pageSize !== undefined || limit !== undefined;
+    const resolvedPage = page ?? 1;
+    const resolvedPageSize = limit ?? pageSize ?? 20;
+    const offset = (resolvedPage - 1) * resolvedPageSize;
+
     let query = dbClient
         .selectFrom('enrollment_requests')
         .innerJoin(
@@ -149,12 +163,35 @@ export const getEnrollmentRequestsData = async ({
             'terms.semester',
         ]);
 
+    let countQuery = dbClient
+        .selectFrom('enrollment_requests')
+        .innerJoin(
+            'class_groups',
+            'class_groups.class_group_id',
+            'enrollment_requests.class_group_id',
+        )
+        .innerJoin(
+            'subject_offerings',
+            'subject_offerings.subject_offering_id',
+            'class_groups.subject_offering_id',
+        )
+        .innerJoin('subjects', 'subjects.subject_id', 'subject_offerings.subject_id')
+        .innerJoin('terms', 'terms.term_id', 'subject_offerings.term_id')
+        .leftJoin('sections', 'sections.section_id', 'class_groups.section_id')
+        .select(
+            sql<number>`COUNT(DISTINCT CONCAT_WS(':', enrollment_requests.user_id, enrollment_requests.status, subject_offerings.subject_offering_id))::int`.as(
+                'count',
+            ),
+        );
+
     if (status) {
         query = query.where('enrollment_requests.status', '=', status);
+        countQuery = countQuery.where('enrollment_requests.status', '=', status);
     }
 
     if (userId) {
         query = query.where('enrollment_requests.user_id', '=', userId);
+        countQuery = countQuery.where('enrollment_requests.user_id', '=', userId);
     }
 
     if (institutionId) {
@@ -175,10 +212,16 @@ export const getEnrollmentRequestsData = async ({
                 eb('class_groups.institution_id', 'in', allowedInstIds),
             ]),
         );
+        countQuery = countQuery.where((eb) =>
+            eb.or([
+                eb('subject_offerings.institution_id', 'in', allowedInstIds),
+                eb('class_groups.institution_id', 'in', allowedInstIds),
+            ]),
+        );
     }
 
     if (departmentId) {
-        query = query.where((eb) =>
+        const deptFilter = (eb: any) =>
             eb.or([
                 eb('sections.department_id', '=', departmentId),
                 eb.exists(
@@ -192,12 +235,13 @@ export const getEnrollmentRequestsData = async ({
                         .where('sod_scope.department_id', '=', departmentId)
                         .select('sod_scope.subject_offering_id'),
                 ),
-            ]),
-        );
+            ]);
+        query = query.where(deptFilter);
+        countQuery = countQuery.where(deptFilter);
     }
 
     if (courseId) {
-        query = query.where((eb) =>
+        const courseFilter = (eb: any) =>
             eb.or([
                 eb('sections.course_id', '=', courseId),
                 eb.exists(
@@ -211,19 +255,44 @@ export const getEnrollmentRequestsData = async ({
                         .where('soc_scope.course_id', '=', courseId)
                         .select('soc_scope.subject_offering_id'),
                 ),
-            ]),
-        );
+            ]);
+        query = query.where(courseFilter);
+        countQuery = countQuery.where(courseFilter);
     }
 
     if (search) {
         const searchPattern = `%${search}%`;
-        query = query.where((eb) =>
+        const searchFilter = (eb: any) =>
             eb.or([
                 eb('subjects.subject_code', 'ilike', searchPattern),
                 eb('subjects.subject_title', 'ilike', searchPattern),
-            ]),
-        );
+            ]);
+        query = query.where(searchFilter);
+        countQuery = countQuery.where(searchFilter);
     }
 
-    return await query.orderBy('created_at', 'desc').execute();
+    query = query.orderBy('created_at', 'desc');
+
+    if (!isPaginated) {
+        return await query.execute();
+    }
+
+    const [items, countResult] = await Promise.all([
+        query.limit(resolvedPageSize).offset(offset).execute(),
+        countQuery.executeTakeFirst(),
+    ]);
+
+    const total = countResult?.count ?? 0;
+    const totalPages = Math.ceil(total / resolvedPageSize) || 1;
+
+    return {
+        items,
+        pagination: {
+            page: resolvedPage,
+            pageSize: resolvedPageSize,
+            total,
+            totalPages,
+            hasMore: offset + items.length < total,
+        },
+    };
 };

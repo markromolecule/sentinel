@@ -8,14 +8,18 @@ export type GetEnrolledSubjectsServiceArgs = {
     search?: string;
     page?: number;
     pageSize?: number;
+    limit?: number;
 };
 
 /**
- * Returns all subjects a user (instructor) is enrolled in.
+ * Returns all subjects a user (instructor) is enrolled in with optional SQL-level pagination.
  *
  * @param args.dbClient - Database client
  * @param args.userId - User ID to look up
  * @param args.search - Optional search string
+ * @param args.page - Optional page index
+ * @param args.pageSize - Optional page size
+ * @param args.limit - Optional limit alias for page size
  */
 export async function getEnrolledSubjectsService({
     dbClient,
@@ -23,9 +27,15 @@ export async function getEnrolledSubjectsService({
     search,
     page,
     pageSize,
+    limit,
 }: GetEnrolledSubjectsServiceArgs) {
-    const subjects = await getEnrolledSubjectsData({ dbClient, userId, search });
-    return paginateItems(subjects, page, pageSize);
+    return await getEnrolledSubjectsData({
+        dbClient,
+        userId,
+        search,
+        page,
+        pageSize: pageSize ?? limit,
+    });
 }
 
 export type GetEnrolledSubjectsServiceResponse = Awaited<

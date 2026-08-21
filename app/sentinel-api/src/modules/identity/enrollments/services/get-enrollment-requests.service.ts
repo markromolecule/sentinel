@@ -12,22 +12,28 @@ export type GetEnrollmentRequestsServiceArgs = {
     search?: string;
     page?: number;
     pageSize?: number;
+    limit?: number;
 };
 
 /**
  * Returns enrolment requests, optionally filtered by status, user, institution,
- * department, course, or search string.
+ * department, course, or search string, with optional SQL-level pagination.
  *
- * @param args - Filter arguments forwarded directly to the data layer
+ * @param args - Filter and pagination arguments forwarded directly to the data layer
  */
 export async function getEnrollmentRequestsService({
     dbClient,
     page,
     pageSize,
+    limit,
     ...filters
 }: GetEnrollmentRequestsServiceArgs) {
-    const requests = await getEnrollmentRequestsData({ dbClient, ...filters });
-    return paginateItems(requests, page, pageSize);
+    return await getEnrollmentRequestsData({
+        dbClient,
+        page,
+        pageSize: pageSize ?? limit,
+        ...filters,
+    });
 }
 
 export type GetEnrollmentRequestsServiceResponse = Awaited<
