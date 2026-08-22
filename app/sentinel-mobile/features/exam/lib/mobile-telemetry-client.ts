@@ -8,6 +8,7 @@ import {
 } from '@sentinel/shared/schema';
 import type { ExamConfiguration } from '@sentinel/shared/types';
 import { ingestTelemetryEvent, type ApiClientType } from '@sentinel/services';
+import { getApiBaseUrl } from '@/lib/config/api-config';
 
 export type MobileTelemetryEventType =
     (typeof MOBILE_TELEMETRY_EVENT_TYPES)[number] | (typeof SHARED_TELEMETRY_EVENT_TYPES)[number];
@@ -119,12 +120,14 @@ export async function emitMobileTelemetryEvent({
         return false;
     }
 
+    const resolvedBaseUrl = getApiBaseUrl();
+
     if (!studentId || !examSessionId) {
         console.info(
             'Skipping mobile telemetry delivery because the authenticated mobile attempt identity is incomplete.',
             {
                 eventType,
-                hasApiBaseUrl: Boolean(apiClient || process.env.EXPO_PUBLIC_API_URL?.trim()),
+                hasApiBaseUrl: Boolean(apiClient || resolvedBaseUrl),
                 hasStudentId: Boolean(studentId),
                 hasExamSessionId: Boolean(examSessionId),
             },
@@ -143,7 +146,7 @@ export async function emitMobileTelemetryEvent({
         return true;
     }
 
-    const apiBaseUrl = process.env.EXPO_PUBLIC_API_URL?.trim().replace(/\/+$/, '');
+    const apiBaseUrl = resolvedBaseUrl;
     const bearerToken = process.env.EXPO_PUBLIC_API_BEARER_TOKEN?.trim();
 
     if (!apiBaseUrl) {

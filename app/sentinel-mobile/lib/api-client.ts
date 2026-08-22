@@ -1,10 +1,11 @@
 import { createApiClient } from '@sentinel/services';
 import { supabase } from './supabase';
+import { getApiBaseUrl } from './config/api-config';
 
 let cachedToken: string | undefined = undefined;
 
 export const apiClient = createApiClient({
-    baseUrl: process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001',
+    baseUrl: getApiBaseUrl(),
     getToken: async () => {
         if (cachedToken) return cachedToken;
 

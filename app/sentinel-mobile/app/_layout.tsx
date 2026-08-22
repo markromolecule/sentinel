@@ -1,6 +1,6 @@
 import '../global.css';
 import { LogBox } from 'react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 LogBox.ignoreLogs(['SafeAreaView has been deprecated']);
 import { Stack } from 'expo-router';
@@ -10,8 +10,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, ApiProvider, type SentinelSupabaseClient } from '@sentinel/hooks';
 import { supabase } from '@/lib/supabase';
 import { apiClient } from '@/lib/api-client';
+import { logApiConfiguration } from '@/lib/config/api-config';
 
 export default function RootLayout() {
+    useEffect(() => {
+        logApiConfiguration();
+    }, []);
+
     const [queryClient] = useState(
         () =>
             new QueryClient({

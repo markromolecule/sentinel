@@ -216,6 +216,43 @@ describe('CORS functionality', () => {
         expect(res.headers.get('Access-Control-Allow-Credentials')).toBe('true');
     });
 
+    it('should return CORS headers for private LAN IPs in development', async () => {
+        const res1 = await app.request('/', {
+            method: 'OPTIONS',
+            headers: {
+                Origin: 'http://192.168.1.102:8081',
+                'Access-Control-Request-Method': 'GET',
+            },
+        });
+
+        expect(res1.status).toBe(204);
+        expect(res1.headers.get('Access-Control-Allow-Origin')).toBe('http://192.168.1.102:8081');
+
+        const res2 = await app.request('/', {
+            method: 'OPTIONS',
+            headers: {
+                Origin: 'http://10.0.2.2:8081',
+                'Access-Control-Request-Method': 'GET',
+            },
+        });
+
+        expect(res2.status).toBe(204);
+        expect(res2.headers.get('Access-Control-Allow-Origin')).toBe('http://10.0.2.2:8081');
+    });
+
+    it('should allow Expo scheme origins in development', async () => {
+        const res = await app.request('/', {
+            method: 'OPTIONS',
+            headers: {
+                Origin: 'exp://192.168.1.102:8081',
+                'Access-Control-Request-Method': 'GET',
+            },
+        });
+
+        expect(res.status).toBe(204);
+        expect(res.headers.get('Access-Control-Allow-Origin')).toBe('exp://192.168.1.102:8081');
+    });
+
     it('should keep CORS headers on 404 responses', async () => {
         const res = await app.request('/non-existent-route', {
             method: 'GET',
