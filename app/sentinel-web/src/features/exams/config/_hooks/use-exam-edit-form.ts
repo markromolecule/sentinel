@@ -71,9 +71,11 @@ export function useExamEditForm(
     const startDateTime = useWatch({ control: form.control, name: 'startDateTime' });
     const endDateTime = useWatch({ control: form.control, name: 'endDateTime' });
 
+    const { reset, setValue, getValues } = form;
+
     useEffect(() => {
-        form.reset(buildEditFormValues(exam));
-    }, [exam, form]);
+        reset(buildEditFormValues(exam));
+    }, [exam.id, reset]);
 
     useEffect(() => {
         if (!startDateTime) {
@@ -83,19 +85,23 @@ export function useExamEditForm(
         const currentDuration = getDurationMinutes(startDateTime, endDateTime);
 
         if (!endDateTime || !currentDuration) {
-            form.setValue(
+            setValue(
                 'endDateTime',
                 getEndDateTimeFromDuration(startDateTime, DEFAULT_EXAM_DURATION_MINUTES),
                 { shouldDirty: !endDateTime, shouldValidate: true },
             );
-            form.setValue('durationMinutes', DEFAULT_EXAM_DURATION_MINUTES, {
-                shouldValidate: true,
-            });
+            if (getValues('durationMinutes') !== DEFAULT_EXAM_DURATION_MINUTES) {
+                setValue('durationMinutes', DEFAULT_EXAM_DURATION_MINUTES, {
+                    shouldValidate: true,
+                });
+            }
             return;
         }
 
-        form.setValue('durationMinutes', currentDuration, { shouldValidate: true });
-    }, [endDateTime, form, startDateTime]);
+        if (getValues('durationMinutes') !== currentDuration) {
+            setValue('durationMinutes', currentDuration, { shouldValidate: true });
+        }
+    }, [endDateTime, getValues, setValue, startDateTime]);
 
     const onSubmit = async (data: ExamCreateFormValues) => {
         const startDateTime = serializeDateTimeForApi(data.startDateTime);

@@ -168,7 +168,7 @@ function AssignmentBuilderRow({
                                 <SelectValue placeholder="Select room" />
                             </SelectTrigger>
                             <SelectContent>
-                                {rooms.map((room) => (
+                                {(Array.isArray(rooms) ? rooms : []).map((room) => (
                                     <SelectItem key={room.id} value={room.id}>
                                         <div className="flex w-full items-center justify-between gap-2">
                                             <span>

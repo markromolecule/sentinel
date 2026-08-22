@@ -252,4 +252,20 @@ describe('NewAssignmentsBuilder', () => {
         expect(screen.queryByTestId('classroom-select-cls-2')).not.toBeNull();
         expect(screen.queryByTestId('classroom-select-cls-1')).toBeNull();
     });
+
+    it('safely handles paginated rooms query response without throwing S.filter is not a function', () => {
+        vi.mocked(useRoomsQuery).mockReturnValueOnce({
+            data: {
+                data: [{ id: 'room-1', name: 'Room 101', room_number: '101', status: 'AVAILABLE' }],
+                meta: { page: 1, limit: 25, total: 1, totalPages: 1 },
+            },
+            isLoading: false,
+        } as any);
+
+        expect(() => {
+            render(<NewAssignmentsBuilder examId="exam-1" currentAssignments={[]} />);
+        }).not.toThrow();
+
+        expect(screen.getByTestId('room-select-room-1')).toBeDefined();
+    });
 });
