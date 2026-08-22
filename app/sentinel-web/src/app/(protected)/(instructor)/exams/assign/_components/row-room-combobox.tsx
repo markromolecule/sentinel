@@ -51,9 +51,11 @@ export const RowRoomCombobox = React.forwardRef<HTMLInputElement, RowRoomCombobo
         // Find the currently selected room for display
         const selectedRoom = React.useMemo(() => {
             if (!value || value === 'none') return null;
+            const roomList = Array.isArray(rooms) ? rooms : [];
+            const searchedList = Array.isArray(searchedRooms) ? searchedRooms : [];
             return (
-                rooms.find((r) => r.id === value) ||
-                searchedRooms.find((r) => r.id === value) ||
+                roomList.find((r) => r.id === value) ||
+                searchedList.find((r) => r.id === value) ||
                 cachedRoom
             );
         }, [rooms, searchedRooms, value, cachedRoom]);
@@ -65,9 +67,11 @@ export const RowRoomCombobox = React.forwardRef<HTMLInputElement, RowRoomCombobo
                 setCachedRoom(null);
                 return;
             }
+            const roomList = Array.isArray(rooms) ? rooms : [];
+            const searchedList = Array.isArray(searchedRooms) ? searchedRooms : [];
             const found =
-                rooms.find((r) => r.id === value) ||
-                searchedRooms.find((r) => r.id === value) ||
+                roomList.find((r) => r.id === value) ||
+                searchedList.find((r) => r.id === value) ||
                 null;
             if (found) {
                 setCachedRoom(found);
@@ -91,12 +95,14 @@ export const RowRoomCombobox = React.forwardRef<HTMLInputElement, RowRoomCombobo
 
         // Use server-side results when >= 2 chars, else client-side filter of initial list
         const filteredRooms = React.useMemo(() => {
+            const roomList = Array.isArray(rooms) ? rooms : [];
+            const searchedList = Array.isArray(searchedRooms) ? searchedRooms : [];
             const term = searchTerm.toLowerCase().trim();
             if (term.length >= 2) {
-                return searchedRooms;
+                return searchedList;
             }
-            if (!term) return rooms;
-            return rooms.filter((room) => {
+            if (!term) return roomList;
+            return roomList.filter((room) => {
                 const name = (room.name || '').toLowerCase();
                 const number = (room.room_number || '').toLowerCase();
                 return name.includes(term) || number.includes(term);

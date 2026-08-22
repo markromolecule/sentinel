@@ -11,7 +11,6 @@ export function useQuestionBankImportModal(
     existingQuestions: ExamQuestion[] = [],
     allowedQuestionType?: QuestionType,
 ): QuestionBankImportModalState {
-    const selection = useQuestionBankImportSelection(allowedQuestionType);
     const alreadyAddedIds = useMemo(
         () =>
             existingQuestions.flatMap((question) =>
@@ -21,10 +20,12 @@ export function useQuestionBankImportModal(
             ),
         [existingQuestions],
     );
+    const selection = useQuestionBankImportSelection(allowedQuestionType, alreadyAddedIds);
 
+    const setAlreadyAddedIds = selection.setAlreadyAddedIds;
     useEffect(() => {
-        selection.setAlreadyAddedIds(alreadyAddedIds);
-    }, [alreadyAddedIds, selection]);
+        setAlreadyAddedIds(alreadyAddedIds);
+    }, [alreadyAddedIds, setAlreadyAddedIds]);
 
     const data = useQuestionBankImportData(
         selection.selectedCollectionId,

@@ -1,17 +1,20 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { QuestionRecord } from '@sentinel/services';
 import type { QuestionType } from '@sentinel/shared/types';
 import { ALL_COLLECTIONS_ID } from '../constants';
 import type { SelectedImportQuestionRecord } from '../utils';
 
-export function useQuestionBankImportSelection(allowedQuestionType?: QuestionType) {
+export function useQuestionBankImportSelection(
+    allowedQuestionType?: QuestionType,
+    initialAlreadyAddedIds: string[] = [],
+) {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [selectedQuestionsById, setSelectedQuestionsById] = useState<
         Record<string, SelectedImportQuestionRecord>
     >({});
-    const [alreadyAddedIds, setAlreadyAddedIds] = useState<string[]>([]);
+    const [alreadyAddedIds, setAlreadyAddedIds] = useState<string[]>(initialAlreadyAddedIds);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedQuestionType, setSelectedQuestionType] = useState<QuestionType | 'all'>(
         allowedQuestionType ?? 'all',
@@ -19,26 +22,35 @@ export function useQuestionBankImportSelection(allowedQuestionType?: QuestionTyp
     const [selectedCollectionId, setSelectedCollectionId] = useState<string>(ALL_COLLECTIONS_ID);
     const [currentPage, setCurrentPage] = useState(1);
 
+    const selectedQuestionsByIdRef = useRef(selectedQuestionsById);
+    selectedQuestionsByIdRef.current = selectedQuestionsById;
+
     useEffect(() => {
-        if (allowedQuestionType) {
-            setSelectedQuestionType(allowedQuestionType);
-            setSelectedQuestionsById((currentQuestions) => {
-                const nextQuestions: Record<string, SelectedImportQuestionRecord> = {};
-                Object.keys(currentQuestions).forEach((id) => {
-                    const item = currentQuestions[id];
-                    if (item && item.question.type === allowedQuestionType) {
-                        nextQuestions[id] = item;
-                    }
-                });
-                return nextQuestions;
+        if (!allowedQuestionType) return;
+
+        setSelectedQuestionType(allowedQuestionType);
+
+        const currentQuestions = selectedQuestionsByIdRef.current;
+        const currentEntries = Object.entries(currentQuestions);
+        const hasIncompatible = currentEntries.some(
+            ([, item]) => item?.question.type !== allowedQuestionType,
+        );
+
+        if (hasIncompatible) {
+            const nextQuestions: Record<string, SelectedImportQuestionRecord> = {};
+            currentEntries.forEach(([id, item]) => {
+                if (item && item.question.type === allowedQuestionType) {
+                    nextQuestions[id] = item;
+                }
             });
+            setSelectedQuestionsById(nextQuestions);
             setSelectedIds((currentIds) =>
                 currentIds.filter(
-                    (id) => selectedQuestionsById[id]?.question.type === allowedQuestionType,
+                    (id) => currentQuestions[id]?.question.type === allowedQuestionType,
                 ),
             );
         }
-    }, [allowedQuestionType, selectedQuestionsById]);
+    }, [allowedQuestionType]);
 
     const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
     const selectedQuestions = useMemo(

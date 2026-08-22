@@ -51,21 +51,27 @@ function NewAssignmentsBuilder({
     const { data: users = [], isLoading: isUsersLoading } = useUsersQuery({ role: 'instructor' });
 
     const filteredClassrooms = React.useMemo(() => {
+        const classroomList: ClassroomSummary[] = Array.isArray(classrooms)
+            ? (classrooms as ClassroomSummary[])
+            : ((classrooms as any)?.data ?? []);
         const subjectMatchedClassrooms = !subjectId
             ? []
-            : (classrooms as ClassroomSummary[]).filter(
-                  (classroom) => classroom.subjectId === subjectId,
+            : classroomList.filter(
+                  (classroom: ClassroomSummary) => classroom.subjectId === subjectId,
               );
 
         if (subjectMatchedClassrooms.length > 0) {
             return subjectMatchedClassrooms;
         }
 
-        return classrooms as ClassroomSummary[];
+        return classroomList;
     }, [classrooms, subjectId]);
 
     const activeRooms = React.useMemo(() => {
-        return (rooms as Room[]).filter((room: Room) => room.status !== 'MAINTENANCE');
+        const roomList: Room[] = Array.isArray(rooms)
+            ? (rooms as Room[])
+            : ((rooms as any)?.data ?? []);
+        return roomList.filter((room: Room) => room.status !== 'MAINTENANCE');
     }, [rooms]);
 
     // Instantiate hook

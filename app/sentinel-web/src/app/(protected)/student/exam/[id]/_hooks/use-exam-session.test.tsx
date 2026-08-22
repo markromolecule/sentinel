@@ -1,4 +1,4 @@
-import { cleanup, renderHook, waitFor } from '@testing-library/react';
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { StrictMode, type ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useExamSession } from './use-exam-session';
@@ -291,7 +291,7 @@ describe('useExamSession — timer and callback stability', () => {
     beforeEach(() => {
         cleanup();
         vi.clearAllMocks();
-        vi.useFakeTimers();
+        vi.useFakeTimers({ shouldAdvanceTime: true });
         mockReadStoredExamSession.mockReturnValue(null);
         mockReadStoredExamTurnInPreview.mockReturnValue(null);
         mockReadStoredExamAnswerDraft.mockReturnValue(null);
@@ -318,9 +318,11 @@ describe('useExamSession — timer and callback stability', () => {
         await waitFor(() => expect(result.current.isInitializingSession).toBe(false));
 
         // Advance 3 seconds
-        vi.advanceTimersByTime(3000);
+        act(() => {
+            vi.advanceTimersByTime(3000);
+        });
 
-        await waitFor(() => expect(result.current.elapsedSeconds).toBe(3));
+        expect(result.current.elapsedSeconds).toBe(3);
         expect(result.current.elapsedSecondsRef.current).toBe(3);
     });
 
@@ -335,7 +337,9 @@ describe('useExamSession — timer and callback stability', () => {
 
         await waitFor(() => expect(result.current.isInitializingSession).toBe(false));
 
-        vi.advanceTimersByTime(5000);
+        act(() => {
+            vi.advanceTimersByTime(5000);
+        });
 
         // elapsedSeconds should remain at its initial value
         expect(result.current.elapsedSeconds).toBe(0);
@@ -354,13 +358,17 @@ describe('useExamSession — timer and callback stability', () => {
 
         await waitFor(() => expect(result.current.isInitializingSession).toBe(false));
 
-        vi.advanceTimersByTime(2000);
-        await waitFor(() => expect(result.current.elapsedSeconds).toBe(2));
+        act(() => {
+            vi.advanceTimersByTime(2000);
+        });
+        expect(result.current.elapsedSeconds).toBe(2);
 
         // Latch terminal state — timer must stop
         rerender({ isAttemptActive: false });
 
-        vi.advanceTimersByTime(5000);
+        act(() => {
+            vi.advanceTimersByTime(5000);
+        });
         expect(result.current.elapsedSeconds).toBe(2);
     });
 
@@ -378,10 +386,11 @@ describe('useExamSession — timer and callback stability', () => {
         const syncBefore = result.current.syncProgress;
 
         // Advance 5 seconds — identity must not change
-        vi.advanceTimersByTime(5000);
+        act(() => {
+            vi.advanceTimersByTime(5000);
+        });
 
-        await waitFor(() => expect(result.current.elapsedSeconds).toBe(5));
-
+        expect(result.current.elapsedSeconds).toBe(5);
         expect(result.current.syncProgress).toBe(syncBefore);
     });
 
@@ -397,7 +406,9 @@ describe('useExamSession — timer and callback stability', () => {
 
         await waitFor(() => expect(result.current.isInitializingSession).toBe(false));
 
-        vi.advanceTimersByTime(5000);
+        act(() => {
+            vi.advanceTimersByTime(5000);
+        });
 
         expect(result.current.elapsedSeconds).toBe(0);
     });
