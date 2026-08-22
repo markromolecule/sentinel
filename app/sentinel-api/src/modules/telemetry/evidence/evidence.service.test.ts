@@ -12,8 +12,10 @@ vi.mock('@sentinel/db', async () => {
     const actual = await vi.importActual<typeof import('@sentinel/db')>('@sentinel/db');
     return {
         ...actual,
-        executeTransaction: vi.fn(async (callback: any) => {
-            const activeTrx = (globalThis as any).activeTestTrx;
+        executeTransaction: vi.fn(async (dbOrCallback: any, maybeCallback?: any) => {
+            const callback = typeof dbOrCallback === 'function' ? dbOrCallback : maybeCallback;
+            const explicitDb = typeof dbOrCallback === 'function' ? undefined : dbOrCallback;
+            const activeTrx = (globalThis as any).activeTestTrx ?? explicitDb;
             if (activeTrx) {
                 return await callback(activeTrx);
             }

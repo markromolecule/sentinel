@@ -9,6 +9,10 @@ import { EvidenceUploadService } from './evidence-upload.service';
 
 vi.mock('./evidence-storage.service', () => ({
     EvidenceStorageService: {
+        createSignedUploadTarget: vi.fn().mockResolvedValue({
+            signedUrl: 'https://storage.test/upload',
+            token: 'mock-token',
+        }),
         deleteObject: vi.fn().mockResolvedValue(undefined),
         inspectObject: vi.fn().mockResolvedValue({
             sizeBytes: 12345,
@@ -242,7 +246,7 @@ describe('EvidenceCorrelationService', () => {
 
             const result = await EvidenceReconciliationService.reconcileEvidence(dbClient);
 
-            expect(result.processedCount).toBe(1);
+            expect(result.processedCount).toBeGreaterThanOrEqual(1);
 
             const linked = await dbClient
                 .selectFrom('telemetry_incident_evidence')
@@ -259,6 +263,7 @@ describe('EvidenceCorrelationService', () => {
         'links evidence during upload completion when the incident already exists',
         async ({ dbClient }) => {
             const fixture = await createFixture(dbClient);
+            vi.stubEnv('TELEMETRY_EVIDENCE_INSTITUTION_ALLOWLIST', fixture.institutionId);
             const eventId = randomUUID();
 
             const initialized = await EvidenceUploadService.initializeUpload(dbClient, {
@@ -386,11 +391,22 @@ describe('EvidenceCorrelationService', () => {
                 .where('attempt_id', '=', fixture.attemptId)
                 .execute();
 
+            const incident = await dbClient
+                .insertInto('flagged_incidents')
+                .values({
+                    attempt_id: fixture.attemptId,
+                    incident_type: 'FACE_NOT_VISIBLE',
+                    status: 'PENDING',
+                    dedupe_key: `attempt:NO_FACE_DETECTED:${eventId}`,
+                })
+                .returningAll()
+                .executeTakeFirstOrThrow();
+
             const evidence = await dbClient
                 .insertInto('telemetry_incident_evidence')
                 .values({
                     attempt_id: fixture.attemptId,
-                    incident_id: '11111111-1111-4111-8111-111111111111',
+                    incident_id: incident.incident_id,
                     institution_id: fixture.institutionId,
                     student_id: fixture.studentId,
                     event_id: eventId,

@@ -117,4 +117,57 @@ describe('getExamReportExportSource', () => {
         expect(result.generatedBy).toBe('John Doe');
         expect(result.report).toEqual(mockReport);
     });
+
+    it('filters students and isolates section when sectionId is provided', async () => {
+        const mockExam = {
+            exam_id: 'exam-uuid',
+            title: 'Algebra Exam',
+            duration_minutes: 60,
+            passing_score: 70,
+            scheduled_date: new Date('2026-08-01T08:00:00.000Z'),
+            end_date_time: new Date('2026-08-01T09:00:00.000Z'),
+            institution_id: 'inst-uuid',
+            subject_code: 'MATH-101',
+            subject_name: 'Mathematics',
+            institution_name: 'Sentinel School',
+        };
+
+        const mockReport = {
+            exam: { id: 'exam-uuid' },
+            students: [
+                { studentId: 's-1', sectionId: 'sec-A', sectionName: 'Section Alpha' },
+                { studentId: 's-2', sectionId: 'sec-B', sectionName: 'Section Beta' },
+            ],
+            sections: [
+                { id: 'sec-A', name: 'Section Alpha' },
+                { id: 'sec-B', name: 'Section Beta' },
+            ],
+        };
+
+        const mockTrx = {
+            selectFrom: vi.fn().mockReturnValue({
+                leftJoin: vi.fn().mockReturnThis(),
+                select: vi.fn().mockReturnThis(),
+                where: vi.fn().mockReturnThis(),
+                executeTakeFirst: vi.fn().mockResolvedValue(mockExam),
+            }),
+        };
+
+        vi.mocked(executeTransaction).mockImplementation((cb) => cb(mockTrx as any));
+        vi.mocked(buildCompleteExamReport).mockResolvedValue(mockReport as any);
+
+        const result = await getExamReportExportSource(
+            {} as any,
+            'exam-uuid',
+            'inst-uuid',
+            null,
+            'sec-A',
+        );
+
+        expect(result.sectionId).toBe('sec-A');
+        expect(result.sectionName).toBe('Section Alpha');
+        expect(result.report.students).toHaveLength(1);
+        expect(result.report.students[0].studentId).toBe('s-1');
+        expect(result.report.sections).toHaveLength(1);
+    });
 });

@@ -1375,7 +1375,7 @@ describe('IncidentPersistenceService', () => {
 
             const init = await EvidenceUploadService.initializeUpload(dbClient, {
                 attemptId: fixture.attemptId,
-                incidentId,
+                incidentId: undefined,
                 eventId,
                 eventType: 'FACE_NOT_VISIBLE',
                 capturedAt: new Date('2026-04-22T08:00:00.000Z').toISOString(),
@@ -1420,7 +1420,7 @@ describe('IncidentPersistenceService', () => {
             expect(evidenceRows).toHaveLength(1);
             expect(evidenceRows[0]).toMatchObject({
                 state: 'PENDING_UPLOAD',
-                incident_id: incidentId,
+                incident_id: null,
                 event_id: eventId,
             });
             expect(attempt.lifecycle_state).toBe('CLOSED');

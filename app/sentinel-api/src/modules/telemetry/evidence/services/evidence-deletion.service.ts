@@ -81,7 +81,7 @@ export class EvidenceDeletionService {
             }
         }
 
-        await executeTransaction(async (trx) => {
+        await executeTransaction(db, async (trx) => {
             await trx
                 .updateTable('telemetry_incident_evidence')
                 .set({
@@ -111,7 +111,7 @@ export class EvidenceDeletionService {
 
         const terminalState = deletionReason === 'RETENTION_EXPIRED' ? 'EXPIRED' : 'DELETED';
 
-        await executeTransaction(async (trx) => {
+        await executeTransaction(db, async (trx) => {
             await trx
                 .updateTable('telemetry_incident_evidence')
                 .set({

@@ -84,7 +84,7 @@ export class EvidenceUploadService {
         const storagePath = `${auth.institutionId}/${auth.examId}/${attemptId}/${eventId}.${ext}`;
 
         // 6. Handle transaction-safe idempotent upsert
-        return await executeTransaction(async (trx) => {
+        return await executeTransaction(db, async (trx) => {
             const existing = await trx
                 .selectFrom('telemetry_incident_evidence')
                 .selectAll()

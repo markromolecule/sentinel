@@ -272,4 +272,52 @@ describe('checkInLobby', () => {
             decided_by: null,
         });
     });
+
+    it('simulates concurrent check-in burst from multiple distinct students without conflict', async () => {
+        const now = new Date('2026-04-13T05:01:00.000Z');
+        const studentIds = Array.from({ length: 10 }, (_, i) => `student-${i + 1}`);
+
+        const results = await Promise.all(
+            studentIds.map((studentId) => {
+                const examSelect = createSelectBuilder({
+                    exam_id: 'exam-1',
+                    lobby_admission_mode: 'AUTOMATIC',
+                });
+                const studentSelect = createSelectBuilder({ user_id: `user-${studentId}` });
+                const admissionSelect = createSelectBuilder(undefined);
+                const latestAttemptSelect = createSelectBuilder(undefined);
+                const insertBuilder = {
+                    values: vi.fn().mockReturnThis(),
+                    onConflict: vi.fn().mockReturnThis(),
+                    returningAll: vi.fn().mockReturnThis(),
+                    executeTakeFirstOrThrow: vi.fn().mockResolvedValue({
+                        admission_id: `admission-${studentId}`,
+                        exam_id: 'exam-1',
+                        student_id: studentId,
+                        status: 'APPROVED',
+                        checked_in_at: now,
+                        decided_at: now,
+                    }),
+                };
+                const dbClient = {
+                    selectFrom: vi
+                        .fn()
+                        .mockReturnValueOnce(examSelect)
+                        .mockReturnValueOnce(studentSelect)
+                        .mockReturnValueOnce(admissionSelect)
+                        .mockReturnValueOnce(latestAttemptSelect),
+                    insertInto: vi.fn().mockReturnValue(insertBuilder),
+                } as unknown as DbClient;
+
+                return checkInLobby(dbClient, 'exam-1', studentId);
+            }),
+        );
+
+        expect(results).toHaveLength(10);
+        results.forEach((res) => {
+            expect(res.status).toBe('APPROVED');
+            expect(res.checkedInAt).toBe(now.toISOString());
+        });
+    });
 });
+

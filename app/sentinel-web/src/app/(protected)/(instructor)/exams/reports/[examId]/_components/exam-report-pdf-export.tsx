@@ -38,10 +38,15 @@ function openSignedDownload(downloadUrl: string) {
 
 type ExamReportPdfExportProps = {
     examId: string;
+    sectionId?: string | null;
     variant?: 'panel' | 'button';
 };
 
-export function ExamReportPdfExport({ examId, variant = 'panel' }: ExamReportPdfExportProps) {
+export function ExamReportPdfExport({
+    examId,
+    sectionId,
+    variant = 'panel',
+}: ExamReportPdfExportProps) {
     const queryClient = useQueryClient();
     const { hasPermission, isLoading: isLoadingPermissions } = useActivePermissions();
     const [permissionDenied, setPermissionDenied] = useState(false);
@@ -161,6 +166,7 @@ export function ExamReportPdfExport({ examId, variant = 'panel' }: ExamReportPdf
         setLiveRegionMessage('Requesting exam results PDF export.');
         createMutation.mutate({
             exam_id: examId,
+            ...(sectionId ? { section_id: sectionId } : {}),
         });
     };
 

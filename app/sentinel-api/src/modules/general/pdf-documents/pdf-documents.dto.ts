@@ -186,6 +186,12 @@ export const createExamResultsReportExportBodySchema = z
             .string()
             .uuid()
             .openapi({ description: 'UUID of the exam to generate a results report for' }),
+        section_id: z
+            .string()
+            .uuid()
+            .optional()
+            .nullable()
+            .openapi({ description: 'Optional UUID of the section to generate results for' }),
         title: z
             .string()
             .min(1)
