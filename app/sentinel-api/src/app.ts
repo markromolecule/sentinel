@@ -74,8 +74,8 @@ type Variables = {
 
 const app = new OpenAPIHono<{ Variables: Variables }>({ strict: false });
 
-const DEFAULT_CORS_ORIGIN = 'https://sentinelph.tech';
-const ALLOWED_CORS_ORIGINS = [
+export const DEFAULT_CORS_ORIGIN = 'https://sentinelph.tech';
+export const ALLOWED_CORS_ORIGINS = [
     'http://localhost:3000',
     'http://localhost:3001',
     'http://localhost:3002',
@@ -87,16 +87,25 @@ const ALLOWED_CORS_ORIGINS = [
     'https://core.sentinelph.tech',
 ];
 
-function resolveCorsOrigin(origin?: string | null) {
+const PRIVATE_NETWORK_ORIGIN_REGEX =
+    /^http:\/\/(localhost|127\.0\.0\.1|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3})(:\d+)?$/;
+
+export function resolveCorsOrigin(origin?: string | null, nodeEnv = process.env.NODE_ENV): string | null {
     if (!origin) return DEFAULT_CORS_ORIGIN;
     if (ALLOWED_CORS_ORIGINS.includes(origin)) return origin;
 
-    if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+    if (origin.endsWith('.sentinelph.tech') || origin.endsWith('.vercel.app')) {
         return origin;
     }
 
-    const isAllowedDomain = origin.endsWith('.sentinelph.tech') || origin.endsWith('.vercel.app');
-    if (isAllowedDomain) return origin;
+    if (nodeEnv !== 'production') {
+        if (PRIVATE_NETWORK_ORIGIN_REGEX.test(origin)) {
+            return origin;
+        }
+        if (/^exp:\/\//.test(origin)) {
+            return origin;
+        }
+    }
 
     return null;
 }

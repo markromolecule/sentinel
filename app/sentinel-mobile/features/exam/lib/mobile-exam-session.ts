@@ -1,4 +1,5 @@
 import type { Exam } from '@/data/exams';
+import { getApiBaseUrl } from '@/lib/config/api-config';
 
 type MobileExamSessionConfigSnapshot = {
     settings: Exam['settings'];
@@ -34,7 +35,7 @@ function createMockExamSession(exam: Exam): MobileExamSessionResult {
 }
 
 export async function startMobileExamSession(exam: Exam): Promise<MobileExamSessionResult> {
-    const apiBaseUrl = process.env.EXPO_PUBLIC_API_URL?.trim().replace(/\/+$/, '');
+    const apiBaseUrl = getApiBaseUrl();
     const bearerToken = process.env.EXPO_PUBLIC_API_BEARER_TOKEN?.trim();
 
     if (!apiBaseUrl) {
