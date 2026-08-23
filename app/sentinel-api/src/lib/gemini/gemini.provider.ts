@@ -2,18 +2,11 @@ import { HTTPException } from 'hono/http-exception';
 import { aiRequestThrottler } from './middleware/gemini-request-throttler';
 
 const GEMINI_API_BASE_URL = 'https://generativelanguage.googleapis.com';
-const DEFAULT_FLASH_MODEL =
-    process.env.GEMINI_FLASH_MODEL?.trim() ||
-    process.env.GEMINI_MODEL?.trim() ||
-    'gemini-2.5-flash';
+const DEFAULT_FLASH_MODEL = 'gemini-2.5-flash';
 const MAX_QUOTA_RETRIES = 1;
 const DEFAULT_QUOTA_RETRY_DELAY_MS = 2_000;
 const MAX_QUOTA_RETRY_DELAY_MS = 3_000;
-const GEMINI_GENERATION_TIMEOUT_MS =
-    Number(process.env.AI_GEMINI_TIMEOUT_MS) > 0
-        ? Number(process.env.AI_GEMINI_TIMEOUT_MS)
-        : 35_000;
-
+export const DEFAULT_GEMINI_GENERATION_TIMEOUT_MS = 180_000;
 
 const GEMINI_REQUEST_FAILURE_MESSAGE = 'Gemini request timed out or failed to connect.';
 
@@ -30,7 +23,34 @@ export type UploadedGeminiFile = {
 
 export class GeminiProvider {
     static resolveFlashModel(model?: string) {
-        return model?.trim() || DEFAULT_FLASH_MODEL;
+        return (
+            model?.trim() ||
+            process.env.GEMINI_FLASH_MODEL?.trim() ||
+            process.env.GEMINI_MODEL?.trim() ||
+            DEFAULT_FLASH_MODEL
+        );
+    }
+
+    static getGeminiTimeoutMs(): number {
+        const candidateKeys = [
+            'AI_GEMINI_TIMEOUT_MS',
+            'AI_GEMINI_TIMEOUT',
+            'GEMINI_TIMEOUT_MS',
+            'GEMINI_TIMEOUT',
+        ];
+
+        for (const key of candidateKeys) {
+            const rawValue = process.env[key]?.trim();
+            if (!rawValue) continue;
+
+            const parsed = Number(rawValue);
+            if (Number.isFinite(parsed) && parsed > 0) {
+                // If <= 1000, interpret as seconds (e.g. 180 -> 180,000 ms)
+                return parsed <= 1000 ? Math.round(parsed * 1000) : Math.round(parsed);
+            }
+        }
+
+        return DEFAULT_GEMINI_GENERATION_TIMEOUT_MS;
     }
 
     static async uploadFile(args: {
@@ -359,7 +379,8 @@ export class GeminiProvider {
 
     private static async fetchWithThrottle(input: string, init: RequestInit) {
         return await aiRequestThrottler.schedule(async () => {
-            const signal = this.createTimeoutSignal(GEMINI_GENERATION_TIMEOUT_MS);
+            const timeoutMs = this.getGeminiTimeoutMs();
+            const signal = this.createTimeoutSignal(timeoutMs);
 
             try {
                 return await fetch(input, {
