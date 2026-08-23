@@ -19,7 +19,7 @@
         "pdf:cleanup": "tsx -r dotenv/config src/pdf-cleanup-process.ts",
         "verify:telemetry-evidence-readiness": "tsx -r dotenv/config src/scripts/verify-telemetry-evidence-readiness.ts",
         "build": "cd ../../packages/db && pnpm run build && cd ../../packages/shared && pnpm run build",
-        "ignore-build": "npx turbo-ignore",
+        "ignore-build": "npx turbo-ignore --fallback=master",
         "seed:support": "prisma db seed",
         "db:cleanup-seed-data": "tsx prisma/cleanup-seed-data.ts",
         "seed:real-baseline": "tsx prisma/seed-real-baseline.ts",

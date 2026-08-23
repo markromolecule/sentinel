@@ -8,7 +8,7 @@
         "start": "next start",
         "lint": "eslint",
         "test": "vitest run --passWithNoTests",
-        "ignore-build": "npx turbo-ignore"
+        "ignore-build": "npx turbo-ignore --fallback=master"
     },
     "dependencies": {
         "@hookform/resolvers": "^5.2.2",

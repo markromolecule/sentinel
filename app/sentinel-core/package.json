@@ -8,7 +8,7 @@
         "start": "next start",
         "lint": "eslint",
         "test": "vitest run --passWithNoTests",
-        "ignore-build": "npx turbo-ignore"
+        "ignore-build": "npx turbo-ignore --fallback=master"
     },
     "dependencies": {
         "@dnd-kit/core": "^6.3.1",
