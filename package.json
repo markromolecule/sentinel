@@ -29,7 +29,7 @@
         "context:update": "git submodule update --remote --merge context-factory && pnpm context:bridge && pnpm context:doctor"
     },
     "devDependencies": {
-        "@types/react": "~19.1.10",
+        "@types/react": "~19.2.18",
         "prettier": "latest",
         "prettier-plugin-tailwindcss": "^0.7.2",
         "react-doctor": "^0.9.12",
@@ -37,7 +37,7 @@
         "typescript": "~5.9.2"
     },
     "dependencies": {
-        "expo": "^54.0.33",
+        "expo": "^57.0.15",
         "pg": "^8.19.0"
     }
 }
