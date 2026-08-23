@@ -112,9 +112,10 @@ export function buildPassageRepairBatchPrompt(args: {
         'REPAIR INSTRUCTIONS:',
         '1. Return only { "slotId", "passageContent" } objects for the requested slots.',
         '2. The repaired passageContent must not contain the exact answer signals or clues that make the answer a trivial copy-paste match. Avoid those signals even inside compound words, hyphenated phrases, or lists.',
-        '3. The repaired passageContent must still contain enough context for the student to derive the answer.',
-        '4. Do not return question content, sourceEvidence, sourceFileName, sourcePageNumber, or other provenance fields.',
-        `5. Use the original item context and one of these source files for reference only: ${args.sourceFiles.join(', ')}.`,
+        '3. For IDENTIFICATION and ENUMERATION questions, replace leaked answer terms with descriptive context, operational roles, or application scenarios rather than definition sentences.',
+        '4. The repaired passageContent must still contain enough context for the student to derive the answer.',
+        '5. Do not return question content, sourceEvidence, sourceFileName, sourcePageNumber, or other provenance fields.',
+        `6. Use the original item context and one of these source files for reference only: ${args.sourceFiles.join(', ')}.`,
     ].join('\n');
 }
 
@@ -155,9 +156,10 @@ export function buildPassageRepairPrompt(args: RepairPromptInput): string {
         'REPAIR INSTRUCTIONS:',
         '1. Return only a fresh "passageContent" value for this slot, not a full replacement question.',
         '2. The new "passageContent" MUST NOT contain the exact answer signals, key names, dates, numbers, formulas, or phrases that make the question a trivial copy-paste match. Avoid those signals even inside compound words, hyphenated phrases, or lists.',
-        '3. The new "passageContent" MUST contain enough context for the student to solve the question.',
-        '4. Do not return "sourceEvidence", "sourceFileName", "sourcePageNumber", or any other question fields.',
-        `5. Use one of these source files for reference only: ${sourceFiles.join(', ')}.`,
+        '3. For IDENTIFICATION and ENUMERATION questions, replace leaked answer terms with descriptive context, operational roles, or application scenarios rather than definition sentences.',
+        '4. The new "passageContent" MUST contain enough context for the student to solve the question.',
+        '5. Do not return "sourceEvidence", "sourceFileName", "sourcePageNumber", or any other question fields.',
+        `6. Use one of these source files for reference only: ${sourceFiles.join(', ')}.`,
     ].join('\n');
 }
 

@@ -17,8 +17,8 @@ export const QUESTION_TYPE_DEFINITIONS: Record<QuestionType, QuestionTypeDefinit
             type: 'object',
             properties: {
                 prompt: { type: 'string' },
-                options: { type: 'array', items: { type: 'string' } },
-                correctAnswerText: { type: 'string' },
+                options: { type: 'array', items: { type: 'string', maxLength: 200 } },
+                correctAnswerText: { type: 'string', maxLength: 200 },
             },
             required: ['prompt', 'options', 'correctAnswerText'],
         },
@@ -31,8 +31,8 @@ export const QUESTION_TYPE_DEFINITIONS: Record<QuestionType, QuestionTypeDefinit
             type: 'object',
             properties: {
                 prompt: { type: 'string' },
-                options: { type: 'array', items: { type: 'string' } },
-                correctAnswerList: { type: 'array', items: { type: 'string' } },
+                options: { type: 'array', items: { type: 'string', maxLength: 200 } },
+                correctAnswerList: { type: 'array', items: { type: 'string', maxLength: 200 } },
             },
             required: ['prompt', 'options', 'correctAnswerList'],
         },
@@ -60,7 +60,7 @@ export const QUESTION_TYPE_DEFINITIONS: Record<QuestionType, QuestionTypeDefinit
                 prompt: { type: 'string' },
                 acceptedAnswers: {
                     type: 'array',
-                    items: { type: 'string' },
+                    items: { type: 'string', maxLength: 200 },
                 },
                 caseSensitive: { type: 'boolean' },
             },
@@ -80,8 +80,8 @@ export const QUESTION_TYPE_DEFINITIONS: Record<QuestionType, QuestionTypeDefinit
                     items: {
                         type: 'object',
                         properties: {
-                            left: { type: 'string' },
-                            right: { type: 'string' },
+                            left: { type: 'string', maxLength: 200 },
+                            right: { type: 'string', maxLength: 200 },
                         },
                         required: ['left', 'right'],
                     },
@@ -115,7 +115,7 @@ export const QUESTION_TYPE_DEFINITIONS: Record<QuestionType, QuestionTypeDefinit
                 prompt: { type: 'string' },
                 blanks: {
                     type: 'array',
-                    items: { type: 'string' },
+                    items: { type: 'string', maxLength: 200 },
                 },
             },
             required: ['prompt', 'blanks'],
@@ -131,7 +131,7 @@ export const QUESTION_TYPE_DEFINITIONS: Record<QuestionType, QuestionTypeDefinit
                 prompt: { type: 'string' },
                 acceptedAnswers: {
                     type: 'array',
-                    items: { type: 'string' },
+                    items: { type: 'string', maxLength: 200 },
                 },
             },
             required: ['prompt', 'acceptedAnswers'],

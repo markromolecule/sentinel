@@ -79,9 +79,10 @@ describe('GeminiProvider quota retry', () => {
         });
     });
 
-    it('retries once on transient network failure and succeeds if second attempt passes', async () => {
+    it('retries on transient network failure and succeeds with exponential backoff', async () => {
         const fetchSpy = vi
             .spyOn(globalThis, 'fetch')
+            .mockRejectedValueOnce(new TypeError('fetch failed'))
             .mockRejectedValueOnce(new TypeError('fetch failed'))
             .mockResolvedValueOnce(
                 new Response(
@@ -109,8 +110,9 @@ describe('GeminiProvider quota retry', () => {
         });
 
         expect(result).toEqual({ ok: true });
-        expect(fetchSpy).toHaveBeenCalledTimes(2);
-        expect(sleepSpy).toHaveBeenCalledWith(1500);
+        expect(fetchSpy).toHaveBeenCalledTimes(3);
+        expect(sleepSpy).toHaveBeenNthCalledWith(1, 1000);
+        expect(sleepSpy).toHaveBeenNthCalledWith(2, 2000);
     });
 
     it('preserves upstream error payload as cause in createUpstreamException', async () => {

@@ -122,4 +122,163 @@ describe('QuestionGeneratorService quality failure classification', () => {
         expect(provider.deleteFile).toHaveBeenCalledTimes(1);
         expect(result).toEqual({ target: 'QUESTION_BANK' });
     });
+
+    it('discards unrepairable leaky questions and replenishes with fresh candidates', async () => {
+        const provider = {
+            resolveFlashModel: vi.fn().mockReturnValue('gemini-model'),
+            uploadFile: vi.fn(),
+            deleteFile: vi.fn().mockResolvedValue(undefined),
+            generateStructuredJson: vi.fn(),
+        };
+
+        vi.spyOn(uploadFilesModule, 'uploadFilesStep').mockResolvedValue([
+            { name: 'gemini-file', uri: 'uri', mimeType: 'application/pdf' },
+        ] as any);
+        vi.spyOn(generateBatchesModule, 'generateBatchesStep').mockResolvedValue({
+            rawQuestions: [
+                {
+                    type: 'IDENTIFICATION',
+                    sourceFileName: 'lesson.pdf',
+                    sourcePageNumber: 1,
+                    sourceEvidence: 'The Terminator symbol indicates the beginning.',
+                    passageContent: 'Leaky passage with pill symbol.',
+                    difficulty: 'EASY',
+                    points: 1,
+                    content: {
+                        prompt: 'What symbol indicates start?',
+                        acceptedAnswers: ['pill', 'terminator'],
+                    },
+                },
+            ],
+            deficits: [],
+        } as any);
+        vi.spyOn(resolvePageCountsModule, 'resolvePageCountsStep').mockResolvedValue([
+            { fileName: 'lesson.pdf', pageCount: 1 },
+        ] as any);
+
+        const assessSpy = vi.spyOn(assessPassageQualityModule, 'assessPassageQuality');
+        // Initial check: fails with ANSWER_EXACT_MATCH
+        assessSpy
+            .mockResolvedValueOnce({
+                passedSlots: [],
+                failedSlots: [
+                    {
+                        slotId: 'slot-0',
+                        type: 'IDENTIFICATION',
+                        question: { type: 'IDENTIFICATION' },
+                        violations: ['ANSWER_EXACT_MATCH'],
+                        reasons: ['Answer signal "pill" leaked.'],
+                    },
+                ],
+            } as any)
+            // Round 1 repair check: STILL fails with ANSWER_EXACT_MATCH
+            .mockResolvedValueOnce({
+                passedSlots: [],
+                failedSlots: [
+                    {
+                        slotId: 'slot-0',
+                        type: 'IDENTIFICATION',
+                        question: { type: 'IDENTIFICATION' },
+                        violations: ['ANSWER_EXACT_MATCH'],
+                        reasons: ['Answer signal "pill" leaked again.'],
+                    },
+                ],
+            } as any)
+            // Round 2 repair check: STILL fails with ANSWER_EXACT_MATCH (repair exhausted)
+            .mockResolvedValueOnce({
+                passedSlots: [],
+                failedSlots: [
+                    {
+                        slotId: 'slot-0',
+                        type: 'IDENTIFICATION',
+                        question: { type: 'IDENTIFICATION' },
+                        violations: ['ANSWER_EXACT_MATCH'],
+                        reasons: ['Answer signal "pill" leaked persistently.'],
+                    },
+                ],
+            } as any)
+            // Replenished question check: PASSES
+            .mockResolvedValueOnce({
+                passedSlots: [
+                    {
+                        slotId: 'replenished-slot-1-0',
+                        type: 'IDENTIFICATION',
+                        question: {
+                            type: 'IDENTIFICATION',
+                            passageContent: 'Clean passage about flowchart boundaries.',
+                        },
+                    },
+                ],
+                failedSlots: [],
+            } as any)
+            // Final replenished assess check: PASSES
+            .mockResolvedValueOnce({
+                passedSlots: [
+                    {
+                        slotId: 'replenished-slot-1-0',
+                        type: 'IDENTIFICATION',
+                        question: {
+                            type: 'IDENTIFICATION',
+                            passageContent: 'Clean passage about flowchart boundaries.',
+                        },
+                    },
+                ],
+                failedSlots: [],
+            } as any);
+
+        vi.spyOn(repairInvalidQuestionsModule, 'repairInvalidQuestions').mockResolvedValue([
+            {
+                slotId: 'slot-0',
+                passageContent: 'Still leaky passage with pill.',
+            },
+        ] as any);
+
+        const replenishSpy = vi
+            .spyOn(await import('./steps/replenish-question-deficits'), 'replenishQuestionDeficits')
+            .mockResolvedValue([
+                {
+                    type: 'IDENTIFICATION',
+                    sourceFileName: 'lesson.pdf',
+                    sourcePageNumber: 1,
+                    sourceEvidence: 'Evidence text',
+                    passageContent: 'Clean passage about flowchart boundaries.',
+                    difficulty: 'EASY',
+                    points: 1,
+                    content: {
+                        prompt: 'What symbol indicates start?',
+                        acceptedAnswers: ['oval', 'terminator'],
+                    },
+                },
+            ] as any);
+
+        const buildResponseSpy = vi
+            .spyOn(buildResponseModule, 'buildResponseStep')
+            .mockReturnValue({ target: 'QUESTION_BANK', success: true } as any);
+
+        const result = await QuestionGeneratorService.generatePreviewFromPdf({
+            files: [new File(['%PDF-1.4 test'], 'lesson.pdf', { type: 'application/pdf' })],
+            config: {
+                target: 'QUESTION_BANK',
+                institutionId: 'institution-1',
+                tags: [],
+                isPublic: false,
+                questionCount: 1,
+                questionTypeDistribution: [{ type: 'IDENTIFICATION', count: 1 }],
+            } as any,
+            provider: provider as any,
+        });
+
+        expect(replenishSpy).toHaveBeenCalled();
+        expect(buildResponseSpy).toHaveBeenCalledWith(
+            expect.objectContaining({
+                normalizedQuestions: [
+                    expect.objectContaining({
+                        type: 'IDENTIFICATION',
+                        passageContent: 'Clean passage about flowchart boundaries.',
+                    }),
+                ],
+            }),
+        );
+        expect(result).toEqual({ target: 'QUESTION_BANK', success: true });
+    });
 });
