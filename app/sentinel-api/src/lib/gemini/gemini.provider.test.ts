@@ -58,8 +58,66 @@ describe('GeminiProvider quota retry', () => {
         expect(sleepSpy).toHaveBeenCalledWith(0);
     });
 
-    it('maps network failures to a safe 502 response', async () => {
-        vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('fetch failed'));
+    it('maps network failures to a safe 502 response with cause preserved', async () => {
+        const originalError = new TypeError('fetch failed');
+        vi.spyOn(globalThis, 'fetch').mockRejectedValue(originalError);
+        vi.spyOn(GeminiProvider as any, 'sleep').mockResolvedValue(undefined);
+
+        const promise = GeminiProvider.generateStructuredJson<{ ok: boolean }>({
+            prompt: 'Generate JSON.',
+            responseJsonSchema: {
+                type: 'object',
+                properties: { ok: { type: 'boolean' } },
+                required: ['ok'],
+            },
+        });
+
+        await expect(promise).rejects.toMatchObject({
+            status: 502,
+            message: 'Gemini request timed out or failed to connect.',
+            cause: originalError,
+        });
+    });
+
+    it('retries once on transient network failure and succeeds if second attempt passes', async () => {
+        const fetchSpy = vi
+            .spyOn(globalThis, 'fetch')
+            .mockRejectedValueOnce(new TypeError('fetch failed'))
+            .mockResolvedValueOnce(
+                new Response(
+                    JSON.stringify({
+                        candidates: [
+                            {
+                                content: {
+                                    parts: [{ text: JSON.stringify({ ok: true }) }],
+                                },
+                            },
+                        ],
+                    }),
+                    { status: 200 },
+                ),
+            );
+        const sleepSpy = vi.spyOn(GeminiProvider as any, 'sleep').mockResolvedValue(undefined);
+
+        const result = await GeminiProvider.generateStructuredJson<{ ok: boolean }>({
+            prompt: 'Generate JSON.',
+            responseJsonSchema: {
+                type: 'object',
+                properties: { ok: { type: 'boolean' } },
+                required: ['ok'],
+            },
+        });
+
+        expect(result).toEqual({ ok: true });
+        expect(fetchSpy).toHaveBeenCalledTimes(2);
+        expect(sleepSpy).toHaveBeenCalledWith(1500);
+    });
+
+    it('preserves upstream error payload as cause in createUpstreamException', async () => {
+        const errorPayload = { error: { message: 'Resource exhausted or invalid argument', code: 400 } };
+        vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+            new Response(JSON.stringify(errorPayload), { status: 400 }),
+        );
 
         await expect(
             GeminiProvider.generateStructuredJson<{ ok: boolean }>({
@@ -71,19 +129,21 @@ describe('GeminiProvider quota retry', () => {
                 },
             }),
         ).rejects.toMatchObject({
-            status: 502,
-            message: 'Gemini request timed out or failed to connect.',
+            status: 400,
+            message: 'Resource exhausted or invalid argument',
+            cause: errorPayload,
         });
     });
 
-    it('maps aborted requests to a safe 502 response', async () => {
+    it('maps aborted requests to a safe 502 response with cause preserved', async () => {
         const controller = new AbortController();
         controller.abort();
 
+        const abortError = new DOMException('The operation was aborted.', 'AbortError');
         vi.spyOn(GeminiProvider as any, 'createTimeoutSignal').mockReturnValue(controller.signal);
         vi.spyOn(globalThis, 'fetch').mockImplementation(async (_input, init) => {
             if (init?.signal?.aborted) {
-                throw new DOMException('The operation was aborted.', 'AbortError');
+                throw abortError;
             }
 
             return new Response(
@@ -112,6 +172,7 @@ describe('GeminiProvider quota retry', () => {
         ).rejects.toMatchObject({
             status: 502,
             message: 'Gemini request timed out or failed to connect.',
+            cause: abortError,
         });
     });
 });
@@ -190,5 +251,57 @@ describe('GeminiProvider timeout and model resolution', () => {
 
         expect(GeminiProvider.resolveFlashModel('custom-model')).toBe('custom-model');
     });
+
+    it('resolves thinking budget with defaults and environment overrides', () => {
+        expect(GeminiProvider.resolveThinkingBudget('gemini-2.5-flash')).toBe(0);
+        expect(GeminiProvider.resolveThinkingBudget('gemini-2.0-flash')).toBe(0);
+        expect(GeminiProvider.resolveThinkingBudget('gemini-2.5-pro')).toBeUndefined();
+
+        process.env.AI_GEMINI_THINKING_BUDGET = '512';
+        expect(GeminiProvider.resolveThinkingBudget('gemini-2.5-pro')).toBe(512);
+        expect(GeminiProvider.resolveThinkingBudget('gemini-2.5-flash')).toBe(512);
+
+        process.env.AI_GEMINI_THINKING_BUDGET = '0';
+        expect(GeminiProvider.resolveThinkingBudget('gemini-2.5-pro')).toBe(0);
+
+        process.env.AI_GEMINI_THINKING_BUDGET = '-1';
+        expect(GeminiProvider.resolveThinkingBudget('gemini-2.5-flash')).toBeUndefined();
+
+        process.env.AI_GEMINI_THINKING_BUDGET = 'invalid';
+        expect(GeminiProvider.resolveThinkingBudget('gemini-2.5-flash')).toBe(0);
+    });
+
+    it('includes thinkingConfig in generateStructuredJson payload for flash models', async () => {
+        process.env.GEMINI_API_KEY = 'test-api-key';
+        let capturedPayload: any;
+        vi.spyOn(globalThis, 'fetch').mockImplementation(async (_input, init) => {
+            if (init?.body) {
+                capturedPayload = JSON.parse(init.body as string);
+            }
+            return new Response(
+                JSON.stringify({
+                    candidates: [
+                        {
+                            content: {
+                                parts: [{ text: JSON.stringify({ ok: true }) }],
+                            },
+                        },
+                    ],
+                }),
+                { status: 200 },
+            );
+        });
+
+        await GeminiProvider.generateStructuredJson({
+            prompt: 'Test prompt',
+            responseJsonSchema: { type: 'object' },
+            model: 'gemini-2.5-flash',
+        });
+
+        expect(capturedPayload?.generationConfig?.thinkingConfig).toEqual({
+            thinkingBudget: 0,
+        });
+    });
 });
+
 

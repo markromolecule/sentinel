@@ -6,6 +6,8 @@ const DEFAULT_FLASH_MODEL = 'gemini-2.5-flash';
 const MAX_QUOTA_RETRIES = 1;
 const DEFAULT_QUOTA_RETRY_DELAY_MS = 2_000;
 const MAX_QUOTA_RETRY_DELAY_MS = 3_000;
+const MAX_NETWORK_RETRIES = 1;
+const NETWORK_RETRY_DELAY_MS = 1_500;
 export const DEFAULT_GEMINI_GENERATION_TIMEOUT_MS = 180_000;
 
 const GEMINI_REQUEST_FAILURE_MESSAGE = 'Gemini request timed out or failed to connect.';
@@ -29,6 +31,22 @@ export class GeminiProvider {
             process.env.GEMINI_MODEL?.trim() ||
             DEFAULT_FLASH_MODEL
         );
+    }
+
+    static resolveThinkingBudget(model: string): number | undefined {
+        const rawBudget = process.env.AI_GEMINI_THINKING_BUDGET?.trim();
+        if (rawBudget !== undefined && rawBudget !== '') {
+            const parsed = Number(rawBudget);
+            if (Number.isFinite(parsed)) {
+                return parsed >= 0 ? Math.round(parsed) : undefined;
+            }
+        }
+
+        if (model.toLowerCase().includes('flash')) {
+            return 0;
+        }
+
+        return undefined;
     }
 
     static getGeminiTimeoutMs(): number {
@@ -91,6 +109,7 @@ export class GeminiProvider {
         if (!uploadUrl) {
             throw new HTTPException(502, {
                 message: 'Gemini file upload did not return a resumable upload URL.',
+                cause: new Error('Missing x-goog-upload-url header'),
             });
         }
 
@@ -118,6 +137,7 @@ export class GeminiProvider {
         if (!file?.name || !file?.uri) {
             throw new HTTPException(502, {
                 message: 'Gemini upload completed without returning file metadata.',
+                cause: new Error('Missing file.name or file.uri in upload response payload'),
             });
         }
 
@@ -138,6 +158,7 @@ export class GeminiProvider {
     }): Promise<T> {
         const apiKey = this.getApiKey();
         const model = this.resolveFlashModel(args.model);
+        const thinkingBudget = this.resolveThinkingBudget(model);
         const requestInit: RequestInit = {
             method: 'POST',
             headers: {
@@ -166,6 +187,13 @@ export class GeminiProvider {
                 generationConfig: {
                     responseMimeType: 'application/json',
                     responseJsonSchema: args.responseJsonSchema,
+                    ...(thinkingBudget !== undefined
+                        ? {
+                            thinkingConfig: {
+                                thinkingBudget,
+                            },
+                        }
+                        : {}),
                 },
             }),
         };
@@ -191,6 +219,7 @@ export class GeminiProvider {
         if (!response) {
             throw new HTTPException(502, {
                 message: 'Gemini did not return a response.',
+                cause: new Error('Response is undefined after quota retries'),
             });
         }
 
@@ -210,6 +239,7 @@ export class GeminiProvider {
                 message: blockReason
                     ? `Gemini blocked the request: ${blockReason}.`
                     : 'Gemini returned an empty response.',
+                cause: payload ?? new Error('Empty text part in Gemini response'),
             });
         }
 
@@ -219,6 +249,7 @@ export class GeminiProvider {
             console.error('Failed to parse Gemini JSON response:', error, text);
             throw new HTTPException(502, {
                 message: 'Gemini returned invalid JSON.',
+                cause: error,
             });
         }
     }
@@ -270,18 +301,28 @@ export class GeminiProvider {
     private static async createUpstreamException(response: Response, fallbackMessage: string) {
         const responseText = await response.text();
         let message = fallbackMessage;
+        let errorDetails: unknown = undefined;
 
         if (responseText) {
             try {
                 const payload = JSON.parse(responseText);
                 message = payload?.error?.message || payload?.message || fallbackMessage;
+                errorDetails = payload;
             } catch {
                 message = responseText;
+                errorDetails = responseText;
             }
         }
 
-        throw new HTTPException(this.mapUpstreamStatus(response.status), {
+        const status = this.mapUpstreamStatus(response.status);
+        console.error(
+            `[GeminiProvider] Upstream API error (${response.status} -> HTTP ${status}): ${message}`,
+            errorDetails,
+        );
+
+        throw new HTTPException(status, {
             message,
+            cause: errorDetails ?? new Error(message),
         });
     }
 
@@ -318,6 +359,37 @@ export class GeminiProvider {
         const controller = new AbortControllerCtor();
         setTimeout(() => controller.abort(), timeoutMs);
         return controller.signal;
+    }
+
+    private static isTransientNetworkError(error: unknown, signal?: AbortSignal): boolean {
+        if (signal?.aborted) {
+            return false;
+        }
+
+        if (error instanceof TypeError) {
+            return true;
+        }
+
+        if (typeof error === 'object' && error !== null) {
+            const err = error as Record<string, unknown>;
+            const cause = err.cause as Record<string, unknown> | undefined;
+            const code = String(err.code || cause?.code || '');
+            if (
+                [
+                    'ECONNRESET',
+                    'ECONNREFUSED',
+                    'EPIPE',
+                    'ETIMEDOUT',
+                    'UND_ERR_SOCKET',
+                    'UND_ERR_CONNECT_TIMEOUT',
+                    'UND_ERR_HEADERS_TIMEOUT',
+                ].includes(code)
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static isTimeoutOrNetworkFailure(error: unknown) {
@@ -380,22 +452,47 @@ export class GeminiProvider {
     private static async fetchWithThrottle(input: string, init: RequestInit) {
         return await aiRequestThrottler.schedule(async () => {
             const timeoutMs = this.getGeminiTimeoutMs();
-            const signal = this.createTimeoutSignal(timeoutMs);
+            const startTime = Date.now();
 
-            try {
-                return await fetch(input, {
-                    ...init,
-                    ...(signal ? { signal } : {}),
-                });
-            } catch (error) {
-                if (this.isTimeoutOrNetworkFailure(error)) {
-                    throw new HTTPException(502, {
-                        message: GEMINI_REQUEST_FAILURE_MESSAGE,
+            for (let attempt = 0; attempt <= MAX_NETWORK_RETRIES; attempt++) {
+                const signal = this.createTimeoutSignal(timeoutMs);
+
+                try {
+                    return await fetch(input, {
+                        ...init,
+                        ...(signal ? { signal } : {}),
                     });
-                }
+                } catch (error) {
+                    const elapsedMs = Date.now() - startTime;
+                    const isTransient = this.isTransientNetworkError(error, signal);
 
-                throw error;
+                    if (isTransient && attempt < MAX_NETWORK_RETRIES) {
+                        console.warn(
+                            `[GeminiProvider] Transient network failure during fetch to ${input} (attempt ${attempt + 1}/${MAX_NETWORK_RETRIES + 1}, elapsed ${elapsedMs}ms). Retrying in ${NETWORK_RETRY_DELAY_MS}ms... Error: ${error instanceof Error ? error.message : String(error)}`,
+                        );
+                        await this.sleep(NETWORK_RETRY_DELAY_MS);
+                        continue;
+                    }
+
+                    console.error(
+                        `[GeminiProvider] Upstream request failed for ${input} after ${elapsedMs}ms (attempt ${attempt + 1}/${MAX_NETWORK_RETRIES + 1}). Error:`,
+                        error,
+                    );
+
+                    if (this.isTimeoutOrNetworkFailure(error)) {
+                        throw new HTTPException(502, {
+                            message: GEMINI_REQUEST_FAILURE_MESSAGE,
+                            cause: error,
+                        });
+                    }
+
+                    throw error;
+                }
             }
+
+            throw new HTTPException(502, {
+                message: GEMINI_REQUEST_FAILURE_MESSAGE,
+            });
         });
     }
 }

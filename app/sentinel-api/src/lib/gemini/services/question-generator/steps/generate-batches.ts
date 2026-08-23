@@ -51,7 +51,12 @@ export async function generateBatchesStep(args: {
         predicted_difficulty: z.string().optional(),
     });
 
-    const batchTasks = batches.map((batchConfig) => async (): Promise<GenerateBatchesResult> => {
+    const batchTasks = batches.map((batchConfig, batchIndex) => async (): Promise<GenerateBatchesResult> => {
+        const batchNum = batchIndex + 1;
+        const totalBatches = batches.length;
+        const startTime = Date.now();
+        console.log(`[generateBatchesStep] Starting batch ${batchNum}/${totalBatches}...`);
+
         const prompt = buildPrompt({
             config: batchConfig,
             sourceFiles: files.map((file) => ({
@@ -72,8 +77,14 @@ export async function generateBatchesStep(args: {
                     mimeType: file.mimeType,
                 })),
             });
+            const elapsedMs = Date.now() - startTime;
+            console.log(`[generateBatchesStep] Batch ${batchNum}/${totalBatches} completed in ${elapsedMs}ms.`);
         } catch (error) {
-            console.error('Batch generation model call failed:', error);
+            const elapsedMs = Date.now() - startTime;
+            console.error(
+                `[generateBatchesStep] Batch ${batchNum}/${totalBatches} generation failed after ${elapsedMs}ms:`,
+                error,
+            );
             throw error;
         }
 
@@ -81,7 +92,10 @@ export async function generateBatchesStep(args: {
             .record(z.string(), z.array(z.unknown()).default([]))
             .safeParse(generated);
         if (!parsedRecord.success) {
-            console.error('Batch generation output structure parsing failed:', parsedRecord.error);
+            console.error(
+                `[generateBatchesStep] Batch ${batchNum}/${totalBatches} output structure parsing failed:`,
+                parsedRecord.error,
+            );
             const deficits = getQuestionTypeDistribution(batchConfig).map((d) => ({
                 type: d.type,
                 count: d.count,
@@ -103,7 +117,7 @@ export async function generateBatchesStep(args: {
                     } as RawGeneratedQuestion);
                 } else {
                     console.warn(
-                        `Malformed raw question item for type ${type} skipped:`,
+                        `[generateBatchesStep] Batch ${batchNum}/${totalBatches} malformed raw question item for type ${type} skipped:`,
                         parsedItem.error,
                     );
                 }
