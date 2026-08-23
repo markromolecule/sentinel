@@ -3,12 +3,15 @@ import { aiRequestThrottler } from './middleware/gemini-request-throttler';
 
 const GEMINI_API_BASE_URL = 'https://generativelanguage.googleapis.com';
 const DEFAULT_FLASH_MODEL = 'gemini-2.5-flash';
+export const DEFAULT_FALLBACK_MODEL = 'gemini-2.5-flash-lite';
+export const MAX_UPSTREAM_RETRIES = 2;
 const MAX_QUOTA_RETRIES = 1;
 const DEFAULT_QUOTA_RETRY_DELAY_MS = 2_000;
 const MAX_QUOTA_RETRY_DELAY_MS = 3_000;
 const MAX_NETWORK_RETRIES = 2;
 const NETWORK_RETRY_BASE_DELAY_MS = 1_000;
 export const DEFAULT_GEMINI_GENERATION_TIMEOUT_MS = 180_000;
+export const DEFAULT_PER_ATTEMPT_GENERATION_TIMEOUT_MS = 28_000;
 
 const GEMINI_REQUEST_FAILURE_MESSAGE = 'Gemini request timed out or failed to connect.';
 
@@ -33,6 +36,19 @@ export class GeminiProvider {
         );
     }
 
+    static resolveFallbackModel(currentModel?: string): string {
+        const envFallback = process.env.AI_GEMINI_FALLBACK_MODEL?.trim();
+        if (envFallback) {
+            return envFallback;
+        }
+
+        if (currentModel === DEFAULT_FALLBACK_MODEL) {
+            return DEFAULT_FALLBACK_MODEL;
+        }
+
+        return DEFAULT_FALLBACK_MODEL;
+    }
+
     static resolveThinkingBudget(model: string): number | undefined {
         const rawBudget = process.env.AI_GEMINI_THINKING_BUDGET?.trim();
         if (rawBudget !== undefined && rawBudget !== '') {
@@ -47,6 +63,25 @@ export class GeminiProvider {
         }
 
         return undefined;
+    }
+
+    static getPerAttemptGenerationTimeoutMs(): number {
+        const candidateKeys = [
+            'AI_GEMINI_PER_ATTEMPT_TIMEOUT_MS',
+            'AI_GEMINI_PER_ATTEMPT_TIMEOUT',
+        ];
+
+        for (const key of candidateKeys) {
+            const rawValue = process.env[key]?.trim();
+            if (!rawValue) continue;
+
+            const parsed = Number(rawValue);
+            if (Number.isFinite(parsed) && parsed > 0) {
+                return parsed <= 1000 ? Math.round(parsed * 1000) : Math.round(parsed);
+            }
+        }
+
+        return DEFAULT_PER_ATTEMPT_GENERATION_TIMEOUT_MS;
     }
 
     static getGeminiTimeoutMs(): number {
@@ -157,69 +192,108 @@ export class GeminiProvider {
         model?: string;
     }): Promise<T> {
         const apiKey = this.getApiKey();
-        const model = this.resolveFlashModel(args.model);
-        const thinkingBudget = this.resolveThinkingBudget(model);
-        const requestInit: RequestInit = {
-            method: 'POST',
-            headers: {
-                'x-goog-api-key': apiKey,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                contents: [
-                    {
-                        role: 'user',
-                        parts: [
-                            ...(args.files?.length
-                                ? args.files.map((file) => ({
-                                    file_data: {
-                                        mime_type: file.mimeType,
-                                        file_uri: file.uri,
-                                    },
-                                }))
-                                : []),
-                            {
-                                text: args.prompt,
-                            },
-                        ],
-                    },
-                ],
-                generationConfig: {
-                    responseMimeType: 'application/json',
-                    responseJsonSchema: args.responseJsonSchema,
-                    ...(thinkingBudget !== undefined
-                        ? {
-                            thinkingConfig: {
-                                thinkingBudget,
-                            },
-                        }
-                        : {}),
-                },
-            }),
-        };
+        let currentModel = this.resolveFlashModel(args.model);
+        const perAttemptTimeoutMs = this.getPerAttemptGenerationTimeoutMs();
 
         let response: Response | undefined;
-        for (let attempt = 0; attempt <= MAX_QUOTA_RETRIES; attempt++) {
-            response = await this.fetchWithThrottle(
-                `${GEMINI_API_BASE_URL}/v1beta/models/${encodeURIComponent(model)}:generateContent`,
-                requestInit,
-            );
+        let lastError: unknown = undefined;
 
-            if (response.status !== 429 || attempt === MAX_QUOTA_RETRIES) {
+        for (let attempt = 0; attempt <= MAX_UPSTREAM_RETRIES; attempt++) {
+            const thinkingBudget = this.resolveThinkingBudget(currentModel);
+            const requestInit: RequestInit = {
+                method: 'POST',
+                headers: {
+                    'x-goog-api-key': apiKey,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    contents: [
+                        {
+                            role: 'user',
+                            parts: [
+                                ...(args.files?.length
+                                    ? args.files.map((file) => ({
+                                        file_data: {
+                                            mime_type: file.mimeType,
+                                            file_uri: file.uri,
+                                        },
+                                    }))
+                                    : []),
+                                {
+                                    text: args.prompt,
+                                },
+                            ],
+                        },
+                    ],
+                    generationConfig: {
+                        responseMimeType: 'application/json',
+                        responseJsonSchema: args.responseJsonSchema,
+                        ...(thinkingBudget !== undefined
+                            ? {
+                                thinkingConfig: {
+                                    thinkingBudget,
+                                },
+                            }
+                            : {}),
+                    },
+                }),
+            };
+
+            try {
+                response = await this.fetchWithThrottle(
+                    `${GEMINI_API_BASE_URL}/v1beta/models/${encodeURIComponent(currentModel)}:generateContent`,
+                    requestInit,
+                    perAttemptTimeoutMs,
+                );
+
+                if (response.ok) {
+                    break;
+                }
+
+                if (response.status === 429) {
+                    if (attempt === MAX_UPSTREAM_RETRIES) break;
+                    const retryDelayMs = await this.resolveQuotaRetryDelayMs(response);
+                    console.warn(
+                        `[GeminiProvider] Gemini quota limit reached (${currentModel}). Retrying generation in ${Math.ceil(retryDelayMs / 1000)} seconds.`,
+                    );
+                    await this.sleep(retryDelayMs);
+                    continue;
+                }
+
+                if ([504, 503, 502, 408].includes(response.status)) {
+                    if (attempt === MAX_UPSTREAM_RETRIES) break;
+                    const fallbackModel = this.resolveFallbackModel(currentModel);
+                    const retryDelayMs = 1500 * (attempt + 1);
+                    console.warn(
+                        `[GeminiProvider] Upstream Gemini server error (${response.status}) on model ${currentModel} (attempt ${attempt + 1}/${MAX_UPSTREAM_RETRIES + 1}). Retrying with fallback model ${fallbackModel} in ${retryDelayMs}ms...`,
+                    );
+                    currentModel = fallbackModel;
+                    await this.sleep(retryDelayMs);
+                    continue;
+                }
+
+                // Non-retryable status (400, 401, 403, 404, 422, etc.)
                 break;
+            } catch (error) {
+                lastError = error;
+                if (attempt < MAX_UPSTREAM_RETRIES && this.isTimeoutOrNetworkFailure(error)) {
+                    const fallbackModel = this.resolveFallbackModel(currentModel);
+                    const retryDelayMs = 1500 * (attempt + 1);
+                    console.warn(
+                        `[GeminiProvider] Generation attempt ${attempt + 1} timed out or failed network call on ${currentModel}. Retrying with fallback model ${fallbackModel} in ${retryDelayMs}ms...`,
+                    );
+                    currentModel = fallbackModel;
+                    await this.sleep(retryDelayMs);
+                    continue;
+                }
+                throw error;
             }
-
-            const retryDelayMs = await this.resolveQuotaRetryDelayMs(response);
-            console.warn(
-                `Gemini quota limit reached. Retrying generation in ${Math.ceil(retryDelayMs / 1000)} seconds.`,
-            );
-            await this.sleep(retryDelayMs);
         }
 
         if (!response) {
             throw new HTTPException(502, {
                 message: 'Gemini did not return a response.',
-                cause: new Error('Response is undefined after quota retries'),
+                cause: lastError ?? new Error('Response is undefined after retries'),
             });
         }
 
@@ -395,23 +469,28 @@ export class GeminiProvider {
     private static isTimeoutOrNetworkFailure(error: unknown) {
         if (!error) return false;
 
+        const candidate =
+            typeof error === 'object' && error !== null && 'cause' in error
+                ? (error as { cause?: unknown }).cause || error
+                : error;
+
         if (
-            error instanceof DOMException &&
-            (error.name === 'AbortError' || error.name === 'TimeoutError')
+            candidate instanceof DOMException &&
+            (candidate.name === 'AbortError' || candidate.name === 'TimeoutError')
         ) {
             return true;
         }
 
-        if (error instanceof TypeError) {
+        if (candidate instanceof TypeError) {
             return true;
         }
 
         return (
-            typeof error === 'object' &&
-            error !== null &&
-            'name' in error &&
-            ((error as { name?: unknown }).name === 'AbortError' ||
-                (error as { name?: unknown }).name === 'TimeoutError')
+            typeof candidate === 'object' &&
+            candidate !== null &&
+            'name' in candidate &&
+            ((candidate as { name?: unknown }).name === 'AbortError' ||
+                (candidate as { name?: unknown }).name === 'TimeoutError')
         );
     }
 
@@ -449,9 +528,13 @@ export class GeminiProvider {
         });
     }
 
-    private static async fetchWithThrottle(input: string, init: RequestInit) {
+    private static async fetchWithThrottle(
+        input: string,
+        init: RequestInit,
+        customTimeoutMs?: number,
+    ) {
         return await aiRequestThrottler.schedule(async () => {
-            const timeoutMs = this.getGeminiTimeoutMs();
+            const timeoutMs = customTimeoutMs ?? this.getGeminiTimeoutMs();
             const startTime = Date.now();
 
             for (let attempt = 0; attempt <= MAX_NETWORK_RETRIES; attempt++) {

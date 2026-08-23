@@ -189,6 +189,10 @@ describe('GeminiProvider timeout and model resolution', () => {
         delete process.env.GEMINI_TIMEOUT;
         delete process.env.GEMINI_FLASH_MODEL;
         delete process.env.GEMINI_MODEL;
+        delete process.env.AI_GEMINI_THINKING_BUDGET;
+        delete process.env.AI_GEMINI_FALLBACK_MODEL;
+        delete process.env.AI_GEMINI_PER_ATTEMPT_TIMEOUT_MS;
+        delete process.env.AI_GEMINI_PER_ATTEMPT_TIMEOUT;
     });
 
     afterEach(() => {
@@ -304,6 +308,152 @@ describe('GeminiProvider timeout and model resolution', () => {
             thinkingBudget: 0,
         });
     });
+
+    it('resolves fallback model correctly with defaults and overrides', () => {
+        expect(GeminiProvider.resolveFallbackModel('gemini-2.5-flash')).toBe('gemini-2.5-flash-lite');
+        expect(GeminiProvider.resolveFallbackModel('gemini-2.5-flash-lite')).toBe('gemini-2.5-flash-lite');
+
+        process.env.AI_GEMINI_FALLBACK_MODEL = 'gemini-3.6-flash';
+        expect(GeminiProvider.resolveFallbackModel('gemini-2.5-flash')).toBe('gemini-3.6-flash');
+    });
+
+    it('resolves per-attempt generation timeout with defaults and overrides', () => {
+        expect(GeminiProvider.getPerAttemptGenerationTimeoutMs()).toBe(28_000);
+
+        process.env.AI_GEMINI_PER_ATTEMPT_TIMEOUT_MS = '25000';
+        expect(GeminiProvider.getPerAttemptGenerationTimeoutMs()).toBe(25_000);
+
+        delete process.env.AI_GEMINI_PER_ATTEMPT_TIMEOUT_MS;
+        process.env.AI_GEMINI_PER_ATTEMPT_TIMEOUT = '30';
+        expect(GeminiProvider.getPerAttemptGenerationTimeoutMs()).toBe(30_000);
+    });
+
+    it('retries on upstream 504 DEADLINE_EXCEEDED and switches to fallback model', async () => {
+        process.env.GEMINI_API_KEY = 'test-api-key';
+        const urlsCalled: string[] = [];
+
+        vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+            urlsCalled.push(String(input));
+            if (urlsCalled.length === 1) {
+                return new Response(
+                    JSON.stringify({
+                        error: {
+                            code: 504,
+                            message: 'The request timed out. Please try again.',
+                            status: 'DEADLINE_EXCEEDED',
+                        },
+                    }),
+                    { status: 504 },
+                );
+            }
+            return new Response(
+                JSON.stringify({
+                    candidates: [
+                        {
+                            content: {
+                                parts: [{ text: JSON.stringify({ ok: true }) }],
+                            },
+                        },
+                    ],
+                }),
+                { status: 200 },
+            );
+        });
+        const sleepSpy = vi.spyOn(GeminiProvider as any, 'sleep').mockResolvedValue(undefined);
+
+        const result = await GeminiProvider.generateStructuredJson<{ ok: boolean }>({
+            prompt: 'Test prompt',
+            responseJsonSchema: { type: 'object' },
+            model: 'gemini-2.5-flash',
+        });
+
+        expect(result).toEqual({ ok: true });
+        expect(urlsCalled.length).toBe(2);
+        expect(urlsCalled[0]).toContain('gemini-2.5-flash');
+        expect(urlsCalled[1]).toContain('gemini-2.5-flash-lite');
+        expect(sleepSpy).toHaveBeenCalledWith(1500);
+    });
+
+    it('retries on upstream 503 UNAVAILABLE and succeeds', async () => {
+        process.env.GEMINI_API_KEY = 'test-api-key';
+        const urlsCalled: string[] = [];
+
+        vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+            urlsCalled.push(String(input));
+            if (urlsCalled.length === 1) {
+                return new Response(
+                    JSON.stringify({
+                        error: {
+                            code: 503,
+                            message: 'The model is overloaded. Please try again later.',
+                            status: 'UNAVAILABLE',
+                        },
+                    }),
+                    { status: 503 },
+                );
+            }
+            return new Response(
+                JSON.stringify({
+                    candidates: [
+                        {
+                            content: {
+                                parts: [{ text: JSON.stringify({ ok: true }) }],
+                            },
+                        },
+                    ],
+                }),
+                { status: 200 },
+            );
+        });
+        vi.spyOn(GeminiProvider as any, 'sleep').mockResolvedValue(undefined);
+
+        const result = await GeminiProvider.generateStructuredJson<{ ok: boolean }>({
+            prompt: 'Test prompt',
+            responseJsonSchema: { type: 'object' },
+            model: 'gemini-2.5-flash',
+        });
+
+        expect(result).toEqual({ ok: true });
+        expect(urlsCalled.length).toBe(2);
+    });
+
+    it('retries on timeout abort and switches to fallback model', async () => {
+        process.env.GEMINI_API_KEY = 'test-api-key';
+        const urlsCalled: string[] = [];
+        const abortError = new DOMException('The operation was aborted.', 'AbortError');
+
+        vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+            urlsCalled.push(String(input));
+            if (urlsCalled.length === 1) {
+                throw abortError;
+            }
+            return new Response(
+                JSON.stringify({
+                    candidates: [
+                        {
+                            content: {
+                                parts: [{ text: JSON.stringify({ ok: true }) }],
+                            },
+                        },
+                    ],
+                }),
+                { status: 200 },
+            );
+        });
+        vi.spyOn(GeminiProvider as any, 'sleep').mockResolvedValue(undefined);
+
+        const result = await GeminiProvider.generateStructuredJson<{ ok: boolean }>({
+            prompt: 'Test prompt',
+            responseJsonSchema: { type: 'object' },
+            model: 'gemini-2.5-flash',
+        });
+
+        expect(result).toEqual({ ok: true });
+        expect(urlsCalled.length).toBe(2);
+        expect(urlsCalled[0]).toContain('gemini-2.5-flash');
+        expect(urlsCalled[1]).toContain('gemini-2.5-flash-lite');
+    });
 });
+
 
 
