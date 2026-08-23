@@ -14,7 +14,9 @@ export function useExamLobbyAdmissionStatusQuery(examId?: string) {
             : [...EXAM_QUERY_KEYS.all, 'lobby', 'admission-status'],
         queryFn: () => getExamLobbyAdmissionStatus(apiClient, examId as string),
         enabled: Boolean(examId) && isAuthenticatedQueryEnabled,
-        staleTime: 5000,
+        staleTime: 1000,
+        refetchInterval: (query) => (query.state.data?.status === 'APPROVED' ? false : 2500),
+        refetchIntervalInBackground: false,
         refetchOnWindowFocus: true,
     });
 }
