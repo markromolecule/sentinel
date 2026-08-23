@@ -215,9 +215,54 @@ describe('useStudentLiveInspectionPublisher', () => {
             clone,
             expect.objectContaining({
                 source: 'camera',
+                simulcast: false,
+                videoCodec: 'vp8',
                 stopLocalTrackOnUnpublish: false,
             }),
         );
+    });
+
+    it('uses bundled connection from directive and skips createLiveInspectionPublisherConnection', async () => {
+        const { supabase } = createSupabase();
+        const { original } = createLiveTrack();
+        const bundledConnection = {
+            leaseId,
+            revision: 1,
+            roomName: 'room-bundled',
+            token: 'bundled-publisher-token',
+            liveKitUrl: 'wss://sentinel-bundled.livekit.cloud',
+            participantIdentity: 'sentinel:publisher:student-1',
+            expiresAt: '2026-07-20T00:05:00.000Z',
+        };
+        mockDirective.mockResolvedValue({
+            ...createDirective(1),
+            connection: bundledConnection,
+        });
+
+        const { result } = renderHook(() =>
+            useStudentLiveInspectionPublisher({
+                supabase,
+                apiClient: vi.fn() as never,
+                sessionId: 'session-1',
+                attemptId,
+                enabled: true,
+                getLiveVideoTrack: () => original,
+            }),
+        );
+
+        await waitFor(() => expect(result.current.isLive).toBe(true));
+
+        expect(mockPublisherConnection).not.toHaveBeenCalled();
+        expect(mockConnect).toHaveBeenCalledWith(
+            'wss://sentinel-bundled.livekit.cloud',
+            'bundled-publisher-token',
+            { autoSubscribe: false },
+        );
+        expect(mockPublisherReady).toHaveBeenCalledWith(expect.anything(), {
+            sessionId: 'session-1',
+            leaseId,
+            revision: 1,
+        });
     });
 
     it('resumes publication from a server-side PUBLISHER_CONNECTING directive', async () => {
@@ -284,7 +329,7 @@ describe('useStudentLiveInspectionPublisher', () => {
         // Let the mount effects run
         await vi.runOnlyPendingTimersAsync();
 
-        expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 1000);
+        expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 500);
     });
 
     it('keeps missed-event recovery active when the attempt page is hidden', async () => {
@@ -390,10 +435,10 @@ describe('useStudentLiveInspectionPublisher', () => {
             }),
         );
 
-        // Advance 8 seconds of camera check in 250ms steps
-        for (let i = 0; i < 33; i++) {
+        // Advance 8 seconds of camera check in 100ms steps
+        for (let i = 0; i < 82; i++) {
             await act(async () => {
-                await vi.advanceTimersByTimeAsync(250);
+                await vi.advanceTimersByTimeAsync(100);
             });
         }
 

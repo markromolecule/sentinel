@@ -1,6 +1,7 @@
 import { HTTPException } from 'hono/http-exception';
 import type { DbClient } from '@sentinel/db';
 import { LiveKitService } from '../../../infrastructure/livekit/livekit.service';
+import { LiveKitManagedService } from '../../../infrastructure/livekit/services/livekit-managed.service';
 import {
     acquireLiveInspectionLease,
     countActiveLiveInspectionLeases,
@@ -16,6 +17,7 @@ import {
     createLiveInspectionRoomName,
     getLiveInspectionAttemptForStaff,
     mapLiveInspectionLeaseStatus,
+    type LiveInspectionLeaseRecord,
     type LiveInspectionServiceDeps,
 } from './live-inspection-service-helpers';
 
@@ -29,6 +31,39 @@ export type StartLiveInspectionArgs = {
     activeInstitutionId: string;
     activePermissionKeys?: string[] | Set<string>;
 };
+
+async function buildViewerLeaseStatus(
+    dbClient: DbClient,
+    lease: LiveInspectionLeaseRecord,
+    viewerUserId: string,
+    deps: LiveInspectionServiceDeps,
+    config: ReturnType<typeof assertLiveInspectionEnabled>,
+) {
+    const liveKit =
+        deps.liveKit ?? new LiveKitManagedService({ config: deps.config ?? config });
+    const token = await liveKit.createViewerToken({
+        roomName: lease.provider_room_name,
+        leaseId: lease.lease_id,
+    });
+    await LiveKitService.logLiveKitTokenGranted(dbClient, {
+        attemptId: lease.attempt_id,
+        actorId: viewerUserId,
+        institutionId: lease.institution_id,
+        roomName: lease.provider_room_name,
+        identity: token.participantIdentity,
+        role: 'viewer',
+    });
+    const connection = {
+        leaseId: lease.lease_id,
+        revision: lease.version,
+        roomName: lease.provider_room_name,
+        token: token.token,
+        liveKitUrl: token.liveKitUrl,
+        participantIdentity: token.participantIdentity,
+        expiresAt: token.expiresAt.toISOString(),
+    };
+    return mapLiveInspectionLeaseStatus(lease, connection);
+}
 
 /**
  * Starts one durable inspection lease and returns immediately so the viewer and
@@ -70,7 +105,13 @@ export async function startLiveInspection(
         }
 
         if (args.restart !== true) {
-            return mapLiveInspectionLeaseStatus(existingLease);
+            return buildViewerLeaseStatus(
+                args.dbClient,
+                existingLease,
+                args.viewerUserId,
+                deps,
+                config,
+            );
         }
 
         // Restart requested: stop old lease and provider room
@@ -147,7 +188,13 @@ export async function startLiveInspection(
         });
 
         if (racedLease && racedLease.viewer_user_id === args.viewerUserId) {
-            return mapLiveInspectionLeaseStatus(racedLease);
+            return buildViewerLeaseStatus(
+                args.dbClient,
+                racedLease,
+                args.viewerUserId,
+                deps,
+                config,
+            );
         }
 
         if (acquired.code === 'VIEWER_ALREADY_ACTIVE') {
@@ -193,7 +240,13 @@ export async function startLiveInspection(
                     );
 
                     if (retriedLease?.viewer_user_id === args.viewerUserId) {
-                        return mapLiveInspectionLeaseStatus(retriedLease);
+                        return buildViewerLeaseStatus(
+                            args.dbClient,
+                            retriedLease,
+                            args.viewerUserId,
+                            deps,
+                            config,
+                        );
                     }
                 }
             }
@@ -227,5 +280,5 @@ export async function startLiveInspection(
         attemptId: args.attemptId,
     });
 
-    return mapLiveInspectionLeaseStatus(lease!);
+    return buildViewerLeaseStatus(args.dbClient, lease!, args.viewerUserId, deps, config);
 }

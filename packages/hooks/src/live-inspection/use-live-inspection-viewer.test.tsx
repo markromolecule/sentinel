@@ -137,6 +137,46 @@ describe('useLiveInspectionViewer', () => {
         expect(JSON.stringify(result.current).toLowerCase()).not.toContain('viewer-token');
     });
 
+    it('uses bundled credentials from startLiveInspection and bypasses createLiveInspectionViewerConnection', async () => {
+        const bundledConnection = {
+            leaseId: lease.leaseId,
+            revision: 1,
+            roomName: 'room-bundled',
+            token: 'bundled-viewer-token',
+            liveKitUrl: 'wss://sentinel-bundled.livekit.cloud',
+            participantIdentity: 'sentinel:viewer:viewer-1',
+            expiresAt: '2026-07-20T00:05:00.000Z',
+        };
+        mockStart.mockResolvedValueOnce({
+            ...lease,
+            connection: bundledConnection,
+        });
+
+        const { result } = renderHook(
+            () =>
+                useLiveInspectionViewer({
+                    examId: 'exam-1',
+                    studentId: 'student-1',
+                    attemptId: lease.attemptId,
+                    enabled: true,
+                }),
+            { wrapper },
+        );
+
+        await act(async () => {
+            await result.current.start();
+        });
+
+        expect(mockCredentials).not.toHaveBeenCalled();
+        expect(mockConnect).toHaveBeenCalledWith(
+            'wss://sentinel-bundled.livekit.cloud',
+            'bundled-viewer-token',
+            {
+                autoSubscribe: true,
+            },
+        );
+    });
+
     it('does not enter live until the expected camera track is attached and playable', async () => {
         const video = document.createElement('video');
         const { result } = renderHook(

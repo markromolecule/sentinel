@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Room, RoomEvent, Track } from 'livekit-client';
-import type { LiveInspectionStaffStatus, LiveInspectionState } from '@sentinel/shared/schema';
+import type {
+    LiveInspectionConnectionResponse,
+    LiveInspectionStaffStatus,
+    LiveInspectionState,
+} from '@sentinel/shared/schema';
 import {
     createLiveInspectionViewerConnection,
     getLiveInspectionStatus,
@@ -180,15 +184,21 @@ export function useLiveInspectionViewer({
     );
 
     const connectViewer = useCallback(
-        async (lease: LiveInspectionStaffStatus) => {
+        async (
+            lease: LiveInspectionStaffStatus,
+            bundledCredentials?: LiveInspectionConnectionResponse,
+        ) => {
             setState('connecting');
             setReason(null);
 
             try {
-                const credentials = await createLiveInspectionViewerConnection(apiClient, {
-                    examId,
-                    leaseId: lease.leaseId,
-                });
+                const credentials =
+                    bundledCredentials ??
+                    lease.connection ??
+                    (await createLiveInspectionViewerConnection(apiClient, {
+                        examId,
+                        leaseId: lease.leaseId,
+                    }));
                 const room = new Room({ adaptiveStream: true });
                 roomRef.current = room;
 
@@ -357,7 +367,7 @@ export function useLiveInspectionViewer({
                 });
                 leaseRef.current = lease;
                 pollStartTimeRef.current = Date.now();
-                const viewerConnected = await connectViewer(lease);
+                const viewerConnected = await connectViewer(lease, lease.connection);
                 if (!viewerConnected || leaseRef.current?.leaseId !== lease.leaseId) {
                     return;
                 }

@@ -52,6 +52,12 @@ export function logLocalDiagnostic(phase: string, error: any) {
     console.warn(
         `[LiveInspection Diagnostic] Phase: ${phase}, Status: ${status}, Code: ${boundedCode}`,
     );
+
+    if (boundedCode === 'UNAUTHORIZED') {
+        console.warn(
+            '[LiveInspection Diagnostic] Ensure student and instructor sessions run in separate browser profiles (Normal + Incognito) to prevent auth token overwriting.',
+        );
+    }
 }
 
 /**
@@ -71,7 +77,7 @@ export async function waitForCameraTrack({
     enabled: boolean;
     requestSequenceRef: RefObject<number>;
 }): Promise<MediaStreamTrack | null> {
-    const intervalMs = 250;
+    const intervalMs = 100;
     const maxWaitMs = 8000;
     let elapsed = 0;
 

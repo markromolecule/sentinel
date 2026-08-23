@@ -1,7 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { HTTPException } from 'hono/http-exception';
 import type { DbClient } from '@sentinel/db';
-import type { LiveInspectionState, LiveInspectionStaffStatus } from '@sentinel/shared/schema';
+import type {
+    LiveInspectionState,
+    LiveInspectionStaffStatus,
+    LiveInspectionConnectionResponse,
+} from '@sentinel/shared/schema';
 import type { LiveKitConfig } from '../../../infrastructure/livekit/livekit.config';
 import { getLiveKitConfig } from '../../../infrastructure/livekit/livekit.config';
 import type { LiveKitManagedService } from '../../../infrastructure/livekit/services/livekit-managed.service';
@@ -58,6 +62,7 @@ export function assertLiveInspectionEnabled(
  */
 export function mapLiveInspectionLeaseStatus(
     lease: LiveInspectionLeaseRecord,
+    connection?: LiveInspectionConnectionResponse,
 ): LiveInspectionStaffStatus {
     return {
         leaseId: lease.lease_id,
@@ -72,6 +77,7 @@ export function mapLiveInspectionLeaseStatus(
         endedAt: lease.ended_at?.toISOString() ?? null,
         endReason: lease.end_reason,
         lastErrorCode: lease.last_error_code,
+        ...(connection ? { connection } : {}),
     };
 }
 

@@ -85,6 +85,12 @@ describe('startLiveInspection', () => {
         vi.clearAllMocks();
         mockLiveKit = {
             createInspectionRoom: vi.fn().mockResolvedValue({}),
+            createViewerToken: vi.fn().mockResolvedValue({
+                token: 'mock-viewer-token',
+                liveKitUrl: 'wss://livekit.test',
+                participantIdentity: 'sentinel:viewer:viewer-123',
+                expiresAt: new Date('2026-07-23T12:05:00Z'),
+            }),
         };
         vi.mocked(accessService.assertLiveInspectionViewerAccess).mockResolvedValue({
             examId: 'exam-123',
@@ -109,7 +115,7 @@ describe('startLiveInspection', () => {
         expect(mockLiveKit.createInspectionRoom).not.toHaveBeenCalled();
     });
 
-    it('returns existing lease owned by same viewer if restart is false', async () => {
+    it('returns existing lease owned by same viewer if restart is false with bundled connection', async () => {
         vi.mocked(repository.getActiveLiveInspectionLeaseForAttempt).mockResolvedValueOnce(
             mockLease as any,
         );
@@ -127,6 +133,10 @@ describe('startLiveInspection', () => {
         );
 
         expect(result.leaseId).toBe('lease-123');
+        expect(result.connection).toBeDefined();
+        expect(result.connection?.token).toBe('mock-viewer-token');
+        expect(result.connection?.liveKitUrl).toBe('wss://livekit.test');
+        expect(result.connection?.participantIdentity).toBe('sentinel:viewer:viewer-123');
         expect(repository.acquireLiveInspectionLease).not.toHaveBeenCalled();
     });
 
@@ -180,6 +190,9 @@ describe('startLiveInspection', () => {
         );
 
         expect(result.leaseId).toBe('lease-new');
+        expect(result.connection).toBeDefined();
+        expect(result.connection?.token).toBe('mock-viewer-token');
+        expect(result.connection?.liveKitUrl).toBe('wss://livekit.test');
         expect(stopService.stopLiveInspection).toHaveBeenCalledWith(
             expect.objectContaining({ leaseId: 'lease-123', viewerUserId: 'viewer-123' }),
             expect.any(Object),
