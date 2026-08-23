@@ -28,12 +28,31 @@ export const liveInspectionFailureCodeSchema = z
     .regex(/^[A-Z0-9_]+$/)
     .max(64);
 
+export const liveInspectionConnectionResponseSchema = z.object({
+    leaseId: z.string().uuid(),
+    revision: z.number().int().positive(),
+    roomName: z.string().min(1).max(128),
+    token: z.string().min(1),
+    liveKitUrl: z.string().url(),
+    participantIdentity: z.string().min(1).max(160),
+    expiresAt: z.string().datetime(),
+});
+
+export const liveInspectionStartResponseSchema = z.object({
+    leaseId: z.string().uuid(),
+    roomName: z.string().min(1).max(128),
+    token: z.string().min(1),
+    liveKitUrl: z.string().url(),
+    expiresAt: z.string().datetime(),
+});
+
 export const liveInspectionDirectiveSchema = z.object({
     leaseId: z.string().uuid(),
     revision: z.number().int().positive(),
     state: liveInspectionStateSchema,
     attemptId: z.string().uuid(),
     topic: z.string().max(160),
+    connection: liveInspectionConnectionResponseSchema.optional(),
 });
 
 export const liveInspectionStaffStatusSchema = z.object({
@@ -49,24 +68,7 @@ export const liveInspectionStaffStatusSchema = z.object({
     endedAt: z.string().datetime().nullable(),
     endReason: liveInspectionTerminalReasonSchema.nullable(),
     lastErrorCode: liveInspectionFailureCodeSchema.nullable(),
-});
-
-export const liveInspectionStartResponseSchema = z.object({
-    leaseId: z.string().uuid(),
-    roomName: z.string().min(1).max(128),
-    token: z.string().min(1),
-    liveKitUrl: z.string().url(),
-    expiresAt: z.string().datetime(),
-});
-
-export const liveInspectionConnectionResponseSchema = z.object({
-    leaseId: z.string().uuid(),
-    revision: z.number().int().positive(),
-    roomName: z.string().min(1).max(128),
-    token: z.string().min(1),
-    liveKitUrl: z.string().url(),
-    participantIdentity: z.string().min(1).max(160),
-    expiresAt: z.string().datetime(),
+    connection: liveInspectionConnectionResponseSchema.optional(),
 });
 
 export const liveInspectionReadyAckSchema = z.object({

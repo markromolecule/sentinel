@@ -137,23 +137,25 @@ export function useStudentLiveInspectionPublication({
             }
 
             let room: Room | null = null;
-            let credentials;
+            let credentials = directive.connection;
 
-            try {
-                credentials = await createLiveInspectionPublisherConnection(apiClientRef.current, {
-                    sessionId,
-                    leaseId: directive.leaseId,
-                    revision: directive.revision,
-                });
-            } catch (error) {
-                logLocalDiagnostic('create_publisher_connection', error);
-                if (sequence !== requestSequenceRef.current || !isMountedRef.current) {
+            if (!credentials) {
+                try {
+                    credentials = await createLiveInspectionPublisherConnection(apiClientRef.current, {
+                        sessionId,
+                        leaseId: directive.leaseId,
+                        revision: directive.revision,
+                    });
+                } catch (error) {
+                    logLocalDiagnostic('create_publisher_connection', error);
+                    if (sequence !== requestSequenceRef.current || !isMountedRef.current) {
+                        stopClonedInspectionTrack(clonedTrack);
+                        return;
+                    }
                     stopClonedInspectionTrack(clonedTrack);
+                    await acknowledgeFailure(directive, 'LIVEKIT_CONNECT_FAILED');
                     return;
                 }
-                stopClonedInspectionTrack(clonedTrack);
-                await acknowledgeFailure(directive, 'LIVEKIT_CONNECT_FAILED');
-                return;
             }
 
             try {
@@ -176,6 +178,8 @@ export function useStudentLiveInspectionPublication({
                 });
                 await room.localParticipant.publishTrack(clonedTrack, {
                     source: Track.Source.Camera,
+                    simulcast: false,
+                    videoCodec: 'vp8',
                     stopLocalTrackOnUnpublish: false,
                 } as Parameters<Room['localParticipant']['publishTrack']>[1]);
 
@@ -188,15 +192,14 @@ export function useStudentLiveInspectionPublication({
                 currentRevisionRef.current = credentials.revision;
                 setActiveLeaseId(directive.leaseId);
 
-                try {
-                    await acknowledgeLiveInspectionPublisherReady(apiClientRef.current, {
-                        sessionId,
-                        leaseId: directive.leaseId,
-                        revision: credentials.revision,
-                    });
-                } catch (error) {
+                // Non-blocking background ready acknowledgment
+                void acknowledgeLiveInspectionPublisherReady(apiClientRef.current, {
+                    sessionId,
+                    leaseId: directive.leaseId,
+                    revision: credentials.revision,
+                }).catch((error) => {
                     logLocalDiagnostic('acknowledge_ready', error);
-                }
+                });
 
                 if (sequence === requestSequenceRef.current && isMountedRef.current) {
                     setPublisherStatus('live');

@@ -19,7 +19,7 @@ import {
 export * from './use-student-live-inspection-publisher.types';
 
 const LIVE_INSPECTION_SIGNAL_EVENT = 'LIVE_INSPECTION_CHANGED';
-const LIVE_INSPECTION_RECONCILE_INTERVAL_MS = 1_000;
+const LIVE_INSPECTION_RECONCILE_INTERVAL_MS = 500;
 const LIVE_INSPECTION_AUTH_RETRY_MS = 3_000;
 const TERMINAL_STATES = new Set<LiveInspectionState>(['ENDED', 'FAILED', 'EXPIRED']);
 

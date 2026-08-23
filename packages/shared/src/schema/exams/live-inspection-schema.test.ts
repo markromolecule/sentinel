@@ -79,7 +79,7 @@ describe('live inspection schemas', () => {
         ).toBe(false);
     });
 
-    it('keeps serializable status models token-free', () => {
+    it('keeps serializable status models token-free when connection is omitted', () => {
         const status = liveInspectionStaffStatusSchema.parse({
             leaseId: uuid,
             attemptId: uuid,
@@ -97,6 +97,59 @@ describe('live inspection schemas', () => {
 
         expect(JSON.stringify(status).toLowerCase()).not.toContain('token');
         expect(JSON.stringify(status).toLowerCase()).not.toContain('secret');
+        expect(status.connection).toBeUndefined();
+    });
+
+    it('allows bundled connection in staff status and directive schemas', () => {
+        const mockConnection = {
+            leaseId: uuid,
+            revision: 1,
+            roomName: 'room-123',
+            token: 'mock-jwt-token',
+            liveKitUrl: 'wss://sentinel-test.livekit.cloud',
+            participantIdentity: 'sentinel:viewer:viewer-1',
+            expiresAt: '2026-07-19T10:05:00.000Z',
+        };
+
+        const statusWithConnection = liveInspectionStaffStatusSchema.parse({
+            leaseId: uuid,
+            attemptId: uuid,
+            studentUserId: uuid,
+            viewerUserId: uuid,
+            state: 'REQUESTED',
+            revision: 1,
+            requestedAt: '2026-07-19T10:00:00.000Z',
+            expiresAt: '2026-07-19T10:05:00.000Z',
+            startedAt: null,
+            endedAt: null,
+            endReason: null,
+            lastErrorCode: null,
+            connection: mockConnection,
+        });
+        expect(statusWithConnection.connection).toBeDefined();
+        expect(statusWithConnection.connection?.token).toBe('mock-jwt-token');
+
+        const directiveWithConnection = liveInspectionDirectiveSchema.parse({
+            leaseId: uuid,
+            revision: 1,
+            state: 'PUBLISHER_CONNECTING',
+            attemptId: uuid,
+            topic: 'exam-attempt:test:live-inspection',
+            connection: mockConnection,
+        });
+        expect(directiveWithConnection.connection).toBeDefined();
+        expect(directiveWithConnection.connection?.participantIdentity).toBe(
+            'sentinel:viewer:viewer-1',
+        );
+
+        const directiveWithoutConnection = liveInspectionDirectiveSchema.parse({
+            leaseId: uuid,
+            revision: 1,
+            state: 'LIVE',
+            attemptId: uuid,
+            topic: 'exam-attempt:test:live-inspection',
+        });
+        expect(directiveWithoutConnection.connection).toBeUndefined();
     });
 
     it('allows tokens only in immediate connection responses', () => {
