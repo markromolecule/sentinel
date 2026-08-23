@@ -52,14 +52,21 @@ export class QuestionGeneratorService {
         provider?: QuestionGeneratorLlmProvider;
     }): Promise<GenerateQuestionPreviewResponse> {
         const provider = args.provider ?? GeminiProvider;
-        const BATCH_SIZE = 20;
+        const BATCH_SIZE = 10;
+        const pipelineStartTime = Date.now();
 
         const batches = createBatches(args.config, BATCH_SIZE);
         const totalSizeBytes = args.files.reduce((total, file) => total + file.size, 0);
         const model = provider.resolveFlashModel();
+        console.log(
+            `[QuestionGeneratorService] Starting generation: ${args.config.questionCount} questions in ${batches.length} batch(es) (size ${BATCH_SIZE}), model: ${model}`,
+        );
+
         const uploadedFiles = await uploadFilesStep(args.files, provider);
+        console.log(`[QuestionGeneratorService] PDF upload completed in ${Date.now() - pipelineStartTime}ms`);
 
         try {
+            const batchStartTime = Date.now();
             const [sourcePageCounts, generationResult] = await Promise.all([
                 resolvePageCountsStep({
                     files: args.files,
@@ -75,6 +82,9 @@ export class QuestionGeneratorService {
                     provider,
                 }),
             ]);
+            console.log(
+                `[QuestionGeneratorService] Parallel batch generation completed in ${Date.now() - batchStartTime}ms (total elapsed: ${Date.now() - pipelineStartTime}ms)`,
+            );
 
             const { rawQuestions: allRawQuestions } = generationResult;
 
@@ -190,24 +200,112 @@ export class QuestionGeneratorService {
             }
 
 
-            const blockingFailures = assessResult.failedSlots.filter(isBlockingPassageFailure);
+            let blockingFailures = assessResult.failedSlots.filter(isBlockingPassageFailure);
 
+            // If blocking passage failures persist after repairs, discard those compromised questions
+            // and replenish with fresh candidate questions instead of failing the entire preview.
             if (blockingFailures.length > 0) {
-                console.error(
-                    'Passage quality validation failed after repair rounds:',
-                    blockingFailures,
+                console.warn(
+                    `Passage repair exhausted for ${blockingFailures.length} slots with blocking violations. Discarding flawed items and replenishing with fresh questions:`,
+                    blockingFailures.map((f) => ({ slotId: f.slotId, type: f.type, violations: f.violations })),
                 );
-                throw new PassageQualityValidationError(
-                    'AI passage generation did not meet the required quality criteria. Reframed questions could not be generated without leaking answers.',
-                    {
-                        violations: blockingFailures.flatMap((s) =>
-                            (s.violations || []).map((code, idx) => ({
-                                code,
-                                message: s.reasons?.[idx] || 'Quality violation',
-                            })),
-                        ),
-                    },
-                );
+
+                const failedSlotIds = new Set(blockingFailures.map((f) => f.slotId));
+
+                // Retain only valid non-blocking questions
+                const validQuestions = reconciliation.slots
+                    .filter((s) => !failedSlotIds.has(s.slotId) && s.question !== null)
+                    .map((s) => s.question);
+
+                candidateQuestions.length = 0;
+                candidateQuestions.push(...validQuestions);
+                reconciliation = reconcileQuestionSlots(candidateQuestions, args.config);
+
+                let postRepairReplenishRound = 0;
+                while (
+                    reconciliation.deficits.length > 0 &&
+                    postRepairReplenishRound < MAX_DEFICIT_REPLENISHMENT_ROUNDS
+                ) {
+                    postRepairReplenishRound++;
+                    console.log(
+                        `Running post-repair deficit replenishment round ${postRepairReplenishRound} for ${reconciliation.deficits.reduce((acc, d) => acc + d.count, 0)} missing questions.`,
+                    );
+
+                    const replenishedQuestions = await replenishQuestionDeficits({
+                        reconciliation,
+                        config: args.config,
+                        files: args.files,
+                        uploadedFiles,
+                        sourceDocuments,
+                        model,
+                        provider,
+                    });
+
+                    const replenishedSlots = replenishedQuestions.map((q, idx) => ({
+                        slotId: `replenished-slot-${postRepairReplenishRound}-${idx}`,
+                        type: q.type,
+                        question: q,
+                    }));
+
+                    const replenishedAssessResult = await assessPassageQuality(
+                        replenishedSlots,
+                        args.config,
+                        model,
+                        provider,
+                    );
+
+                    const replenishedBlocking = replenishedAssessResult.failedSlots.filter(isBlockingPassageFailure);
+                    if (replenishedBlocking.length > 0) {
+                        const repairedReplenished = await repairInvalidQuestions({
+                            failedSlots: replenishedBlocking,
+                            config: args.config,
+                            files: args.files,
+                            uploadedFiles,
+                            model,
+                            provider,
+                        });
+                        for (const rep of repairedReplenished) {
+                            const repSlot = replenishedSlots.find((s) => s.slotId === rep.slotId);
+                            if (repSlot && rep.passageContent && repSlot.question) {
+                                repSlot.question.passageContent = rep.passageContent;
+                            }
+                        }
+                    }
+
+                    const finalReplenishedAssess = await assessPassageQuality(
+                        replenishedSlots,
+                        args.config,
+                        model,
+                        provider,
+                    );
+                    const finalReplenishedBlockingIds = new Set(
+                        finalReplenishedAssess.failedSlots.filter(isBlockingPassageFailure).map((f) => f.slotId),
+                    );
+                    const validReplenished = replenishedSlots
+                        .filter((s) => !finalReplenishedBlockingIds.has(s.slotId))
+                        .map((s) => s.question);
+
+                    candidateQuestions.push(...validReplenished);
+                    reconciliation = reconcileQuestionSlots(candidateQuestions, args.config);
+                }
+
+                const residualDeficits = reconciliation.deficits.reduce((total, d) => total + d.count, 0);
+                if (residualDeficits > 0) {
+                    console.error(
+                        `Deficit replenishment exhausted with ${residualDeficits} missing questions after passage quality recovery.`,
+                    );
+                    throw new PassageQualityValidationError(
+                        'AI passage generation did not meet the required quality criteria. Reframed questions could not be generated without leaking answers.',
+                        {
+                            violations: blockingFailures.flatMap((s) =>
+                                (s.violations || []).map((code, idx) => ({
+                                    code,
+                                    message: s.reasons?.[idx] || 'Quality violation',
+                                })),
+                            ),
+                        },
+                    );
+                }
             }
 
             if (assessResult.failedSlots.length > 0) {

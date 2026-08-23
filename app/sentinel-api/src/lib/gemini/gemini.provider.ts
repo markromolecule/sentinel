@@ -6,8 +6,8 @@ const DEFAULT_FLASH_MODEL = 'gemini-2.5-flash';
 const MAX_QUOTA_RETRIES = 1;
 const DEFAULT_QUOTA_RETRY_DELAY_MS = 2_000;
 const MAX_QUOTA_RETRY_DELAY_MS = 3_000;
-const MAX_NETWORK_RETRIES = 1;
-const NETWORK_RETRY_DELAY_MS = 1_500;
+const MAX_NETWORK_RETRIES = 2;
+const NETWORK_RETRY_BASE_DELAY_MS = 1_000;
 export const DEFAULT_GEMINI_GENERATION_TIMEOUT_MS = 180_000;
 
 const GEMINI_REQUEST_FAILURE_MESSAGE = 'Gemini request timed out or failed to connect.';
@@ -467,10 +467,11 @@ export class GeminiProvider {
                     const isTransient = this.isTransientNetworkError(error, signal);
 
                     if (isTransient && attempt < MAX_NETWORK_RETRIES) {
+                        const retryDelayMs = NETWORK_RETRY_BASE_DELAY_MS * (attempt + 1);
                         console.warn(
-                            `[GeminiProvider] Transient network failure during fetch to ${input} (attempt ${attempt + 1}/${MAX_NETWORK_RETRIES + 1}, elapsed ${elapsedMs}ms). Retrying in ${NETWORK_RETRY_DELAY_MS}ms... Error: ${error instanceof Error ? error.message : String(error)}`,
+                            `[GeminiProvider] Transient network failure during fetch to ${input} (attempt ${attempt + 1}/${MAX_NETWORK_RETRIES + 1}, elapsed ${elapsedMs}ms). Retrying in ${retryDelayMs}ms... Error: ${error instanceof Error ? error.message : String(error)}`,
                         );
-                        await this.sleep(NETWORK_RETRY_DELAY_MS);
+                        await this.sleep(retryDelayMs);
                         continue;
                     }
 
