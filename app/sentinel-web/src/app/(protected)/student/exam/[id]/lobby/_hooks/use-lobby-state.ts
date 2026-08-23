@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useApi, useLobbyRealtime } from '@sentinel/hooks';
-import { checkIntoExamLobby, getExamLobbyAdmissionStatus } from '@sentinel/services';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useApi, useExamLobbyAdmissionStatusQuery, useLobbyRealtime } from '@sentinel/hooks';
+import { checkIntoExamLobby } from '@sentinel/services';
+import { toast } from 'sonner';
 import { readStoredExamSession } from '../../_lib/exam-session-storage';
 import { useLobbyTimer } from './use-lobby-timer';
 import { useLobbyMediaPipe } from './use-lobby-mediapipe';
@@ -24,7 +25,7 @@ export function useLobbyState(args: {
     const { examId, exam, configuration, mediaPipeSandbox, refetchExam } = args;
     const apiClient = useApi();
     const [isAdmissionPendingRefresh, setIsAdmissionPendingRefresh] = useState(false);
-    const [admissionStatus, setAdmissionStatus] = useState<ExamLobbyAdmissionStatus | null>(null);
+    const prevStatusRef = useRef<ExamLobbyAdmissionStatus | null>(null);
 
     // 1. Core Timer
     const { currentTime, countdownLabel } = useLobbyTimer(exam?.runtimeAccess);
@@ -57,6 +58,21 @@ export function useLobbyState(args: {
         runtimeAccess?.canResume && runtimeAccess?.hasActiveAttempt,
     );
     const shouldSkipLobbySync = hasResumableAttempt && !requiresInstructorAdmission;
+
+    // 5. Reactive Admission Query (TanStack Query with 2.5s adaptive polling fallback)
+    const {
+        data: admissionData,
+        refetch: refetchAdmissionStatus,
+    } = useExamLobbyAdmissionStatusQuery(shouldSkipLobbySync ? undefined : examId);
+
+    const admissionStatus: ExamLobbyAdmissionStatus | null =
+        admissionData?.status ??
+        (shouldSkipLobbySync
+            ? 'APPROVED'
+            : !requiresInstructorAdmission
+                ? 'APPROVED'
+                : null);
+
     const isApprovedRuntimeAccess = runtimeAccess?.state === 'lobby_approved';
     const isHardRuntimeBlock =
         runtimeAccess?.state === 'closed' ||
@@ -85,38 +101,28 @@ export function useLobbyState(args: {
         }
     }, [refetchExam]);
 
-    const syncAdmission = useCallback(
-        async (skipCheckIn = false) => {
-            try {
-                const admission = skipCheckIn
-                    ? await getExamLobbyAdmissionStatus(apiClient, examId)
-                    : await checkIntoExamLobby(apiClient, examId);
-
-                setAdmissionStatus(admission.status);
-
-                if (admission.status === 'APPROVED') {
-                    await refreshApprovedAccess();
-                }
-            } catch {
-                // Ignore transient sync error
-            }
-        },
-        [apiClient, examId, refreshApprovedAccess],
-    );
-
     // Real-time admission event listener for instant sub-second unlock
     useLobbyRealtime({
         examId,
         enabled: !shouldSkipLobbySync,
         onAdmissionChange: () => {
-            setAdmissionStatus('APPROVED');
-            void syncAdmission(true);
+            void refetchAdmissionStatus();
+            void refreshApprovedAccess();
         },
     });
 
+    // Detect transition from WAITING/REJECTED to APPROVED to show toast and refresh runtime access
+    useEffect(() => {
+        if (admissionStatus === 'APPROVED' && prevStatusRef.current !== null && prevStatusRef.current !== 'APPROVED') {
+            toast.success('Instructor approval received! You may now continue to the exam attempt.');
+            void refreshApprovedAccess();
+        }
+        prevStatusRef.current = admissionStatus;
+    }, [admissionStatus, refreshApprovedAccess]);
+
+    // Initial check-in on mount
     useEffect(() => {
         let isMounted = true;
-        let intervalId: number | null = null;
 
         if (shouldSkipLobbySync) {
             return () => {
@@ -124,52 +130,22 @@ export function useLobbyState(args: {
             };
         }
 
-        if (!requiresInstructorAdmission) {
-            void checkIntoExamLobby(apiClient, examId)
-                .then(async (admission) => {
-                    if (!isMounted) {
-                        return;
-                    }
-
-                    setAdmissionStatus(admission.status);
+        void checkIntoExamLobby(apiClient, examId)
+            .then(async (admission) => {
+                if (!isMounted) return;
+                await refetchAdmissionStatus();
+                if (admission.status === 'APPROVED') {
                     await refreshApprovedAccess();
-                })
-                .catch(() => null)
-                .finally(() => {
-                    if (isMounted) {
-                        setIsAdmissionPendingRefresh(false);
-                    }
-                });
-
-            return () => {
-                isMounted = false;
-            };
-        }
-
-        void syncAdmission();
-
-        // 45-second low-priority background heartbeat fallback for WebSocket disconnection
-        intervalId = window.setInterval(() => {
-            void syncAdmission(true);
-        }, 45000);
+                }
+            })
+            .catch(() => null);
 
         return () => {
             isMounted = false;
-
-            if (intervalId !== null) {
-                window.clearInterval(intervalId);
-            }
         };
-    }, [
-        apiClient,
-        examId,
-        refreshApprovedAccess,
-        requiresInstructorAdmission,
-        shouldSkipLobbySync,
-        syncAdmission,
-    ]);
+    }, [apiClient, examId, refetchAdmissionStatus, refreshApprovedAccess, shouldSkipLobbySync]);
 
-    // 5. Actions Orchestration
+    // 6. Actions Orchestration
     const { isStartingSession, handleEnterExam } = useLobbyActions({
         examId,
         configuration,

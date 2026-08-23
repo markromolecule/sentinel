@@ -66,7 +66,7 @@ function buildInstructions(exam: Exam): string[] {
         instructions.unshift('Wait for instructor approval in the lobby before entering.');
     }
 
-    if (exam.configuration?.mobileSecurity.prevent_backgrounding) {
+    if (exam.configuration?.mobileSecurity?.prevent_backgrounding) {
         instructions.push('Backgrounding the app may be flagged by the proctoring policy.');
     }
 
@@ -128,7 +128,7 @@ export function adaptExamQuestionsForMobile(exam: Exam): MobileSessionQuestion[]
     const questions = exam.questions ?? [];
 
     return [...questions]
-        .sort((left, right) => left.orderIndex - right.orderIndex)
+        .sort((left, right) => (left.orderIndex ?? 0) - (right.orderIndex ?? 0))
         .map((question) => {
             const content = question.content;
 

@@ -15,11 +15,20 @@ vi.mock('@tanstack/react-query', () => ({
     useMutation: vi.fn((options: any) => {
         const mutateAsync = async (variables: any) => {
             try {
+                let data = {
+                    messageId: 'new-msg-123',
+                    conversationId: variables.conversationId,
+                    senderId: 'user-uuid-111',
+                    content: variables.content,
+                    status: 'SENT' as const,
+                    createdAt: new Date().toISOString(),
+                };
                 if (options.mutationFn) {
-                    await options.mutationFn(variables);
+                    const result = await options.mutationFn(variables);
+                    if (result) data = result;
                 }
                 if (options.onSuccess) {
-                    await options.onSuccess({ messageId: 'new-msg-123' }, variables, null);
+                    await options.onSuccess(data, variables, null);
                 }
             } catch (error) {
                 if (options.onError) {

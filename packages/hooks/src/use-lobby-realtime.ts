@@ -28,8 +28,9 @@ export function useLobbyRealtime(args: UseLobbyRealtimeArgs) {
         }
 
         const channelName = `lobby:admissions:${examId}`;
-        const channel: RealtimeChannel = supabase
-            .channel(channelName)
+        const channel: RealtimeChannel = supabase.channel(channelName);
+
+        channel
             .on(
                 'postgres_changes',
                 {
@@ -39,6 +40,20 @@ export function useLobbyRealtime(args: UseLobbyRealtimeArgs) {
                     filter: `exam_id=eq.${examId}`,
                 },
                 (payload) => {
+                    if (payload.new && typeof payload.new === 'object' && 'status' in payload.new) {
+                        const newRow = payload.new as Record<string, any>;
+                        if (newRow.status) {
+                            queryClient.setQueryData(
+                                EXAM_QUERY_KEYS.lobbyAdmissionStatus(examId),
+                                {
+                                    status: newRow.status,
+                                    checkedInAt: newRow.checked_in_at ? String(newRow.checked_in_at) : null,
+                                    decidedAt: newRow.decided_at ? String(newRow.decided_at) : null,
+                                },
+                            );
+                        }
+                    }
+
                     void queryClient.invalidateQueries({
                         queryKey: EXAM_QUERY_KEYS.lobbyWaitingList(examId),
                     });
@@ -55,7 +70,11 @@ export function useLobbyRealtime(args: UseLobbyRealtimeArgs) {
                     callbackRef.current?.(payload);
                 },
             )
-            .subscribe();
+            .subscribe((status, err) => {
+                if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                    console.warn(`[useLobbyRealtime] Channel ${channelName} subscription issue: ${status}`, err);
+                }
+            });
 
         return () => {
             supabase.removeChannel(channel);
