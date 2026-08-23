@@ -3,6 +3,7 @@ import { MESSAGES_QUERY_KEYS } from '@sentinel/shared/constants';
 import { useMessageRealtime } from './use-message-realtime';
 
 const mockInvalidateQueries = vi.fn();
+const mockSetQueryData = vi.fn();
 const mockSubscribe = vi.fn();
 const mockRemoveChannel = vi.fn();
 const mockChannelOn = vi.fn();
@@ -34,6 +35,7 @@ vi.mock('react', async (importOriginal) => {
 vi.mock('@tanstack/react-query', () => ({
     useQueryClient: vi.fn(() => ({
         invalidateQueries: mockInvalidateQueries,
+        setQueryData: mockSetQueryData,
     })),
 }));
 
@@ -46,6 +48,7 @@ describe('useMessageRealtime Hook', () => {
         vi.clearAllMocks();
         capturedCleanup = undefined;
         mockChannelOn.mockReturnValue(mockChannel);
+        mockSubscribe.mockReturnValue(mockChannel);
     });
 
     it('subscribes to a specific conversation and removes the channel on cleanup', () => {
@@ -73,7 +76,7 @@ describe('useMessageRealtime Hook', () => {
         expect(mockRemoveChannel).toHaveBeenCalledWith(mockChannel);
     });
 
-    it('invalidates conversation and list queries for the selected conversation channel', () => {
+    it('invalidates conversation and updates messages cache for the selected conversation channel', () => {
         const conversationId = 'conv-uuid-123';
 
         useMessageRealtime({ conversationId });
@@ -84,17 +87,27 @@ describe('useMessageRealtime Hook', () => {
         );
 
         expect(messageSubscriptionCall).toBeDefined();
-        messageSubscriptionCall?.[2]({});
-
-        expect(mockInvalidateQueries).toHaveBeenCalledWith({
-            queryKey: MESSAGES_QUERY_KEYS.messages(conversationId),
+        messageSubscriptionCall?.[2]({
+            eventType: 'INSERT',
+            new: {
+                message_id: 'msg-uuid-1',
+                conversation_id: conversationId,
+                sender_id: 'user-uuid-222',
+                content: 'Hello',
+                created_at: new Date().toISOString(),
+            },
         });
+
+        expect(mockSetQueryData).toHaveBeenCalledWith(
+            MESSAGES_QUERY_KEYS.messages(conversationId),
+            expect.any(Function),
+        );
         expect(mockInvalidateQueries).toHaveBeenCalledWith({
             queryKey: MESSAGES_QUERY_KEYS.conversations(),
         });
     });
 
-    it('invalidates the conversation list and does NOT invalidate specific conversations when listening globally', () => {
+    it('invalidates the conversation list and updates conversations preview when listening globally', () => {
         useMessageRealtime();
 
         expect(mockSupabaseChannel).toHaveBeenCalledWith('messages:all:user-uuid-111');
@@ -108,14 +121,22 @@ describe('useMessageRealtime Hook', () => {
 
         expect(messageSubscriptionCall).toBeDefined();
         messageSubscriptionCall?.[2]({
-            old: { conversation_id: 'conv-uuid-999' },
+            eventType: 'INSERT',
+            new: {
+                message_id: 'msg-uuid-999',
+                conversation_id: 'conv-uuid-999',
+                sender_id: 'user-uuid-222',
+                content: 'Global message',
+                created_at: new Date().toISOString(),
+            },
         });
 
         expect(mockInvalidateQueries).toHaveBeenCalledWith({
             queryKey: MESSAGES_QUERY_KEYS.conversations(),
         });
-        expect(mockInvalidateQueries).not.toHaveBeenCalledWith({
-            queryKey: MESSAGES_QUERY_KEYS.messages('conv-uuid-999'),
-        });
+        expect(mockSetQueryData).toHaveBeenCalledWith(
+            MESSAGES_QUERY_KEYS.conversations(),
+            expect.any(Function),
+        );
     });
 });

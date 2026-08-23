@@ -19,7 +19,6 @@
         "build": "tsup src/index.ts --format cjs,esm --external \"../generated/client\" && tsc --emitDeclarationOnly",
         "dev": "tsup src/index.ts --format cjs,esm --external \"../generated/client\" --watch",
         "postinstall": "prisma generate",
-        "lint": "eslint src/",
         "test": "vitest run"
     },
     "dependencies": {
