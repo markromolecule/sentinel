@@ -335,4 +335,101 @@ describe('startLiveInspection', () => {
         expect(repository.acquireLiveInspectionLease).toHaveBeenCalledTimes(2);
         expect(result.leaseId).toBe('lease-new');
     });
+
+    it('allows multiple unique instructors to concurrently inspect distinct students across exams', async () => {
+        const instructorA = {
+            viewerUserId: 'inst-user-A',
+            examId: 'exam-1',
+            attemptId: 'attempt-student-1',
+            studentUserId: 'student-user-1',
+        };
+        const instructorB = {
+            viewerUserId: 'inst-user-B',
+            examId: 'exam-2',
+            attemptId: 'attempt-student-2',
+            studentUserId: 'student-user-2',
+        };
+
+        vi.mocked(repository.getActiveLiveInspectionLeaseForAttempt)
+            .mockResolvedValueOnce(null)
+            .mockResolvedValueOnce(null)
+            .mockResolvedValueOnce({ ...mockLease, lease_id: 'lease-inst-A', viewer_user_id: instructorA.viewerUserId } as any)
+            .mockResolvedValueOnce({ ...mockLease, lease_id: 'lease-inst-B', viewer_user_id: instructorB.viewerUserId } as any);
+        vi.mocked(repository.getActiveLiveInspectionLeaseForViewer).mockResolvedValue(null);
+        vi.mocked(repository.countActiveLiveInspectionLeases).mockResolvedValue(0);
+        vi.mocked(repository.countActiveLiveInspectionLeasesByInstitution).mockResolvedValue(0);
+        vi.mocked(repository.acquireLiveInspectionLease)
+            .mockResolvedValueOnce({ ok: true, leaseId: 'lease-inst-A' })
+            .mockResolvedValueOnce({ ok: true, leaseId: 'lease-inst-B' });
+
+        vi.mocked(helpers.getLiveInspectionAttemptForStaff)
+            .mockResolvedValueOnce({
+                attemptId: instructorA.attemptId,
+                examId: instructorA.examId,
+                studentUserId: instructorA.studentUserId,
+                institutionId: 'inst-123',
+            } as any)
+            .mockResolvedValueOnce({
+                attemptId: instructorB.attemptId,
+                examId: instructorB.examId,
+                studentUserId: instructorB.studentUserId,
+                institutionId: 'inst-123',
+            } as any);
+
+        vi.mocked(accessService.assertLiveInspectionViewerAccess)
+            .mockResolvedValueOnce({ examId: instructorA.examId } as any)
+            .mockResolvedValueOnce({ examId: instructorB.examId } as any);
+
+        const [resultA, resultB] = await Promise.all([
+            startLiveInspection(
+                {
+                    dbClient: {} as any,
+                    examId: instructorA.examId,
+                    attemptId: instructorA.attemptId,
+                    viewerUserId: instructorA.viewerUserId,
+                    role: 'instructor',
+                    activeInstitutionId: 'inst-123',
+                },
+                { config: enabledConfig, liveKit: mockLiveKit },
+            ),
+            startLiveInspection(
+                {
+                    dbClient: {} as any,
+                    examId: instructorB.examId,
+                    attemptId: instructorB.attemptId,
+                    viewerUserId: instructorB.viewerUserId,
+                    role: 'instructor',
+                    activeInstitutionId: 'inst-123',
+                },
+                { config: enabledConfig, liveKit: mockLiveKit },
+            ),
+        ]);
+
+        expect(resultA.leaseId).toBe('lease-inst-A');
+        expect(resultB.leaseId).toBe('lease-inst-B');
+    });
+
+    it('rejects with 409 conflict when a second instructor attempts to inspect an already leased student', async () => {
+        vi.mocked(repository.getActiveLiveInspectionLeaseForAttempt).mockResolvedValueOnce({
+            ...mockLease,
+            viewer_user_id: 'inst-user-A', // Currently held by Instructor A
+            attempt_id: 'attempt-student-1',
+        } as any);
+
+        await expect(
+            startLiveInspection(
+                {
+                    dbClient: {} as any,
+                    examId: 'exam-123',
+                    attemptId: 'attempt-student-1',
+                    viewerUserId: 'inst-user-B', // Instructor B requests the same student
+                    role: 'instructor',
+                    activeInstitutionId: 'inst-123',
+                },
+                { config: enabledConfig, liveKit: mockLiveKit },
+            ),
+        ).rejects.toThrow(
+            new HTTPException(409, { message: 'Live inspection is already active.' }),
+        );
+    });
 });

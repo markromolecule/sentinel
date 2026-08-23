@@ -34,6 +34,7 @@ export interface ExamResultsReportViewModel {
     generatedBy: string;
     institutionName: string;
     examId: string;
+    sectionName?: string | null;
     examTitle: string;
     subjectCode: string;
     subjectName: string;
@@ -166,7 +167,10 @@ export function mapSourceToViewModel(source: ExamReportExportSource): ExamResult
         generatedBy: source.generatedBy,
         institutionName: source.institutionName,
         examId: source.examId,
-        examTitle: source.examTitle,
+        sectionName: source.sectionName ?? null,
+        examTitle: source.sectionName
+            ? `${source.examTitle} — Section: ${source.sectionName}`
+            : source.examTitle,
         subjectCode: source.subjectCode,
         subjectName: source.subjectName,
         durationMinutes: source.durationMinutes,

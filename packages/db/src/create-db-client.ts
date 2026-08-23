@@ -22,18 +22,44 @@ export const transactionStorage =
     globalForTransaction.transactionStorage ?? new AsyncLocalStorage<DbClient>();
 globalForTransaction.transactionStorage = transactionStorage;
 
-
 /**
  * Execute a transaction using Prisma's $transaction while staying within the Kysely ecosystem
  * for queries. This is necessary because the prisma-extension-kysely driver doesn't support
  * native Kysely transactions.
- * If an active transaction exists in AsyncLocalStorage (e.g. during testing or nested calls),
- * it is reused transparently.
+ * If an active transaction exists in AsyncLocalStorage (e.g. during testing or nested calls)
+ * or an existing client is passed, it is reused transparently.
  */
 export async function executeTransaction<T>(
     callback: (trx: DbClient) => Promise<T>,
     options?: TransactionOptions,
+): Promise<T>;
+export async function executeTransaction<T>(
+    db: DbClient,
+    callback: (trx: DbClient) => Promise<T>,
+    options?: TransactionOptions,
+): Promise<T>;
+export async function executeTransaction<T>(
+    dbOrCallback: DbClient | ((trx: DbClient) => Promise<T>),
+    callbackOrOptions?: ((trx: DbClient) => Promise<T>) | TransactionOptions,
+    options?: TransactionOptions,
 ): Promise<T> {
+    let explicitDb: DbClient | undefined;
+    let callback: (trx: DbClient) => Promise<T>;
+    let txOptions: TransactionOptions | undefined;
+
+    if (typeof dbOrCallback === 'function') {
+        callback = dbOrCallback;
+        txOptions = callbackOrOptions as TransactionOptions | undefined;
+    } else {
+        explicitDb = dbOrCallback;
+        callback = callbackOrOptions as (trx: DbClient) => Promise<T>;
+        txOptions = options;
+    }
+
+    if (explicitDb && explicitDb !== dbClient) {
+        return await callback(explicitDb);
+    }
+
     const activeTrx = transactionStorage.getStore();
     if (activeTrx) {
         return await callback(activeTrx);
@@ -42,5 +68,5 @@ export async function executeTransaction<T>(
     return await prisma.$transaction(async (tx) => {
         const trx = (tx as any).$kysely as DbClient;
         return await transactionStorage.run(trx, () => callback(trx));
-    }, options);
+    }, txOptions);
 }

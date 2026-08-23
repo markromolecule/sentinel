@@ -5,6 +5,8 @@ import { buildCompleteExamReport } from '../../../../examination/reporting/servi
 export type ExamReportExportSource = {
     examId: string;
     institutionId: string;
+    sectionId?: string | null;
+    sectionName?: string | null;
     examTitle: string;
     subjectCode: string;
     subjectName: string;
@@ -27,6 +29,7 @@ export type ExamReportExportSource = {
  * @param examId - UUID of the exam
  * @param institutionId - UUID of the requesting institution
  * @param createdByUserId - UUID of the user who requested the export
+ * @param sectionId - Optional UUID of specific section to filter
  * @returns Typed source data
  */
 export async function getExamReportExportSource(
@@ -34,6 +37,7 @@ export async function getExamReportExportSource(
     examId: string,
     institutionId: string,
     createdByUserId?: string | null,
+    sectionId?: string | null,
 ): Promise<ExamReportExportSource> {
     return await executeTransaction(async (trx) => {
         // 1. Get Exam with Institution & Subject info
@@ -84,7 +88,7 @@ export async function getExamReportExportSource(
 
         // 3. Build the complete unpaginated report
         // We use 'superadmin' role here to bypass any section/assignment visibility restrictions since we are generating a complete report
-        const report = await buildCompleteExamReport({
+        let report = await buildCompleteExamReport({
             dbClient: trx,
             examId,
             institutionId,
@@ -92,9 +96,30 @@ export async function getExamReportExportSource(
             userId: createdByUserId,
         });
 
+        let sectionName: string | null = null;
+
+        if (sectionId) {
+            const matchingSection = report.sections?.find((s) => s.id === sectionId);
+            sectionName = matchingSection?.name ?? null;
+
+            const filteredStudents = report.students.filter(
+                (s) =>
+                    s.sectionId === sectionId ||
+                    (Boolean(sectionName) && s.sectionName === sectionName),
+            );
+
+            report = {
+                ...report,
+                students: filteredStudents,
+                sections: matchingSection ? [matchingSection] : report.sections,
+            };
+        }
+
         return {
             examId: examData.exam_id,
             institutionId: examData.institution_id!,
+            sectionId: sectionId ?? null,
+            sectionName: sectionName ?? null,
             examTitle: examData.title,
             subjectCode: examData.subject_code ?? 'GEN-101',
             subjectName: examData.subject_name ?? 'General Course',

@@ -121,5 +121,20 @@ describe('LiveVideoMonitor', () => {
         );
 
         expect(screen.getAllByText(/Student live connection failed/i).length).toBeGreaterThan(0);
+
+        rerender(
+            <LiveVideoMonitor
+                state="failed"
+                reason="CONFLICT"
+                videoRef={vi.fn()}
+                onStart={vi.fn()}
+                onStop={vi.fn()}
+                onRetry={vi.fn()}
+            />,
+        );
+
+        expect(
+            screen.getAllByText(/Student is currently under live inspection by another proctor/i).length,
+        ).toBeGreaterThan(0);
     });
 });

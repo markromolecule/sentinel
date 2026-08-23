@@ -120,4 +120,35 @@ describe('postCreateExamReportExportHandler', () => {
         );
         expect(LogsService.createLog).toHaveBeenCalled();
     });
+
+    it('creates section-filtered export and records section_id in request_snapshot', async () => {
+        const SECTION_UUID = '123e4567-e89b-12d3-a456-426614174099';
+        const app = createApp(['examinations:export_results_report']);
+
+        vi.mocked(getReportingExamContext).mockResolvedValue({
+            examId: EXAM_UUID,
+            institutionId: INST_UUID,
+            title: 'Mock Exam',
+        } as any);
+
+        const res = await app.request('/exam-reports', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                exam_id: EXAM_UUID,
+                section_id: SECTION_UUID,
+                title: 'Section A Report',
+            }),
+        });
+
+        expect(res.status).toBe(202);
+        expect(mockDb.values).toHaveBeenCalledWith(
+            expect.objectContaining({
+                request_snapshot: JSON.stringify({
+                    title: 'Section A Report',
+                    section_id: SECTION_UUID,
+                }),
+            }),
+        );
+    });
 });

@@ -102,7 +102,10 @@ export const postCreateExamReportExportHandler: AppRouteHandler<
                 status: 'PENDING',
                 retry_count: 0,
                 created_by: user.id,
-                request_snapshot: JSON.stringify({ title: body.title }) as any,
+                request_snapshot: JSON.stringify({
+                    title: body.title,
+                    section_id: body.section_id ?? null,
+                }) as any,
             })
             .returningAll()
             .executeTakeFirstOrThrow();

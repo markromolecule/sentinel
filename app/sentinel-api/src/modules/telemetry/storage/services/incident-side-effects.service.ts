@@ -11,17 +11,17 @@ async function maybeApplyAutomaticLifecyclePolicy(args: {
     attemptId: string;
     triggeringEventType?: string;
 }): Promise<void> {
-    const resolution = await resolveAutomaticLifecyclePolicy({
-        dbClient: args.db,
-        attemptId: args.attemptId,
-        triggeringEventType: args.triggeringEventType,
-    });
-
-    if (resolution.action !== 'CLOSE_ATTEMPT') {
-        return;
-    }
-
     try {
+        const resolution = await resolveAutomaticLifecyclePolicy({
+            dbClient: args.db,
+            attemptId: args.attemptId,
+            triggeringEventType: args.triggeringEventType,
+        });
+
+        if (resolution.action !== 'CLOSE_ATTEMPT') {
+            return;
+        }
+
         await closeExamAttempt({
             dbClient: args.db,
             examId: resolution.examId,
@@ -31,7 +31,7 @@ async function maybeApplyAutomaticLifecyclePolicy(args: {
             actorUserId: null,
         });
     } catch (error) {
-        console.error('[TelemetryStorage] Automatic lifecycle close failed', {
+        console.error('[TelemetryStorage] Automatic lifecycle check or close failed', {
             attemptId: args.attemptId,
             error: error instanceof Error ? error.message : error,
         });

@@ -356,4 +356,150 @@ describe('updateGradingAttempt', () => {
             }),
         );
     });
+
+    it('preserves write-once initial_score baseline on subsequent grading saves', async () => {
+        // First save: initialScore is null -> initial_score is captured
+        vi.mocked(getGradingAttemptDetail).mockResolvedValueOnce({
+            attempt: {
+                attemptId: 'attempt-baseline',
+                examId: 'exam-1',
+                score: 65,
+                initialScore: null,
+                scoreState: 'DRAFT',
+                answers: {},
+                evaluations: {},
+                itemOverrides: {},
+                rubric: capturedRubric,
+                grading: {},
+            },
+            questions: [],
+        } as any);
+
+        await updateGradingAttempt({
+            dbClient: mockDb,
+            attemptId: 'attempt-baseline',
+            actorUserId: 'user-1',
+        });
+
+        expect(mockDb.set).toHaveBeenCalledWith(
+            expect.objectContaining({
+                initial_score: 65,
+            }),
+        );
+
+        // Second save: initialScore is already 65 -> initial_score must NOT be in set payload
+        vi.mocked(getGradingAttemptDetail).mockResolvedValueOnce({
+            attempt: {
+                attemptId: 'attempt-baseline',
+                examId: 'exam-1',
+                score: 85,
+                initialScore: 65,
+                scoreState: 'DRAFT',
+                answers: {},
+                evaluations: {},
+                itemOverrides: {},
+                rubric: capturedRubric,
+                grading: {},
+            },
+            questions: [],
+        } as any);
+
+        await updateGradingAttempt({
+            dbClient: mockDb,
+            attemptId: 'attempt-baseline',
+            actorUserId: 'user-1',
+        });
+
+        const secondSetPayload = mockDb.set.mock.calls[1][0];
+        expect(secondSetPayload).not.toHaveProperty('initial_score');
+    });
+
+    it('rejects overrides that exceed the question maximum points', async () => {
+        vi.mocked(getGradingAttemptDetail).mockResolvedValueOnce({
+            attempt: {
+                attemptId: 'attempt-override',
+                examId: 'exam-1',
+                scoreState: 'DRAFT',
+                answers: {},
+                evaluations: {},
+                itemOverrides: {},
+                rubric: capturedRubric,
+                grading: {},
+            },
+            questions: [
+                {
+                    id: 'q-mc',
+                    examId: 'exam-1',
+                    type: 'MULTIPLE_CHOICE',
+                    points: 5,
+                    orderIndex: 0,
+                    content: { choices: [{ text: 'A', isCorrect: true }] },
+                },
+            ],
+        } as any);
+
+        await expect(
+            updateGradingAttempt({
+                dbClient: mockDb,
+                attemptId: 'attempt-override',
+                itemOverrides: {
+                    'q-mc': {
+                        awardedScore: 10, // Exceeds max 5 points
+                        reason: 'Bonus points not allowed',
+                    },
+                },
+            }),
+        ).rejects.toThrow(
+            new HTTPException(400, {
+                message: 'Override score exceeds max points for question: q-mc',
+            }),
+        );
+    });
+
+    it('rejects rubric evaluations with scores outside 0-4 range', async () => {
+        vi.mocked(getGradingAttemptDetail).mockResolvedValueOnce({
+            attempt: {
+                attemptId: 'attempt-essay',
+                examId: 'exam-1',
+                scoreState: 'DRAFT',
+                answers: {},
+                evaluations: {},
+                itemOverrides: {},
+                rubric: capturedRubric,
+                grading: {},
+            },
+            questions: [
+                {
+                    id: 'essay-1',
+                    examId: 'exam-1',
+                    type: 'ESSAY',
+                    points: 10,
+                    orderIndex: 0,
+                    content: { prompt: 'Prompt' },
+                },
+            ],
+        } as any);
+
+        await expect(
+            updateGradingAttempt({
+                dbClient: mockDb,
+                attemptId: 'attempt-essay',
+                evaluations: {
+                    'essay-1': {
+                        scores: {
+                            contentSubstance: 5, // Invalid: max level is 4
+                            structureOrganization: 4,
+                            argumentationSupport: 4,
+                            styleTone: 4,
+                            grammarConventions: 4,
+                        },
+                    },
+                },
+            }),
+        ).rejects.toThrow(
+            new HTTPException(400, {
+                message: 'Essay evaluation contains an invalid score for question: essay-1',
+            }),
+        );
+    });
 });

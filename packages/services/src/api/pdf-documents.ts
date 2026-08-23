@@ -67,6 +67,7 @@ export interface ListExamReportExportsParams {
 
 export interface CreateExamReportExportBody {
     exam_id: string;
+    section_id?: string | null;
     title?: string;
 }
 

@@ -178,6 +178,17 @@ describe('ExamReportPdfExport', () => {
         expect(mockCreateMutate).toHaveBeenCalledWith({ exam_id: 'exam-1' }, expect.any(Object));
     });
 
+    it('creates a section-filtered export when sectionId prop is provided', () => {
+        render(<ExamReportPdfExport examId="exam-1" sectionId="section-123" />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Export Results PDF' }));
+
+        expect(mockCreateMutate).toHaveBeenCalledWith(
+            { exam_id: 'exam-1', section_id: 'section-123' },
+            expect.any(Object),
+        );
+    });
+
     it('renders a compact header button variant that creates an export', () => {
         render(<ExamReportPdfExport examId="exam-1" variant="button" />);
 

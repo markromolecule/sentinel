@@ -107,6 +107,7 @@ describe('ExamResultsReportDocumentProcessor', () => {
             'exam-123',
             'inst-456',
             'creator-999',
+            null,
         );
 
         expect(renderExamResultsReportPdf).toHaveBeenCalledWith(

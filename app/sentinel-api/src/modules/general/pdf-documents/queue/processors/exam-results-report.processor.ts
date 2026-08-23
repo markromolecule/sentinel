@@ -45,12 +45,20 @@ export class ExamResultsReportDocumentProcessor implements PdfDocumentProcessor 
 
         const storagePath = `exam-reports/${institutionId}/${examId}/${exportId}.pdf`;
 
-        // Gather full report source dataset
+        const requestSnapshot = exportRecord.request_snapshot
+            ? typeof exportRecord.request_snapshot === 'string'
+                ? JSON.parse(exportRecord.request_snapshot)
+                : exportRecord.request_snapshot
+            : null;
+        const sectionId = requestSnapshot?.section_id ?? _requestData?.section_id ?? null;
+
+        // Gather report source dataset (optionally filtered by section)
         const sourceData = await getExamReportExportSource(
             dbClient,
             examId,
             institutionId,
             createdBy,
+            sectionId,
         );
 
         const pdfBuffer = await renderExamResultsReportPdf(

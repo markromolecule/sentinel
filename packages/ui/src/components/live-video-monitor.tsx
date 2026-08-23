@@ -42,7 +42,7 @@ function getStatusLabel(state: LiveVideoMonitorState, reason?: string | null) {
     // Bounded reason codes
     if (reason === 'PERMISSION_DENIED') return 'Live view denied';
     if (reason === 'CAPACITY_REACHED') return 'Live view capacity reached';
-    if (reason === 'CONFLICT') return 'Another live view is active';
+    if (reason === 'CONFLICT') return 'Student is currently under live inspection by another proctor';
     if (reason === 'TIMEOUT') return 'Student connection timed out';
     if (reason === 'NO_LIVE_CAMERA_TRACK') return 'Student camera not ready';
     if (reason === 'LIVEKIT_CONNECT_FAILED') return 'Student live connection failed';

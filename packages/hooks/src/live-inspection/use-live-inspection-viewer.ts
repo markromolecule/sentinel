@@ -139,8 +139,8 @@ export function useLiveInspectionViewer({
         clearPollTimer();
         setState((current) =>
             current === 'waiting_for_student' ||
-            current === 'connecting' ||
-            current === 'reconnecting'
+                current === 'connecting' ||
+                current === 'reconnecting'
                 ? 'live'
                 : current,
         );
