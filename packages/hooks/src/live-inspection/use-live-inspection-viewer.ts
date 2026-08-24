@@ -15,6 +15,7 @@ import {
     type ApiClientType,
 } from '@sentinel/services';
 import { useApi } from '../api-provider';
+import { useAuth, type SentinelSupabaseClient } from '../auth-provider';
 
 const VIEWER_STATUS_POLL_MS = 1_000;
 const PUBLISHER_READY_TIMEOUT_MS = 30_000;
@@ -54,6 +55,7 @@ export type UseLiveInspectionViewerArgs = {
     attemptId: string | null | undefined;
     enabled: boolean;
     apiClient?: ApiClientType;
+    supabase?: SentinelSupabaseClient | null;
 };
 
 function mapErrorReason(error: unknown): LiveInspectionViewerReason {
@@ -89,9 +91,12 @@ export function useLiveInspectionViewer({
     attemptId,
     enabled,
     apiClient: providedApiClient,
+    supabase: providedSupabase,
 }: UseLiveInspectionViewerArgs) {
     const contextApiClient = useApi();
     const apiClient = providedApiClient ?? contextApiClient;
+    const { supabase: contextSupabase } = useAuth();
+    const supabase = providedSupabase ?? contextSupabase;
     const videoElementRef = useRef<HTMLVideoElement | null>(null);
     const roomRef = useRef<Room | null>(null);
     const leaseRef = useRef<LiveInspectionStaffStatus | null>(null);
@@ -104,6 +109,27 @@ export function useLiveInspectionViewer({
     const [reason, setReason] = useState<LiveInspectionViewerReason>(null);
     const [connectionQuality, setConnectionQuality] = useState<string | null>(null);
     const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
+
+    const broadcastInspectionChanged = useCallback(
+        async (targetAttemptId: string) => {
+            if (!supabase || !targetAttemptId) return;
+            try {
+                const topic = `exam-attempt:${targetAttemptId}:live-inspection`;
+                const channel = supabase.channel(topic, { config: { private: true } });
+                await channel.send({
+                    type: 'broadcast',
+                    event: 'LIVE_INSPECTION_CHANGED',
+                    payload: {
+                        attemptId: targetAttemptId,
+                        timestamp: Date.now(),
+                    },
+                });
+            } catch {
+                // Best-effort realtime dispatch; authoritative API remains ground truth
+            }
+        },
+        [supabase],
+    );
 
     const clearPollTimer = useCallback(() => {
         if (pollTimerRef.current !== null) {
@@ -367,6 +393,7 @@ export function useLiveInspectionViewer({
                 });
                 leaseRef.current = lease;
                 pollStartTimeRef.current = Date.now();
+                void broadcastInspectionChanged(attemptId);
                 const viewerConnected = await connectViewer(lease, lease.connection);
                 if (!viewerConnected || leaseRef.current?.leaseId !== lease.leaseId) {
                     return;
@@ -381,6 +408,7 @@ export function useLiveInspectionViewer({
         [
             apiClient,
             attemptId,
+            broadcastInspectionChanged,
             cleanupRoom,
             connectViewer,
             enabled,
@@ -405,10 +433,14 @@ export function useLiveInspectionViewer({
             }
         }
 
+        if (attemptId) {
+            void broadcastInspectionChanged(attemptId);
+        }
+
         leaseRef.current = null;
         setState('ended');
         setReason('STOPPED');
-    }, [apiClient, cleanupRoom, clearPollTimer, examId]);
+    }, [apiClient, attemptId, broadcastInspectionChanged, cleanupRoom, clearPollTimer, examId]);
 
     const retry = useCallback(() => {
         void start({ restart: true });
@@ -431,8 +463,11 @@ export function useLiveInspectionViewer({
             if (lease) {
                 void stopLiveInspection(apiClient, { examId, leaseId: lease.leaseId });
             }
+            if (attemptId) {
+                void broadcastInspectionChanged(attemptId);
+            }
         };
-    }, [apiClient, cleanupRoom, examId]);
+    }, [apiClient, attemptId, broadcastInspectionChanged, cleanupRoom, examId]);
 
     useEffect(() => {
         const isWaiting = ['requesting', 'waiting_for_student', 'connecting'].includes(state);

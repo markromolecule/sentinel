@@ -14,9 +14,9 @@ export function useExamLobbyCountQuery(examId?: string) {
             : [...EXAM_QUERY_KEYS.all, 'lobby', 'count'],
         queryFn: () => getExamLobbyCount(apiClient, examId as string),
         enabled: Boolean(examId) && isAuthenticatedQueryEnabled,
-        staleTime: 0,
+        staleTime: 30_000,
         refetchOnMount: true,
-        refetchInterval: 5000,
-        refetchIntervalInBackground: true,
+        refetchInterval: false,
+        refetchIntervalInBackground: false,
     });
 }

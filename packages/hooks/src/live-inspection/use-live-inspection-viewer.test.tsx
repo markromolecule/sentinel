@@ -653,4 +653,91 @@ describe('useLiveInspectionViewer', () => {
         expect(result.current.state).toBe('failed');
         expect(result.current.reason).toBe('LIVEKIT_RUNTIME_LOST');
     });
+
+    it('dispatches LIVE_INSPECTION_CHANGED broadcast on start() and stop()', async () => {
+        const sendMock = vi.fn().mockResolvedValue('ok');
+        const channelMock = { send: sendMock };
+        const supabaseMock = {
+            channel: vi.fn(() => channelMock),
+            removeChannel: vi.fn(),
+        } as never;
+
+        const { result } = renderHook(
+            () =>
+                useLiveInspectionViewer({
+                    examId: 'exam-1',
+                    studentId: 'student-1',
+                    attemptId: lease.attemptId,
+                    enabled: true,
+                    supabase: supabaseMock,
+                }),
+            { wrapper },
+        );
+
+        await act(async () => {
+            await result.current.start();
+        });
+
+        expect((supabaseMock as any).channel).toHaveBeenCalledWith(
+            `exam-attempt:${lease.attemptId}:live-inspection`,
+            { config: { private: true } },
+        );
+        expect(sendMock).toHaveBeenCalledWith({
+            type: 'broadcast',
+            event: 'LIVE_INSPECTION_CHANGED',
+            payload: expect.objectContaining({
+                attemptId: lease.attemptId,
+            }),
+        });
+
+        sendMock.mockClear();
+
+        await act(async () => {
+            await result.current.stop();
+        });
+
+        expect(sendMock).toHaveBeenCalledWith({
+            type: 'broadcast',
+            event: 'LIVE_INSPECTION_CHANGED',
+            payload: expect.objectContaining({
+                attemptId: lease.attemptId,
+            }),
+        });
+    });
+
+    it('dispatches LIVE_INSPECTION_CHANGED broadcast on unmount cleanup when attemptId is active', async () => {
+        const sendMock = vi.fn().mockResolvedValue('ok');
+        const channelMock = { send: sendMock };
+        const supabaseMock = {
+            channel: vi.fn(() => channelMock),
+            removeChannel: vi.fn(),
+        } as never;
+
+        const { result, unmount } = renderHook(
+            () =>
+                useLiveInspectionViewer({
+                    examId: 'exam-1',
+                    studentId: 'student-1',
+                    attemptId: lease.attemptId,
+                    enabled: true,
+                    supabase: supabaseMock,
+                }),
+            { wrapper },
+        );
+
+        await act(async () => {
+            await result.current.start();
+        });
+
+        sendMock.mockClear();
+        unmount();
+
+        expect(sendMock).toHaveBeenCalledWith({
+            type: 'broadcast',
+            event: 'LIVE_INSPECTION_CHANGED',
+            payload: expect.objectContaining({
+                attemptId: lease.attemptId,
+            }),
+        });
+    });
 });

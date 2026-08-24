@@ -37,20 +37,15 @@ describe('useExamLobbyAdmissionStatusQuery', () => {
         vi.clearAllMocks();
     });
 
-    it('queries admission status with adaptive polling configuration', () => {
+    it('queries admission status relying on realtime events without continuous interval polling', () => {
         const query = useExamLobbyAdmissionStatusQuery('exam-1') as any;
 
         expect(getExamLobbyAdmissionStatus).toHaveBeenCalledWith({ mockClient: true }, 'exam-1');
         expect(query.queryKey).toEqual(EXAM_QUERY_KEYS.lobbyAdmissionStatus('exam-1'));
         expect(query.enabled).toBe(true);
-        expect(query.staleTime).toBe(1000);
+        expect(query.staleTime).toBe(30_000);
+        expect(query.refetchInterval).toBe(false);
         expect(query.refetchIntervalInBackground).toBe(false);
         expect(query.refetchOnWindowFocus).toBe(true);
-
-        // Check adaptive polling function
-        expect(typeof query.refetchInterval).toBe('function');
-        expect(query.refetchInterval({ state: { data: { status: 'WAITING' } } })).toBe(2500);
-        expect(query.refetchInterval({ state: { data: { status: 'REJECTED' } } })).toBe(2500);
-        expect(query.refetchInterval({ state: { data: { status: 'APPROVED' } } })).toBe(false);
     });
 });

@@ -4,7 +4,7 @@ import { EXAM_QUERY_KEYS } from '@sentinel/shared/constants';
 import { useApi } from '../../api-provider';
 import { useAuthenticatedQueryEnabled } from '../_shared/use-authenticated-query-enabled';
 
-export const EXAM_SESSION_STATUS_REFETCH_INTERVAL_MS = 2000;
+export const EXAM_SESSION_STATUS_REFETCH_INTERVAL_MS = false as const;
 
 export type UseExamSessionStatusQueryOptions = Omit<
     UseQueryOptions<ExamSessionStatusResult, Error>,
@@ -12,7 +12,7 @@ export type UseExamSessionStatusQueryOptions = Omit<
 >;
 
 /**
- * Polls lightweight status for an active student-owned exam session.
+ * Loads initial status for an active student-owned exam session without continuous background polling.
  */
 export function useExamSessionStatusQuery(
     sessionId?: string | null,
@@ -30,7 +30,7 @@ export function useExamSessionStatusQuery(
             : [...EXAM_QUERY_KEYS.all, 'session-status'],
         queryFn: () => getExamSessionStatus(apiClient, sessionId as string),
         enabled: hasSession && isAttemptActive && isAuthenticatedQueryEnabled,
-        refetchInterval: EXAM_SESSION_STATUS_REFETCH_INTERVAL_MS,
-        refetchIntervalInBackground: true,
+        refetchInterval: false,
+        refetchIntervalInBackground: false,
     });
 }

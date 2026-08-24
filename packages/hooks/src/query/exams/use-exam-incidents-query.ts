@@ -6,7 +6,7 @@ import { useAuthenticatedQueryEnabled } from '../_shared/use-authenticated-query
 export const EXAM_INCIDENTS_QUERY_KEY = (examId: string, query: ApiGetExamIncidentsQuery) =>
     ['exams', examId, 'incidents', query] as const;
 
-export const EXAM_INCIDENTS_REFETCH_INTERVAL_MS = 2000;
+export const EXAM_INCIDENTS_REFETCH_INTERVAL_MS = 6000;
 
 /**
  * Custom hook to fetch infinite/paginated telemetry incidents for a specific exam.
@@ -31,7 +31,8 @@ export function useExamIncidentsQuery(
         },
         initialPageParam: 1,
         enabled: isAuthenticatedQueryEnabled && Boolean(examId),
-        staleTime: 1000 * 30, // 30 seconds
+        staleTime: 4000,
         refetchInterval: EXAM_INCIDENTS_REFETCH_INTERVAL_MS,
+        refetchIntervalInBackground: false,
     });
 }
