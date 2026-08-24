@@ -39,7 +39,11 @@ export function assertStudentOnboardingEligibility(
         throw new Error('Course does not match the approved whitelist record for this student.');
     }
 
-    if (context.conflictingStudent && context.conflictingStudent.user_id !== userId) {
+    if (
+        context.conflictingStudent &&
+        context.conflictingStudent.user_id &&
+        context.conflictingStudent.user_id !== userId
+    ) {
         throw new Error(
             `Student number "${studentData.studentNumber}" is already registered to another account.`,
         );
