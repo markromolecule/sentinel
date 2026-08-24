@@ -44,18 +44,62 @@ export async function createUserData({
 
     // 2. Create student record if role is student
     if (role === 'student' && student) {
-        await dbClient
-            .insertInto('students')
-            .values({
-                ...student,
-                user_id: userId,
-            })
-            .onConflict((oc: any) =>
-                oc.column('user_id').doUpdateSet({
+        if (student.institution_id && student.student_number) {
+            const existingStudent = await dbClient
+                .selectFrom('students')
+                .where('institution_id', '=', student.institution_id)
+                .where('student_number', '=', student.student_number)
+                .selectAll()
+                .executeTakeFirst();
+
+            if (existingStudent && existingStudent.user_id && existingStudent.user_id !== userId) {
+                throw new Error(
+                    `Student number "${student.student_number}" is already registered to another account.`,
+                );
+            }
+
+            await dbClient
+                .insertInto('students')
+                .values({
                     ...student,
-                }),
-            )
-            .execute();
+                    user_id: userId,
+                })
+                .onConflict((oc: any) =>
+                    oc.columns(['institution_id', 'student_number']).doUpdateSet({
+                        ...student,
+                        user_id: userId,
+                        updated_at: new Date(),
+                    }),
+                )
+                .execute();
+
+            // Sync student_whitelist claimed status if matching unclaimed record exists
+            await dbClient
+                .updateTable('student_whitelist')
+                .set({
+                    claimed_user_id: userId,
+                    claimed_at: new Date(),
+                    updated_at: new Date(),
+                    updated_by: userId,
+                })
+                .where('institution_id', '=', student.institution_id)
+                .where('student_number', '=', student.student_number)
+                .where('claimed_user_id', 'is', null)
+                .execute();
+        } else {
+            await dbClient
+                .insertInto('students')
+                .values({
+                    ...student,
+                    user_id: userId,
+                })
+                .onConflict((oc: any) =>
+                    oc.column('user_id').doUpdateSet({
+                        ...student,
+                    }),
+                )
+                .execute();
+        }
     }
 
     // 2.1 Create instructor record if role is staff

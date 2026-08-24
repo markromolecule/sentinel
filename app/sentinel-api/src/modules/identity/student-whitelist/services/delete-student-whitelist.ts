@@ -34,6 +34,8 @@ export async function deleteStudentWhitelist(
     await deleteStudentWhitelistData({
         dbClient,
         id,
+        institutionId: existingRecord.institution_id,
+        studentNumber: existingRecord.student_number,
     });
 
     await ActivityNotificationService.notifyGenericInstitutionActivity({

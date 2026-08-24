@@ -1,4 +1,36 @@
-import { type DbClient } from '@sentinel/db';
+import { executeTransaction, type DbClient } from '@sentinel/db';
+
+type UnclaimedWhitelistPlaceholderKey = {
+    institution_id: string;
+    student_number: string;
+};
+
+async function deleteUnclaimedPlaceholderStudents({
+    dbClient,
+    records,
+}: {
+    dbClient: DbClient;
+    records: UnclaimedWhitelistPlaceholderKey[];
+}) {
+    if (records.length === 0) {
+        return;
+    }
+
+    await dbClient
+        .deleteFrom('students')
+        .where('user_id', 'is', null)
+        .where((eb) =>
+            eb.or(
+                records.map((record) =>
+                    eb.and([
+                        eb('institution_id', '=', record.institution_id),
+                        eb('student_number', '=', record.student_number),
+                    ]),
+                ),
+            ),
+        )
+        .execute();
+}
 
 export async function purgeStudentWhitelistData({
     dbClient,
@@ -17,7 +49,7 @@ export async function purgeStudentWhitelistData({
 }) {
     let selectQuery = dbClient
         .selectFrom('student_whitelist')
-        .select(['whitelist_id', 'claimed_user_id']);
+        .select(['whitelist_id', 'claimed_user_id', 'institution_id', 'student_number']);
 
     if (institutionId) {
         selectQuery = selectQuery.where('institution_id', '=', institutionId);
@@ -40,12 +72,25 @@ export async function purgeStudentWhitelistData({
     const deletableIds = matchingRecords
         .filter((record) => includeClaimed || !record.claimed_user_id)
         .map((record) => record.whitelist_id);
+    const unclaimedPlaceholderKeys = matchingRecords
+        .filter((record) => !record.claimed_user_id)
+        .map((record) => ({
+            institution_id: record.institution_id,
+            student_number: record.student_number,
+        }));
 
     if (deletableIds.length > 0) {
-        await dbClient
-            .deleteFrom('student_whitelist')
-            .where('whitelist_id', 'in', deletableIds)
-            .execute();
+        await executeTransaction(dbClient, async (trx) => {
+            await deleteUnclaimedPlaceholderStudents({
+                dbClient: trx,
+                records: unclaimedPlaceholderKeys,
+            });
+
+            await trx
+                .deleteFrom('student_whitelist')
+                .where('whitelist_id', 'in', deletableIds)
+                .execute();
+        });
     }
 
     return {

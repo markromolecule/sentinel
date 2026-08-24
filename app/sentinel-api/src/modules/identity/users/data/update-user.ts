@@ -56,12 +56,12 @@ export async function updateUserData({ dbClient, id, values, requesterRole }: Up
     const existingInstructorCourseIds =
         supportsInstructorCourses && existingProfile.instructor_id
             ? (
-                  await dbClient
-                      .selectFrom('instructor_courses')
-                      .where('instructor_id', '=', existingProfile.instructor_id)
-                      .select('course_id')
-                      .execute()
-              ).map((record) => record.course_id)
+                await dbClient
+                    .selectFrom('instructor_courses')
+                    .where('instructor_id', '=', existingProfile.instructor_id)
+                    .select('course_id')
+                    .execute()
+            ).map((record) => record.course_id)
             : [];
 
     // 1. Update user_profiles
@@ -75,19 +75,19 @@ export async function updateUserData({ dbClient, id, values, requesterRole }: Up
                         ? values.courseIds
                         : [values.courseIds[0]].filter(Boolean)
                     : values.course
-                      ? [values.course]
-                      : existingInstructorCourseIds.length
-                        ? existingInstructorCourseIds
-                        : existingProfile.course_id
-                          ? [existingProfile.course_id]
-                          : []
+                        ? [values.course]
+                        : existingInstructorCourseIds.length
+                            ? existingInstructorCourseIds
+                            : existingProfile.course_id
+                                ? [existingProfile.course_id]
+                                : []
                 : values.course !== undefined
-                  ? values.course
-                      ? [values.course]
-                      : []
-                  : existingProfile.course_id
-                    ? [existingProfile.course_id]
-                    : []
+                    ? values.course
+                        ? [values.course]
+                        : []
+                    : existingProfile.course_id
+                        ? [existingProfile.course_id]
+                        : []
             ).filter(Boolean),
         ),
     );
@@ -149,24 +149,86 @@ export async function updateUserData({ dbClient, id, values, requesterRole }: Up
 
     if (isStudent) {
         // Insert or Update student
-        await dbClient
-            .insertInto('students')
-            .values({
-                user_id: id,
-                student_number: values.studentNo ?? existingProfile.student_number ?? '',
-                department_id: resolvedDepartmentId,
-                course_id: primaryCourseId,
-                institution_id: resolvedInstitutionId,
-            })
-            .onConflict((oc) =>
-                oc.column('user_id').doUpdateSet({
-                    student_number: values.studentNo ?? existingProfile.student_number ?? '',
+        const studentNumber = values.studentNo ?? existingProfile.student_number ?? '';
+
+        if (resolvedInstitutionId && studentNumber) {
+            const conflictingStudent = await dbClient
+                .selectFrom('students')
+                .where('institution_id', '=', resolvedInstitutionId)
+                .where('student_number', '=', studentNumber)
+                .selectAll()
+                .executeTakeFirst();
+
+            if (
+                conflictingStudent &&
+                conflictingStudent.user_id &&
+                conflictingStudent.user_id !== id
+            ) {
+                throw new Error(
+                    `Student number "${studentNumber}" is already registered to another account.`,
+                );
+            }
+
+            if (conflictingStudent && conflictingStudent.student_id) {
+                await dbClient
+                    .deleteFrom('students')
+                    .where('user_id', '=', id)
+                    .where('student_id', '!=', conflictingStudent.student_id)
+                    .execute();
+            }
+
+            await dbClient
+                .insertInto('students')
+                .values({
+                    user_id: id,
+                    student_number: studentNumber,
                     department_id: resolvedDepartmentId,
                     course_id: primaryCourseId,
                     institution_id: resolvedInstitutionId,
-                }),
-            )
-            .execute();
+                })
+                .onConflict((oc) =>
+                    oc.columns(['institution_id', 'student_number']).doUpdateSet({
+                        user_id: id,
+                        department_id: resolvedDepartmentId,
+                        course_id: primaryCourseId,
+                        updated_at: new Date(),
+                    }),
+                )
+                .execute();
+
+            // Sync student_whitelist claimed status if matching unclaimed record exists
+            await dbClient
+                .updateTable('student_whitelist')
+                .set({
+                    claimed_user_id: id,
+                    claimed_at: new Date(),
+                    updated_at: new Date(),
+                    updated_by: id,
+                })
+                .where('institution_id', '=', resolvedInstitutionId)
+                .where('student_number', '=', studentNumber)
+                .where('claimed_user_id', 'is', null)
+                .execute();
+        } else {
+            await dbClient
+                .insertInto('students')
+                .values({
+                    user_id: id,
+                    student_number: studentNumber,
+                    department_id: resolvedDepartmentId,
+                    course_id: primaryCourseId,
+                    institution_id: resolvedInstitutionId,
+                })
+                .onConflict((oc) =>
+                    oc.column('user_id').doUpdateSet({
+                        student_number: studentNumber,
+                        department_id: resolvedDepartmentId,
+                        course_id: primaryCourseId,
+                        institution_id: resolvedInstitutionId,
+                    }),
+                )
+                .execute();
+        }
 
         // Strict cleanup
         await dbClient.deleteFrom('instructors').where('user_id', '=', id).execute();
