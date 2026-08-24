@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getExamMonitoringStudentDetail } from '@sentinel/services';
+import { getExamLobbyCount } from '@sentinel/services';
 import { EXAM_QUERY_KEYS } from '@sentinel/shared/constants';
-import { useExamMonitoringStudentQuery } from './use-exam-monitoring-student-query';
+import { useExamLobbyCountQuery } from './use-exam-lobby-count-query';
 
 vi.mock('@tanstack/react-query', () => ({
     useQuery: vi.fn((options: any) => {
@@ -13,6 +13,7 @@ vi.mock('@tanstack/react-query', () => ({
             queryKey: options.queryKey,
             enabled: options.enabled,
             staleTime: options.staleTime,
+            refetchOnMount: options.refetchOnMount,
             refetchInterval: options.refetchInterval,
             refetchIntervalInBackground: options.refetchIntervalInBackground,
         };
@@ -20,7 +21,7 @@ vi.mock('@tanstack/react-query', () => ({
 }));
 
 vi.mock('@sentinel/services', () => ({
-    getExamMonitoringStudentDetail: vi.fn(),
+    getExamLobbyCount: vi.fn(),
 }));
 
 vi.mock('../../api-provider', () => ({
@@ -31,23 +32,20 @@ vi.mock('../_shared/use-authenticated-query-enabled', () => ({
     useAuthenticatedQueryEnabled: vi.fn(() => true),
 }));
 
-describe('useExamMonitoringStudentQuery', () => {
+describe('useExamLobbyCountQuery', () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });
 
-    it('uses an exam/student-scoped cache key and polls student monitoring every 8 seconds with background polling disabled', () => {
-        const query = useExamMonitoringStudentQuery('exam-1', 'student-1') as any;
+    it('queries lobby count with 30s staleTime and disabled background interval polling', () => {
+        const query = useExamLobbyCountQuery('exam-1') as any;
 
-        expect(getExamMonitoringStudentDetail).toHaveBeenCalledWith(
-            { mockClient: true },
-            'exam-1',
-            'student-1',
-        );
-        expect(query.queryKey).toEqual(EXAM_QUERY_KEYS.monitoringStudent('exam-1', 'student-1'));
+        expect(getExamLobbyCount).toHaveBeenCalledWith({ mockClient: true }, 'exam-1');
+        expect(query.queryKey).toEqual(EXAM_QUERY_KEYS.lobbyCount('exam-1'));
         expect(query.enabled).toBe(true);
-        expect(query.staleTime).toBe(4000);
-        expect(query.refetchInterval).toBe(8000);
+        expect(query.staleTime).toBe(30_000);
+        expect(query.refetchOnMount).toBe(true);
+        expect(query.refetchInterval).toBe(false);
         expect(query.refetchIntervalInBackground).toBe(false);
     });
 });

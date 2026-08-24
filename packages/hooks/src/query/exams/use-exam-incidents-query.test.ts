@@ -21,7 +21,9 @@ vi.mock('@tanstack/react-query', () => ({
             queryKey: options.queryKey,
             enabled: options.enabled,
             getNextPageParam: options.getNextPageParam,
+            staleTime: options.staleTime,
             refetchInterval: options.refetchInterval,
+            refetchIntervalInBackground: options.refetchIntervalInBackground,
         };
     }),
     useMutation: vi.fn((options: any) => {
@@ -75,7 +77,10 @@ describe('Exam Incidents Hooks', () => {
                 page: 1,
             });
             expect(query.enabled).toBe(true);
-            expect(query.refetchInterval).toBe(EXAM_INCIDENTS_REFETCH_INTERVAL_MS);
+            expect(query.staleTime).toBe(4000);
+            expect(query.refetchInterval).toBe(6000);
+            expect(EXAM_INCIDENTS_REFETCH_INTERVAL_MS).toBe(6000);
+            expect(query.refetchIntervalInBackground).toBe(false);
         });
 
         it('returns correct page parameter from getNextPageParam', () => {

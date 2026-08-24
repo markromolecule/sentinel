@@ -87,12 +87,24 @@ function createDirective(revision: number, state = 'REQUESTED', directiveLeaseId
 }
 
 function createSupabase() {
+    let broadcastHandler: Function | null = null;
+    let subscribeHandler: Function | null = null;
     const channel = {
-        on: vi.fn().mockReturnThis(),
-        subscribe: vi.fn().mockReturnThis(),
+        on: vi.fn().mockImplementation((type: string, filter: any, callback: Function) => {
+            if (type === 'broadcast' && filter?.event === 'LIVE_INSPECTION_CHANGED') {
+                broadcastHandler = callback;
+            }
+            return channel;
+        }),
+        subscribe: vi.fn().mockImplementation((callback?: Function) => {
+            subscribeHandler = callback ?? null;
+            return channel;
+        }),
     };
     return {
         channel,
+        getBroadcastHandler: () => broadcastHandler,
+        getSubscribeHandler: () => subscribeHandler,
         supabase: {
             auth: {} as never,
             channel: vi.fn(() => channel),
@@ -304,7 +316,7 @@ describe('useStudentLiveInspectionPublisher', () => {
         );
     });
 
-    it('registers missed-event recovery while the attempt page is mounted using setTimeout', async () => {
+    it('does not register periodic polling timers on mount and relies on realtime events', async () => {
         vi.useFakeTimers();
         const { supabase } = createSupabase();
         const { original } = createLiveTrack();
@@ -327,22 +339,21 @@ describe('useStudentLiveInspectionPublisher', () => {
         );
 
         // Let the mount effects run
-        await vi.runOnlyPendingTimersAsync();
+        await act(async () => {
+            await Promise.resolve();
+        });
 
-        expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 500);
+        expect(setTimeoutSpy).not.toHaveBeenCalledWith(expect.any(Function), 500);
     });
 
-    it('keeps missed-event recovery active when the attempt page is hidden', async () => {
+    it('reconciles on visibilitychange and online reconnect events', async () => {
         const { supabase } = createSupabase();
         const { original } = createLiveTrack();
-        vi.useFakeTimers();
-        Object.defineProperty(document, 'visibilityState', {
-            configurable: true,
-            value: 'hidden',
-        });
         mockDirective
-            .mockRejectedValueOnce(new Error('missed'))
-            .mockResolvedValue(createDirective(1));
+            .mockResolvedValueOnce(
+                createDirective(1, 'ENDED', '33333333-3333-4333-8333-333333333333'),
+            )
+            .mockResolvedValue(createDirective(2));
 
         renderHook(() =>
             useStudentLiveInspectionPublisher({
@@ -355,16 +366,21 @@ describe('useStudentLiveInspectionPublisher', () => {
             }),
         );
 
-        await act(async () => {
-            await Promise.resolve();
-        });
-        expect(mockDirective).toHaveBeenCalledTimes(1);
+        await waitFor(() => expect(mockDirective).toHaveBeenCalledTimes(1));
 
-        await act(async () => {
-            await vi.advanceTimersByTimeAsync(3000);
+        // Trigger visibilitychange event
+        act(() => {
+            document.dispatchEvent(new Event('visibilitychange'));
         });
 
-        expect(mockDirective.mock.calls.length).toBeGreaterThan(1);
+        await waitFor(() => expect(mockDirective).toHaveBeenCalledTimes(2));
+
+        // Trigger online event
+        act(() => {
+            window.dispatchEvent(new Event('online'));
+        });
+
+        await waitFor(() => expect(mockDirective).toHaveBeenCalledTimes(3));
     });
 
     it('cleans up only the clone when unmounted', async () => {
@@ -572,9 +588,8 @@ describe('useStudentLiveInspectionPublisher', () => {
         consoleWarnSpy.mockRestore();
     });
 
-    it('automatically retries polling after a transient 401/403', async () => {
-        vi.useFakeTimers();
-        const { supabase } = createSupabase();
+    it('resets authorization cooldown on new broadcast signal after transient 401/403', async () => {
+        const { supabase, getBroadcastHandler } = createSupabase();
         const { original } = createLiveTrack();
         const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -597,18 +612,20 @@ describe('useStudentLiveInspectionPublisher', () => {
             }),
         );
 
-        // First call fails with 403 and applies a bounded retry delay.
-        await act(async () => {
-            await Promise.resolve();
-        });
-        expect(mockDirective).toHaveBeenCalledTimes(1);
+        // First call fails with 403
+        await waitFor(() => expect(mockDirective).toHaveBeenCalledTimes(1));
+
+        // Simulate broadcast signal from proctor
+        const broadcastHandler = getBroadcastHandler();
+        expect(broadcastHandler).toBeDefined();
 
         await act(async () => {
-            await vi.advanceTimersByTimeAsync(4000);
+            broadcastHandler?.();
         });
 
-        expect(mockDirective.mock.calls.length).toBeGreaterThan(1);
-        expect(mockPublisherConnection).toHaveBeenCalled();
+        // Broadcast signal triggers immediate reconcile without waiting for a cooldown
+        await waitFor(() => expect(mockDirective.mock.calls.length).toBeGreaterThan(1));
+        await waitFor(() => expect(result.current.isLive).toBe(true));
 
         consoleWarnSpy.mockRestore();
     });

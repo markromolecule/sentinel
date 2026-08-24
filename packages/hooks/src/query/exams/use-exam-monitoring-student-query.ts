@@ -16,7 +16,8 @@ export function useExamMonitoringStudentQuery(examId?: string, studentId?: strin
         queryFn: () =>
             getExamMonitoringStudentDetail(apiClient, examId as string, studentId as string),
         enabled: Boolean(examId && studentId) && isAuthenticatedQueryEnabled,
-        refetchInterval: 5000,
-        refetchIntervalInBackground: true,
+        staleTime: 4000,
+        refetchInterval: 8000,
+        refetchIntervalInBackground: false,
     });
 }

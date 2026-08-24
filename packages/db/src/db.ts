@@ -26,7 +26,7 @@ const createClient = () => {
         connectionUrl.includes('sslmode=disable');
 
     const maxConnections =
-        Number(process.env.DB_POOL_MAX) > 0 ? Number(process.env.DB_POOL_MAX) : 5;
+        Number(process.env.DB_POOL_MAX) > 0 ? Number(process.env.DB_POOL_MAX) : 15;
     const idleTimeoutMillis =
         Number(process.env.DB_POOL_IDLE_TIMEOUT_MS) > 0
             ? Number(process.env.DB_POOL_IDLE_TIMEOUT_MS)

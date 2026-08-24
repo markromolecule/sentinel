@@ -49,12 +49,12 @@ Eliminate 97% of backend HTTP request volume and database query overhead caused 
 
 | ID | Source goal/scenario/decision | Criterion | Implementation | Verification | Status |
 |---|---|---|---|---|---|
-| **AC-01** | SC-01, D2 | `useStudentLiveInspectionPublisher` does not execute any background interval polling while waiting for live inspection. | Delete `LIVE_INSPECTION_RECONCILE_INTERVAL_MS` (500ms) and `scheduleReconcile` in `use-student-live-inspection-publisher.ts`. | `pnpm --filter @sentinel/hooks test use-student-live-inspection-publisher` | Planned |
-| **AC-02** | SC-03, D2 | Instructor `start()` / `stop()` live inspection broadcasts `LIVE_INSPECTION_CHANGED` via Supabase Realtime channel. | Add broadcast dispatcher in `use-live-inspection-viewer.ts`. | `pnpm --filter @sentinel/hooks test use-live-inspection-viewer` | Planned |
-| **AC-03** | SC-01, D4 | `useActiveAttemptLifecycle` does not poll `GET /examination/flow/sessions/:id/status` every 2s. | Set `refetchInterval: false` in `use-exam-session-status-query.ts`. | `pnpm --filter @sentinel/hooks test use-exam-session-status-query` | Planned |
-| **AC-04** | SC-04, D4 | Student lobby admission status and waiting count do not execute aggressive continuous interval polling. | Remove background polling in `use-exam-lobby-admission-status-query.ts` and `use-exam-lobby-count-query.ts`. | `pnpm --filter @sentinel/hooks test lobby` | Planned |
-| **AC-05** | SC-02, D4 | Instructor monitoring overview and incidents queries use relaxed 6s intervals with background refetching disabled. | Update `EXAM_MONITORING_OVERVIEW_REFETCH_INTERVAL_MS` & `EXAM_INCIDENTS_REFETCH_INTERVAL_MS` to 6000ms. | `pnpm --filter @sentinel/hooks test monitoring` | Planned |
-| **AC-06** | SC-05, D3 | Database client initializes with `DB_POOL_MAX=15` and supports Supabase Transaction Pooler connection string. | Update default `maxConnections` in `packages/db/src/db.ts`. | `pnpm --filter @sentinel/db test` | Planned |
+| **AC-01** | SC-01, D2 | `useStudentLiveInspectionPublisher` does not execute any background interval polling while waiting for live inspection. | Delete `LIVE_INSPECTION_RECONCILE_INTERVAL_MS` (500ms) and `scheduleReconcile` in `use-student-live-inspection-publisher.ts`. | `pnpm --filter @sentinel/hooks test use-student-live-inspection-publisher` | Verified |
+| **AC-02** | SC-03, D2 | Instructor `start()` / `stop()` live inspection broadcasts `LIVE_INSPECTION_CHANGED` via Supabase Realtime channel. | Add broadcast dispatcher in `use-live-inspection-viewer.ts`. | `pnpm --filter @sentinel/hooks test use-live-inspection-viewer` | Verified |
+| **AC-03** | SC-01, D4 | `useActiveAttemptLifecycle` does not poll `GET /examination/flow/sessions/:id/status` every 2s. | Set `refetchInterval: false` in `use-exam-session-status-query.ts`. | `pnpm --filter @sentinel/hooks test use-exam-session-status-query` | Verified |
+| **AC-04** | SC-04, D4 | Student lobby admission status and waiting count do not execute aggressive continuous interval polling. | Remove background polling in `use-exam-lobby-admission-status-query.ts` and `use-exam-lobby-count-query.ts`. | `pnpm --filter @sentinel/hooks test lobby` | Verified |
+| **AC-05** | SC-02, D4 | Instructor monitoring overview and incidents queries use relaxed 6s intervals with background refetching disabled. | Update `EXAM_MONITORING_OVERVIEW_REFETCH_INTERVAL_MS` & `EXAM_INCIDENTS_REFETCH_INTERVAL_MS` to 6000ms. | `pnpm --filter @sentinel/hooks test monitoring` | Verified |
+| **AC-06** | SC-05, D3 | Database client initializes with `DB_POOL_MAX=15` and supports Supabase Transaction Pooler connection string. | Update default `maxConnections` in `packages/db/src/db.ts`. | `pnpm --filter @sentinel/db test` | Verified |
 
 ---
 
@@ -78,10 +78,10 @@ Eliminate 97% of backend HTTP request volume and database query overhead caused 
 
 ## Phases
 
-- [ ] [`phase-01-eliminate-student-live-inspection-polling.md`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/tasks/2026/08/2026-08-24/fix-exam-concurrency-traffic-and-instructor-monitoring/phase-01-eliminate-student-live-inspection-polling.md) — Phase 1: Eliminate Student Live Inspection 500ms Polling & Wire Realtime Signaling
-- [ ] [`phase-02-deduplicate-session-status-and-lobby-polling.md`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/tasks/2026/08/2026-08-24/fix-exam-concurrency-traffic-and-instructor-monitoring/phase-02-deduplicate-session-status-and-lobby-polling.md) — Phase 2: De-duplicate Active Session Status & Student Lobby Polling Leaks
-- [ ] [`phase-03-optimize-instructor-monitoring-queries.md`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/tasks/2026/08/2026-08-24/fix-exam-concurrency-traffic-and-instructor-monitoring/phase-03-optimize-instructor-monitoring-queries.md) — Phase 3: Optimize Instructor Monitoring Dashboard Queries & Relax Refresh Intervals
-- [ ] [`phase-04-database-pool-tuning-and-railway-sizing.md`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/tasks/2026/08/2026-08-24/fix-exam-concurrency-traffic-and-instructor-monitoring/phase-04-database-pool-tuning-and-railway-sizing.md) — Phase 4: Database Connection Pool Scaling & Railway Sizing Configuration
+- [x] [`phase-01-eliminate-student-live-inspection-polling.md`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/tasks/2026/08/2026-08-24/fix-exam-concurrency-traffic-and-instructor-monitoring/phase-01-eliminate-student-live-inspection-polling.md) — Phase 1: Eliminate Student Live Inspection 500ms Polling & Wire Realtime Signaling
+- [x] [`phase-02-deduplicate-session-status-and-lobby-polling.md`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/tasks/2026/08/2026-08-24/fix-exam-concurrency-traffic-and-instructor-monitoring/phase-02-deduplicate-session-status-and-lobby-polling.md) — Phase 2: De-duplicate Active Session Status & Student Lobby Polling Leaks
+- [x] [`phase-03-optimize-instructor-monitoring-queries.md`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/tasks/2026/08/2026-08-24/fix-exam-concurrency-traffic-and-instructor-monitoring/phase-03-optimize-instructor-monitoring-queries.md) — Phase 3: Optimize Instructor Monitoring Dashboard Queries & Relax Refresh Intervals
+- [x] [`phase-04-database-pool-tuning-and-railway-sizing.md`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/tasks/2026/08/2026-08-24/fix-exam-concurrency-traffic-and-instructor-monitoring/phase-04-database-pool-tuning-and-railway-sizing.md) — Phase 4: Database Connection Pool Scaling & Railway Sizing Configuration
 
 ---
 

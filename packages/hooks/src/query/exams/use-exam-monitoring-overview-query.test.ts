@@ -14,6 +14,7 @@ vi.mock('@tanstack/react-query', () => ({
         return {
             queryKey: options.queryKey,
             enabled: options.enabled,
+            staleTime: options.staleTime,
             refetchInterval: options.refetchInterval,
             refetchIntervalInBackground: options.refetchIntervalInBackground,
         };
@@ -37,12 +38,14 @@ describe('useExamMonitoringOverviewQuery', () => {
         vi.clearAllMocks();
     });
 
-    it('polls the monitoring overview every 2 seconds while preserving background polling', () => {
+    it('polls the monitoring overview every 6 seconds with background polling disabled', () => {
         const query = useExamMonitoringOverviewQuery('exam-1') as any;
 
         expect(getExamMonitoringOverview).toHaveBeenCalledWith({ mockClient: true }, 'exam-1');
         expect(query.enabled).toBe(true);
-        expect(query.refetchInterval).toBe(EXAM_MONITORING_OVERVIEW_REFETCH_INTERVAL_MS);
-        expect(query.refetchIntervalInBackground).toBe(true);
+        expect(query.staleTime).toBe(4000);
+        expect(query.refetchInterval).toBe(6000);
+        expect(EXAM_MONITORING_OVERVIEW_REFETCH_INTERVAL_MS).toBe(6000);
+        expect(query.refetchIntervalInBackground).toBe(false);
     });
 });

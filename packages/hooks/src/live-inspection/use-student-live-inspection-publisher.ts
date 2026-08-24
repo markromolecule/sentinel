@@ -19,7 +19,6 @@ import {
 export * from './use-student-live-inspection-publisher.types';
 
 const LIVE_INSPECTION_SIGNAL_EVENT = 'LIVE_INSPECTION_CHANGED';
-const LIVE_INSPECTION_RECONCILE_INTERVAL_MS = 500;
 const LIVE_INSPECTION_AUTH_RETRY_MS = 3_000;
 const TERMINAL_STATES = new Set<LiveInspectionState>(['ENDED', 'FAILED', 'EXPIRED']);
 
@@ -50,7 +49,6 @@ export function useStudentLiveInspectionPublisher({
 
     const requestSequenceRef = useRef(0);
     const isMountedRef = useRef(false);
-    const reconcileTimerRef = useRef<any>(null);
     const isReconcilingRef = useRef(false);
     const statusRef = useRef<StudentLiveInspectionPublisherStatus>('idle');
     const authorizationRetryAtRef = useRef(0);
@@ -180,30 +178,8 @@ export function useStudentLiveInspectionPublisher({
     }, [cleanupPublication, enabled, sessionId, setPublisherStatus, startPublication]);
 
     // ------------------------------------------------------------------------
-    // 5. Scheduling Helpers
+    // 5. Scheduling & Reconciliation Trigger
     // ------------------------------------------------------------------------
-    const scheduleReconcile = useCallback(() => {
-        if (reconcileTimerRef.current) {
-            window.clearTimeout(reconcileTimerRef.current);
-        }
-        if (!enabled || !sessionId || !isMountedRef.current) {
-            return;
-        }
-        reconcileTimerRef.current = window.setTimeout(async () => {
-            if (isReconcilingRef.current) {
-                scheduleReconcile();
-                return;
-            }
-            isReconcilingRef.current = true;
-            try {
-                await reconcile();
-            } finally {
-                isReconcilingRef.current = false;
-                scheduleReconcile();
-            }
-        }, LIVE_INSPECTION_RECONCILE_INTERVAL_MS);
-    }, [enabled, sessionId, reconcile]);
-
     const runReconcileNow = useCallback(async () => {
         authorizationRetryAtRef.current = 0;
         if (!isMountedRef.current || !enabled || !sessionId) return;
@@ -213,9 +189,8 @@ export function useStudentLiveInspectionPublisher({
             await reconcile();
         } finally {
             isReconcilingRef.current = false;
-            scheduleReconcile();
         }
-    }, [enabled, sessionId, reconcile, scheduleReconcile]);
+    }, [enabled, sessionId, reconcile]);
 
     // ------------------------------------------------------------------------
     // 6. Lifecycle & Event Effects
@@ -228,9 +203,6 @@ export function useStudentLiveInspectionPublisher({
             isMountedRef.current = false;
             requestSequenceRef.current += 1;
             cleanupPublication();
-            if (reconcileTimerRef.current) {
-                window.clearTimeout(reconcileTimerRef.current);
-            }
         };
     }, [cleanupPublication]);
 
@@ -240,9 +212,6 @@ export function useStudentLiveInspectionPublisher({
             cleanupPublication();
             setPublisherStatus('idle');
             authorizationRetryAtRef.current = 0;
-            if (reconcileTimerRef.current) {
-                window.clearTimeout(reconcileTimerRef.current);
-            }
             return;
         }
 
@@ -283,9 +252,6 @@ export function useStudentLiveInspectionPublisher({
 
         return () => {
             requestSequenceRef.current += 1;
-            if (reconcileTimerRef.current) {
-                window.clearTimeout(reconcileTimerRef.current);
-            }
             if (typeof document !== 'undefined' && typeof document.removeEventListener === 'function') {
                 document.removeEventListener('visibilitychange', handleVisibilityOrReconnect);
             }

@@ -28,14 +28,14 @@ describe('useExamSessionStatusQuery', () => {
         vi.clearAllMocks();
     });
 
-    it('enables two-second background polling only when a session is active', async () => {
+    it('configures one-time status fetching without background interval polling when a session is active', async () => {
         const query = useExamSessionStatusQuery('session-1', true) as any;
 
         expect(query).toMatchObject({
             queryKey: ['exams', 'session-status', 'session-1'],
             enabled: true,
-            refetchInterval: EXAM_SESSION_STATUS_REFETCH_INTERVAL_MS,
-            refetchIntervalInBackground: true,
+            refetchInterval: false,
+            refetchIntervalInBackground: false,
         });
 
         await query.queryFn();
@@ -46,11 +46,11 @@ describe('useExamSessionStatusQuery', () => {
     it.each([
         [null, true],
         ['session-1', false],
-    ])('disables polling for sessionId=%s active=%s', (sessionId, isAttemptActive) => {
+    ])('disables query for sessionId=%s active=%s', (sessionId, isAttemptActive) => {
         const query = useExamSessionStatusQuery(sessionId, isAttemptActive) as any;
 
         expect(query.enabled).toBe(false);
-        expect(query.refetchInterval).toBe(2000);
-        expect(query.refetchIntervalInBackground).toBe(true);
+        expect(query.refetchInterval).toBe(false);
+        expect(query.refetchIntervalInBackground).toBe(false);
     });
 });
