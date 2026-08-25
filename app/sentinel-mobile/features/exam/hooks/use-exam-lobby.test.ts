@@ -88,6 +88,10 @@ const mockRuntimeAccess = vi.hoisted(() => ({
     },
 }));
 
+const mockAdmissionStatus = vi.hoisted(() => ({
+    value: { status: 'APPROVED' as const },
+}));
+
 vi.mock('@sentinel/hooks', () => ({
     useApi: () => ({}),
     useAuth: () => mockAuth(),
@@ -98,6 +102,7 @@ vi.mock('@sentinel/hooks', () => ({
             configuration: {
                 cameraRequired: true,
                 micRequired: true,
+                lobbyAdmissionMode: 'INSTRUCTOR_GATED',
             },
             mediaPipeSandbox: {
                 enabled: true,
@@ -111,11 +116,15 @@ vi.mock('@sentinel/hooks', () => ({
         data: { count: 3 },
         refetch: vi.fn(),
     }),
+    useExamLobbyAdmissionStatusQuery: () => ({
+        data: mockAdmissionStatus.value,
+        refetch: vi.fn().mockResolvedValue({ data: mockAdmissionStatus.value }),
+    }),
+    useLobbyRealtime: vi.fn(),
 }));
 
 vi.mock('@sentinel/services', () => ({
     checkIntoExamLobby: vi.fn().mockResolvedValue({ status: 'APPROVED' }),
-    getExamLobbyAdmissionStatus: vi.fn().mockResolvedValue({ status: 'APPROVED' }),
     startExamSession: vi.fn().mockResolvedValue({ sessionId: 'session-123' }),
 }));
 
@@ -140,6 +149,7 @@ describe('useExamLobby hook', () => {
         stateValues = [];
         stateIndex = 0;
         effectCallbacks = [];
+        mockAdmissionStatus.value = { status: 'APPROVED' };
         mockRuntimeAccess.value = {
             canStart: true,
             canResume: false,
@@ -151,8 +161,8 @@ describe('useExamLobby hook', () => {
 
     it('should block exam entry when MediaPipe is uncalibrated', async () => {
         // Mock state: isMediaPipeCalibrated = false, isAudioReady = true
-        stateValues[3] = false; // isMediaPipeCalibrated
-        stateValues[4] = true; // isAudioReady
+        stateValues[2] = false; // isMediaPipeCalibrated
+        stateValues[3] = true; // isAudioReady
 
         const result = useExamLobby();
         expect(result.canEnterExam).toBe(false);
@@ -168,8 +178,8 @@ describe('useExamLobby hook', () => {
 
     it('should allow exam entry when all requirements are satisfied', async () => {
         // Mock state: isMediaPipeCalibrated = true, isAudioReady = true
+        stateValues[2] = true;
         stateValues[3] = true;
-        stateValues[4] = true;
 
         const result = useExamLobby();
         expect(result.canEnterExam).toBe(true);
@@ -181,9 +191,9 @@ describe('useExamLobby hook', () => {
 
     it('should allow approved instructor-gated resume access when runtime access can resume', () => {
         stateValues[0] = false; // isStartingSession
-        stateValues[1] = 'APPROVED'; // admissionStatus
-        stateValues[3] = true; // isMediaPipeCalibrated
-        stateValues[4] = true; // isAudioReady
+        stateValues[2] = true; // isMediaPipeCalibrated
+        stateValues[3] = true; // isAudioReady
+        mockAdmissionStatus.value = { status: 'APPROVED' };
         mockRuntimeAccess.value = {
             canStart: false,
             canResume: true,
@@ -198,13 +208,10 @@ describe('useExamLobby hook', () => {
 
     it('should display the correct student count using query or presence fallback', () => {
         // Mock state: presenceCount = 5
-        stateValues[2] = 5;
+        stateValues[1] = 5;
 
         const result = useExamLobby();
         // Since useExamLobbyCountQuery returns count: 3, it prefers query count if available
         expect(result.readyCount).toBe(3);
-
-        // If count is not available from query, it should fallback to presenceCount
-        // Mock query count to undefined by overriding readyCount calculation mock logic
     });
 });

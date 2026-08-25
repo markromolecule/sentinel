@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, useColorScheme } from 'react-native';
 import { Stack, useNavigation, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -50,24 +50,25 @@ export const ExamSessionScreen = () => {
     const navigation = useNavigation();
 
     // Proctoring bridge and MediaPipe real-time monitoring
-    const handleAnomaly = async (
-        eventType: 'GAZE_OFF_SCREEN' | 'MULTIPLE_FACES' | 'NO_FACE_DETECTED',
-    ) => {
-        if (!exam || !sessionId || !session?.user?.id) return;
-        try {
-            await captureAndUploadEvidenceFrame({
-                cameraRef,
-                attemptId: sessionId,
-                examSessionId: sessionId,
-                studentId: session.user.id,
-                eventType,
-                apiClient,
-                supabase,
-            });
-        } catch (err) {
-            console.error('Failed to capture and upload evidence frame', err);
-        }
-    };
+    const handleAnomaly = useCallback(
+        async (eventType: 'GAZE_OFF_SCREEN' | 'MULTIPLE_FACES' | 'NO_FACE_DETECTED') => {
+            if (!exam || !sessionId || !session?.user?.id) return;
+            try {
+                await captureAndUploadEvidenceFrame({
+                    cameraRef,
+                    attemptId: sessionId,
+                    examSessionId: sessionId,
+                    studentId: session.user.id,
+                    eventType,
+                    apiClient,
+                    supabase,
+                });
+            } catch (err) {
+                console.error('Failed to capture and upload evidence frame', err);
+            }
+        },
+        [apiClient, exam, sessionId, session?.user?.id, supabase],
+    );
 
     const { warningStatus } = useMobileMediaPipeMonitoring({
         examId: typeof examId === 'string' ? examId : '',

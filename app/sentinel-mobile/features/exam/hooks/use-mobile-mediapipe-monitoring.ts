@@ -61,6 +61,9 @@ export function useMobileMediaPipeMonitoring({
         useState<UseMobileMediaPipeMonitoringResult['warningStatus']>(null);
     const [analysis, setAnalysis] = useState<MediaPipeFrameAnalysis | null>(null);
 
+    const onAnomalyDetectedRef = useRef(onAnomalyDetected);
+    onAnomalyDetectedRef.current = onAnomalyDetected;
+
     const consecutiveFrames = useRef<Record<string, number>>({
         GAZE_OFF_SCREEN: 0,
         MULTIPLE_FACES: 0,
@@ -83,7 +86,7 @@ export function useMobileMediaPipeMonitoring({
         if (!examId) return;
         readStoredMobileCalibrationProfile(examId).then((profile) => {
             if (profile) {
-                setCalibrationProfile(profile);
+                setCalibrationProfile((prev) => (prev === profile ? prev : profile));
             }
         });
     }, [examId]);
@@ -91,8 +94,8 @@ export function useMobileMediaPipeMonitoring({
     // 2. Continuous frame analyzer loop
     useEffect(() => {
         if (!isMonitoring) {
-            setWarningStatus(null);
-            setAnalysis(null);
+            setWarningStatus((prev) => (prev === null ? null : null));
+            setAnalysis((prev) => (prev === null ? null : null));
             return;
         }
 
@@ -108,7 +111,19 @@ export function useMobileMediaPipeMonitoring({
             calibrationProfile,
         });
 
-        setAnalysis(currentAnalysis);
+        setAnalysis((prev) => {
+            if (
+                prev?.status === currentAnalysis.status &&
+                prev?.signal === currentAnalysis.signal &&
+                prev?.faceCount === currentAnalysis.faceCount &&
+                prev?.confidenceScore === currentAnalysis.confidenceScore &&
+                prev?.gazeDirection === currentAnalysis.gazeDirection &&
+                prev?.eyeState === currentAnalysis.eyeState
+            ) {
+                return prev;
+            }
+            return currentAnalysis;
+        });
 
         const now = Date.now();
         let activeSignal: 'GAZE_OFF_SCREEN' | 'MULTIPLE_FACES' | 'NO_FACE_DETECTED' | null = null;
@@ -119,7 +134,7 @@ export function useMobileMediaPipeMonitoring({
             consecutiveFrames.current.GAZE_OFF_SCREEN = 0;
             consecutiveFrames.current.MULTIPLE_FACES = 0;
             consecutiveFrames.current.NO_FACE_DETECTED = 0;
-            setWarningStatus(null);
+            setWarningStatus((prev) => (prev === null ? null : null));
             return;
         }
 
@@ -134,7 +149,7 @@ export function useMobileMediaPipeMonitoring({
             activeWarning = 'Looking away from screen';
         }
 
-        setWarningStatus(activeWarning);
+        setWarningStatus((prev) => (prev === activeWarning ? prev : activeWarning));
 
         if (activeSignal) {
             // Reset other signals' consecutive frame counters
@@ -169,8 +184,8 @@ export function useMobileMediaPipeMonitoring({
                         });
                     }
 
-                    if (onAnomalyDetected) {
-                        void onAnomalyDetected(activeSignal);
+                    if (onAnomalyDetectedRef.current) {
+                        void onAnomalyDetectedRef.current(activeSignal);
                     }
                 }
             }
@@ -184,7 +199,6 @@ export function useMobileMediaPipeMonitoring({
         apiClient,
         examSessionId,
         studentId,
-        onAnomalyDetected,
     ]);
 
     return {

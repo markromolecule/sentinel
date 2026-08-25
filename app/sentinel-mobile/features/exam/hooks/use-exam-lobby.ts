@@ -5,10 +5,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { Colors } from '@/constants/theme';
-import { useApi, useAuth, useExamLobbyCountQuery, useExamQuery } from '@sentinel/hooks';
+import {
+    useApi,
+    useAuth,
+    useExamLobbyCountQuery,
+    useExamQuery,
+    useExamLobbyAdmissionStatusQuery,
+    useLobbyRealtime,
+} from '@sentinel/hooks';
 import {
     checkIntoExamLobby,
-    getExamLobbyAdmissionStatus,
     startExamSession,
 } from '@sentinel/services';
 import { adaptExamForMobile } from '@/features/exam/lib/mobile-exam-adapter';
@@ -42,9 +48,13 @@ export function useExamLobby() {
 
     const { data: rawExam, refetch: refetchExam } = useExamQuery(id);
     const { data: lobbyCount, refetch: refetchLobbyCount } = useExamLobbyCountQuery(id);
+    const {
+        data: admissionData,
+        refetch: refetchAdmissionStatus,
+    } = useExamLobbyAdmissionStatusQuery(id);
+
     const exam = rawExam ? adaptExamForMobile(rawExam) : undefined;
     const [isStartingSession, setIsStartingSession] = useState(false);
-    const [admissionStatus, setAdmissionStatus] = useState<LobbyAdmissionStatus>(null);
 
     const { supabase, session: authSession } = useAuth();
     const [presenceCount, setPresenceCount] = useState(0);
@@ -52,11 +62,12 @@ export function useExamLobby() {
     const [isMediaPipeCalibrated, setIsMediaPipeCalibrated] = useState(false);
     const [isAudioReady, setIsAudioReady] = useState(false);
 
-    // Monotonic counter to prevent stale out-of-order responses from overwriting newer status
-    const statusSequenceRef = useRef<number>(0);
-
     const requiresInstructorAdmission =
         exam?.configuration?.lobbyAdmissionMode === 'INSTRUCTOR_GATED';
+
+    const admissionStatus: LobbyAdmissionStatus =
+        admissionData?.status ?? (!requiresInstructorAdmission ? 'APPROVED' : null);
+
     const isHardRuntimeBlock =
         exam?.runtimeAccess?.state === 'closed' ||
         exam?.runtimeAccess?.state === 'locked' ||
@@ -143,61 +154,76 @@ export function useExamLobby() {
         }
     };
 
-    const updateStatusSafely = useCallback((newStatus: string | null | undefined, seq: number) => {
-        if (seq < statusSequenceRef.current) {
-            return; // Ignore stale out-of-order response
-        }
-        statusSequenceRef.current = seq;
-        if (newStatus === 'APPROVED' || newStatus === 'WAITING' || newStatus === 'REJECTED') {
-            setAdmissionStatus(newStatus);
-        }
-    }, []);
-
     // Initial check-in on mount
     useEffect(() => {
         if (!id) {
             return;
         }
 
-        const currentSeq = ++statusSequenceRef.current;
         void checkIntoExamLobby(apiClient, id)
-            .then(async (checkInResult) => {
-                if (checkInResult?.status) {
-                    updateStatusSafely(checkInResult.status, currentSeq);
-                }
-                await refetchExam();
-                await refetchLobbyCount();
+            .then(async () => {
+                await Promise.allSettled([
+                    refetchAdmissionStatus(),
+                    refetchExam(),
+                    refetchLobbyCount(),
+                ]);
             })
             .catch(async () => {
-                const statusRes = await getExamLobbyAdmissionStatus(apiClient, id).catch(
-                    () => null,
-                );
-                if (statusRes?.status) {
-                    updateStatusSafely(statusRes.status, currentSeq);
-                }
-                await refetchExam();
-                await refetchLobbyCount();
+                await Promise.allSettled([
+                    refetchAdmissionStatus(),
+                    refetchExam(),
+                    refetchLobbyCount(),
+                ]);
             });
-    }, [apiClient, id, refetchExam, refetchLobbyCount, updateStatusSafely]);
+    }, [apiClient, id, refetchAdmissionStatus, refetchExam, refetchLobbyCount]);
 
-    // Track calibration and audio readiness — stops polling once both are ready
+    // Track calibration and audio readiness — evaluates immediately and only intervals if incomplete
     useEffect(() => {
         if (!id) return;
         if (isMediaPipeCalibrated && isAudioReady) return;
 
-        const checkReadiness = async () => {
-            const profile = await readStoredMobileCalibrationProfile(id);
-            const audioReadyStr = await AsyncStorage.getItem(`sentinel-mobile:audio-ready:${id}`);
-            const audioReady = audioReadyStr === 'true';
+        let isMounted = true;
+        let interval: ReturnType<typeof setInterval> | null = null;
 
-            setIsMediaPipeCalibrated(!isMediaPipeConfigured || !!profile);
-            setIsAudioReady(!requiresMicrophone || audioReady);
+        const checkReadiness = async (): Promise<boolean> => {
+            try {
+                const [profile, audioReadyStr] = await Promise.all([
+                    readStoredMobileCalibrationProfile(id),
+                    AsyncStorage.getItem(`sentinel-mobile:audio-ready:${id}`),
+                ]);
+                if (!isMounted) return false;
+
+                const audioReady = audioReadyStr === 'true';
+                const mediaPipeReady = !isMediaPipeConfigured || Boolean(profile);
+                const micReady = !requiresMicrophone || audioReady;
+
+                setIsMediaPipeCalibrated(mediaPipeReady);
+                setIsAudioReady(micReady);
+
+                return mediaPipeReady && micReady;
+            } catch {
+                return false;
+            }
         };
 
-        void checkReadiness();
+        void checkReadiness().then((isReady) => {
+            if (!isReady && isMounted) {
+                interval = setInterval(async () => {
+                    const ready = await checkReadiness();
+                    if (ready && interval) {
+                        clearInterval(interval);
+                        interval = null;
+                    }
+                }, 1000);
+            }
+        });
 
-        const interval = setInterval(checkReadiness, 1000);
-        return () => clearInterval(interval);
+        return () => {
+            isMounted = false;
+            if (interval) {
+                clearInterval(interval);
+            }
+        };
     }, [id, isMediaPipeConfigured, requiresMicrophone, isMediaPipeCalibrated, isAudioReady]);
 
     // Supabase Presence tracking for real-time count
@@ -241,89 +267,40 @@ export function useExamLobby() {
         };
     }, [supabase, authSession?.user, id]);
 
-    // Real-time Postgres changes for instant admission approval
+    // Real-time Postgres changes listener via shared useLobbyRealtime (optimistic cache mutation)
+    useLobbyRealtime({
+        examId: typeof id === 'string' ? id : '',
+        enabled: Boolean(id),
+        onAdmissionChange: (payload) => {
+            const newRow = payload?.new as Record<string, any> | undefined;
+            if (newRow?.status === 'APPROVED') {
+                void refetchExam();
+            }
+            void refetchAdmissionStatus();
+            void refetchLobbyCount();
+        },
+    });
+
+    // Adaptive short-polling fallback (2.5s) while waiting for instructor admission
     useEffect(() => {
-        if (!supabase || !authSession?.user || !id) return;
-
-        const channelName = `lobby:admissions:${id}`;
-        const channel = supabase
-            .channel(channelName)
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'exam_lobby_admissions',
-                    filter: `exam_id=eq.${id}`,
-                },
-                async () => {
-                    const currentSeq = ++statusSequenceRef.current;
-                    try {
-                        const statusRes = await getExamLobbyAdmissionStatus(apiClient, id);
-                        if (statusRes?.status) {
-                            updateStatusSafely(statusRes.status, currentSeq);
-                            if (statusRes.status === 'APPROVED') {
-                                await refetchExam();
-                            }
-                        }
-                    } catch {
-                        // Ignore transient network errors
-                    } finally {
-                        void refetchLobbyCount();
-                    }
-                },
-            )
-            .subscribe();
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
-    }, [apiClient, id, refetchExam, refetchLobbyCount, authSession?.user, supabase, updateStatusSafely]);
-
-    // Jittered background polling fallback (30s - 45s randomized interval)
-    // Prevents 200+ students from hitting the backend admission status endpoint at the same second
-    useEffect(() => {
-        if (!id || canEnterExam) {
+        if (!id || !requiresInstructorAdmission || admissionStatus === 'APPROVED') {
             return;
         }
 
-        let timeoutId: ReturnType<typeof setTimeout> | null = null;
         let isMounted = true;
-
-        const scheduleNextPoll = () => {
+        const interval = setInterval(async () => {
             if (!isMounted) return;
-            // 30s to 45s randomized jitter
-            const jitterMs = 30_000 + Math.floor(Math.random() * 15_000);
-            timeoutId = setTimeout(async () => {
-                const currentSeq = ++statusSequenceRef.current;
-                try {
-                    const statusRes = await getExamLobbyAdmissionStatus(apiClient, id);
-                    if (statusRes?.status && isMounted) {
-                        updateStatusSafely(statusRes.status, currentSeq);
-                        if (statusRes.status === 'APPROVED') {
-                            await refetchExam();
-                        }
-                    }
-                } catch {
-                    // Ignore error during fallback check
-                } finally {
-                    if (isMounted) {
-                        void refetchLobbyCount();
-                        scheduleNextPoll();
-                    }
-                }
-            }, jitterMs);
-        };
-
-        scheduleNextPoll();
+            const res = await refetchAdmissionStatus();
+            if (res.data?.status === 'APPROVED') {
+                await refetchExam();
+            }
+        }, 2500);
 
         return () => {
             isMounted = false;
-            if (timeoutId) {
-                clearTimeout(timeoutId);
-            }
+            clearInterval(interval);
         };
-    }, [apiClient, canEnterExam, id, refetchExam, refetchLobbyCount, updateStatusSafely]);
+    }, [admissionStatus, id, refetchAdmissionStatus, refetchExam, requiresInstructorAdmission]);
 
     useFocusEffect(
         useCallback(() => {
@@ -331,23 +308,14 @@ export function useExamLobby() {
                 return undefined;
             }
 
-            const currentSeq = ++statusSequenceRef.current;
-            void getExamLobbyAdmissionStatus(apiClient, id)
-                .then(async (statusRes) => {
-                    if (statusRes?.status) {
-                        updateStatusSafely(statusRes.status, currentSeq);
-                        if (statusRes.status === 'APPROVED') {
-                            await refetchExam();
-                        }
-                    }
-                })
-                .catch(() => null)
-                .finally(() => {
-                    void refetchLobbyCount();
-                });
+            void Promise.allSettled([
+                refetchAdmissionStatus(),
+                refetchExam(),
+                refetchLobbyCount(),
+            ]);
 
             return undefined;
-        }, [apiClient, id, refetchExam, refetchLobbyCount, updateStatusSafely]),
+        }, [id, refetchAdmissionStatus, refetchExam, refetchLobbyCount]),
     );
 
     return {
