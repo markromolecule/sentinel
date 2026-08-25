@@ -37,15 +37,31 @@ describe('useExamLobbyAdmissionStatusQuery', () => {
         vi.clearAllMocks();
     });
 
-    it('queries admission status relying on realtime events without continuous interval polling', () => {
+    it('configures query with 0 staleTime and adaptive fallback refetchInterval function', () => {
         const query = useExamLobbyAdmissionStatusQuery('exam-1') as any;
 
         expect(getExamLobbyAdmissionStatus).toHaveBeenCalledWith({ mockClient: true }, 'exam-1');
         expect(query.queryKey).toEqual(EXAM_QUERY_KEYS.lobbyAdmissionStatus('exam-1'));
         expect(query.enabled).toBe(true);
-        expect(query.staleTime).toBe(30_000);
-        expect(query.refetchInterval).toBe(false);
+        expect(query.staleTime).toBe(0);
+        expect(typeof query.refetchInterval).toBe('function');
         expect(query.refetchIntervalInBackground).toBe(false);
         expect(query.refetchOnWindowFocus).toBe(true);
+    });
+
+    it('returns 3000ms polling while status is WAITING or undefined', () => {
+        const query = useExamLobbyAdmissionStatusQuery('exam-1') as any;
+        const refetchIntervalFn = query.refetchInterval;
+
+        expect(refetchIntervalFn({ state: { data: { status: 'WAITING' } } })).toBe(3000);
+        expect(refetchIntervalFn({ state: { data: undefined } })).toBe(3000);
+        expect(refetchIntervalFn({ state: { data: { status: 'REJECTED' } } })).toBe(3000);
+    });
+
+    it('returns false to completely halt polling once status is APPROVED', () => {
+        const query = useExamLobbyAdmissionStatusQuery('exam-1') as any;
+        const refetchIntervalFn = query.refetchInterval;
+
+        expect(refetchIntervalFn({ state: { data: { status: 'APPROVED' } } })).toBe(false);
     });
 });

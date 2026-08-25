@@ -8,12 +8,13 @@ import { useAuth } from './auth-provider';
 
 export type UseLobbyRealtimeArgs = {
     examId: string;
-    onAdmissionChange?: (payload: RealtimePostgresChangesPayload<Record<string, any>>) => void;
+    studentId?: string;
+    onAdmissionChange?: (payload: RealtimePostgresChangesPayload<Record<string, any>> | Record<string, any>) => void;
     enabled?: boolean;
 };
 
 export function useLobbyRealtime(args: UseLobbyRealtimeArgs) {
-    const { examId, onAdmissionChange, enabled = true } = args;
+    const { examId, studentId, onAdmissionChange, enabled = true } = args;
     const queryClient = useQueryClient();
     const { supabase, session } = useAuth();
     const callbackRef = useRef(onAdmissionChange);
@@ -24,13 +25,84 @@ export function useLobbyRealtime(args: UseLobbyRealtimeArgs) {
 
     useEffect(() => {
         if (!enabled || !supabase || !session?.user || !examId || !supabase.channel || !supabase.removeChannel) {
-            return () => {};
+            return () => { };
         }
 
         const channelName = `lobby:admissions:${examId}`;
         const channel: RealtimeChannel = supabase.channel(channelName);
 
+        const handleAdmissionChange = (status: string, checkedInAt?: string | null, decidedAt?: string | null) => {
+            queryClient.setQueryData(
+                EXAM_QUERY_KEYS.lobbyAdmissionStatus(examId),
+                {
+                    status,
+                    checkedInAt: checkedInAt ?? null,
+                    decidedAt: decidedAt ?? null,
+                },
+            );
+
+            void queryClient.invalidateQueries({
+                queryKey: EXAM_QUERY_KEYS.lobbyWaitingList(examId),
+            });
+            void queryClient.invalidateQueries({
+                queryKey: EXAM_QUERY_KEYS.lobbyAdmissionStatus(examId),
+            });
+            void queryClient.invalidateQueries({
+                queryKey: EXAM_QUERY_KEYS.lobbyCount(examId),
+            });
+            void queryClient.invalidateQueries({
+                queryKey: EXAM_QUERY_KEYS.details(examId),
+            });
+        };
+
         channel
+            // 1. Direct Realtime Broadcast (< 50ms fast path for single or batch admissions)
+            .on(
+                'broadcast',
+                { event: 'admission:updated' },
+                (res: { payload?: Record<string, any> }) => {
+                    const payload = res?.payload;
+                    const isTargetStudent =
+                        !studentId ||
+                        !payload ||
+                        (Array.isArray(payload.studentIds) && payload.studentIds.includes(studentId)) ||
+                        payload.studentId === studentId;
+
+                    if (isTargetStudent && payload?.status) {
+                        handleAdmissionChange(
+                            payload.status,
+                            payload.checkedInAt ? String(payload.checkedInAt) : null,
+                            payload.decidedAt ? String(payload.decidedAt) : null,
+                        );
+                    } else {
+                        // Invalidate instructor waiting list and counter if event was for another student
+                        void queryClient.invalidateQueries({
+                            queryKey: EXAM_QUERY_KEYS.lobbyWaitingList(examId),
+                        });
+                        void queryClient.invalidateQueries({
+                            queryKey: EXAM_QUERY_KEYS.lobbyCount(examId),
+                        });
+                    }
+
+                    callbackRef.current?.(res as any);
+                },
+            )
+            // 2. Realtime Broadcast for student check-ins (updates instructor queue instantly)
+            .on(
+                'broadcast',
+                { event: 'student:checked_in' },
+                (res: { payload?: Record<string, any> }) => {
+                    void queryClient.invalidateQueries({
+                        queryKey: EXAM_QUERY_KEYS.lobbyWaitingList(examId),
+                    });
+                    void queryClient.invalidateQueries({
+                        queryKey: EXAM_QUERY_KEYS.lobbyCount(examId),
+                    });
+
+                    callbackRef.current?.(res as any);
+                },
+            )
+            // 3. PostgreSQL CDC Change Data Capture (Reliable Database WAL Backup)
             .on(
                 'postgres_changes',
                 {
@@ -42,30 +114,30 @@ export function useLobbyRealtime(args: UseLobbyRealtimeArgs) {
                 (payload) => {
                     if (payload.new && typeof payload.new === 'object' && 'status' in payload.new) {
                         const newRow = payload.new as Record<string, any>;
-                        if (newRow.status) {
-                            queryClient.setQueryData(
-                                EXAM_QUERY_KEYS.lobbyAdmissionStatus(examId),
-                                {
-                                    status: newRow.status,
-                                    checkedInAt: newRow.checked_in_at ? String(newRow.checked_in_at) : null,
-                                    decidedAt: newRow.decided_at ? String(newRow.decided_at) : null,
-                                },
-                            );
-                        }
-                    }
+                        const isTargetStudent = !studentId || newRow.student_id === studentId;
 
-                    void queryClient.invalidateQueries({
-                        queryKey: EXAM_QUERY_KEYS.lobbyWaitingList(examId),
-                    });
-                    void queryClient.invalidateQueries({
-                        queryKey: EXAM_QUERY_KEYS.lobbyAdmissionStatus(examId),
-                    });
-                    void queryClient.invalidateQueries({
-                        queryKey: EXAM_QUERY_KEYS.lobbyCount(examId),
-                    });
-                    void queryClient.invalidateQueries({
-                        queryKey: EXAM_QUERY_KEYS.details(examId),
-                    });
+                        if (isTargetStudent && newRow.status) {
+                            handleAdmissionChange(
+                                newRow.status,
+                                newRow.checked_in_at ? String(newRow.checked_in_at) : null,
+                                newRow.decided_at ? String(newRow.decided_at) : null,
+                            );
+                        } else {
+                            void queryClient.invalidateQueries({
+                                queryKey: EXAM_QUERY_KEYS.lobbyWaitingList(examId),
+                            });
+                            void queryClient.invalidateQueries({
+                                queryKey: EXAM_QUERY_KEYS.lobbyCount(examId),
+                            });
+                        }
+                    } else {
+                        void queryClient.invalidateQueries({
+                            queryKey: EXAM_QUERY_KEYS.lobbyWaitingList(examId),
+                        });
+                        void queryClient.invalidateQueries({
+                            queryKey: EXAM_QUERY_KEYS.lobbyCount(examId),
+                        });
+                    }
 
                     callbackRef.current?.(payload);
                 },
@@ -79,5 +151,5 @@ export function useLobbyRealtime(args: UseLobbyRealtimeArgs) {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [enabled, examId, queryClient, session?.user, supabase]);
+    }, [enabled, examId, queryClient, session?.user, studentId, supabase]);
 }

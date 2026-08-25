@@ -14,8 +14,15 @@ export function useExamLobbyAdmissionStatusQuery(examId?: string) {
             : [...EXAM_QUERY_KEYS.all, 'lobby', 'admission-status'],
         queryFn: () => getExamLobbyAdmissionStatus(apiClient, examId as string),
         enabled: Boolean(examId) && isAuthenticatedQueryEnabled,
-        staleTime: 30_000,
-        refetchInterval: false,
+        staleTime: 0,
+        // Adaptive polling fallback: Poll every 3s ONLY while not approved; stop immediately when approved
+        refetchInterval: (query) => {
+            const status = query.state.data?.status;
+            if (status === 'APPROVED') {
+                return false;
+            }
+            return 3000;
+        },
         refetchIntervalInBackground: false,
         refetchOnWindowFocus: true,
     });

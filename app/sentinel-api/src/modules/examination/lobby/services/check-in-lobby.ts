@@ -1,6 +1,7 @@
 import { type DbClient } from '@sentinel/db';
 import { HTTPException } from 'hono/http-exception';
 import { ActivityNotificationService } from '../../../general/notification/services/activity-notification.service';
+import { broadcastLobbyEvent } from './broadcast-lobby-event';
 
 /**
  * Creates or refreshes a student's lobby admission state for the given exam.
@@ -80,10 +81,19 @@ export const checkInLobby = async (dbClient: DbClient, examId: string, studentId
                 }
             }
 
+            const checkedInAt =
+                updatedAdmission.checked_in_at?.toISOString() ?? new Date().toISOString();
+
+            void broadcastLobbyEvent(examId, 'student:checked_in', {
+                examId,
+                studentId,
+                status: updatedAdmission.status ?? 'WAITING',
+                checkedInAt,
+            });
+
             return {
                 status: updatedAdmission.status ?? 'WAITING',
-                checkedInAt:
-                    updatedAdmission.checked_in_at?.toISOString() ?? new Date().toISOString(),
+                checkedInAt,
             };
         }
 
@@ -98,10 +108,21 @@ export const checkInLobby = async (dbClient: DbClient, examId: string, studentId
                 .returningAll()
                 .executeTakeFirstOrThrow();
 
+            const checkedInAt =
+                updatedAdmission.checked_in_at?.toISOString() ?? new Date().toISOString();
+
+            void broadcastLobbyEvent(examId, 'admission:updated', {
+                examId,
+                studentIds: [studentId],
+                studentId,
+                status: 'APPROVED',
+                checkedInAt,
+                decidedAt: new Date().toISOString(),
+            });
+
             return {
                 status: updatedAdmission.status ?? 'WAITING',
-                checkedInAt:
-                    updatedAdmission.checked_in_at?.toISOString() ?? new Date().toISOString(),
+                checkedInAt,
             };
         }
 
@@ -129,9 +150,19 @@ export const checkInLobby = async (dbClient: DbClient, examId: string, studentId
             }
         }
 
+        const checkedInAt =
+            existingAdmission.checked_in_at?.toISOString() ?? new Date().toISOString();
+
+        void broadcastLobbyEvent(examId, 'student:checked_in', {
+            examId,
+            studentId,
+            status: resolvedStatus,
+            checkedInAt,
+        });
+
         return {
             status: resolvedStatus,
-            checkedInAt: existingAdmission.checked_in_at?.toISOString() ?? new Date().toISOString(),
+            checkedInAt,
         };
     }
 
@@ -192,8 +223,18 @@ export const checkInLobby = async (dbClient: DbClient, examId: string, studentId
         }
     }
 
+    const finalCheckedInAt = newAdmission.checked_in_at?.toISOString() ?? new Date().toISOString();
+
+    // Fast-path Realtime broadcast so instructor queue updates in < 50ms
+    void broadcastLobbyEvent(examId, 'student:checked_in', {
+        examId,
+        studentId,
+        status: resolvedStatus,
+        checkedInAt: finalCheckedInAt,
+    });
+
     return {
         status: resolvedStatus,
-        checkedInAt: newAdmission.checked_in_at?.toISOString() ?? new Date().toISOString(),
+        checkedInAt: finalCheckedInAt,
     };
 };
