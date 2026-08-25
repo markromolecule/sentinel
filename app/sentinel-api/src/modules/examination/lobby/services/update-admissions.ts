@@ -1,6 +1,7 @@
 import { type DbClient } from '@sentinel/db';
 import type { LobbyAdmissionDecisionStatus } from '../lobby.dto';
 import { NotificationService } from '../../../general/notification/notification.service';
+import { broadcastLobbyEvent } from './broadcast-lobby-event';
 
 export const updateAdmissions = async (
     dbClient: DbClient,
@@ -9,16 +10,25 @@ export const updateAdmissions = async (
     status: LobbyAdmissionDecisionStatus,
     instructorId?: string,
 ) => {
+    const decidedAt = new Date();
     const result = await dbClient
         .updateTable('exam_lobby_admissions')
         .set({
             status: status as any,
-            decided_at: new Date(),
+            decided_at: decidedAt,
             decided_by: instructorId ?? null,
         })
         .where('exam_id', '=', examId)
         .where('student_id', 'in', studentIds)
         .executeTakeFirst();
+
+    // Fast-path Supabase Realtime broadcast to unlock student UIs in < 50ms
+    void broadcastLobbyEvent(examId, 'admission:updated', {
+        examId,
+        studentIds,
+        status,
+        decidedAt: decidedAt.toISOString(),
+    });
 
     // Notify each student regarding the decision in parallel
     try {

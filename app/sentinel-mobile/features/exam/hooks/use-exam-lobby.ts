@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useColorScheme, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -72,13 +72,10 @@ export function useExamLobby() {
         exam?.runtimeAccess?.state === 'closed' ||
         exam?.runtimeAccess?.state === 'locked' ||
         exam?.runtimeAccess?.state === 'before_start';
-    const isApprovedRuntimeAccess = exam?.runtimeAccess?.state === 'lobby_approved';
 
+    // Instant optimistic unlock without waiting on secondary HTTP round-trips
     const hasApprovedInstructorAdmission =
-        admissionStatus === 'APPROVED' &&
-        (isApprovedRuntimeAccess ||
-            Boolean(exam?.runtimeAccess?.canStart) ||
-            Boolean(exam?.runtimeAccess?.canResume));
+        admissionStatus === 'APPROVED' && !isHardRuntimeBlock;
 
     const requiresMicrophone = exam?.configuration?.micRequired ?? true;
     const isMediaPipeConfigured = Boolean(
@@ -86,7 +83,7 @@ export function useExamLobby() {
         exam?.mediaPipeSandbox?.captureDuringCheckup,
     );
 
-    // Properly gated: instructor-gated exams strictly require hasApprovedInstructorAdmission
+    // Properly gated: unlocks instantly upon admission approval
     const canEnterExam = Boolean(
         !isHardRuntimeBlock &&
         isMediaPipeCalibrated &&
@@ -267,40 +264,16 @@ export function useExamLobby() {
         };
     }, [supabase, authSession?.user, id]);
 
-    // Real-time Postgres changes listener via shared useLobbyRealtime (optimistic cache mutation)
+    // Real-time broadcast and CDC listener via shared useLobbyRealtime
     useLobbyRealtime({
         examId: typeof id === 'string' ? id : '',
         enabled: Boolean(id),
-        onAdmissionChange: (payload) => {
-            const newRow = payload?.new as Record<string, any> | undefined;
-            if (newRow?.status === 'APPROVED') {
-                void refetchExam();
-            }
+        onAdmissionChange: () => {
             void refetchAdmissionStatus();
+            void refetchExam();
             void refetchLobbyCount();
         },
     });
-
-    // Adaptive short-polling fallback (2.5s) while waiting for instructor admission
-    useEffect(() => {
-        if (!id || !requiresInstructorAdmission || admissionStatus === 'APPROVED') {
-            return;
-        }
-
-        let isMounted = true;
-        const interval = setInterval(async () => {
-            if (!isMounted) return;
-            const res = await refetchAdmissionStatus();
-            if (res.data?.status === 'APPROVED') {
-                await refetchExam();
-            }
-        }, 2500);
-
-        return () => {
-            isMounted = false;
-            clearInterval(interval);
-        };
-    }, [admissionStatus, id, refetchAdmissionStatus, refetchExam, requiresInstructorAdmission]);
 
     useFocusEffect(
         useCallback(() => {
