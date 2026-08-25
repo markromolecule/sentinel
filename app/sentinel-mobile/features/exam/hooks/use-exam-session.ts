@@ -31,7 +31,7 @@ export const useExamSession = () => {
     const router = useRouter();
     const apiClient = useApi();
     const { user } = useAuth();
-    const { data: rawExam } = useExamQuery(id);
+    const { data: rawExam, isLoading: isExamLoading } = useExamQuery(id, { viewer: 'student' });
 
     // Data
     const exam = useMemo(() => (rawExam ? adaptExamForMobile(rawExam) : undefined), [rawExam]);
@@ -90,8 +90,8 @@ export const useExamSession = () => {
     }, [id, sessionId, router]);
 
     // Helpers
-    const currentQuestion = questions[currentIndex];
-    const isLastQuestion = currentIndex === questions.length - 1;
+    const currentQuestion = questions[currentIndex] ?? questions[0];
+    const isLastQuestion = questions.length > 0 && currentIndex === questions.length - 1;
 
     const emitSessionTelemetry = useCallback(
         (
@@ -430,6 +430,7 @@ export const useExamSession = () => {
         isDrawerOpen,
         setIsDrawerOpen,
         timeLeft,
+        isLoading: isExamLoading,
         isSubmitting,
         formatTime,
         handleSelectOption,

@@ -175,6 +175,58 @@ describe('adaptExamQuestionsForMobile', () => {
         expect(questions.map((q) => q.text)).toEqual(['First', 'Second', 'Third']);
     });
 
+    it('adapts questions with object options', () => {
+        const exam = makeExam([
+            makeQuestion('MULTIPLE_CHOICE', {
+                prompt: 'Select feature',
+                options: [
+                    { id: 'opt-1', text: 'Feature 1' },
+                    { key: 'opt-2', label: 'Feature 2' },
+                ],
+            }),
+        ] as any);
+
+        const [q] = adaptExamQuestionsForMobile(exam);
+
+        expect(q.options).toEqual([
+            { id: 'opt-1', text: 'Feature 1' },
+            { id: 'opt-2', text: 'Feature 2' },
+        ]);
+    });
+
+    it('defensively extracts prompt from fallback property keys', () => {
+        const exam1 = makeExam([
+            makeQuestion('MULTIPLE_CHOICE', { question: 'Fallback Question Text', options: ['A'] }),
+        ] as any);
+        const [q1] = adaptExamQuestionsForMobile(exam1);
+        expect(q1.text).toBe('Fallback Question Text');
+
+        const exam2 = makeExam([
+            makeQuestion('MULTIPLE_CHOICE', { text: 'Fallback Text Property', options: ['A'] }),
+        ] as any);
+        const [q2] = adaptExamQuestionsForMobile(exam2);
+        expect(q2.text).toBe('Fallback Text Property');
+
+        const exam3 = makeExam([
+            makeQuestion('MULTIPLE_CHOICE', {}, { prompt: 'Top Level Prompt' }),
+        ] as any);
+        const [q3] = adaptExamQuestionsForMobile(exam3);
+        expect(q3.text).toBe('Top Level Prompt');
+    });
+
+    it('safely parses stringified JSON content', () => {
+        const exam = makeExam([
+            makeQuestion('MULTIPLE_CHOICE', JSON.stringify({
+                prompt: 'Parsed JSON prompt',
+                options: ['Choice 1', 'Choice 2'],
+            }) as any),
+        ] as any);
+
+        const [q] = adaptExamQuestionsForMobile(exam);
+        expect(q.text).toBe('Parsed JSON prompt');
+        expect(q.options).toHaveLength(2);
+    });
+
     it('returns empty array when exam has no questions', () => {
         const exam = makeExam(undefined);
         expect(adaptExamQuestionsForMobile(exam)).toEqual([]);

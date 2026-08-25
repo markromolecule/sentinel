@@ -23,6 +23,7 @@ export function useExamResult() {
 
     const { data: rawExam } = useExamQuery(id);
     const exam = rawExam ? adaptExamForMobile(rawExam) : undefined;
+    const questions = rawExam?.questions ?? [];
     const [preview, setPreview] =
         useState<Awaited<ReturnType<typeof readStoredMobileExamPreview>>>(null);
 
@@ -50,16 +51,15 @@ export function useExamResult() {
                 elapsedSeconds: preview.elapsedSeconds,
             });
 
+            const sessionId = preview.sessionId;
             await clearStoredMobileExamPreview(id);
             await clearStoredMobileExamSession(id);
 
             setIsTurningIn(false);
-            Alert.alert('Success', 'Exam turned in successfully.', [
-                {
-                    text: 'OK',
-                    onPress: () => router.replace('/(tabs)/exam'),
-                },
-            ]);
+            router.replace({
+                pathname: '/exam/[id]/feedback',
+                params: { id, attemptId: sessionId },
+            });
         } catch (error: any) {
             setIsTurningIn(false);
             Alert.alert('Turn-in failed', error?.message || 'Please try again.');
@@ -68,6 +68,7 @@ export function useExamResult() {
 
     return {
         exam,
+        questions,
         summary: preview?.summary ?? {
             score: 0,
             totalScore: 0,

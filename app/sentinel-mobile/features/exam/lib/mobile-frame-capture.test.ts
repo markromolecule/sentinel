@@ -65,7 +65,16 @@ describe('mobile-frame-capture', () => {
             quality: 0.5,
             base64: true,
         });
-        expect(mockIngestCandidate).toHaveBeenCalled();
+        expect(mockIngestCandidate).toHaveBeenCalledWith(
+            mockApiClient,
+            expect.objectContaining({
+                metadata: expect.objectContaining({
+                    eventId: expect.stringMatching(
+                        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+                    ),
+                }),
+            }),
+        );
         expect(mockSupabase.storage.from).toHaveBeenCalledWith('bucket-name');
         expect(mockUploadToSignedUrl).toHaveBeenCalledWith(
             'file-path.jpg',
@@ -78,7 +87,39 @@ describe('mobile-frame-capture', () => {
         expect(mockCompleteUpload).toHaveBeenCalledWith(mockApiClient, 'evidence-123');
     });
 
-    it('falls back to direct POST endpoint if candidate flow fails', async () => {
+    it('returns true without upload when candidate decision is NOT_ELIGIBLE or ALREADY_AVAILABLE', async () => {
+        const mockCameraRef = {
+            current: {
+                takePictureAsync: vi.fn().mockResolvedValue({
+                    uri: 'ph://test-photo-uri',
+                    base64: 'mock-base-64-data',
+                }),
+            },
+        };
+
+        mockIngestCandidate.mockResolvedValue({
+            evidenceDecision: 'NOT_ELIGIBLE',
+        });
+
+        const mockSupabase = {
+            storage: { from: vi.fn() },
+        };
+
+        const result = await captureAndUploadEvidenceFrame({
+            cameraRef: mockCameraRef,
+            attemptId: 'attempt-1',
+            examSessionId: 'session-1',
+            studentId: 'student-1',
+            eventType: 'GAZE_OFF_SCREEN',
+            apiClient: vi.fn() as any,
+            supabase: mockSupabase as any,
+        });
+
+        expect(result).toBe(true);
+        expect(mockSupabase.storage.from).not.toHaveBeenCalled();
+    });
+
+    it('gracefully catches error and returns false if candidate ingestion fails', async () => {
         const mockCameraRef = {
             current: {
                 takePictureAsync: vi.fn().mockResolvedValue({
@@ -103,13 +144,6 @@ describe('mobile-frame-capture', () => {
             supabase: mockSupabase as any,
         });
 
-        expect(result).toBe(true);
-        expect(mockApiClient).toHaveBeenCalledWith(
-            '/student/exam-attempts/attempt-1/incidents/evidence',
-            expect.objectContaining({
-                method: 'POST',
-                body: expect.stringContaining('mock-base-64-data'),
-            }),
-        );
+        expect(result).toBe(false);
     });
 });

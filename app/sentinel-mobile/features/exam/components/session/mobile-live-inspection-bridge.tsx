@@ -1,25 +1,34 @@
-import React from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { View, Text, useColorScheme } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useApi, useAuth, useStudentLiveInspectionPublisher } from '@sentinel/hooks';
+import { useApi, useAuth } from '@sentinel/hooks';
+import {
+    getStudentLiveInspectionDirective,
+    createLiveInspectionPublisherConnection,
+    acknowledgeLiveInspectionPublisherReady,
+    acknowledgeLiveInspectionPublisherFailure,
+} from '@sentinel/services';
+import type { LiveInspectionDirective } from '@sentinel/shared/schema';
 import { Colors } from '@/constants/theme';
+import type { MobileMediaPipeBridgeRef } from '../checkup/mobile-mediapipe-bridge';
 
 export type MobileLiveInspectionBridgeProps = {
     sessionId: string | null;
-    attemptId: string | null;
+    attemptId?: string | null;
     enabled: boolean;
-    getLiveVideoTrack: () => any;
+    mediaPipeRef?: React.RefObject<MobileMediaPipeBridgeRef | null>;
+    getLiveVideoTrack?: () => any;
 };
 
 /**
  * MobileLiveInspectionBridge connects the mobile exam camera stream to the proctoring network
- * via LiveKit, displaying a subtle overlay indicator when being viewed live.
+ * via LiveKit embedded in the MediaPipe WebView, displaying a subtle overlay indicator when being viewed live.
  */
 export function MobileLiveInspectionBridge({
     sessionId,
-    attemptId,
+    attemptId: _attemptId,
     enabled,
-    getLiveVideoTrack,
+    mediaPipeRef,
 }: MobileLiveInspectionBridgeProps) {
     const apiClient = useApi();
     const { supabase } = useAuth();
@@ -27,16 +36,131 @@ export function MobileLiveInspectionBridge({
     const colors = Colors[colorScheme ?? 'light'];
     const isDark = colorScheme === 'dark';
 
-    const publisher = useStudentLiveInspectionPublisher({
-        supabase,
-        apiClient,
-        sessionId,
-        attemptId,
-        enabled,
-        getLiveVideoTrack,
-    });
+    const [isLive, setIsLive] = useState(false);
+    const activeLeaseIdRef = useRef<string | null>(null);
 
-    if (!publisher?.isLive) {
+    const stopPublication = useCallback(async () => {
+        if (!activeLeaseIdRef.current) return;
+        activeLeaseIdRef.current = null;
+        setIsLive(false);
+        try {
+            await mediaPipeRef?.current?.stopLiveInspection();
+        } catch (e) {
+            console.warn('Failed to stop LiveKit inspection stream:', e);
+        }
+    }, [mediaPipeRef]);
+
+    const reconcileDirective = useCallback(async () => {
+        if (!enabled || !sessionId) {
+            return;
+        }
+
+        try {
+            const directive: LiveInspectionDirective = await getStudentLiveInspectionDirective(apiClient, {
+                sessionId,
+            });
+
+            const isPublishState =
+                directive.state === 'REQUESTED' ||
+                directive.state === 'PUBLISHER_CONNECTING' ||
+                directive.state === 'PUBLISHER_READY' ||
+                directive.state === 'LIVE';
+
+            const isStopState =
+                directive.state === 'STOPPING' ||
+                directive.state === 'ENDED' ||
+                directive.state === 'FAILED' ||
+                directive.state === 'EXPIRED';
+
+            if (isPublishState) {
+                if (activeLeaseIdRef.current === directive.leaseId && isLive) {
+                    return; // Already publishing for this lease
+                }
+
+                activeLeaseIdRef.current = directive.leaseId;
+
+                let connection = directive.connection;
+                if (!connection) {
+                    connection = await createLiveInspectionPublisherConnection(apiClient, {
+                        sessionId,
+                        leaseId: directive.leaseId,
+                        revision: directive.revision,
+                    });
+                }
+
+                if (connection?.liveKitUrl && connection?.token) {
+                    await mediaPipeRef?.current?.startLiveInspection({
+                        liveKitUrl: connection.liveKitUrl,
+                        token: connection.token,
+                    });
+
+                    await acknowledgeLiveInspectionPublisherReady(apiClient, {
+                        sessionId,
+                        leaseId: directive.leaseId,
+                        revision: directive.revision,
+                    });
+
+                    setIsLive(true);
+                }
+            } else if (isStopState) {
+                await stopPublication();
+            }
+        } catch (err: any) {
+            const status = err?.status ?? err?.statusCode;
+            const isNotFoundError =
+                status === 404 ||
+                err?.message?.includes('Live inspection is not available') ||
+                err?.message?.includes('not found');
+
+            if (!isNotFoundError) {
+                console.warn('Live inspection directive reconciliation failed:', err);
+            }
+
+            if (activeLeaseIdRef.current) {
+                try {
+                    await acknowledgeLiveInspectionPublisherFailure(apiClient, {
+                        sessionId,
+                        leaseId: activeLeaseIdRef.current,
+                        revision: 1,
+                        errorCode: 'LIVEKIT_CONNECT_FAILED',
+                    });
+                } catch { }
+            }
+            await stopPublication();
+        }
+    }, [apiClient, enabled, mediaPipeRef, sessionId, stopPublication]);
+
+    useEffect(() => {
+        if (!enabled || !sessionId) {
+            void stopPublication();
+            return;
+        }
+
+        // Initial directive check
+        void reconcileDirective();
+
+        // Subscribe to Supabase realtime events on exam_sessions channel
+        const channel = supabase
+            ?.channel?.(`exam_sessions:${sessionId}`)
+            ?.on('broadcast', { event: 'LIVE_INSPECTION_CHANGED' }, () => {
+                void reconcileDirective();
+            })
+            ?.subscribe?.();
+
+        const pollInterval = setInterval(() => {
+            void reconcileDirective();
+        }, 10000);
+
+        return () => {
+            clearInterval(pollInterval);
+            if (channel && supabase?.removeChannel) {
+                void supabase.removeChannel(channel);
+            }
+            void stopPublication();
+        };
+    }, [enabled, reconcileDirective, sessionId, stopPublication, supabase]);
+
+    if (!isLive) {
         return null;
     }
 

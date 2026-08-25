@@ -8,12 +8,13 @@ import type { ExamAttemptAnswers, ExamAttemptScoreSummary } from '@sentinel/shar
 
 export interface ResultViewProps {
     exam: MobileExamDisplay;
+    questions?: any[];
     summary: ExamAttemptScoreSummary & { completedAt?: string };
     answers: ExamAttemptAnswers;
     onReturnToDashboard: () => void;
 }
 
-export function ResultView({ exam, summary, answers, onReturnToDashboard }: ResultViewProps) {
+export function ResultView({ exam, questions, summary, answers, onReturnToDashboard }: ResultViewProps) {
     const colorScheme = useColorScheme();
     const colors = Colors[colorScheme ?? 'light'];
     const isDark = colorScheme === 'dark';
@@ -36,9 +37,15 @@ export function ResultView({ exam, summary, answers, onReturnToDashboard }: Resu
             minute: '2-digit',
         });
 
-    // Compute Section Breakdown
+    // Compute Section Breakdown with defensive question array normalization
+    const questionList = Array.isArray(questions)
+        ? questions
+        : Array.isArray((exam as any)?.questions)
+          ? (exam as any).questions
+          : [];
+
     const reports = buildExamAttemptQuestionReports({
-        questions: exam.questions as any || [],
+        questions: questionList,
         answers: answers as any,
     });
 
@@ -48,7 +55,7 @@ export function ResultView({ exam, summary, answers, onReturnToDashboard }: Resu
     const breakdown = hasSections
         ? sections
             .map((sec) => {
-                const secQuestions = (exam.questions as any || []).filter(
+                const secQuestions = questionList.filter(
                     (q: any) => q.sectionId === sec.id
                 );
                 const secReports = reports.filter((r) =>
@@ -215,13 +222,13 @@ export function ResultView({ exam, summary, answers, onReturnToDashboard }: Resu
                 ))}
             </View>
 
-            {/* Return to Dashboard Button */}
+            {/* Complete & Give Feedback Button */}
             <TouchableOpacity
                 style={[styles.button, { backgroundColor: colors.primary }]}
                 onPress={onReturnToDashboard}
                 activeOpacity={0.8}
             >
-                <Text style={styles.buttonText}>Return to Dashboard</Text>
+                <Text style={styles.buttonText}>Complete & Give Feedback</Text>
             </TouchableOpacity>
         </ScrollView>
     );

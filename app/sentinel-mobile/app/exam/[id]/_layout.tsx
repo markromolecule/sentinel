@@ -21,6 +21,8 @@ export default function ExamDetailLayout() {
                 }}
             />
             <Stack.Screen name="result/index" />
+            <Stack.Screen name="feedback/index" />
+            <Stack.Screen name="feedback/thank-you" />
         </Stack>
     );
 }

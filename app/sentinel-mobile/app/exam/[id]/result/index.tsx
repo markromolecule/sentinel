@@ -5,7 +5,7 @@ import { ResultView } from '@/features/exam/components/detail/result-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ResultScreen() {
-    const { exam, summary, answers, colors, handleTurnIn } = useExamResult();
+    const { exam, questions, summary, answers, colors, handleTurnIn } = useExamResult();
     const insets = useSafeAreaInsets();
 
     if (!exam) {
@@ -28,6 +28,7 @@ export default function ResultScreen() {
             <StatusBar barStyle={colors.text === '#11181C' ? 'dark-content' : 'light-content'} />
             <ResultView
                 exam={exam}
+                questions={questions}
                 summary={summary}
                 answers={answers}
                 onReturnToDashboard={handleTurnIn}

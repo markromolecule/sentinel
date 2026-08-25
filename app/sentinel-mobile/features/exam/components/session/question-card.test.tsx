@@ -25,6 +25,9 @@ vi.mock('react-native', () => ({
     TouchableOpacity: 'TouchableOpacity',
     ScrollView: 'ScrollView',
     TextInput: 'TextInput',
+    StyleSheet: {
+        create: (styles: any) => styles,
+    },
     useColorScheme: () => 'light',
 }));
 
@@ -363,5 +366,51 @@ describe('QuestionCard', () => {
         expect(flagBtn).not.toBeNull();
         flagBtn.props.onPress();
         expect(onToggleFlag).toHaveBeenCalled();
+    });
+
+    it('marks MULTIPLE_CHOICE as selected when selectedOptionId matches option text', () => {
+        const question = makeQuestion('MULTIPLE_CHOICE', {
+            options: [
+                { id: 'A', text: 'Alpha' },
+                { id: 'B', text: 'Beta' },
+            ],
+        });
+
+        const tree = QuestionCard({
+            question,
+            currentIndex: 0,
+            totalQuestions: 2,
+            selectedOptionId: 'Alpha',
+            isFlagged: false,
+            onSelectOption: () => {},
+            onToggleFlag: () => {},
+        });
+
+        const selectedNode = findNode(
+            tree,
+            (n) =>
+                n.type === 'TouchableOpacity' &&
+                n.props?.accessibilityLabel === 'Alpha' &&
+                n.props?.accessibilityState?.checked === true,
+        );
+        expect(selectedNode).not.toBeNull();
+    });
+
+    it('renders fallback TextInput for unmapped question types', () => {
+        const question = makeQuestion('CUSTOM_TYPE' as any, {
+            placeholder: 'Custom type placeholder',
+        });
+
+        const tree = QuestionCard({
+            question,
+            currentIndex: 0,
+            totalQuestions: 1,
+            isFlagged: false,
+            onSelectOption: () => {},
+            onToggleFlag: () => {},
+        });
+
+        const input = findNode(tree, (n) => n.type === 'TextInput');
+        expect(input).not.toBeNull();
     });
 });

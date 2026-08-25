@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from 'react-native';
@@ -38,7 +38,8 @@ export const QuestionCard = ({
 
     if (!question) return null;
 
-    const { type, text, options, passage, passageTitle, placeholder, maxLength } = question;
+    const { type, text, options = [], passage, passageTitle, placeholder, maxLength } = question;
+    const normalizedType = String(type || 'MULTIPLE_CHOICE').toUpperCase();
 
     const selectedIds: string[] = Array.isArray(selectedOptionId) ? selectedOptionId : [];
     const selectedSingleId = typeof selectedOptionId === 'string' ? selectedOptionId : undefined;
@@ -47,16 +48,22 @@ export const QuestionCard = ({
     const currentTextValue =
         typeof selectedOptionId === 'string' && options.length === 0 ? selectedOptionId : '';
 
-    const toggleMultiSelect = (optionId: string) => {
-        if (selectedIds.includes(optionId)) {
-            onSelectOption(selectedIds.filter((id) => id !== optionId));
+    const toggleMultiSelect = (optionId: string, optionText?: string) => {
+        const matchesOption = (id: string) => id === optionId || (optionText && id === optionText);
+        if (selectedIds.some(matchesOption)) {
+            onSelectOption(selectedIds.filter((id) => !matchesOption(id)));
         } else {
             onSelectOption([...selectedIds, optionId]);
         }
     };
 
     return (
-        <ScrollView className="flex-1" contentContainerStyle={{ padding: 20, paddingBottom: 120 }}>
+        <ScrollView
+            style={[styles.container, { backgroundColor: colors.background }]}
+            contentContainerStyle={styles.contentContainer}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+        >
             {/* Question Header */}
             <View className="mb-4 flex-row items-center justify-between">
                 <Text
@@ -93,14 +100,15 @@ export const QuestionCard = ({
                 style={{ color: colors.text }}
                 className="mb-6 text-lg font-semibold leading-relaxed"
             >
-                {text}
+                {text || 'Question prompt unavailable.'}
             </Text>
 
             {/* ── MULTIPLE_CHOICE ── */}
-            {type === 'MULTIPLE_CHOICE' && (
+            {normalizedType === 'MULTIPLE_CHOICE' && (
                 <View>
                     {options.map((option) => {
-                        const isSelected = selectedSingleId === option.id;
+                        const isSelected =
+                            selectedSingleId === option.id || selectedSingleId === option.text;
                         return (
                             <TouchableOpacity
                                 key={option.id}
@@ -146,7 +154,7 @@ export const QuestionCard = ({
             )}
 
             {/* ── MULTIPLE_RESPONSE (multi-select checkboxes) ── */}
-            {type === 'MULTIPLE_RESPONSE' && (
+            {normalizedType === 'MULTIPLE_RESPONSE' && (
                 <View>
                     <Text
                         style={{ color: colors.icon }}
@@ -155,11 +163,12 @@ export const QuestionCard = ({
                         Select all that apply
                     </Text>
                     {options.map((option) => {
-                        const isSelected = selectedIds.includes(option.id);
+                        const isSelected =
+                            selectedIds.includes(option.id) || selectedIds.includes(option.text);
                         return (
                             <TouchableOpacity
                                 key={option.id}
-                                onPress={() => toggleMultiSelect(option.id)}
+                                onPress={() => toggleMultiSelect(option.id, option.text)}
                                 accessibilityRole="checkbox"
                                 accessibilityState={{ checked: isSelected }}
                                 accessibilityLabel={option.text}
@@ -201,10 +210,12 @@ export const QuestionCard = ({
             )}
 
             {/* ── TRUE_FALSE (toggle buttons) ── */}
-            {type === 'TRUE_FALSE' && (
+            {normalizedType === 'TRUE_FALSE' && (
                 <View className="flex-row gap-4">
                     {options.map((option) => {
-                        const isSelected = selectedSingleId === option.id;
+                        const isSelected =
+                            selectedSingleId === option.id ||
+                            String(selectedSingleId).toLowerCase() === option.id.toLowerCase();
                         const accent = option.id === 'true' ? '#10b981' : '#ef4444';
                         return (
                             <TouchableOpacity
@@ -244,10 +255,10 @@ export const QuestionCard = ({
             )}
 
             {/* ── ESSAY / IDENTIFICATION / FILL_BLANK / ENUMERATION ── */}
-            {(type === 'ESSAY' ||
-                type === 'IDENTIFICATION' ||
-                type === 'FILL_BLANK' ||
-                type === 'ENUMERATION') && (
+            {(normalizedType === 'ESSAY' ||
+                normalizedType === 'IDENTIFICATION' ||
+                normalizedType === 'FILL_BLANK' ||
+                normalizedType === 'ENUMERATION') && (
                 <View>
                     <TextInput
                         accessibilityLabel="Answer input"
@@ -255,8 +266,8 @@ export const QuestionCard = ({
                         onChangeText={(value) => onSelectOption(value)}
                         placeholder={placeholder ?? 'Enter your answer here…'}
                         placeholderTextColor={colors.icon}
-                        multiline={type === 'ESSAY'}
-                        numberOfLines={type === 'ESSAY' ? 8 : 3}
+                        multiline={normalizedType === 'ESSAY'}
+                        numberOfLines={normalizedType === 'ESSAY' ? 8 : 3}
                         maxLength={maxLength}
                         style={{
                             backgroundColor: colors.card,
@@ -268,8 +279,8 @@ export const QuestionCard = ({
                             color: colors.text,
                             fontSize: 15,
                             lineHeight: 22,
-                            textAlignVertical: type === 'ESSAY' ? 'top' : 'center',
-                            minHeight: type === 'ESSAY' ? 160 : 52,
+                            textAlignVertical: normalizedType === 'ESSAY' ? 'top' : 'center',
+                            minHeight: normalizedType === 'ESSAY' ? 160 : 52,
                         }}
                     />
                     {Boolean(maxLength) && (
@@ -284,7 +295,7 @@ export const QuestionCard = ({
             )}
 
             {/* ── MATCHING (display-only notice) ── */}
-            {type === 'MATCHING' && (
+            {normalizedType === 'MATCHING' && (
                 <View
                     style={{
                         backgroundColor: isDark ? '#1f2937' : '#f9fafb',
@@ -299,6 +310,41 @@ export const QuestionCard = ({
                     </Text>
                 </View>
             )}
+
+            {/* ── Fallback for any unmapped question types ── */}
+            {!['MULTIPLE_CHOICE', 'MULTIPLE_RESPONSE', 'TRUE_FALSE', 'ESSAY', 'IDENTIFICATION', 'FILL_BLANK', 'ENUMERATION', 'MATCHING'].includes(normalizedType) && (
+                <View>
+                    <TextInput
+                        accessibilityLabel="Answer input"
+                        defaultValue={currentTextValue}
+                        onChangeText={(value) => onSelectOption(value)}
+                        placeholder={placeholder ?? 'Enter your answer here…'}
+                        placeholderTextColor={colors.icon}
+                        style={{
+                            backgroundColor: colors.card,
+                            borderColor: currentTextValue ? colors.primary : colors.border,
+                            borderWidth: 1.5,
+                            borderRadius: 12,
+                            paddingHorizontal: 14,
+                            paddingVertical: 12,
+                            color: colors.text,
+                            fontSize: 15,
+                            minHeight: 52,
+                        }}
+                    />
+                </View>
+            )}
         </ScrollView>
     );
 };
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+    },
+    contentContainer: {
+        padding: 20,
+        paddingBottom: 140,
+        flexGrow: 1,
+    },
+});

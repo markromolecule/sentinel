@@ -187,4 +187,28 @@ describe('ResultView Component', () => {
 
         expect(mockOnReturn).toHaveBeenCalled();
     });
+
+    it('safely handles exam.questions being a number without crashing', () => {
+        let capturedQuestions: any = null;
+        mockBuildReports.mockImplementation(() => []);
+
+        const summary = {
+            score: 5,
+            totalScore: 10,
+            percentage: 50,
+            answeredCount: 5,
+            autoGradableQuestionCount: 5,
+            manualReviewQuestionCount: 0,
+            requiresManualReview: false,
+        };
+
+        expect(() => {
+            ResultView({
+                exam: { ...mockExam, questions: 10 as any },
+                summary,
+                answers: mockAnswers,
+                onReturnToDashboard: mockOnReturn,
+            });
+        }).not.toThrow();
+    });
 });

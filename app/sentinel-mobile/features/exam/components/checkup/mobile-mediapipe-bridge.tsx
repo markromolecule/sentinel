@@ -6,6 +6,7 @@ export type MobileMediaPipeBridgeProps = {
     onLandmarksDetected: (landmarksByFace: any[][], confidenceScore: number) => void;
     onStatusChange?: (status: 'initializing' | 'ready') => void;
     onError?: (error: string) => void;
+    onInspectionStatusChange?: (status: 'connected' | 'disconnected' | 'error', error?: string) => void;
     frameIntervalMs?: number;
     facing?: 'front' | 'back';
     showPreview?: boolean;
@@ -13,6 +14,8 @@ export type MobileMediaPipeBridgeProps = {
 
 export type MobileMediaPipeBridgeRef = {
     takePictureAsync: (options?: { quality?: number }) => Promise<{ uri: string; base64: string }>;
+    startLiveInspection: (credentials: { liveKitUrl: string; token: string }) => Promise<void>;
+    stopLiveInspection: () => Promise<void>;
 };
 
 export const MobileMediaPipeBridge = forwardRef<MobileMediaPipeBridgeRef, MobileMediaPipeBridgeProps>(
@@ -21,6 +24,7 @@ export const MobileMediaPipeBridge = forwardRef<MobileMediaPipeBridgeRef, Mobile
             onLandmarksDetected,
             onStatusChange,
             onError,
+            onInspectionStatusChange,
             frameIntervalMs = 500,
             facing = 'front',
             showPreview = false,
@@ -49,6 +53,26 @@ export const MobileMediaPipeBridge = forwardRef<MobileMediaPipeBridgeRef, Mobile
                         reject(new Error('WebView not ready'));
                     }
                 });
+            },
+            startLiveInspection: async ({ liveKitUrl, token }: { liveKitUrl: string; token: string }) => {
+                if (webViewRef.current) {
+                    webViewRef.current.postMessage(
+                        JSON.stringify({
+                            type: 'start_inspection',
+                            liveKitUrl,
+                            token,
+                        })
+                    );
+                }
+            },
+            stopLiveInspection: async () => {
+                if (webViewRef.current) {
+                    webViewRef.current.postMessage(
+                        JSON.stringify({
+                            type: 'stop_inspection',
+                        })
+                    );
+                }
             },
         }));
 
@@ -83,6 +107,7 @@ export const MobileMediaPipeBridge = forwardRef<MobileMediaPipeBridgeRef, Mobile
       ${facing === 'front' ? 'transform: scaleX(-1);' : ''}
     }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/livekit-client@2.6.2/dist/livekit-client.umd.min.js"></script>
 </head>
 <body>
   <video id="webcam" autoplay playsinline muted></video>
@@ -96,6 +121,7 @@ export const MobileMediaPipeBridge = forwardRef<MobileMediaPipeBridgeRef, Mobile
     let facingMode = "${facing === 'front' ? 'user' : 'environment'}";
     let lastProcessedTime = 0;
     let localStream = null;
+    let liveKitRoom = null;
 
     function sendToRN(data) {
       if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
@@ -145,6 +171,50 @@ export const MobileMediaPipeBridge = forwardRef<MobileMediaPipeBridgeRef, Mobile
       }
     }
 
+    async function connectAndPublishLiveKit(liveKitUrl, token) {
+      try {
+        if (liveKitRoom) {
+          await liveKitRoom.disconnect();
+          liveKitRoom = null;
+        }
+
+        const Livekit = window.LivekitClient;
+        if (!Livekit) {
+          throw new Error('LiveKit client library not available');
+        }
+
+        const room = new Livekit.Room({
+          adaptiveStream: true,
+          dynacast: true,
+        });
+
+        await room.connect(liveKitUrl, token);
+
+        if (localStream && localStream.getVideoTracks().length > 0) {
+          const videoTrack = localStream.getVideoTracks()[0];
+          await room.localParticipant.publishTrack(videoTrack, {
+            name: 'camera',
+            source: Livekit.Track.Source.Camera,
+          });
+        }
+
+        liveKitRoom = room;
+        sendToRN({ type: 'inspection_status', status: 'connected' });
+      } catch (err) {
+        sendToRN({ type: 'inspection_status', status: 'error', error: err.message });
+      }
+    }
+
+    async function disconnectLiveKit() {
+      if (liveKitRoom) {
+        try {
+          await liveKitRoom.disconnect();
+        } catch (e) {}
+        liveKitRoom = null;
+      }
+      sendToRN({ type: 'inspection_status', status: 'disconnected' });
+    }
+
     function predictLoop() {
       if (!running) return;
 
@@ -178,6 +248,12 @@ export const MobileMediaPipeBridge = forwardRef<MobileMediaPipeBridgeRef, Mobile
             facingMode = msg.facingMode;
             startCamera();
           }
+        }
+        if (msg.type === 'start_inspection') {
+          connectAndPublishLiveKit(msg.liveKitUrl, msg.token);
+        }
+        if (msg.type === 'stop_inspection') {
+          disconnectLiveKit();
         }
         if (msg.type === 'capture') {
           try {
@@ -241,6 +317,8 @@ export const MobileMediaPipeBridge = forwardRef<MobileMediaPipeBridgeRef, Mobile
                                 if (onError) {
                                     onError(message.error);
                                 }
+                            } else if (message.type === 'inspection_status') {
+                                onInspectionStatusChange?.(message.status, message.error);
                             } else if (message.type === 'capture_result') {
                                 const pending = pendingCaptures.current.get(message.requestId);
                                 if (pending) {

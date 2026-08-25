@@ -93,18 +93,85 @@ export function adaptExamForMobile(exam: Exam): MobileExamDisplay {
 }
 
 /**
- * Derives rendered option rows for MULTIPLE_CHOICE and MULTIPLE_RESPONSE
- * questions from the raw content.
+ * Safely parses raw content into an object even if provided as stringified JSON.
  */
-function getChoiceOptions(content: ExamQuestion['content']): { id: string; text: string }[] {
-    if (!Array.isArray(content.options) || content.options.length === 0) {
+function parseQuestionContent(rawContent: unknown): Record<string, any> {
+    if (!rawContent) return {};
+    if (typeof rawContent === 'string') {
+        try {
+            return JSON.parse(rawContent);
+        } catch {
+            return { prompt: rawContent };
+        }
+    }
+    if (typeof rawContent === 'object') {
+        return rawContent as Record<string, any>;
+    }
+    return {};
+}
+
+/**
+ * Extracts question prompt text across standard and fallback property keys.
+ */
+function getQuestionPromptText(question: ExamQuestion, content: Record<string, any>): string {
+    if (typeof content.prompt === 'string' && content.prompt.trim()) {
+        return content.prompt.trim();
+    }
+    if (typeof content.question === 'string' && content.question.trim()) {
+        return content.question.trim();
+    }
+    if (typeof content.text === 'string' && content.text.trim()) {
+        return content.text.trim();
+    }
+    if (typeof content.title === 'string' && content.title.trim()) {
+        return content.title.trim();
+    }
+    if (typeof (question as any).prompt === 'string' && (question as any).prompt.trim()) {
+        return (question as any).prompt.trim();
+    }
+    if (typeof (question as any).question === 'string' && (question as any).question.trim()) {
+        return (question as any).question.trim();
+    }
+    if (typeof (question as any).text === 'string' && (question as any).text.trim()) {
+        return (question as any).text.trim();
+    }
+    if (typeof (question as any).title === 'string' && (question as any).title.trim()) {
+        return (question as any).title.trim();
+    }
+    return '';
+}
+
+/**
+ * Derives rendered option rows for MULTIPLE_CHOICE and MULTIPLE_RESPONSE
+ * questions from the raw content, supporting both string arrays and object arrays.
+ */
+function getChoiceOptions(content: Record<string, any>): { id: string; text: string }[] {
+    const rawOptions = content.options ?? content.choices ?? content.items ?? content.answers;
+    if (!Array.isArray(rawOptions) || rawOptions.length === 0) {
         return [];
     }
 
-    return (content.options as string[]).map((text, index) => ({
-        id: String.fromCharCode(65 + index), // 'A', 'B', 'C', ...
-        text,
-    }));
+    return rawOptions.map((opt, index) => {
+        const defaultId = String.fromCharCode(65 + index); // 'A', 'B', 'C', ...
+        if (typeof opt === 'string') {
+            return {
+                id: defaultId,
+                text: opt,
+            };
+        }
+        if (opt && typeof opt === 'object') {
+            const text = opt.text ?? opt.label ?? opt.value ?? opt.prompt ?? String(opt);
+            const id = opt.id ?? opt.key ?? defaultId;
+            return {
+                id: String(id),
+                text: String(text),
+            };
+        }
+        return {
+            id: defaultId,
+            text: String(opt),
+        };
+    });
 }
 
 /**
@@ -130,13 +197,14 @@ export function adaptExamQuestionsForMobile(exam: Exam): MobileSessionQuestion[]
     return [...questions]
         .sort((left, right) => (left.orderIndex ?? 0) - (right.orderIndex ?? 0))
         .map((question) => {
-            const content = question.content;
+            const content = parseQuestionContent(question.content);
+            const normalizedType = String(question.type || 'MULTIPLE_CHOICE').toUpperCase() as QuestionType;
 
             let options: { id: string; text: string }[] = [];
             let placeholder: string | undefined;
             let maxLength: number | undefined;
 
-            switch (question.type) {
+            switch (normalizedType) {
                 case 'MULTIPLE_CHOICE':
                 case 'MULTIPLE_RESPONSE':
                     options = getChoiceOptions(content);
@@ -179,17 +247,19 @@ export function adaptExamQuestionsForMobile(exam: Exam): MobileSessionQuestion[]
             const passageTitle: string | null | undefined =
                 (content as any).passageTitle ?? null;
 
+            const text = getQuestionPromptText(question, content);
+
             return {
                 id: question.id,
-                text: content.prompt ?? '',
-                type: question.type,
+                text,
+                type: normalizedType,
                 points: question.points,
                 options,
                 passage: passageBody || null,
                 passageTitle: passageTitle || null,
                 ...(placeholder !== undefined && { placeholder }),
                 ...(maxLength !== undefined && { maxLength }),
-                originalContent: content,
+                originalContent: question.content,
             };
         });
 }

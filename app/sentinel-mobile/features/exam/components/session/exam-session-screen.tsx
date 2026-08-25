@@ -1,5 +1,5 @@
 import React, { useRef, useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, useColorScheme } from 'react-native';
+import { View, Text, TouchableOpacity, useColorScheme, ActivityIndicator } from 'react-native';
 import { Stack, useNavigation, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
@@ -29,6 +29,7 @@ export const ExamSessionScreen = () => {
         isDrawerOpen,
         setIsDrawerOpen,
         timeLeft,
+        isLoading,
         formatTime,
         handleSelectOption,
         toggleFlag,
@@ -84,17 +85,31 @@ export const ExamSessionScreen = () => {
     const getLiveVideoTrack = () => {
         // Return dummy track for LiveKit publisher compatibility on mobile
         return {
-            stop: () => {},
+            stop: () => { },
             enabled: true,
             muted: false,
         };
     };
 
+    if (isLoading) {
+        return (
+            <View
+                style={{ flex: 1, backgroundColor: colors.background }}
+                className="items-center justify-center"
+            >
+                <ActivityIndicator size="large" color="#4f46e5" />
+                <Text style={{ color: colors.text }} className="mt-4 text-sm font-medium">
+                    Loading exam session...
+                </Text>
+            </View>
+        );
+    }
+
     if (!exam) {
         return (
             <View
-                style={{ backgroundColor: colors.background }}
-                className="flex-1 items-center justify-center"
+                style={{ flex: 1, backgroundColor: colors.background }}
+                className="items-center justify-center"
             >
                 <Text style={{ color: colors.text }}>Exam not found</Text>
             </View>
@@ -102,7 +117,7 @@ export const ExamSessionScreen = () => {
     }
 
     return (
-        <View style={{ backgroundColor: colors.background }} className="flex-1">
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
             <Stack.Screen
                 options={{
                     headerShown: false,
@@ -164,15 +179,17 @@ export const ExamSessionScreen = () => {
                 </View>
             )}
 
-            <QuestionCard
-                question={currentQuestion}
-                currentIndex={currentIndex}
-                totalQuestions={questions.length}
-                selectedOptionId={answers[currentQuestion?.id]}
-                isFlagged={!!flagged[currentQuestion?.id]}
-                onSelectOption={handleSelectOption}
-                onToggleFlag={toggleFlag}
-            />
+            <View style={{ flex: 1 }}>
+                <QuestionCard
+                    question={currentQuestion}
+                    currentIndex={currentIndex}
+                    totalQuestions={questions.length}
+                    selectedOptionId={answers[currentQuestion?.id]}
+                    isFlagged={!!flagged[currentQuestion?.id]}
+                    onSelectOption={handleSelectOption}
+                    onToggleFlag={toggleFlag}
+                />
+            </View>
 
             <SessionFooter
                 onPrev={handlePrev}
@@ -210,6 +227,7 @@ export const ExamSessionScreen = () => {
                 sessionId={sessionId || null}
                 attemptId={sessionId || null}
                 enabled={Boolean(exam.configuration?.cameraRequired !== false)}
+                mediaPipeRef={cameraRef}
                 getLiveVideoTrack={getLiveVideoTrack}
             />
         </View>
