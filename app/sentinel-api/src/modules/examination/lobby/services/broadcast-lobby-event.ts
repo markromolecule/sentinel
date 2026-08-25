@@ -1,5 +1,3 @@
-import { getSupabaseAdmin } from '../../../../lib/supabase-admin';
-
 export type LobbyBroadcastPayload = {
     examId: string;
     studentIds?: string[];
@@ -13,8 +11,11 @@ export type LobbyBroadcastPayload = {
 export type LobbyBroadcastEvent = 'admission:updated' | 'student:checked_in';
 
 /**
- * Safely dispatches a Supabase Realtime broadcast message on the exam lobby channel.
- * Non-blocking / fire-and-forget; handles missing credentials and socket timeouts gracefully.
+ * Dispatches a lightweight, stateless Supabase Realtime broadcast message over HTTP REST.
+ *
+ * Uses POST /realtime/v1/api/broadcast instead of maintaining ephemeral WebSocket
+ * client lifecycles in Node.js, completely preventing socket teardown crashes.
+ * Non-blocking with strict 2-second timeout and suppressed errors.
  */
 export async function broadcastLobbyEvent(
     examId: string,
@@ -22,56 +23,44 @@ export async function broadcastLobbyEvent(
     payload: LobbyBroadcastPayload,
 ): Promise<void> {
     try {
-        const supabase = getSupabaseAdmin();
-        if (!supabase || typeof supabase.channel !== 'function') {
+        const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const key =
+            process.env.SUPABASE_SERVICE_ROLE_KEY ||
+            process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY ||
+            process.env.SUPABASE_KEY ||
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+        if (!url || !key) {
             return;
         }
 
-        const channelName = `lobby:admissions:${examId}`;
-        const channel = supabase.channel(channelName);
+        const broadcastUrl = `${url.replace(/\/$/, '')}/realtime/v1/api/broadcast`;
+        const channelTopic = `lobby:admissions:${examId}`;
 
-        await new Promise<void>((resolve) => {
-            const timeoutId = setTimeout(() => {
-                try {
-                    void supabase.removeChannel(channel);
-                } catch {
-                    // Ignore removal errors on timeout
-                }
-                resolve();
-            }, 3000);
-
-            channel.subscribe((status) => {
-                if (status === 'SUBSCRIBED') {
-                    void channel
-                        .send({
-                            type: 'broadcast',
-                            event,
-                            payload,
-                        })
-                        .finally(() => {
-                            clearTimeout(timeoutId);
-                            try {
-                                void supabase.removeChannel(channel);
-                            } catch {
-                                // Ignore cleanup errors
-                            }
-                            resolve();
-                        });
-                } else if (
-                    status === 'CHANNEL_ERROR' ||
-                    status === 'TIMED_OUT' ||
-                    status === 'CLOSED'
-                ) {
-                    clearTimeout(timeoutId);
-                    try {
-                        void supabase.removeChannel(channel);
-                    } catch {
-                        // Ignore cleanup errors
-                    }
-                    resolve();
-                }
-            });
+        const response = await fetch(broadcastUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                apikey: key,
+                Authorization: `Bearer ${key}`,
+            },
+            body: JSON.stringify({
+                messages: [
+                    {
+                        topic: channelTopic,
+                        event,
+                        payload,
+                    },
+                ],
+            }),
+            signal: AbortSignal.timeout(2000),
         });
+
+        if (!response.ok) {
+            console.warn(
+                `[broadcastLobbyEvent] Realtime broadcast returned status ${response.status} for exam ${examId}`,
+            );
+        }
     } catch (err) {
         console.warn(`[broadcastLobbyEvent] Failed to broadcast ${event} for exam ${examId}:`, err);
     }

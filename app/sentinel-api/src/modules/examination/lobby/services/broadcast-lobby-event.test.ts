@@ -1,10 +1,26 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { broadcastLobbyEvent } from './broadcast-lobby-event';
-import * as supabaseAdminModule from '../../../../lib/supabase-admin';
 
 describe('broadcastLobbyEvent', () => {
-    it('gracefully returns if Supabase admin is not configured', async () => {
-        vi.spyOn(supabaseAdminModule, 'getSupabaseAdmin').mockReturnValue(null);
+    const originalEnv = process.env;
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        process.env = { ...originalEnv };
+    });
+
+    afterEach(() => {
+        process.env = originalEnv;
+        vi.restoreAllMocks();
+    });
+
+    it('gracefully returns if Supabase credentials are not configured', async () => {
+        delete process.env.SUPABASE_URL;
+        delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+        delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+        delete process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
+
+        const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
         await expect(
             broadcastLobbyEvent('exam-1', 'admission:updated', {
@@ -13,24 +29,19 @@ describe('broadcastLobbyEvent', () => {
                 status: 'APPROVED',
             }),
         ).resolves.toBeUndefined();
+
+        expect(fetchSpy).not.toHaveBeenCalled();
     });
 
-    it('sends broadcast message on subscribed channel and cleans up', async () => {
-        const mockSend = vi.fn().mockResolvedValue({});
-        const mockChannel = {
-            subscribe: vi.fn((callback: (status: string) => void) => {
-                callback('SUBSCRIBED');
-                return mockChannel;
-            }),
-            send: mockSend,
-        };
-        const mockRemoveChannel = vi.fn().mockResolvedValue({});
-        const mockSupabase = {
-            channel: vi.fn().mockReturnValue(mockChannel),
-            removeChannel: mockRemoveChannel,
-        } as any;
+    it('sends broadcast message via REST API with correct headers and body', async () => {
+        process.env.SUPABASE_URL = 'https://mock.supabase.co';
+        process.env.SUPABASE_SERVICE_ROLE_KEY = 'mock-service-role-key';
 
-        vi.spyOn(supabaseAdminModule, 'getSupabaseAdmin').mockReturnValue(mockSupabase);
+        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+            ok: true,
+            status: 200,
+            json: async () => ({}),
+        } as any);
 
         await broadcastLobbyEvent('exam-1', 'admission:updated', {
             examId: 'exam-1',
@@ -38,40 +49,60 @@ describe('broadcastLobbyEvent', () => {
             status: 'APPROVED',
         });
 
-        expect(mockSupabase.channel).toHaveBeenCalledWith('lobby:admissions:exam-1');
-        expect(mockSend).toHaveBeenCalledWith({
-            type: 'broadcast',
-            event: 'admission:updated',
-            payload: {
-                examId: 'exam-1',
-                studentIds: ['student-1'],
-                status: 'APPROVED',
-            },
-        });
-        expect(mockRemoveChannel).toHaveBeenCalledWith(mockChannel);
+        expect(fetchSpy).toHaveBeenCalledWith(
+            'https://mock.supabase.co/realtime/v1/api/broadcast',
+            expect.objectContaining({
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    apikey: 'mock-service-role-key',
+                    Authorization: 'Bearer mock-service-role-key',
+                },
+                body: JSON.stringify({
+                    messages: [
+                        {
+                            topic: 'lobby:admissions:exam-1',
+                            event: 'admission:updated',
+                            payload: {
+                                examId: 'exam-1',
+                                studentIds: ['student-1'],
+                                status: 'APPROVED',
+                            },
+                        },
+                    ],
+                }),
+            }),
+        );
     });
 
-    it('cleans up channel on channel error or timeout', async () => {
-        const mockRemoveChannel = vi.fn().mockResolvedValue({});
-        const mockChannel = {
-            subscribe: vi.fn((callback: (status: string) => void) => {
-                callback('CHANNEL_ERROR');
-                return mockChannel;
+    it('gracefully handles non-200 responses without throwing', async () => {
+        process.env.SUPABASE_URL = 'https://mock.supabase.co';
+        process.env.SUPABASE_SERVICE_ROLE_KEY = 'mock-service-role-key';
+
+        vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+            ok: false,
+            status: 500,
+        } as any);
+
+        await expect(
+            broadcastLobbyEvent('exam-1', 'student:checked_in', {
+                examId: 'exam-1',
+                studentId: 'student-1',
             }),
-            send: vi.fn(),
-        };
-        const mockSupabase = {
-            channel: vi.fn().mockReturnValue(mockChannel),
-            removeChannel: mockRemoveChannel,
-        } as any;
+        ).resolves.toBeUndefined();
+    });
 
-        vi.spyOn(supabaseAdminModule, 'getSupabaseAdmin').mockReturnValue(mockSupabase);
+    it('gracefully suppresses fetch network errors and abort timeouts', async () => {
+        process.env.SUPABASE_URL = 'https://mock.supabase.co';
+        process.env.SUPABASE_SERVICE_ROLE_KEY = 'mock-service-role-key';
 
-        await broadcastLobbyEvent('exam-1', 'student:checked_in', {
-            examId: 'exam-1',
-            studentId: 'student-1',
-        });
+        vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new Error('Network connection timeout'));
 
-        expect(mockRemoveChannel).toHaveBeenCalledWith(mockChannel);
+        await expect(
+            broadcastLobbyEvent('exam-1', 'student:checked_in', {
+                examId: 'exam-1',
+                studentId: 'student-1',
+            }),
+        ).resolves.toBeUndefined();
     });
 });

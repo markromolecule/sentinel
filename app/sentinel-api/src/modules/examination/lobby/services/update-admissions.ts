@@ -95,5 +95,5 @@ export const updateAdmissions = async (
         console.error('Failed to resolve exam/student details for lobby admission notification:', examErr);
     }
 
-    return { updatedCount: Number(result.numUpdatedRows) };
+    return { updatedCount: Number(result?.numUpdatedRows ?? 0) };
 };
