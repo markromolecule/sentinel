@@ -19,10 +19,11 @@ import { MobileExamReconnection } from '@/features/exam/lib/mobile-exam-reconnec
 /**
  * Standardized answer truthiness check across sync payloads and UI count calculations.
  */
-function isQuestionAnswered(answer: string | string[] | undefined | null): boolean {
+function isQuestionAnswered(answer: string | string[] | Record<string, any> | undefined | null): boolean {
     if (answer === undefined || answer === null) return false;
     if (typeof answer === 'string') return answer.trim().length > 0;
     if (Array.isArray(answer)) return answer.length > 0;
+    if (typeof answer === 'object') return Object.keys(answer).length > 0;
     return false;
 }
 
@@ -42,7 +43,7 @@ export const useExamSession = () => {
 
     // State
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
+    const [answers, setAnswers] = useState<Record<string, any>>({});
     const [flagged, setFlagged] = useState<Record<string, boolean>>({});
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [timeLeft, setTimeLeft] = useState((exam?.duration || 60) * 60);
@@ -346,7 +347,7 @@ export const useExamSession = () => {
     }, [timeLeft, executeSubmission]);
 
     // Handlers
-    const handleSelectOption = useCallback((optionId: string | string[]) => {
+    const handleSelectOption = useCallback((optionId: any) => {
         if (!currentQuestion) return;
         setAnswers((prev) => ({ ...prev, [currentQuestion.id]: optionId }));
     }, [currentQuestion]);

@@ -36,6 +36,7 @@ export const ExamSessionScreen = () => {
         toggleFlag,
         handleNext,
         handlePrev,
+        handleSelectQuestion,
         isLastQuestion,
     } = useExamSession();
 
@@ -239,7 +240,7 @@ export const ExamSessionScreen = () => {
                 onClose={() => setIsDrawerOpen(false)}
                 questions={questions}
                 currentIndex={currentIndex}
-                onSelectQuestion={setCurrentIndex}
+                onSelectQuestion={handleSelectQuestion}
                 answers={answers as Record<string, string>}
                 flaggedQuestions={flagged}
                 colors={colors}

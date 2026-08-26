@@ -11,6 +11,35 @@ interface PassageCardProps {
     title?: string | null;
 }
 
+function cleanPassageContent(raw: string): string {
+    if (!raw) return '';
+
+    // Normalize break and paragraph tags to newlines
+    let text = raw
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/p>/gi, '\n\n')
+        .replace(/<\/div>/gi, '\n')
+        .replace(/<\/h[1-6]>/gi, '\n\n')
+        .replace(/<\/li>/gi, '\n')
+        .replace(/<li>/gi, '• ');
+
+    // Strip all remaining HTML tags
+    text = text.replace(/<[^>]+>/g, '');
+
+    // Decode standard HTML entities
+    text = text
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&apos;/g, "'")
+        .replace(/&nbsp;/g, ' ');
+
+    // Normalize multiple consecutive empty lines
+    return text.replace(/\n{3,}/g, '\n\n').trim();
+}
+
 /**
  * PassageCard renders a collapsible reading passage above a question prompt.
  * It is intended to be placed at the top of QuestionCard when a passage is
@@ -21,6 +50,11 @@ export const PassageCard = ({ passage, title }: PassageCardProps) => {
     const colorScheme = useColorScheme();
     const colors = Colors[colorScheme ?? 'light'];
     const isDark = colorScheme === 'dark';
+
+    const cleanedPassage = cleanPassageContent(passage);
+    if (!cleanedPassage) {
+        return null;
+    }
 
     const displayTitle = title?.trim() || 'Reading Passage';
 
@@ -94,7 +128,7 @@ export const PassageCard = ({ passage, title }: PassageCardProps) => {
                             lineHeight: 22,
                         }}
                     >
-                        {passage}
+                        {cleanedPassage}
                     </Text>
                 </ScrollView>
             )}
