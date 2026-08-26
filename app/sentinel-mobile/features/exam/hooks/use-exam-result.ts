@@ -45,11 +45,17 @@ export function useExamResult() {
         setIsTurningIn(true);
 
         try {
-            await completeExamSession(apiClient, {
-                sessionId: preview.sessionId,
-                answers: preview.answers,
-                elapsedSeconds: preview.elapsedSeconds,
-            });
+            // Only call completeExamSession if the attempt hasn't already been
+            // submitted during the session finish flow. If preview.completedAt
+            // exists, the server already has the answers and the attempt is
+            // persisted — skip the duplicate mutation.
+            if (!preview.completedAt) {
+                await completeExamSession(apiClient, {
+                    sessionId: preview.sessionId,
+                    answers: preview.answers,
+                    elapsedSeconds: preview.elapsedSeconds,
+                });
+            }
 
             const sessionId = preview.sessionId;
             await clearStoredMobileExamPreview(id);

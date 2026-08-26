@@ -3,7 +3,7 @@ title: "Phase 1: Question Rendering Fallbacks and Empty State Card"
 type: phase
 parent: "fix-mobile-questions-rendering-essay-grading-and-navigation-sheet"
 phase: "01"
-status: planned
+status: completed
 created: "2026-08-26"
 tags: [task, phase, mobile, question-rendering]
 ---

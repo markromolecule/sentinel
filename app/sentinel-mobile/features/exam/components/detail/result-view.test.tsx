@@ -211,4 +211,68 @@ describe('ResultView Component', () => {
             });
         }).not.toThrow();
     });
+
+    it('renders PENDING REVIEW when requiresManualReview is true (essay grading parity)', () => {
+        mockBuildReports.mockReturnValue([]);
+        const summary = {
+            score: 6,
+            totalScore: 10,
+            percentage: 60,
+            answeredCount: 10,
+            autoGradableQuestionCount: 8,
+            manualReviewQuestionCount: 2,
+            requiresManualReview: true,
+        };
+
+        const node = ResultView({
+            exam: mockExam,
+            summary,
+            answers: mockAnswers,
+            onReturnToDashboard: mockOnReturn,
+        });
+
+        // Should show PENDING REVIEW, not DID NOT PASS or PASSED
+        expect(findText(node, 'PENDING REVIEW')).toBe(true);
+        expect(findText(node, 'DID NOT PASS')).toBe(false);
+        expect(findText(node, 'PASSED')).toBe(false);
+
+        // Should show the pending notice banner
+        expect(findText(node, 'instructor grading')).toBe(true);
+
+        // Score should say "Pending Review" instead of numeric value
+        expect(findText(node, 'Pending Review')).toBe(true);
+
+        // Percentage should show "--" instead of the numeric percentage
+        expect(findText(node, '--')).toBe(true);
+
+        // Should show manual review question count
+        const pendingMetric = findNode(
+            node,
+            (n: any) => n.type === 'Text' && findText(n, 'Pending'),
+        );
+        expect(pendingMetric).not.toBeNull();
+    });
+
+    it('renders PENDING REVIEW when manualReviewQuestionCount > 0 even without requiresManualReview flag', () => {
+        mockBuildReports.mockReturnValue([]);
+        const summary = {
+            score: 8,
+            totalScore: 10,
+            percentage: 80,
+            answeredCount: 10,
+            autoGradableQuestionCount: 9,
+            manualReviewQuestionCount: 1,
+            requiresManualReview: false,
+        };
+
+        const node = ResultView({
+            exam: mockExam,
+            summary,
+            answers: mockAnswers,
+            onReturnToDashboard: mockOnReturn,
+        });
+
+        expect(findText(node, 'PENDING REVIEW')).toBe(true);
+        expect(findText(node, 'PASSED')).toBe(false);
+    });
 });

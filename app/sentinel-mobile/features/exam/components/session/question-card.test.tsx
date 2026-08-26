@@ -110,8 +110,8 @@ function makeQuestion(
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe('QuestionCard', () => {
-    it('returns null when question is falsy', () => {
-        const result = QuestionCard({
+    it('renders a fallback container when question is null', () => {
+        const tree = QuestionCard({
             question: null,
             currentIndex: 0,
             totalQuestions: 5,
@@ -119,7 +119,42 @@ describe('QuestionCard', () => {
             onSelectOption: () => {},
             onToggleFlag: () => {},
         });
-        expect(result).toBeNull();
+        expect(tree).not.toBeNull();
+        expect(tree.props.accessibilityRole).toBe('alert');
+        expect(tree.props.accessibilityLabel).toBe('Question unavailable');
+        expect(findText(tree, 'Question Unavailable')).toBe(true);
+        expect(findText(tree, 'Question details could not be loaded')).toBe(true);
+    });
+
+    it('renders a fallback container when question is undefined', () => {
+        const tree = QuestionCard({
+            question: undefined,
+            currentIndex: 2,
+            totalQuestions: 10,
+            isFlagged: false,
+            onSelectOption: () => {},
+            onToggleFlag: () => {},
+        });
+        expect(tree).not.toBeNull();
+        expect(tree.props.accessibilityLabel).toBe('Question unavailable');
+    });
+
+    it('renders default fallback prompt text when question.text is empty', () => {
+        const question = makeQuestion('MULTIPLE_CHOICE', {
+            text: '',
+            options: [{ id: 'A', text: 'Alpha' }],
+        });
+
+        const tree = QuestionCard({
+            question,
+            currentIndex: 0,
+            totalQuestions: 1,
+            isFlagged: false,
+            onSelectOption: () => {},
+            onToggleFlag: () => {},
+        });
+
+        expect(findText(tree, 'Question prompt unavailable.')).toBe(true);
     });
 
     it('renders question text', () => {

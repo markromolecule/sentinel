@@ -36,7 +36,47 @@ export const QuestionCard = ({
     const isDark = colorScheme === 'dark';
     const colors = Colors[colorScheme ?? 'light'];
 
-    if (!question) return null;
+    if (!question) {
+        return (
+            <View
+                style={[
+                    styles.container,
+                    {
+                        backgroundColor: colors.background,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: 32,
+                    },
+                ]}
+                accessibilityRole="alert"
+                accessibilityLabel="Question unavailable"
+            >
+                <Ionicons name="alert-circle-outline" size={48} color={colors.icon} />
+                <Text
+                    style={{
+                        color: colors.text,
+                        fontSize: 16,
+                        fontWeight: '600',
+                        marginTop: 12,
+                        textAlign: 'center',
+                    }}
+                >
+                    Question Unavailable
+                </Text>
+                <Text
+                    style={{
+                        color: colors.icon,
+                        fontSize: 14,
+                        marginTop: 6,
+                        textAlign: 'center',
+                        lineHeight: 20,
+                    }}
+                >
+                    Question details could not be loaded. Please try navigating to another question.
+                </Text>
+            </View>
+        );
+    }
 
     const { type, text, options = [], passage, passageTitle, placeholder, maxLength } = question;
     const normalizedType = String(type || 'MULTIPLE_CHOICE').toUpperCase();

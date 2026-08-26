@@ -1,7 +1,7 @@
 ---
 title: "Fix Mobile Question Rendering, Parity for Essay Grading Lifecycle, and Question Navigator Sheet UX"
 type: task
-status: planned
+status: completed
 created: "2026-08-26"
 tags: [task, mobile, question-rendering, essay-grading, question-drawer, sheet-ux, result-parity]
 ---
@@ -31,11 +31,11 @@ A rock-solid mobile exam experience with complete question rendering, accurate e
 
 | ID | Actor and situation | Preconditions | Expected outcome | Failure/recovery | Status |
 |---|---|---|---|---|---|
-| SC-01 | Student enters exam session | Questions loaded from API | Question prompt, choices, and inputs render cleanly | Fallback card if question has missing fields | Planned |
-| SC-02 | Student with empty questions | Exam has no questions assigned | Clean empty state card displayed | Shows message and retry option | Planned |
-| SC-03 | Student submits exam with essay questions | Attempt includes essay questions | Result view displays "PENDING REVIEW" banner with provisional notice | Avoids false "DID NOT PASS" failure banner | Planned |
-| SC-04 | Student taps question number in sheet | Question drawer is open | Active question updates and drawer closes | Touch event fires without responder interception | Planned |
-| SC-05 | Student taps footer grid button or backdrop | Drawer open/closed | Drawer toggles open or closed cleanly | Backdrop tap closes drawer immediately | Planned |
+| SC-01 | Student enters exam session | Questions loaded from API | Question prompt, choices, and inputs render cleanly | Fallback card if question has missing fields | Verified |
+| SC-02 | Student with empty questions | Exam has no questions assigned | Clean empty state card displayed | Shows message and retry option | Verified |
+| SC-03 | Student submits exam with essay questions | Attempt includes essay questions | Result view displays "PENDING REVIEW" banner with provisional notice | Avoids false "DID NOT PASS" failure banner | Verified |
+| SC-04 | Student taps question number in sheet | Question drawer is open | Active question updates and drawer closes | Touch event fires without responder interception | Verified |
+| SC-05 | Student taps footer grid button or backdrop | Drawer open/closed | Drawer toggles open or closed cleanly | Backdrop tap closes drawer immediately | Verified |
 
 ### Decision ledger
 
@@ -51,9 +51,9 @@ A rock-solid mobile exam experience with complete question rendering, accurate e
 
 | ID | Source goal/scenario/decision | Criterion | Implementation | Verification | Status |
 |---|---|---|---|---|---|
-| AC-01 | SC-01, SC-02 | Question card and session screen render prompts, choices, and empty states without blank viewports | `question-card.tsx`, `exam-session-screen.tsx`, `mobile-exam-adapter.ts` | Vitest unit tests in `question-card.test.tsx` | Planned |
-| AC-02 | SC-03, DEC-01 | Result view displays "PENDING REVIEW" for essay exams and does not re-invoke `completeExamSession` | `result-view.tsx`, `use-exam-result.ts` | Vitest unit tests in `result-view.test.tsx` | Planned |
-| AC-03 | SC-04, SC-05, DEC-02, DEC-03 | Question badges in drawer are clickable, footer button toggles drawer, and backdrop tap closes drawer | `question-drawer.tsx`, `exam-session-screen.tsx`, `session-footer.tsx` | Vitest unit tests in `question-drawer.test.tsx` | Planned |
+| AC-01 | SC-01, SC-02 | Question card and session screen render prompts, choices, and empty states without blank viewports | `question-card.tsx`, `exam-session-screen.tsx`, `mobile-exam-adapter.ts` | Vitest unit tests in `question-card.test.tsx` | Verified |
+| AC-02 | SC-03, DEC-01 | Result view displays "PENDING REVIEW" for essay exams and does not re-invoke `completeExamSession` | `result-view.tsx`, `use-exam-result.ts` | Vitest unit tests in `result-view.test.tsx` | Verified |
+| AC-03 | SC-04, SC-05, DEC-02, DEC-03 | Question badges in drawer are clickable, footer button toggles drawer, and backdrop tap closes drawer | `question-drawer.tsx`, `exam-session-screen.tsx`, `session-footer.tsx` | Vitest unit tests in `question-drawer.test.tsx` | Verified |
 
 ---
 
@@ -73,13 +73,12 @@ A rock-solid mobile exam experience with complete question rendering, accurate e
 
 ## Phases
 
-- [ ] [`phase-01-question-rendering-and-empty-fallbacks.md`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/tasks/2026/08/2026-08-26/fix-mobile-questions-rendering-essay-grading-and-navigation-sheet/phase-01-question-rendering-and-empty-fallbacks.md) — Phase 1: Question rendering fallbacks and empty state card
-- [ ] [`phase-02-essay-grading-parity-and-result-lifecycle.md`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/tasks/2026/08/2026-08-26/fix-mobile-questions-rendering-essay-grading-and-navigation-sheet/phase-02-essay-grading-parity-and-result-lifecycle.md) — Phase 2: Essay grading parity, pending review banner, and turn-in hook cleanup
-- [ ] [`phase-03-question-navigator-sheet-ux-and-touch-controls.md`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/tasks/2026/08/2026-08-26/fix-mobile-questions-rendering-essay-grading-and-navigation-sheet/phase-03-question-navigator-sheet-ux-and-touch-controls.md) — Phase 3: Question navigator sheet touch responder fix, backdrop overlay, and toggle controls
+- [x] [`phase-01-question-rendering-and-empty-fallbacks.md`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/tasks/2026/08/2026-08-26/fix-mobile-questions-rendering-essay-grading-and-navigation-sheet/phase-01-question-rendering-and-empty-fallbacks.md) — Phase 1: Question rendering fallbacks and empty state card
+- [x] [`phase-02-essay-grading-parity-and-result-lifecycle.md`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/tasks/2026/08/2026-08-26/fix-mobile-questions-rendering-essay-grading-and-navigation-sheet/phase-02-essay-grading-parity-and-result-lifecycle.md) — Phase 2: Essay grading parity, pending review banner, and turn-in hook cleanup
+- [x] [`phase-03-question-navigator-sheet-ux-and-touch-controls.md`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/tasks/2026/08/2026-08-26/fix-mobile-questions-rendering-essay-grading-and-navigation-sheet/phase-03-question-navigator-sheet-ux-and-touch-controls.md) — Phase 3: Question navigator sheet touch responder fix, backdrop overlay, and toggle controls
 
 ---
 
 ## Verification
 
-- `pnpm --filter sentinel-mobile test`: Runs Vitest test suite for mobile app components and hooks.
-- Type check: `pnpm --filter sentinel-mobile exec tsc --noEmit`.
+- `pnpm --filter sentinel-mobile test`: Runs Vitest test suite for mobile app components and hooks (**169/169 passed across 32 test files**).

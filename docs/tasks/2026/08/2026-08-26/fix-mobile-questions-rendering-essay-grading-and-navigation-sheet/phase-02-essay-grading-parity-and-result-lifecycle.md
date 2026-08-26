@@ -3,7 +3,7 @@ title: "Phase 2: Essay Grading Parity, Pending Review Banner, and Turn-in Hook C
 type: phase
 parent: "fix-mobile-questions-rendering-essay-grading-and-navigation-sheet"
 phase: "02"
-status: planned
+status: completed
 created: "2026-08-26"
 tags: [task, phase, mobile, essay-grading, result-parity]
 ---

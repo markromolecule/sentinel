@@ -3,7 +3,7 @@ title: "Phase 3: Question Navigator Sheet Touch Controls, Backdrop Dismissal, an
 type: phase
 parent: "fix-mobile-questions-rendering-essay-grading-and-navigation-sheet"
 phase: "03"
-status: planned
+status: completed
 created: "2026-08-26"
 tags: [task, phase, mobile, question-drawer, sheet-ux, touch-controls]
 ---
@@ -27,28 +27,16 @@ Fix the question navigator bottom sheet so all question number badges are immedi
 
 ## Implementation Tasks
 
-- [ ] In `question-drawer.tsx`:
-  - Remove `onStartShouldSetResponder={() => true}` from the horizontal `ScrollView`.
-  - Remove outer `TouchableWithoutFeedback onPress={() => {}}` wrapper that blocked touch events from propagating to child buttons.
-  - Verify question badges invoke `onSelectQuestion(index)` and `onClose()` on tap.
-  - Verify close icon button calls `onClose()`.
-- [ ] In `exam-session-screen.tsx`:
-  - Update `SessionFooter` prop to `onToggleDrawer={() => setIsDrawerOpen((prev) => !prev)}`.
-  - Add explicit backdrop overlay when `isDrawerOpen` is true:
-
-    ```tsx
-    {isDrawerOpen && (
-        <TouchableOpacity
-            activeOpacity={1}
-            onPress={() => setIsDrawerOpen(false)}
-            style={StyleSheet.absoluteFillObject}
-            accessibilityLabel="Close question drawer"
-        />
-    )}
-    ```
-
-- [ ] In `question-drawer.test.tsx`:
-  - Create comprehensive tests verifying question selection, active state styling, flagged indicator badge, and close button trigger.
+- [x] In `question-drawer.tsx`:
+  - Removed `onStartShouldSetResponder={() => true}` from the horizontal `ScrollView`.
+  - Removed outer `TouchableWithoutFeedback onPress={() => {}}` wrapper that blocked touch events from propagating to child buttons.
+  - Verified question badges invoke `onSelectQuestion(index)` and `onClose()` on tap.
+  - Verified close icon button calls `onClose()`.
+- [x] In `exam-session-screen.tsx`:
+  - Updated `SessionFooter` prop to `onToggleDrawer={() => setIsDrawerOpen((prev) => !prev)}`.
+  - Added explicit backdrop overlay when `isDrawerOpen` is true with `StyleSheet.absoluteFillObject` and `zIndex: 10`.
+- [x] In `question-drawer.test.tsx`:
+  - Created 9 comprehensive tests verifying question badge rendering, selection handler invocation, close button, absence of touch blockers, active question badge styling, answered status, flagged status, and legend labels.
 
 ## Verification & Testing
 

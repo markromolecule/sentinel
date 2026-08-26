@@ -1,5 +1,6 @@
 import React, { useRef, useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, useColorScheme, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, useColorScheme, ActivityIndicator, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Stack, useNavigation, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
@@ -116,6 +117,29 @@ export const ExamSessionScreen = () => {
         );
     }
 
+    if (questions.length === 0) {
+        return (
+            <View
+                style={{ flex: 1, backgroundColor: colors.background }}
+                className="items-center justify-center px-8"
+            >
+                <Ionicons name="document-text-outline" size={56} color={colors.icon} />
+                <Text
+                    style={{ color: colors.text }}
+                    className="mt-4 text-center text-lg font-semibold"
+                >
+                    No Questions Available
+                </Text>
+                <Text
+                    style={{ color: colors.icon }}
+                    className="mt-2 text-center text-sm leading-relaxed"
+                >
+                    This exam does not have any questions assigned yet. Please contact your instructor.
+                </Text>
+            </View>
+        );
+    }
+
     return (
         <View style={{ flex: 1, backgroundColor: colors.background }}>
             <Stack.Screen
@@ -194,7 +218,7 @@ export const ExamSessionScreen = () => {
             <SessionFooter
                 onPrev={handlePrev}
                 onNext={handleNext}
-                onToggleDrawer={() => setIsDrawerOpen(true)}
+                onToggleDrawer={() => setIsDrawerOpen((prev) => !prev)}
                 isFirst={currentIndex === 0}
                 isLast={isLastQuestion}
                 currentIndex={currentIndex}
@@ -205,7 +229,8 @@ export const ExamSessionScreen = () => {
                 <TouchableOpacity
                     activeOpacity={1}
                     onPress={() => setIsDrawerOpen(false)}
-                    className="absolute inset-0 z-10" // Transparent backdrop to catch clicks
+                    style={[StyleSheet.absoluteFillObject, { zIndex: 10 }]}
+                    accessibilityLabel="Close question drawer"
                 />
             )}
 

@@ -6,7 +6,6 @@ import {
     Dimensions,
     ScrollView,
     TouchableOpacity,
-    TouchableWithoutFeedback,
     StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -78,8 +77,7 @@ export const QuestionDrawer = ({
                 animatedStyle,
             ]}
         >
-            <TouchableWithoutFeedback onPress={() => {}}>
-                <View className="w-full">
+            <View className="w-full">
                     {/* Header */}
                     <View
                         style={{ borderBottomColor: colors.border }}
@@ -106,7 +104,7 @@ export const QuestionDrawer = ({
                                 gap: 12,
                                 alignItems: 'center',
                             }}
-                            onStartShouldSetResponder={() => true}
+
                         >
                             {questions.map((q, index) => {
                                 const isCurrent = index === currentIndex;
@@ -202,8 +200,7 @@ export const QuestionDrawer = ({
                             </View>
                         </View>
                     </View>
-                </View>
-            </TouchableWithoutFeedback>
+            </View>
         </Animated.View>
     );
 };
