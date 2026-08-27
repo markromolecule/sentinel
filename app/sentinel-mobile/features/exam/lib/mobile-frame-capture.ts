@@ -12,13 +12,26 @@ export type UploadEvidenceFrameArgs = {
 };
 
 /**
- * Captures a picture from expo-camera, converts it, and uploads it to the backend.
- * Uses the candidate-ingestion & Supabase upload flow first, with a fallback to the
- * direct incident evidence route.
+ * Generates an RFC4122 v4 compliant UUID string.
+ */
+export function generateUUID(): string {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+    }
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+        const r = (Math.random() * 16) | 0;
+        const v = c === 'x' ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+    });
+}
+
+/**
+ * Captures a picture from cameraRef, converts it to a blob, and uploads it to the backend
+ * via authoritative candidate-ingestion and direct signed Supabase storage upload.
  */
 export async function captureAndUploadEvidenceFrame({
     cameraRef,
-    attemptId,
+    attemptId: _attemptId,
     examSessionId,
     studentId,
     eventType,
@@ -41,22 +54,19 @@ export async function captureAndUploadEvidenceFrame({
     }
 
     const timestamp = new Date().toISOString();
-    const base64Image = photo.base64 || '';
 
     // Convert local URI to blob
     const fileRes = await fetch(photo.uri);
     const blob = await fileRes.blob();
 
-    let flowSuccess = false;
-
-    // A. Attempt Candidate-Ingestion + Supabase flow
+    // 2. Candidate-Ingestion + Supabase Storage upload flow
     try {
-        const eventId = Math.random().toString(36).substring(2) + Date.now().toString(36);
+        const eventId = generateUUID();
         const candidate = await ingestMediaPipeEvidenceCandidate(apiClient, {
             examSessionId,
             studentId,
             timestamp,
-            platform: 'WEB', // Match schema literal requirement
+            platform: 'WEB', // Match backend schema literal requirement
             source: 'AI',
             ruleKey: `aiRules.${
                 eventType === 'GAZE_OFF_SCREEN'
@@ -79,7 +89,7 @@ export async function captureAndUploadEvidenceFrame({
         });
 
         if (candidate?.evidenceDecision === 'UPLOAD' && candidate.upload) {
-            const { uploadUrl, uploadToken } = candidate.upload;
+            const { uploadUrl, uploadToken, evidenceId } = candidate.upload;
             const path = new URL(uploadUrl).pathname
                 .replace(/^\/storage\/v1\/object\/upload\/sign\//, '')
                 .replace(/^\/object\/upload\/sign\//, '');
@@ -94,38 +104,20 @@ export async function captureAndUploadEvidenceFrame({
 
             if (error) throw error;
 
-            await completeEvidenceUpload(apiClient, candidate.upload.evidenceId);
-            flowSuccess = true;
-        } else if (
+            await completeEvidenceUpload(apiClient, evidenceId);
+            return true;
+        }
+
+        if (
             candidate?.evidenceDecision === 'NOT_ELIGIBLE' ||
             candidate?.evidenceDecision === 'ALREADY_AVAILABLE'
         ) {
-            flowSuccess = true; // No upload needed
+            return true; // Handled per server policy without needing upload
         }
-    } catch (err) {
-        console.warn('Candidate ingestion flow failed, attempting fallback endpoint...', err);
-    }
 
-    // B. Fallback: post directly to the attempt evidence endpoint
-    try {
-        await apiClient(`/student/exam-attempts/${attemptId}/incidents/evidence`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                base64Image,
-                eventType,
-                timestamp,
-            }),
-        });
-        flowSuccess = true;
+        return false;
     } catch (err) {
-        if (!flowSuccess) {
-            console.error('Direct fallback endpoint upload failed.', err);
-            throw err;
-        }
+        console.warn('MediaPipe candidate ingestion or evidence upload failed:', err);
+        return false;
     }
-
-    return flowSuccess;
 }

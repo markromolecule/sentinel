@@ -49,13 +49,13 @@ describe('useExamLobbyAdmissionStatusQuery', () => {
         expect(query.refetchOnWindowFocus).toBe(true);
     });
 
-    it('returns 3000ms polling while status is WAITING or undefined', () => {
+    it('returns 10000ms polling while status is WAITING or undefined', () => {
         const query = useExamLobbyAdmissionStatusQuery('exam-1') as any;
         const refetchIntervalFn = query.refetchInterval;
 
-        expect(refetchIntervalFn({ state: { data: { status: 'WAITING' } } })).toBe(3000);
-        expect(refetchIntervalFn({ state: { data: undefined } })).toBe(3000);
-        expect(refetchIntervalFn({ state: { data: { status: 'REJECTED' } } })).toBe(3000);
+        expect(refetchIntervalFn({ state: { data: { status: 'WAITING' } } })).toBe(10000);
+        expect(refetchIntervalFn({ state: { data: undefined } })).toBe(10000);
+        expect(refetchIntervalFn({ state: { data: { status: 'REJECTED' } } })).toBe(10000);
     });
 
     it('returns false to completely halt polling once status is APPROVED', () => {

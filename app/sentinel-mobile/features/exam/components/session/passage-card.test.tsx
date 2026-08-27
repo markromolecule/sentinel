@@ -114,4 +114,17 @@ describe('PassageCard', () => {
         const tree = PassageCard({ passage: 'Hello' });
         expect((tree as any).props?.accessibilityRole).toBe('article');
     });
+
+    it('cleans and formats HTML markup into readable text', () => {
+        const tree = PassageCard({
+            passage: '<p>Paragraph 1 &amp; notes.</p><p>Paragraph 2 with <strong>bold</strong> text.</p>',
+        });
+        expect(findText(tree, 'Paragraph 1 & notes.')).toBe(true);
+        expect(findText(tree, 'Paragraph 2 with bold text.')).toBe(true);
+    });
+
+    it('returns null when passage is empty or whitespace only', () => {
+        const tree = PassageCard({ passage: '   \n  ' });
+        expect(tree).toBeNull();
+    });
 });

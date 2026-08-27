@@ -136,7 +136,6 @@ describe('StudentExamLobbyPage', () => {
         expect(
             screen.getByRole('button', { name: /waiting for approval/i }).hasAttribute('disabled'),
         ).toBe(true);
-        expect(refetch).toHaveBeenCalled();
     });
 
     it('prefers higher API count over presence count', () => {

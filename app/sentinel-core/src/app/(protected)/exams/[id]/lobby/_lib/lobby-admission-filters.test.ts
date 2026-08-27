@@ -49,16 +49,26 @@ const admissions: ExamLobbyWaitingStudent[] = [
         hasActiveAttempt: true,
         attemptStatus: 'IN_PROGRESS',
     }),
+    createAdmission({
+        admissionId: 'submitted-1',
+        studentId: 'student-5',
+        studentName: 'Jordan Submitted',
+        studentNumber: '2026-005',
+        status: 'APPROVED',
+        hasActiveAttempt: false,
+        attemptStatus: 'SUBMITTED',
+    }),
 ];
 
 describe('getLobbyAdmissionGroups', () => {
-    it('groups waiting, approved, rejected, and active-attempt students', () => {
+    it('groups waiting, approved, inAttempt, submitted, and rejected students', () => {
         const groups = getLobbyAdmissionGroups(admissions);
 
         expect(groups.waitingStudents.map((student) => student.studentId)).toEqual(['student-1']);
         expect(groups.approvedStudents.map((student) => student.studentId)).toEqual(['student-2']);
-        expect(groups.rejectedStudents.map((student) => student.studentId)).toEqual(['student-3']);
         expect(groups.inAttemptStudents.map((student) => student.studentId)).toEqual(['student-4']);
+        expect(groups.submittedStudents.map((student) => student.studentId)).toEqual(['student-5']);
+        expect(groups.rejectedStudents?.map((student) => student.studentId)).toEqual(['student-3']);
     });
 });
 
@@ -82,11 +92,12 @@ describe('filterLobbyAdmissions', () => {
     });
 
     it.each([
-        ['all', ['student-1', 'student-2', 'student-3', 'student-4']],
+        ['all', ['student-1', 'student-2', 'student-3', 'student-4', 'student-5']],
         ['waiting', ['student-1']],
         ['approved', ['student-2']],
-        ['rejected', ['student-3']],
         ['inAttempt', ['student-4']],
+        ['submitted', ['student-5']],
+        ['rejected', ['student-3']],
     ] as const)('filters %s status admissions', (statusFilter, expectedIds) => {
         const filteredAdmissions = filterLobbyAdmissions(admissions, {
             query: '',

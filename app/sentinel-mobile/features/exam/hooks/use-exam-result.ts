@@ -23,6 +23,7 @@ export function useExamResult() {
 
     const { data: rawExam } = useExamQuery(id);
     const exam = rawExam ? adaptExamForMobile(rawExam) : undefined;
+    const questions = rawExam?.questions ?? [];
     const [preview, setPreview] =
         useState<Awaited<ReturnType<typeof readStoredMobileExamPreview>>>(null);
 
@@ -44,22 +45,27 @@ export function useExamResult() {
         setIsTurningIn(true);
 
         try {
-            await completeExamSession(apiClient, {
-                sessionId: preview.sessionId,
-                answers: preview.answers,
-                elapsedSeconds: preview.elapsedSeconds,
-            });
+            // Only call completeExamSession if the attempt hasn't already been
+            // submitted during the session finish flow. If preview.completedAt
+            // exists, the server already has the answers and the attempt is
+            // persisted — skip the duplicate mutation.
+            if (!preview.completedAt) {
+                await completeExamSession(apiClient, {
+                    sessionId: preview.sessionId,
+                    answers: preview.answers,
+                    elapsedSeconds: preview.elapsedSeconds,
+                });
+            }
 
+            const sessionId = preview.sessionId;
             await clearStoredMobileExamPreview(id);
             await clearStoredMobileExamSession(id);
 
             setIsTurningIn(false);
-            Alert.alert('Success', 'Exam turned in successfully.', [
-                {
-                    text: 'OK',
-                    onPress: () => router.replace('/(tabs)/exam'),
-                },
-            ]);
+            router.replace({
+                pathname: '/exam/[id]/feedback',
+                params: { id, attemptId: sessionId },
+            });
         } catch (error: any) {
             setIsTurningIn(false);
             Alert.alert('Turn-in failed', error?.message || 'Please try again.');
@@ -68,6 +74,7 @@ export function useExamResult() {
 
     return {
         exam,
+        questions,
         summary: preview?.summary ?? {
             score: 0,
             totalScore: 0,

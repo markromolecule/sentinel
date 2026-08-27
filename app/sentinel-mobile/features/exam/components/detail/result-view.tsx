@@ -8,17 +8,22 @@ import type { ExamAttemptAnswers, ExamAttemptScoreSummary } from '@sentinel/shar
 
 export interface ResultViewProps {
     exam: MobileExamDisplay;
+    questions?: any[];
     summary: ExamAttemptScoreSummary & { completedAt?: string };
     answers: ExamAttemptAnswers;
     onReturnToDashboard: () => void;
 }
 
-export function ResultView({ exam, summary, answers, onReturnToDashboard }: ResultViewProps) {
+export function ResultView({ exam, questions, summary, answers, onReturnToDashboard }: ResultViewProps) {
     const colorScheme = useColorScheme();
     const colors = Colors[colorScheme ?? 'light'];
     const isDark = colorScheme === 'dark';
 
-    const isPassed = (summary.percentage ?? 0) >= (exam.passingPercentage ?? 50);
+    const isPendingReview =
+        summary.requiresManualReview === true ||
+        (summary.manualReviewQuestionCount != null && summary.manualReviewQuestionCount > 0);
+
+    const isPassed = !isPendingReview && (summary.percentage ?? 0) >= (exam.passingPercentage ?? 50);
 
     const formattedDate = summary.completedAt
         ? new Date(summary.completedAt).toLocaleDateString('en-US', {
@@ -36,9 +41,15 @@ export function ResultView({ exam, summary, answers, onReturnToDashboard }: Resu
             minute: '2-digit',
         });
 
-    // Compute Section Breakdown
+    // Compute Section Breakdown with defensive question array normalization
+    const questionList = Array.isArray(questions)
+        ? questions
+        : Array.isArray((exam as any)?.questions)
+          ? (exam as any).questions
+          : [];
+
     const reports = buildExamAttemptQuestionReports({
-        questions: exam.questions as any || [],
+        questions: questionList,
         answers: answers as any,
     });
 
@@ -48,7 +59,7 @@ export function ResultView({ exam, summary, answers, onReturnToDashboard }: Resu
     const breakdown = hasSections
         ? sections
             .map((sec) => {
-                const secQuestions = (exam.questions as any || []).filter(
+                const secQuestions = questionList.filter(
                     (q: any) => q.sectionId === sec.id
                 );
                 const secReports = reports.filter((r) =>
@@ -76,31 +87,44 @@ export function ResultView({ exam, summary, answers, onReturnToDashboard }: Resu
             },
         ];
 
+    // Derive header card colors based on status
+    const headerBg = isPendingReview
+        ? isDark ? 'rgba(245, 158, 11, 0.1)' : '#fffbeb'
+        : isPassed
+            ? isDark ? 'rgba(16, 185, 129, 0.1)' : '#ecfdf5'
+            : isDark ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2';
+
+    const headerBorder = isPendingReview
+        ? isDark ? 'rgba(245, 158, 11, 0.2)' : '#fef3c7'
+        : isPassed
+            ? isDark ? 'rgba(16, 185, 129, 0.2)' : '#d1fae5'
+            : isDark ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2';
+
+    const iconBgColor = isPendingReview ? '#f59e0b' : isPassed ? '#10b981' : '#ef4444';
+    const iconName = isPendingReview ? 'hourglass-outline' : isPassed ? 'checkmark-circle' : 'close-circle';
+    const statusLabel = isPendingReview ? 'PENDING REVIEW' : isPassed ? 'PASSED' : 'DID NOT PASS';
+    const statusColor = isPendingReview ? '#d97706' : isPassed ? '#059669' : '#dc2626';
+
+    // Score display
+    const scoreDisplay = isPendingReview ? 'Pending Review' : `${summary.score} / ${summary.totalScore}`;
+    const percentageDisplay = isPendingReview
+        ? '--'
+        : summary.percentage !== null ? `${Math.round(summary.percentage)}%` : '--';
+    const percentageColor = isPendingReview ? '#d97706' : isPassed ? '#10b981' : '#ef4444';
+
     return (
         <ScrollView
             style={[styles.container, { backgroundColor: colors.background }]}
             contentContainerStyle={styles.contentContainer}
             showsVerticalScrollIndicator={false}
         >
-            {/* Pass/Fail Header Card */}
+            {/* Status Header Card */}
             <View
                 style={[
                     styles.headerCard,
                     {
-                        backgroundColor: isPassed
-                            ? isDark
-                                ? 'rgba(16, 185, 129, 0.1)'
-                                : '#ecfdf5'
-                            : isDark
-                                ? 'rgba(239, 68, 68, 0.1)'
-                                : '#fef2f2',
-                        borderColor: isPassed
-                            ? isDark
-                                ? 'rgba(16, 185, 129, 0.2)'
-                                : '#d1fae5'
-                            : isDark
-                                ? 'rgba(239, 68, 68, 0.2)'
-                                : '#fee2e2',
+                        backgroundColor: headerBg,
+                        borderColor: headerBorder,
                     },
                 ]}
             >
@@ -108,12 +132,12 @@ export function ResultView({ exam, summary, answers, onReturnToDashboard }: Resu
                     style={[
                         styles.iconContainer,
                         {
-                            backgroundColor: isPassed ? '#10b981' : '#ef4444',
+                            backgroundColor: iconBgColor,
                         },
                     ]}
                 >
                     <Ionicons
-                        name={isPassed ? 'checkmark-circle' : 'close-circle'}
+                        name={iconName}
                         size={32}
                         color="#fff"
                     />
@@ -121,10 +145,10 @@ export function ResultView({ exam, summary, answers, onReturnToDashboard }: Resu
                 <Text
                     style={[
                         styles.statusLabel,
-                        { color: isPassed ? '#059669' : '#dc2626' },
+                        { color: statusColor },
                     ]}
                 >
-                    {isPassed ? 'PASSED' : 'DID NOT PASS'}
+                    {statusLabel}
                 </Text>
                 <Text style={[styles.titleText, { color: colors.text }]}>
                     {exam.title}
@@ -134,11 +158,31 @@ export function ResultView({ exam, summary, answers, onReturnToDashboard }: Resu
                 </Text>
             </View>
 
+            {/* Pending Review Notice Banner */}
+            {isPendingReview && (
+                <View
+                    style={[
+                        styles.pendingNotice,
+                        {
+                            backgroundColor: isDark ? 'rgba(245, 158, 11, 0.08)' : '#fffbeb',
+                            borderColor: isDark ? 'rgba(245, 158, 11, 0.2)' : '#fef3c7',
+                        },
+                    ]}
+                    accessibilityRole="alert"
+                    accessibilityLabel="Pending review notice"
+                >
+                    <Ionicons name="information-circle" size={20} color="#f59e0b" />
+                    <Text style={styles.pendingNoticeText}>
+                        Your exam includes essay questions that require instructor grading. Your final grade will be updated once your instructor finishes reviewing.
+                    </Text>
+                </View>
+            )}
+
             {/* Score Radial Badge Replacement */}
             <View style={[styles.scoreCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={styles.percentageCircle}>
-                    <Text style={[styles.percentageText, { color: isPassed ? '#10b981' : '#ef4444' }]}>
-                        {summary.percentage !== null ? `${Math.round(summary.percentage)}%` : '--'}
+                    <Text style={[styles.percentageText, { color: percentageColor }]}>
+                        {percentageDisplay}
                     </Text>
                     <Text style={[styles.scoreSubtext, { color: colors.icon }]}>
                         Passing Score: {exam.passingPercentage}%
@@ -150,7 +194,7 @@ export function ResultView({ exam, summary, answers, onReturnToDashboard }: Resu
                 <View style={styles.metricsRow}>
                     <View style={styles.metricItem}>
                         <Text style={[styles.metricValue, { color: colors.text }]}>
-                            {summary.score} / {summary.totalScore}
+                            {scoreDisplay}
                         </Text>
                         <Text style={[styles.metricLabel, { color: colors.icon }]}>Points</Text>
                     </View>
@@ -160,6 +204,14 @@ export function ResultView({ exam, summary, answers, onReturnToDashboard }: Resu
                         </Text>
                         <Text style={[styles.metricLabel, { color: colors.icon }]}>Answered</Text>
                     </View>
+                    {isPendingReview && (
+                        <View style={styles.metricItem}>
+                            <Text style={[styles.metricValue, { color: '#d97706' }]}>
+                                {summary.manualReviewQuestionCount}
+                            </Text>
+                            <Text style={[styles.metricLabel, { color: colors.icon }]}>Pending</Text>
+                        </View>
+                    )}
                 </View>
             </View>
 
@@ -197,7 +249,9 @@ export function ResultView({ exam, summary, answers, onReturnToDashboard }: Resu
                                 {item.title}
                             </Text>
                             <Text style={[styles.breakdownScore, { color: colors.text }]}>
-                                {item.score}/{item.maxScore} ({item.percentage}%)
+                                {isPendingReview && item.id === 'general'
+                                    ? 'Pending Review'
+                                    : `${item.score}/${item.maxScore} (${item.percentage}%)`}
                             </Text>
                         </View>
                         <View style={styles.progressBarBackground}>
@@ -205,8 +259,10 @@ export function ResultView({ exam, summary, answers, onReturnToDashboard }: Resu
                                 style={[
                                     styles.progressBarFill,
                                     {
-                                        width: `${item.percentage}%`,
-                                        backgroundColor: item.percentage >= 50 ? '#10b981' : '#f59e0b',
+                                        width: isPendingReview && item.id === 'general' ? '0%' : `${item.percentage}%`,
+                                        backgroundColor: isPendingReview
+                                            ? '#f59e0b'
+                                            : item.percentage >= 50 ? '#10b981' : '#f59e0b',
                                     },
                                 ]}
                             />
@@ -215,13 +271,13 @@ export function ResultView({ exam, summary, answers, onReturnToDashboard }: Resu
                 ))}
             </View>
 
-            {/* Return to Dashboard Button */}
+            {/* Complete & Give Feedback Button */}
             <TouchableOpacity
                 style={[styles.button, { backgroundColor: colors.primary }]}
                 onPress={onReturnToDashboard}
                 activeOpacity={0.8}
             >
-                <Text style={styles.buttonText}>Return to Dashboard</Text>
+                <Text style={styles.buttonText}>Complete & Give Feedback</Text>
             </TouchableOpacity>
         </ScrollView>
     );
@@ -321,6 +377,23 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontWeight: '600',
         color: '#2563eb',
+    },
+    pendingNotice: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        borderRadius: 16,
+        borderWidth: 1,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        marginBottom: 20,
+        gap: 10,
+    },
+    pendingNoticeText: {
+        flex: 1,
+        fontSize: 13,
+        fontWeight: '500',
+        color: '#92400e',
+        lineHeight: 20,
     },
     breakdownContainer: {
         marginBottom: 32,

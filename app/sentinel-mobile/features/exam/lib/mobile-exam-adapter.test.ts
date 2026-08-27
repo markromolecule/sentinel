@@ -175,9 +175,147 @@ describe('adaptExamQuestionsForMobile', () => {
         expect(questions.map((q) => q.text)).toEqual(['First', 'Second', 'Third']);
     });
 
-    it('returns empty array when exam has no questions', () => {
-        const exam = makeExam(undefined);
-        expect(adaptExamQuestionsForMobile(exam)).toEqual([]);
+    it('adapts questions with object options', () => {
+        const exam = makeExam([
+            makeQuestion('MULTIPLE_CHOICE', {
+                prompt: 'Select feature',
+                options: [
+                    { id: 'opt-1', text: 'Feature 1' },
+                    { key: 'opt-2', label: 'Feature 2' },
+                ],
+            }),
+        ] as any);
+
+        const [q] = adaptExamQuestionsForMobile(exam);
+
+        expect(q.options).toEqual([
+            { id: 'opt-1', text: 'Feature 1' },
+            { id: 'opt-2', text: 'Feature 2' },
+        ]);
+    });
+
+    it('defensively extracts prompt from fallback property keys', () => {
+        const exam1 = makeExam([
+            makeQuestion('MULTIPLE_CHOICE', { question: 'Fallback Question Text', options: ['A'] }),
+        ] as any);
+        const [q1] = adaptExamQuestionsForMobile(exam1);
+        expect(q1.text).toBe('Fallback Question Text');
+
+        const exam2 = makeExam([
+            makeQuestion('MULTIPLE_CHOICE', { text: 'Fallback Text Property', options: ['A'] }),
+        ] as any);
+        const [q2] = adaptExamQuestionsForMobile(exam2);
+        expect(q2.text).toBe('Fallback Text Property');
+
+        const exam3 = makeExam([
+            makeQuestion('MULTIPLE_CHOICE', {}, { prompt: 'Top Level Prompt' }),
+        ] as any);
+        const [q3] = adaptExamQuestionsForMobile(exam3);
+        expect(q3.text).toBe('Top Level Prompt');
+    });
+
+    it('safely parses stringified JSON content', () => {
+        const exam = makeExam([
+            makeQuestion('MULTIPLE_CHOICE', JSON.stringify({
+                prompt: 'Parsed JSON prompt',
+                options: ['Choice 1', 'Choice 2'],
+            }) as any),
+        ] as any);
+
+        const [q] = adaptExamQuestionsForMobile(exam);
+        expect(q.text).toBe('Parsed JSON prompt');
+        expect(q.options).toHaveLength(2);
+    });
+
+    it('adapts MATCHING questions with pairs', () => {
+        const exam = makeExam([
+            makeQuestion('MATCHING', {
+                prompt: 'Match terms',
+                pairs: [
+                    { left: 'Term 1', right: 'Def 1' },
+                    { left: 'Term 2', right: 'Def 2' },
+                ],
+            }),
+        ] as any);
+
+        const [q] = adaptExamQuestionsForMobile(exam);
+
+        expect(q.type).toBe('MATCHING');
+        expect(q.text).toBe('Match terms');
+        expect(q.pairs).toEqual([
+            { left: 'Term 1', right: 'Def 1' },
+            { left: 'Term 2', right: 'Def 2' },
+        ]);
+    });
+
+    it('adapts FILL_BLANK questions with multiple blanks', () => {
+        const exam = makeExam([
+            makeQuestion('FILL_BLANK', {
+                prompt: 'Fill in [blank1] and [blank2]',
+                blanks: ['Blank 1', 'Blank 2'],
+            }),
+        ] as any);
+
+        const [q] = adaptExamQuestionsForMobile(exam);
+
+        expect(q.type).toBe('FILL_BLANK');
+        expect(q.blanks).toEqual(['Blank 1', 'Blank 2']);
+    });
+
+    it('adapts ENUMERATION questions with acceptedAnswers', () => {
+        const exam = makeExam([
+            makeQuestion('ENUMERATION', {
+                prompt: 'Enumerate 3 types',
+                acceptedAnswers: ['Item 1', 'Item 2', 'Item 3'],
+            }),
+        ] as any);
+
+        const [q] = adaptExamQuestionsForMobile(exam);
+
+        expect(q.type).toBe('ENUMERATION');
+        expect(q.blanks).toEqual(['Item 1', 'Item 2', 'Item 3']);
+    });
+
+    it('accepts question array directly', () => {
+        const questions = [
+            makeQuestion('MULTIPLE_CHOICE', { prompt: 'Direct array prompt', options: ['A', 'B'] }),
+        ];
+
+        const [q] = adaptExamQuestionsForMobile(questions as any);
+        expect(q.text).toBe('Direct array prompt');
+        expect(q.options).toHaveLength(2);
+    });
+
+    it('handles mobile exam display object where questions is a number without crashing', () => {
+        const displayExam = {
+            id: 'exam-1',
+            questions: 5,
+        };
+
+        expect(adaptExamQuestionsForMobile(displayExam as any)).toEqual([]);
+    });
+
+    it('normalizes lowercase and hyphenated question types', () => {
+        const exam = makeExam([
+            makeQuestion('multiple_choice', { prompt: 'Lowercase', options: ['1', '2'] }),
+            makeQuestion('fill-in-the-blank', { prompt: 'Hyphenated', blanks: ['a'] }),
+            makeQuestion('boolean', { prompt: 'Boolean TF' }),
+        ] as any);
+
+        const adapted = adaptExamQuestionsForMobile(exam);
+        expect(adapted[0].type).toBe('MULTIPLE_CHOICE');
+        expect(adapted[1].type).toBe('FILL_BLANK');
+        expect(adapted[2].type).toBe('TRUE_FALSE');
+    });
+
+    it('extracts choices from top-level question options property', () => {
+        const exam = makeExam([
+            makeQuestion('MULTIPLE_CHOICE', { prompt: 'Choice test' }, { options: ['X', 'Y', 'Z'] }),
+        ] as any);
+
+        const [q] = adaptExamQuestionsForMobile(exam);
+        expect(q.options).toHaveLength(3);
+        expect(q.options[0].text).toBe('X');
     });
 });
 
@@ -215,6 +353,26 @@ describe('buildSessionAnswerPayload', () => {
         ],
         text: '',
         points: 1,
+        originalContent: {},
+    } as any;
+
+    const matchingQuestion = {
+        id: 'q-matching',
+        type: 'MATCHING' as const,
+        options: [],
+        pairs: [{ left: 'Term 1', right: 'Def 1' }],
+        text: '',
+        points: 2,
+        originalContent: {},
+    } as any;
+
+    const fillBlankQuestion = {
+        id: 'q-fb',
+        type: 'FILL_BLANK' as const,
+        options: [],
+        blanks: ['Blank 1', 'Blank 2'],
+        text: '',
+        points: 2,
         originalContent: {},
     } as any;
 
@@ -257,5 +415,19 @@ describe('buildSessionAnswerPayload', () => {
 
         const payload = buildSessionAnswerPayload([tfQuestion], { 'q-tf': 'true' });
         expect(payload['q-tf']).toBe('true');
+    });
+
+    it('serialises matching object answers as JSON string', () => {
+        const payload = buildSessionAnswerPayload([matchingQuestion], {
+            'q-matching': { 'Term 1': 'Def 1' },
+        });
+        expect(payload['q-matching']).toBe(JSON.stringify({ 'Term 1': 'Def 1' }));
+    });
+
+    it('serialises fill-in-the-blank array answers as JSON string', () => {
+        const payload = buildSessionAnswerPayload([fillBlankQuestion], {
+            'q-fb': ['Answer 1', 'Answer 2'],
+        });
+        expect(payload['q-fb']).toBe(JSON.stringify(['Answer 1', 'Answer 2']));
     });
 });

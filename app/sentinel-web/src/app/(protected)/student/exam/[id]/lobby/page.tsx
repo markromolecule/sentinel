@@ -53,14 +53,6 @@ export default function StudentExamLobbyPage() {
         refetchExam,
     });
 
-    useEffect(() => {
-        if (!admissionStatus) {
-            return;
-        }
-
-        void refetchLobbyCount();
-    }, [admissionStatus, refetchLobbyCount]);
-
     if (isResolving) {
         return <StudentExamLoadingState />;
     }

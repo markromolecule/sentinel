@@ -1,5 +1,5 @@
 import type { ChangeEvent, ReactNode } from 'react';
-import { Activity, CheckCircle, Clock, Search, XCircle } from 'lucide-react';
+import { Activity, CheckCircle, Clock, FileCheck, Search, XCircle } from 'lucide-react';
 import {
     Avatar,
     AvatarImage,
@@ -47,8 +47,9 @@ const STATUS_FILTER_LABELS: Record<LobbyAdmissionStatusFilter, string> = {
     all: 'All students',
     waiting: 'Waiting',
     approved: 'Approved',
-    rejected: 'Rejected',
     inAttempt: 'In attempt',
+    submitted: 'Submitted',
+    rejected: 'Rejected',
 };
 
 function formatCheckedInAt(value: string | null) {
@@ -154,7 +155,7 @@ function QueueSection({
 
 /**
  * InstructorLobbyAdmissionPanel renders searchable lobby queues and admission actions
- * in a 4-column kanban layout: Waiting, Approved, In Attempt, and Rejected.
+ * in a 4-column kanban layout: Waiting, Approved, In Attempt, and Submitted.
  *
  * @param props - InstructorLobbyAdmissionPanelProps containing grouped admissions and controls.
  */
@@ -170,8 +171,12 @@ export function InstructorLobbyAdmissionPanel({
     overridingStudentId,
     onOverrideReconnect,
 }: InstructorLobbyAdmissionPanelProps) {
-    const { waitingStudents, approvedStudents, rejectedStudents, inAttemptStudents } =
-        lobbyAdmissionGroups;
+    const { 
+        waitingStudents, 
+        approvedStudents, 
+        inAttemptStudents,
+        submittedStudents = [],
+    } = lobbyAdmissionGroups;
     const hasActiveFilter = searchTerm.trim().length > 0 || statusFilter !== 'all';
     const waitingStudentIds = waitingStudents.map((student) => student.studentId);
 
@@ -309,13 +314,22 @@ export function InstructorLobbyAdmissionPanel({
                 </QueueSection>
 
                 <QueueSection
-                    title="Rejected"
-                    count={rejectedStudents.length}
-                    icon={<XCircle className="h-4 w-4 text-rose-600" />}
-                    accentColor="border-t-rose-600"
-                    students={rejectedStudents}
-                    emptyLabel="No rejected admissions."
-                />
+                    title="Submitted"
+                    count={submittedStudents.length}
+                    icon={<FileCheck className="h-4 w-4 text-purple-600" />}
+                    accentColor="border-t-purple-600"
+                    students={submittedStudents}
+                    emptyLabel="No submitted attempts."
+                >
+                    {() => (
+                        <Badge
+                            variant="outline"
+                            className="border-purple-200 bg-purple-50 text-purple-700 justify-center text-[10px] dark:border-purple-900/50 dark:bg-purple-950/40 dark:text-purple-300"
+                        >
+                            Submitted
+                        </Badge>
+                    )}
+                </QueueSection>
             </div>
         </div>
     );

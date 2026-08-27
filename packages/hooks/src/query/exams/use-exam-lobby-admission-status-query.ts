@@ -15,13 +15,13 @@ export function useExamLobbyAdmissionStatusQuery(examId?: string) {
         queryFn: () => getExamLobbyAdmissionStatus(apiClient, examId as string),
         enabled: Boolean(examId) && isAuthenticatedQueryEnabled,
         staleTime: 0,
-        // Adaptive polling fallback: Poll every 3s ONLY while not approved; stop immediately when approved
+        // Adaptive polling fallback: Poll every 10s ONLY while not approved; stop immediately when approved
         refetchInterval: (query) => {
             const status = query.state.data?.status;
             if (status === 'APPROVED') {
                 return false;
             }
-            return 3000;
+            return 10000;
         },
         refetchIntervalInBackground: false,
         refetchOnWindowFocus: true,

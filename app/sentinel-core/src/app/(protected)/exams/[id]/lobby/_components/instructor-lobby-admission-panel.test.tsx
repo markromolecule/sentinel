@@ -48,20 +48,22 @@ const admissions = [
         attemptStatus: 'IN_PROGRESS',
     }),
     createAdmission({
-        admissionId: 'rejected-1',
+        admissionId: 'submitted-1',
         studentId: 'student-5',
-        studentName: 'Jordan Rejected',
-        status: 'REJECTED',
+        studentName: 'Jordan Submitted',
+        status: 'APPROVED',
+        hasActiveAttempt: false,
+        attemptStatus: 'SUBMITTED',
     }),
 ];
 
 function renderPanel(overrides?: {
     admissions?: ExamLobbyWaitingStudent[];
     searchTerm?: string;
-    statusFilter?: 'all' | 'waiting' | 'approved' | 'rejected' | 'inAttempt';
+    statusFilter?: 'all' | 'waiting' | 'approved' | 'inAttempt' | 'submitted' | 'rejected';
     onSearchChange?: (value: string) => void;
     onStatusFilterChange?: (
-        value: 'all' | 'waiting' | 'approved' | 'rejected' | 'inAttempt',
+        value: 'all' | 'waiting' | 'approved' | 'inAttempt' | 'submitted' | 'rejected',
     ) => void;
     onUpdateLobbyAdmissions?: (
         studentIds: string[],
@@ -90,13 +92,13 @@ afterEach(() => {
 });
 
 describe('InstructorLobbyAdmissionPanel', () => {
-    it('renders queue counts for waiting, approved, in-attempt, and rejected students', () => {
+    it('renders queue counts for waiting, approved, in-attempt, and submitted students', () => {
         renderPanel();
 
         expect(screen.getAllByText('Waiting').length).toBeGreaterThan(0);
         expect(screen.getAllByText('Approved').length).toBeGreaterThan(0);
         expect(screen.getAllByText('In Attempt').length).toBeGreaterThan(0);
-        expect(screen.getAllByText('Rejected').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('Submitted').length).toBeGreaterThan(0);
         expect(screen.getAllByText('2').length).toBeGreaterThan(0);
         expect(screen.getAllByText('1').length).toBeGreaterThanOrEqual(3);
     });
@@ -155,7 +157,7 @@ describe('InstructorLobbyAdmissionPanel', () => {
         expect(screen.getByText('No students waiting.')).toBeTruthy();
         expect(screen.getByText('No approved students waiting.')).toBeTruthy();
         expect(screen.getByText('No active attempts yet.')).toBeTruthy();
-        expect(screen.getByText('No rejected admissions.')).toBeTruthy();
+        expect(screen.getByText('No submitted attempts yet.')).toBeTruthy();
         expect(container.firstElementChild?.className).not.toContain('h-[700px]');
     });
 });

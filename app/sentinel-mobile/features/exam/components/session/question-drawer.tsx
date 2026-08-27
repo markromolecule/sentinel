@@ -6,14 +6,13 @@ import {
     Dimensions,
     ScrollView,
     TouchableOpacity,
-    TouchableWithoutFeedback,
+    StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
     withTiming,
-    runOnJS,
     Easing,
 } from 'react-native-reanimated';
 import { ThemeColors } from '@/types/exam';
@@ -70,16 +69,15 @@ export const QuestionDrawer = ({
         <Animated.View
             pointerEvents={visible ? 'auto' : 'none'}
             style={[
+                styles.drawerContainer,
                 {
                     bottom: bottomOffset,
                     backgroundColor: colors.background,
                 },
                 animatedStyle,
             ]}
-            className="absolute left-0 right-0 z-20 overflow-hidden rounded-t-3xl shadow-xl"
         >
-            <TouchableWithoutFeedback onPress={() => {}}>
-                <View className="w-full">
+            <View className="w-full">
                     {/* Header */}
                     <View
                         style={{ borderBottomColor: colors.border }}
@@ -106,7 +104,7 @@ export const QuestionDrawer = ({
                                 gap: 12,
                                 alignItems: 'center',
                             }}
-                            onStartShouldSetResponder={() => true}
+
                         >
                             {questions.map((q, index) => {
                                 const isCurrent = index === currentIndex;
@@ -135,7 +133,7 @@ export const QuestionDrawer = ({
                                         key={q.id}
                                         onPress={() => {
                                             onSelectQuestion(index);
-                                            // onClose(); // Keep drawer open for browsing
+                                            onClose();
                                         }}
                                         style={{
                                             backgroundColor: bgColor,
@@ -202,8 +200,25 @@ export const QuestionDrawer = ({
                             </View>
                         </View>
                     </View>
-                </View>
-            </TouchableWithoutFeedback>
+            </View>
         </Animated.View>
     );
 };
+
+const styles = StyleSheet.create({
+    drawerContainer: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        zIndex: 20,
+        overflow: 'hidden',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+        elevation: 10,
+    },
+});
+
