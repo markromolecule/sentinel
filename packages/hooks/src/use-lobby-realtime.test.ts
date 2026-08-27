@@ -112,11 +112,12 @@ describe('useLobbyRealtime Hook', () => {
         expect(onAdmissionChange).toHaveBeenCalledWith(broadcastPayload);
     });
 
-    it('does not mutate query cache if broadcast event is for a different student', () => {
+    it('does not mutate query cache or invalidate queries if broadcast event is for a different student', () => {
         const examId = 'exam-123';
         const studentId = 'student-456';
+        const onAdmissionChange = vi.fn();
 
-        renderHook(() => useLobbyRealtime({ examId, studentId }));
+        renderHook(() => useLobbyRealtime({ examId, studentId, onAdmissionChange }));
 
         const broadcastCall = mockChannelOn.mock.calls.find(
             ([type, config]) => type === 'broadcast' && config.event === 'admission:updated',
@@ -131,9 +132,8 @@ describe('useLobbyRealtime Hook', () => {
         });
 
         expect(mockSetQueryData).not.toHaveBeenCalled();
-        expect(mockInvalidateQueries).toHaveBeenCalledWith({
-            queryKey: EXAM_QUERY_KEYS.lobbyWaitingList(examId),
-        });
+        expect(mockInvalidateQueries).not.toHaveBeenCalled();
+        expect(onAdmissionChange).not.toHaveBeenCalled();
     });
 
     it('optimistically populates admission query cache and invalidates query keys on postgres_changes for target student', () => {

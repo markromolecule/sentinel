@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useApi, useExamLobbyAdmissionStatusQuery, useLobbyRealtime } from '@sentinel/hooks';
+import { useApi, useAuth, useExamLobbyAdmissionStatusQuery, useLobbyRealtime } from '@sentinel/hooks';
 import { checkIntoExamLobby } from '@sentinel/services';
 import { toast } from 'sonner';
 import { readStoredExamSession } from '../../_lib/exam-session-storage';
@@ -24,6 +24,8 @@ export function useLobbyState(args: {
 }) {
     const { examId, exam, configuration, mediaPipeSandbox, refetchExam } = args;
     const apiClient = useApi();
+    const { session } = useAuth();
+    const studentId = session?.user?.id;
     const prevStatusRef = useRef<ExamLobbyAdmissionStatus | null>(null);
 
     // 1. Core Timer
@@ -58,7 +60,7 @@ export function useLobbyState(args: {
     );
     const shouldSkipLobbySync = hasResumableAttempt && !requiresInstructorAdmission;
 
-    // 5. Reactive Admission Query (TanStack Query with 3s adaptive polling fallback while waiting)
+    // 5. Reactive Admission Query (TanStack Query with 10s adaptive polling fallback while waiting)
     const {
         data: admissionData,
         refetch: refetchAdmissionStatus,
@@ -90,6 +92,7 @@ export function useLobbyState(args: {
     // Real-time admission event listener for instant sub-second unlock (broadcast + CDC)
     useLobbyRealtime({
         examId,
+        studentId,
         enabled: !shouldSkipLobbySync,
         onAdmissionChange: () => {
             void refetchAdmissionStatus();

@@ -28,6 +28,7 @@ const {
 
 vi.mock('@sentinel/hooks', () => ({
     useApi: () => mockUseApi(),
+    useAuth: () => ({ session: { user: { id: 'test-user-id' } } }),
     useLobbyRealtime: (args: unknown) => mockUseLobbyRealtime(args),
     useExamLobbyAdmissionStatusQuery: (examId?: string) => mockUseExamLobbyAdmissionStatusQuery(examId),
 }));

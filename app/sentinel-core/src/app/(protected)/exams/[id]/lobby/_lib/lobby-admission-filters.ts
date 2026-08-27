@@ -1,12 +1,19 @@
 import type { ExamLobbyWaitingStudent } from '@sentinel/services';
 
-export type LobbyAdmissionStatusFilter = 'all' | 'waiting' | 'approved' | 'rejected' | 'inAttempt';
+export type LobbyAdmissionStatusFilter =
+    | 'all'
+    | 'waiting'
+    | 'approved'
+    | 'inAttempt'
+    | 'submitted'
+    | 'rejected';
 
 export type LobbyAdmissionGroups = {
     waitingStudents: ExamLobbyWaitingStudent[];
     approvedStudents: ExamLobbyWaitingStudent[];
-    rejectedStudents: ExamLobbyWaitingStudent[];
     inAttemptStudents: ExamLobbyWaitingStudent[];
+    submittedStudents: ExamLobbyWaitingStudent[];
+    rejectedStudents?: ExamLobbyWaitingStudent[];
 };
 
 type FilterLobbyAdmissionsArgs = {
@@ -27,12 +34,18 @@ export function getLobbyAdmissionGroups(
             (student) => student.status === 'WAITING' && !student.hasActiveAttempt,
         ),
         approvedStudents: admissions.filter(
-            (student) => student.status === 'APPROVED' && !student.hasActiveAttempt,
+            (student) =>
+                student.status === 'APPROVED' &&
+                !student.hasActiveAttempt &&
+                student.attemptStatus !== 'SUBMITTED',
+        ),
+        inAttemptStudents: admissions.filter((student) => student.hasActiveAttempt),
+        submittedStudents: admissions.filter(
+            (student) => student.attemptStatus === 'SUBMITTED',
         ),
         rejectedStudents: admissions.filter(
             (student) => student.status === 'REJECTED' && !student.hasActiveAttempt,
         ),
-        inAttemptStudents: admissions.filter((student) => student.hasActiveAttempt),
     };
 }
 
@@ -62,11 +75,17 @@ export function filterLobbyAdmissions(
             case 'waiting':
                 return student.status === 'WAITING' && !student.hasActiveAttempt;
             case 'approved':
-                return student.status === 'APPROVED' && !student.hasActiveAttempt;
-            case 'rejected':
-                return student.status === 'REJECTED' && !student.hasActiveAttempt;
+                return (
+                    student.status === 'APPROVED' &&
+                    !student.hasActiveAttempt &&
+                    student.attemptStatus !== 'SUBMITTED'
+                );
             case 'inAttempt':
                 return student.hasActiveAttempt;
+            case 'submitted':
+                return student.attemptStatus === 'SUBMITTED';
+            case 'rejected':
+                return student.status === 'REJECTED' && !student.hasActiveAttempt;
             case 'all':
             default:
                 return true;
