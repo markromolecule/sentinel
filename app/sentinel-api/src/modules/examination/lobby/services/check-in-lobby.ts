@@ -1,6 +1,5 @@
 import { type DbClient } from '@sentinel/db';
 import { HTTPException } from 'hono/http-exception';
-import { ActivityNotificationService } from '../../../general/notification/services/activity-notification.service';
 import { broadcastLobbyEvent } from './broadcast-lobby-event';
 
 /**
@@ -58,29 +57,6 @@ export const checkInLobby = async (dbClient: DbClient, examId: string, studentId
                 .returningAll()
                 .executeTakeFirstOrThrow();
 
-            if (exam.institution_id && actorUserId) {
-                try {
-                    await ActivityNotificationService.notifyInstitutionActivityCreated({
-                        dbClient,
-                        actorUserId,
-                        institutionId: exam.institution_id,
-                        targetType: 'EXAM_LOBBY',
-                        targetId: examId,
-                        targetLabel: exam.title || 'Exam',
-                        title: 'Student checked into lobby',
-                        message: `A student has checked into the waiting lobby for exam "${exam.title || 'Exam'}".`,
-                        sourceModule: 'exams',
-                        sourceAction: 'lobby-check-in',
-                        metadata: {
-                            examId,
-                            studentId,
-                        },
-                    });
-                } catch (notifErr) {
-                    console.error('Failed to notify lobby check-in:', notifErr);
-                }
-            }
-
             const checkedInAt =
                 updatedAdmission.checked_in_at?.toISOString() ?? new Date().toISOString();
 
@@ -127,29 +103,6 @@ export const checkInLobby = async (dbClient: DbClient, examId: string, studentId
         }
 
         const resolvedStatus = existingAdmission.status ?? 'WAITING';
-        if (resolvedStatus === 'WAITING' && exam.institution_id && actorUserId) {
-            try {
-                await ActivityNotificationService.notifyInstitutionActivityCreated({
-                    dbClient,
-                    actorUserId,
-                    institutionId: exam.institution_id,
-                    targetType: 'EXAM_LOBBY',
-                    targetId: examId,
-                    targetLabel: exam.title || 'Exam',
-                    title: 'Student checked into lobby',
-                    message: `A student has checked into the waiting lobby for exam "${exam.title || 'Exam'}".`,
-                    sourceModule: 'exams',
-                    sourceAction: 'lobby-check-in',
-                    metadata: {
-                        examId,
-                        studentId,
-                    },
-                });
-            } catch (notifErr) {
-                console.error('Failed to notify lobby check-in:', notifErr);
-            }
-        }
-
         const checkedInAt =
             existingAdmission.checked_in_at?.toISOString() ?? new Date().toISOString();
 
@@ -200,29 +153,6 @@ export const checkInLobby = async (dbClient: DbClient, examId: string, studentId
         .executeTakeFirstOrThrow();
 
     const resolvedStatus = newAdmission.status ?? 'WAITING';
-    if (resolvedStatus === 'WAITING' && exam.institution_id && actorUserId) {
-        try {
-            await ActivityNotificationService.notifyInstitutionActivityCreated({
-                dbClient,
-                actorUserId,
-                institutionId: exam.institution_id,
-                targetType: 'EXAM_LOBBY',
-                targetId: examId,
-                targetLabel: exam.title || 'Exam',
-                title: 'Student checked into lobby',
-                message: `A student has checked into the waiting lobby for exam "${exam.title || 'Exam'}".`,
-                sourceModule: 'exams',
-                sourceAction: 'lobby-check-in',
-                metadata: {
-                    examId,
-                    studentId,
-                },
-            });
-        } catch (notifErr) {
-            console.error('Failed to notify lobby check-in:', notifErr);
-        }
-    }
-
     const finalCheckedInAt = newAdmission.checked_in_at?.toISOString() ?? new Date().toISOString();
 
     // Fast-path Realtime broadcast so instructor queue updates in < 50ms

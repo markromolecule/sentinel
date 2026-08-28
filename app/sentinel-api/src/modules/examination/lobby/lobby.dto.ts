@@ -86,5 +86,25 @@ export const updateAdmissionsSchema = {
     }),
 };
 
+export const bootstrapLobbySchema = {
+    params: examIdParams,
+    response: z.object({
+        message: z.string(),
+        data: z.object({
+            exam: z.any(),
+            configuration: z.any(),
+            admission: z.object({
+                status: examLobbyAdmissionStatusSchema,
+                checkedInAt: z.string().datetime().nullable(),
+                decidedAt: z.string().datetime().nullable().optional(),
+            }),
+            waitingCount: z.number(),
+            runtimeAccess: z.any(),
+        }),
+    }),
+};
+
 export type LobbyAdmissionStatus = z.infer<typeof examLobbyAdmissionStatusSchema>;
+export type ExamLobbyAdmissionStatus = LobbyAdmissionStatus;
 export type LobbyAdmissionDecisionStatus = z.infer<typeof updateLobbyAdmissionStatusSchema>;
+export type BootstrapLobbyResponse = z.infer<typeof bootstrapLobbySchema.response>;
