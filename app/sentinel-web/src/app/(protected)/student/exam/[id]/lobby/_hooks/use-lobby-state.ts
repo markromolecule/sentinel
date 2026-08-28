@@ -1,6 +1,10 @@
 import { useEffect, useRef } from 'react';
-import { useApi, useAuth, useExamLobbyAdmissionStatusQuery, useLobbyRealtime } from '@sentinel/hooks';
-import { checkIntoExamLobby } from '@sentinel/services';
+import {
+    useAuth,
+    useExamLobbyAdmissionStatusQuery,
+    useExamLobbyBootstrapMutation,
+    useLobbyRealtime,
+} from '@sentinel/hooks';
 import { toast } from 'sonner';
 import { readStoredExamSession } from '../../_lib/exam-session-storage';
 import { useLobbyTimer } from './use-lobby-timer';
@@ -23,7 +27,6 @@ export function useLobbyState(args: {
     refetchExam: () => Promise<unknown>;
 }) {
     const { examId, exam, configuration, mediaPipeSandbox, refetchExam } = args;
-    const apiClient = useApi();
     const { session } = useAuth();
     const studentId = session?.user?.id;
     const prevStatusRef = useRef<ExamLobbyAdmissionStatus | null>(null);
@@ -109,30 +112,22 @@ export function useLobbyState(args: {
         prevStatusRef.current = admissionStatus;
     }, [admissionStatus, refetchExam]);
 
-    // Initial check-in on mount
-    useEffect(() => {
-        let isMounted = true;
+    // Initial atomic bootstrap on mount (check-in, exam metadata, config & admissions in 1 query)
+    const { mutate: bootstrapLobby } = useExamLobbyBootstrapMutation({
+        onSuccess: (data) => {
+            if (data.admission?.status === 'APPROVED') {
+                void refetchExam();
+            }
+        },
+    });
 
-        if (shouldSkipLobbySync) {
-            return () => {
-                isMounted = false;
-            };
+    useEffect(() => {
+        if (shouldSkipLobbySync || !examId) {
+            return;
         }
 
-        void checkIntoExamLobby(apiClient, examId)
-            .then(async (admission) => {
-                if (!isMounted) return;
-                await refetchAdmissionStatus();
-                if (admission.status === 'APPROVED') {
-                    void refetchExam();
-                }
-            })
-            .catch(() => null);
-
-        return () => {
-            isMounted = false;
-        };
-    }, [apiClient, examId, refetchAdmissionStatus, refetchExam, shouldSkipLobbySync]);
+        bootstrapLobby(examId);
+    }, [bootstrapLobby, examId, shouldSkipLobbySync]);
 
     // 6. Actions Orchestration
     const { isStartingSession, handleEnterExam } = useLobbyActions({

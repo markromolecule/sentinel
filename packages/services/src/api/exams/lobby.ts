@@ -1,5 +1,6 @@
 import type { ApiClientType } from '../../api-client';
 import type { ApiExamResponse } from './types';
+import type { ExamConfig, ExamData, ExamRuntimeAccess } from '@sentinel/shared/types';
 
 export type ExamLobbyAdmissionStatus = 'WAITING' | 'APPROVED' | 'REJECTED';
 
@@ -11,6 +12,18 @@ export type ExamLobbyAdmissionStatusResult = {
 
 export type ExamLobbyCountResult = {
     count: number;
+};
+
+export type ExamLobbyBootstrapResult = {
+    exam: ExamData;
+    configuration: ExamConfig;
+    admission: {
+        status: ExamLobbyAdmissionStatus;
+        checkedInAt: string | null;
+        decidedAt?: string | null;
+    };
+    waitingCount: number;
+    runtimeAccess: ExamRuntimeAccess | null;
 };
 
 export type ExamLobbyWaitingStudent = {
@@ -27,6 +40,17 @@ export type ExamLobbyWaitingStudent = {
     reconnectCount: number;
     maxReconnectAttempts: number;
 };
+
+export async function bootstrapExamLobby(apiClient: ApiClientType, examId: string) {
+    const response: ApiExamResponse<ExamLobbyBootstrapResult> = await apiClient(
+        `/exams/${examId}/lobby/bootstrap`,
+        {
+            method: 'POST',
+        },
+    );
+
+    return response.data;
+}
 
 export async function checkIntoExamLobby(apiClient: ApiClientType, examId: string) {
     const response: ApiExamResponse<{

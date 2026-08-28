@@ -61,7 +61,7 @@ describe('broadcastLobbyEvent', () => {
                 body: JSON.stringify({
                     messages: [
                         {
-                            topic: 'lobby:admissions:exam-1',
+                            topic: 'lobby:exam-1',
                             event: 'admission:updated',
                             payload: {
                                 examId: 'exam-1',

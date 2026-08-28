@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderHook } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
 import { EXAM_QUERY_KEYS } from '@sentinel/shared/constants';
 import { useLobbyRealtime } from './use-lobby-realtime';
 
@@ -8,9 +8,15 @@ const mockSetQueryData = vi.fn();
 const mockSubscribe = vi.fn();
 const mockRemoveChannel = vi.fn();
 const mockChannelOn = vi.fn();
+const mockTrack = vi.fn().mockResolvedValue(undefined);
+let presenceStateData: Record<string, any[]> = {};
+const mockPresenceState = vi.fn(() => presenceStateData);
+
 const mockChannel = {
     on: mockChannelOn,
     subscribe: mockSubscribe,
+    presenceState: mockPresenceState,
+    track: mockTrack,
 };
 const mockSupabaseChannel = vi.fn(() => mockChannel);
 const mockUseAuth = vi.fn(() => ({
@@ -36,14 +42,26 @@ describe('useLobbyRealtime Hook', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mockChannelOn.mockReturnValue(mockChannel);
+        presenceStateData = {};
     });
 
-    it('subscribes to broadcast and postgres_changes channels and cleans up on unmount', () => {
+    it('subscribes to single consolidated channel lobby:examId and cleans up on unmount without postgres_changes', () => {
         const examId = 'exam-123';
 
         const { unmount } = renderHook(() => useLobbyRealtime({ examId }));
 
-        expect(mockSupabaseChannel).toHaveBeenCalledWith(`lobby:admissions:${examId}`);
+        expect(mockSupabaseChannel).toHaveBeenCalledWith(`lobby:${examId}`, {
+            config: {
+                presence: {
+                    key: 'student-user-1',
+                },
+            },
+        });
+        expect(mockChannelOn).toHaveBeenCalledWith(
+            'presence',
+            { event: 'sync' },
+            expect.any(Function),
+        );
         expect(mockChannelOn).toHaveBeenCalledWith(
             'broadcast',
             { event: 'admission:updated' },
@@ -54,20 +72,58 @@ describe('useLobbyRealtime Hook', () => {
             { event: 'student:checked_in' },
             expect.any(Function),
         );
-        expect(mockChannelOn).toHaveBeenCalledWith(
-            'postgres_changes',
-            {
-                event: '*',
-                schema: 'public',
-                table: 'exam_lobby_admissions',
-                filter: `exam_id=eq.${examId}`,
-            },
-            expect.any(Function),
-        );
+
+        // Verify postgres_changes CDC is NOT registered
+        const cdcCalls = mockChannelOn.mock.calls.filter(([type]) => type === 'postgres_changes');
+        expect(cdcCalls).toHaveLength(0);
+
         expect(mockSubscribe).toHaveBeenCalled();
 
         unmount();
         expect(mockRemoveChannel).toHaveBeenCalledWith(mockChannel);
+    });
+
+    it('syncs presence count across connected participants', () => {
+        const examId = 'exam-123';
+        const { result } = renderHook(() => useLobbyRealtime({ examId }));
+
+        const presenceCall = mockChannelOn.mock.calls.find(
+            ([type, config]) => type === 'presence' && config.event === 'sync',
+        );
+        expect(presenceCall).toBeDefined();
+
+        presenceStateData = {
+            'student-user-1': [{ user_id: 'student-user-1' }, { user_id: 'student-user-1' }],
+            'student-user-2': [{ user_id: 'student-user-2' }],
+        };
+
+        act(() => {
+            presenceCall?.[2]();
+        });
+
+        expect(result.current.presenceCount).toBe(2);
+    });
+
+    it('tracks presence on successful channel subscription', async () => {
+        const examId = 'exam-123';
+        const studentId = 'student-custom-id';
+
+        let subscribeCb: ((status: string) => Promise<void>) | null = null;
+        mockSubscribe.mockImplementation((cb: (status: string) => Promise<void>) => {
+            subscribeCb = cb;
+            return mockChannel;
+        });
+
+        renderHook(() => useLobbyRealtime({ examId, studentId, trackPresence: true }));
+
+        await act(async () => {
+            await subscribeCb?.('SUBSCRIBED');
+        });
+
+        expect(mockTrack).toHaveBeenCalledWith({
+            user_id: 'student-custom-id',
+            online_at: expect.any(String),
+        });
     });
 
     it('handles admission:updated broadcast for matching studentId', () => {
@@ -136,57 +192,34 @@ describe('useLobbyRealtime Hook', () => {
         expect(onAdmissionChange).not.toHaveBeenCalled();
     });
 
-    it('optimistically populates admission query cache and invalidates query keys on postgres_changes for target student', () => {
+    it('invalidates waiting list and count for instructor on student:checked_in broadcast', () => {
         const examId = 'exam-123';
-        const studentId = 'student-456';
         const onAdmissionChange = vi.fn();
 
-        renderHook(() => useLobbyRealtime({ examId, studentId, onAdmissionChange }));
+        // When studentId is undefined, user is instructor
+        renderHook(() => useLobbyRealtime({ examId, onAdmissionChange }));
 
-        const cdcCall = mockChannelOn.mock.calls.find(
-            ([type, config]) =>
-                type === 'postgres_changes' && config.table === 'exam_lobby_admissions',
+        const checkInCall = mockChannelOn.mock.calls.find(
+            ([type, config]) => type === 'broadcast' && config.event === 'student:checked_in',
         );
 
-        expect(cdcCall).toBeDefined();
+        expect(checkInCall).toBeDefined();
 
         const payload = {
-            eventType: 'UPDATE',
-            new: {
-                student_id: 'student-456',
-                status: 'APPROVED',
-                checked_in_at: '2026-08-23T12:00:00.000Z',
-                decided_at: '2026-08-23T12:05:00.000Z',
+            payload: {
+                examId,
+                studentId: 'student-999',
             },
         };
 
-        cdcCall?.[2](payload);
+        checkInCall?.[2](payload);
 
-        // Optimistic query cache set
-        expect(mockSetQueryData).toHaveBeenCalledWith(
-            EXAM_QUERY_KEYS.lobbyAdmissionStatus(examId),
-            {
-                status: 'APPROVED',
-                checkedInAt: '2026-08-23T12:00:00.000Z',
-                decidedAt: '2026-08-23T12:05:00.000Z',
-            },
-        );
-
-        // Query invalidations
         expect(mockInvalidateQueries).toHaveBeenCalledWith({
             queryKey: EXAM_QUERY_KEYS.lobbyWaitingList(examId),
         });
         expect(mockInvalidateQueries).toHaveBeenCalledWith({
-            queryKey: EXAM_QUERY_KEYS.lobbyAdmissionStatus(examId),
-        });
-        expect(mockInvalidateQueries).toHaveBeenCalledWith({
             queryKey: EXAM_QUERY_KEYS.lobbyCount(examId),
         });
-        expect(mockInvalidateQueries).toHaveBeenCalledWith({
-            queryKey: EXAM_QUERY_KEYS.details(examId),
-        });
-
-        // Callback invoked
         expect(onAdmissionChange).toHaveBeenCalledWith(payload);
     });
 });

@@ -5,6 +5,7 @@ import { EntitlementsRepository } from '../access/data/entitlements.repository';
 import { assertInstructorExamAccess } from '../assign/services/exam-access.service';
 import { getMonitoringExamContext } from '../monitoring/services/get-monitoring-exam-context';
 import type { LobbyAdmissionDecisionStatus } from './lobby.dto';
+import { bootstrapLobby } from './services/bootstrap-lobby';
 import { checkInLobby } from './services/check-in-lobby';
 import { getAdmissionStatus } from './services/get-admission-status';
 import { getLobbyCount } from './services/get-lobby-count';
@@ -41,6 +42,15 @@ async function assertLobbyExamAccess(args: {
 }
 
 export class LobbyService {
+    static async bootstrap(
+        dbClient: DbClient,
+        examId: string,
+        userId: string,
+        institutionId?: string,
+    ) {
+        return await bootstrapLobby(dbClient, examId, userId, institutionId);
+    }
+
     static async checkIn(dbClient: DbClient, examId: string, userId: string) {
         const studentId = await resolveStudentId(dbClient, userId);
         const result = await checkInLobby(dbClient, examId, studentId);

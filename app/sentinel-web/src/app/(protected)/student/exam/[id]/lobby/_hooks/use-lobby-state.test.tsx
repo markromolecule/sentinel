@@ -3,8 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useLobbyState } from './use-lobby-state';
 
 const {
-    mockUseApi,
-    mockCheckIntoExamLobby,
+    mockBootstrapLobby,
     mockReadStoredExamSession,
     mockUseLobbyTimer,
     mockUseLobbyMediaPipe,
@@ -14,8 +13,7 @@ const {
     mockUseExamLobbyAdmissionStatusQuery,
     mockToastSuccess,
 } = vi.hoisted(() => ({
-    mockUseApi: vi.fn(),
-    mockCheckIntoExamLobby: vi.fn(),
+    mockBootstrapLobby: vi.fn(),
     mockReadStoredExamSession: vi.fn(),
     mockUseLobbyTimer: vi.fn(),
     mockUseLobbyMediaPipe: vi.fn(),
@@ -27,10 +25,17 @@ const {
 }));
 
 vi.mock('@sentinel/hooks', () => ({
-    useApi: () => mockUseApi(),
     useAuth: () => ({ session: { user: { id: 'test-user-id' } } }),
     useLobbyRealtime: (args: unknown) => mockUseLobbyRealtime(args),
     useExamLobbyAdmissionStatusQuery: (examId?: string) => mockUseExamLobbyAdmissionStatusQuery(examId),
+    useExamLobbyBootstrapMutation: (options?: any) => ({
+        mutate: (examId: string) => {
+            mockBootstrapLobby(examId);
+            options?.onSuccess?.({
+                admission: { status: 'APPROVED' },
+            });
+        },
+    }),
 }));
 
 vi.mock('sonner', () => ({
@@ -38,10 +43,6 @@ vi.mock('sonner', () => ({
         success: (...args: unknown[]) => mockToastSuccess(...args),
         error: vi.fn(),
     },
-}));
-
-vi.mock('@sentinel/services', () => ({
-    checkIntoExamLobby: (...args: unknown[]) => mockCheckIntoExamLobby(...args),
 }));
 
 vi.mock('../../_lib/exam-session-storage', () => ({
@@ -99,7 +100,6 @@ describe('useLobbyState', () => {
         vi.clearAllMocks();
         mockRefetchAdmissionStatus = vi.fn().mockResolvedValue(undefined);
 
-        mockUseApi.mockReturnValue({ api: true });
         mockReadStoredExamSession.mockReturnValue(null);
         mockUseLobbyTimer.mockReturnValue({
             currentTime: new Date('2026-05-11T00:00:00.000Z'),
@@ -116,10 +116,6 @@ describe('useLobbyState', () => {
             isStartingSession: false,
             handleEnterExam: vi.fn(),
         });
-        mockCheckIntoExamLobby.mockResolvedValue({
-            status: 'APPROVED',
-            checkedInAt: '2026-05-11T00:00:00.000Z',
-        });
         mockUseExamLobbyAdmissionStatusQuery.mockReturnValue({
             data: { status: 'APPROVED', checkedInAt: '2026-05-11T00:00:00.000Z', decidedAt: null },
             refetch: mockRefetchAdmissionStatus,
@@ -130,24 +126,18 @@ describe('useLobbyState', () => {
         vi.useRealTimers();
     });
 
-    it('checks in once on mount for automatic-admission lobby flow', async () => {
+    it('bootstraps once on mount for automatic-admission lobby flow', async () => {
         const args = createArgs();
 
         renderHook(() => useLobbyState(args));
 
         await waitFor(() => {
-            expect(mockCheckIntoExamLobby).toHaveBeenCalledWith({ api: true }, 'exam-1');
+            expect(mockBootstrapLobby).toHaveBeenCalledWith('exam-1');
         });
-        expect(mockRefetchAdmissionStatus).toHaveBeenCalled();
     });
 
     it('reactively updates admission status when TanStack query changes to APPROVED and shows toast', async () => {
         const refetchExam = vi.fn().mockResolvedValue(undefined);
-
-        mockCheckIntoExamLobby.mockResolvedValueOnce({
-            status: 'WAITING',
-            checkedInAt: '2026-05-11T00:00:00.000Z',
-        });
 
         // Initially WAITING
         mockUseExamLobbyAdmissionStatusQuery.mockReturnValue({
@@ -302,7 +292,7 @@ describe('useLobbyState', () => {
 
         const { result } = renderHook(() => useLobbyState(args));
 
-        expect(mockCheckIntoExamLobby).not.toHaveBeenCalled();
+        expect(mockBootstrapLobby).not.toHaveBeenCalled();
         expect(mockUseExamLobbyAdmissionStatusQuery).toHaveBeenCalledWith(undefined);
         expect(result.current.storedSession?.sessionId).toBe('session-1');
     });

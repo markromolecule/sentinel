@@ -120,11 +120,13 @@ vi.mock('@sentinel/hooks', () => ({
         data: mockAdmissionStatus.value,
         refetch: vi.fn().mockResolvedValue({ data: mockAdmissionStatus.value }),
     }),
-    useLobbyRealtime: vi.fn(),
+    useExamLobbyBootstrapMutation: () => ({
+        mutate: vi.fn(),
+    }),
+    useLobbyRealtime: vi.fn(() => ({ presenceCount: 5 })),
 }));
 
 vi.mock('@sentinel/services', () => ({
-    checkIntoExamLobby: vi.fn().mockResolvedValue({ status: 'APPROVED' }),
     startExamSession: vi.fn().mockResolvedValue({ sessionId: 'session-123' }),
 }));
 
@@ -161,8 +163,8 @@ describe('useExamLobby hook', () => {
 
     it('should block exam entry when MediaPipe is uncalibrated', async () => {
         // Mock state: isMediaPipeCalibrated = false, isAudioReady = true
-        stateValues[2] = false; // isMediaPipeCalibrated
-        stateValues[3] = true; // isAudioReady
+        stateValues[1] = false; // isMediaPipeCalibrated
+        stateValues[2] = true; // isAudioReady
 
         const result = useExamLobby();
         expect(result.canEnterExam).toBe(false);
@@ -178,8 +180,8 @@ describe('useExamLobby hook', () => {
 
     it('should allow exam entry when all requirements are satisfied', async () => {
         // Mock state: isMediaPipeCalibrated = true, isAudioReady = true
+        stateValues[1] = true;
         stateValues[2] = true;
-        stateValues[3] = true;
 
         const result = useExamLobby();
         expect(result.canEnterExam).toBe(true);
@@ -191,8 +193,8 @@ describe('useExamLobby hook', () => {
 
     it('should allow approved instructor-gated resume access when runtime access can resume', () => {
         stateValues[0] = false; // isStartingSession
-        stateValues[2] = true; // isMediaPipeCalibrated
-        stateValues[3] = true; // isAudioReady
+        stateValues[1] = true; // isMediaPipeCalibrated
+        stateValues[2] = true; // isAudioReady
         mockAdmissionStatus.value = { status: 'APPROVED' };
         mockRuntimeAccess.value = {
             canStart: false,
@@ -207,9 +209,6 @@ describe('useExamLobby hook', () => {
     });
 
     it('should display the correct student count using query or presence fallback', () => {
-        // Mock state: presenceCount = 5
-        stateValues[1] = 5;
-
         const result = useExamLobby();
         // Since useExamLobbyCountQuery returns count: 3, it prefers query count if available
         expect(result.readyCount).toBe(3);

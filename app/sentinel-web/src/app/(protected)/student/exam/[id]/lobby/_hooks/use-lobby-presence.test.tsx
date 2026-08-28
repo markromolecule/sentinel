@@ -52,7 +52,7 @@ describe('useLobbyPresence', () => {
     it('initializes channel and calculates unique user presence count on sync', () => {
         const { result } = renderHook(() => useLobbyPresence('exam-123'));
 
-        expect(mockSupabase.channel).toHaveBeenCalledWith('presence:lobby:exam-123', {
+        expect(mockSupabase.channel).toHaveBeenCalledWith('lobby:exam-123', {
             config: {
                 presence: {
                     key: 'student-user-1',

@@ -5,6 +5,12 @@ import type { DB } from './generated/types';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 
+export const DEFAULT_DB_POOL_CONFIG = {
+    max: 20,
+    idleTimeoutMillis: 15000,
+    connectionTimeoutMillis: 5000,
+} as const;
+
 const createClient = () => {
     const connectionUrl = process.env.DATABASE_URL;
 
@@ -26,15 +32,17 @@ const createClient = () => {
         connectionUrl.includes('sslmode=disable');
 
     const maxConnections =
-        Number(process.env.DB_POOL_MAX) > 0 ? Number(process.env.DB_POOL_MAX) : 15;
+        Number(process.env.DB_POOL_MAX) > 0
+            ? Number(process.env.DB_POOL_MAX)
+            : DEFAULT_DB_POOL_CONFIG.max;
     const idleTimeoutMillis =
         Number(process.env.DB_POOL_IDLE_TIMEOUT_MS) > 0
             ? Number(process.env.DB_POOL_IDLE_TIMEOUT_MS)
-            : 10000;
+            : DEFAULT_DB_POOL_CONFIG.idleTimeoutMillis;
     const connectionTimeoutMillis =
         Number(process.env.DB_POOL_CONNECTION_TIMEOUT_MS) > 0
             ? Number(process.env.DB_POOL_CONNECTION_TIMEOUT_MS)
-            : 10000;
+            : DEFAULT_DB_POOL_CONFIG.connectionTimeoutMillis;
 
     // 1. Initialize the standard connection pool with scalable limits
     const pool = new Pool({
