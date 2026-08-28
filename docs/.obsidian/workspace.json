@@ -11,10 +11,14 @@
             "id": "c78dc5d833cb1146",
             "type": "leaf",
             "state": {
-              "type": "graph",
-              "state": {},
-              "icon": "lucide-git-fork",
-              "title": "Graph view"
+              "type": "markdown",
+              "state": {
+                "file": "context/August/28/scale-concurrency-surge-root-cause-and-optimization.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "scale-concurrency-surge-root-cause-and-optimization"
             }
           }
         ]
@@ -37,7 +41,9 @@
               "type": "file-explorer",
               "state": {
                 "sortOrder": "alphabetical",
-                "autoReveal": false
+                "autoReveal": false,
+                "showSearch": false,
+                "searchQuery": ""
               },
               "icon": "lucide-folder-closed",
               "title": "Files"
@@ -178,6 +184,15 @@
   },
   "active": "c78dc5d833cb1146",
   "lastOpenFiles": [
+    "tasks/2026/08/2026-08-28/scale-concurrency-surge-optimization/phase-05-surge-verification-and-concurrency-testing.md",
+    "tasks/2026/08/2026-08-28/scale-concurrency-surge-optimization/phase-04-frontend-student-mount-and-instructor-queue-update.md",
+    "tasks/2026/08/2026-08-28/scale-concurrency-surge-optimization/phase-03-realtime-channel-consolidation-and-cdc-removal.md",
+    "tasks/2026/08/2026-08-28/scale-concurrency-surge-optimization/phase-02-consolidated-lobby-bootstrap-endpoint.md",
+    "tasks/2026/08/2026-08-28/scale-concurrency-surge-optimization/phase-01-database-pool-and-in-memory-auth-caching.md",
+    "tasks/2026/08/2026-08-28/scale-concurrency-surge-optimization/README.md",
+    "tasks/2026/08/2026-08-28/scale-concurrency-surge-optimization",
+    "tasks/2026/08/2026-08-28",
+    "tasks/2026/08/2026-08-27/lobby-network-optimization/COMPARISON_AND_METRICS.md",
     "Untitled.canvas",
     "2026-05-26.md",
     "todo/user-search-todo.md",
@@ -198,12 +213,6 @@
     "todo/todo-admin-migration.md",
     "todo/to-do.md",
     "todo/to-do-subject-management-refactor.md",
-    "todo/to-do-subject-management-refactor-search.md",
-    "todo/to-do-plan.md",
-    "todo/to-do-instructor-subject-enrollment.md",
-    "todo/to-do-exam-fixes.md",
-    "todo/to-do-exam-builder-refactor.md",
-    "todo/telemetry-settings-implementation-todo.md",
     "todo",
     "capstone/theory",
     "capstone/architecture",
