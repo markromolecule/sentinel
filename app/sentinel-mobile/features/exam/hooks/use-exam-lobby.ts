@@ -57,8 +57,6 @@ export function useExamLobby() {
     const [isStartingSession, setIsStartingSession] = useState(false);
 
     const { supabase, session: authSession } = useAuth();
-    const [presenceCount, setPresenceCount] = useState(0);
-
     const [isMediaPipeCalibrated, setIsMediaPipeCalibrated] = useState(false);
     const [isAudioReady, setIsAudioReady] = useState(false);
 
@@ -223,51 +221,12 @@ export function useExamLobby() {
         };
     }, [id, isMediaPipeConfigured, requiresMicrophone, isMediaPipeCalibrated, isAudioReady]);
 
-    // Supabase Presence tracking for real-time count
-    useEffect(() => {
-        if (!supabase || !authSession?.user || !id) return;
-
-        const userId = authSession.user.id;
-        const channelName = `presence:lobby:${id}`;
-
-        const channel = supabase
-            .channel(channelName, {
-                config: {
-                    presence: {
-                        key: userId,
-                    },
-                },
-            })
-            .on('presence', { event: 'sync' }, () => {
-                const state = channel.presenceState<any>();
-                const uniqueUserIds = new Set<string>();
-
-                Object.values(state).forEach((presences) => {
-                    presences.forEach((p: any) => {
-                        if (p.user_id) uniqueUserIds.add(p.user_id);
-                    });
-                });
-
-                setPresenceCount(uniqueUserIds.size);
-            })
-            .subscribe(async (status) => {
-                if (status === 'SUBSCRIBED') {
-                    await channel.track({
-                        user_id: userId,
-                        online_at: new Date().toISOString(),
-                    });
-                }
-            });
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
-    }, [supabase, authSession?.user, id]);
-
-    // Real-time broadcast and CDC listener via shared useLobbyRealtime
-    useLobbyRealtime({
+    // Real-time broadcast and presence tracking via consolidated useLobbyRealtime (single channel lobby:examId)
+    const { presenceCount } = useLobbyRealtime({
         examId: typeof id === 'string' ? id : '',
+        studentId: authSession?.user?.id,
         enabled: Boolean(id),
+        trackPresence: true,
         onAdmissionChange: () => {
             void refetchAdmissionStatus();
             void refetchExam();

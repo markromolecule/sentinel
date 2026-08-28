@@ -35,7 +35,7 @@ export async function broadcastLobbyEvent(
         }
 
         const broadcastUrl = `${url.replace(/\/$/, '')}/realtime/v1/api/broadcast`;
-        const channelTopic = `lobby:admissions:${examId}`;
+        const channelTopic = `lobby:${examId}`;
 
         const response = await fetch(broadcastUrl, {
             method: 'POST',

@@ -26,7 +26,7 @@ export function useLobbyPresence(examId: string) {
             };
         }
 
-        const channelName = `presence:lobby:${examId}`;
+        const channelName = `lobby:${examId}`;
         const channel: RealtimeChannel = supabase
             .channel(channelName, {
                 config: {

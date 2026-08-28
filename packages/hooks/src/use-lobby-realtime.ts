@@ -1,22 +1,31 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import { EXAM_QUERY_KEYS } from '@sentinel/shared/constants';
+import type { PresenceState } from '@sentinel/shared/types';
 import { useAuth } from './auth-provider';
 
 export type UseLobbyRealtimeArgs = {
     examId: string;
     studentId?: string;
-    onAdmissionChange?: (payload: RealtimePostgresChangesPayload<Record<string, any>> | Record<string, any>) => void;
+    onAdmissionChange?: (payload: Record<string, any>) => void;
     enabled?: boolean;
+    trackPresence?: boolean;
 };
 
 export function useLobbyRealtime(args: UseLobbyRealtimeArgs) {
-    const { examId, studentId, onAdmissionChange, enabled = true } = args;
+    const {
+        examId,
+        studentId,
+        onAdmissionChange,
+        enabled = true,
+        trackPresence = true,
+    } = args;
     const queryClient = useQueryClient();
     const { supabase, session } = useAuth();
+    const [presenceCount, setPresenceCount] = useState(0);
     const callbackRef = useRef(onAdmissionChange);
 
     useEffect(() => {
@@ -24,14 +33,35 @@ export function useLobbyRealtime(args: UseLobbyRealtimeArgs) {
     }, [onAdmissionChange]);
 
     useEffect(() => {
-        if (!enabled || !supabase || !session?.user || !examId || !supabase.channel || !supabase.removeChannel) {
-            return () => { };
+        if (
+            !enabled ||
+            !supabase ||
+            !session?.user ||
+            !examId ||
+            !supabase.channel ||
+            !supabase.removeChannel
+        ) {
+            setPresenceCount(0);
+            return () => {};
         }
 
-        const channelName = `lobby:admissions:${examId}`;
-        const channel: RealtimeChannel = supabase.channel(channelName);
+        let isEffectActive = true;
+        const channelName = `lobby:${examId}`;
+        const presenceKey = studentId || session.user.id;
 
-        const handleAdmissionChange = (status: string, checkedInAt?: string | null, decidedAt?: string | null) => {
+        const channel: RealtimeChannel = supabase.channel(channelName, {
+            config: {
+                presence: {
+                    key: presenceKey,
+                },
+            },
+        });
+
+        const handleAdmissionChange = (
+            status: string,
+            checkedInAt?: string | null,
+            decidedAt?: string | null,
+        ) => {
             queryClient.setQueryData(
                 EXAM_QUERY_KEYS.lobbyAdmissionStatus(examId),
                 {
@@ -56,7 +86,22 @@ export function useLobbyRealtime(args: UseLobbyRealtimeArgs) {
         };
 
         channel
-            // 1. Direct Realtime Broadcast (< 50ms fast path for single or batch admissions)
+            // 1. Unified Presence Sync on the single lobby channel
+            .on('presence', { event: 'sync' }, () => {
+                if (!isEffectActive) return;
+
+                const state = channel.presenceState<PresenceState>() ?? {};
+                const uniqueUserIds = new Set<string>();
+
+                Object.values(state).forEach((presences) => {
+                    (presences ?? []).forEach((p: any) => {
+                        if (p?.user_id) uniqueUserIds.add(p.user_id);
+                    });
+                });
+
+                setPresenceCount(uniqueUserIds.size);
+            })
+            // 2. Direct Realtime Broadcast (< 50ms fast path for single or batch admissions)
             .on(
                 'broadcast',
                 { event: 'admission:updated' },
@@ -88,7 +133,7 @@ export function useLobbyRealtime(args: UseLobbyRealtimeArgs) {
                     }
                 },
             )
-            // 2. Realtime Broadcast for student check-ins (updates instructor queue instantly)
+            // 3. Realtime Broadcast for student check-ins (updates instructor queue instantly)
             .on(
                 'broadcast',
                 { event: 'student:checked_in' },
@@ -105,56 +150,27 @@ export function useLobbyRealtime(args: UseLobbyRealtimeArgs) {
                     }
                 },
             )
-            // 3. PostgreSQL CDC Change Data Capture (Reliable Database WAL Backup)
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'exam_lobby_admissions',
-                    filter: `exam_id=eq.${examId}`,
-                },
-                (payload) => {
-                    const isInstructor = !studentId;
-                    if (payload.new && typeof payload.new === 'object' && 'status' in payload.new) {
-                        const newRow = payload.new as Record<string, any>;
-                        const isTargetStudent = isInstructor || newRow.student_id === studentId;
-
-                        if (isTargetStudent && newRow.status) {
-                            handleAdmissionChange(
-                                newRow.status,
-                                newRow.checked_in_at ? String(newRow.checked_in_at) : null,
-                                newRow.decided_at ? String(newRow.decided_at) : null,
-                            );
-                            callbackRef.current?.(payload);
-                        } else if (isInstructor) {
-                            void queryClient.invalidateQueries({
-                                queryKey: EXAM_QUERY_KEYS.lobbyWaitingList(examId),
-                            });
-                            void queryClient.invalidateQueries({
-                                queryKey: EXAM_QUERY_KEYS.lobbyCount(examId),
-                            });
-                            callbackRef.current?.(payload);
-                        }
-                    } else if (isInstructor) {
-                        void queryClient.invalidateQueries({
-                            queryKey: EXAM_QUERY_KEYS.lobbyWaitingList(examId),
+            .subscribe(async (status, err) => {
+                if (status === 'SUBSCRIBED' && isEffectActive && trackPresence) {
+                    try {
+                        await channel.track({
+                            user_id: presenceKey,
+                            online_at: new Date().toISOString(),
                         });
-                        void queryClient.invalidateQueries({
-                            queryKey: EXAM_QUERY_KEYS.lobbyCount(examId),
-                        });
-                        callbackRef.current?.(payload);
+                    } catch {
+                        // ignore track errors if unmounted or channel closed
                     }
-                },
-            )
-            .subscribe((status, err) => {
+                }
                 if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
                     console.warn(`[useLobbyRealtime] Channel ${channelName} subscription issue: ${status}`, err);
                 }
             });
 
         return () => {
+            isEffectActive = false;
             supabase.removeChannel(channel);
         };
-    }, [enabled, examId, queryClient, session?.user, studentId, supabase]);
+    }, [enabled, examId, queryClient, session?.user, studentId, supabase, trackPresence]);
+
+    return { presenceCount };
 }
