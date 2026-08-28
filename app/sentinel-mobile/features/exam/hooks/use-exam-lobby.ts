@@ -11,10 +11,10 @@ import {
     useExamLobbyCountQuery,
     useExamQuery,
     useExamLobbyAdmissionStatusQuery,
+    useExamLobbyBootstrapMutation,
     useLobbyRealtime,
 } from '@sentinel/hooks';
 import {
-    checkIntoExamLobby,
     startExamSession,
 } from '@sentinel/services';
 import { adaptExamForMobile } from '@/features/exam/lib/mobile-exam-adapter';
@@ -149,28 +149,22 @@ export function useExamLobby() {
         }
     };
 
-    // Initial check-in on mount
+    const { mutate: bootstrapLobby } = useExamLobbyBootstrapMutation({
+        onSuccess: (data) => {
+            if (data.admission?.status === 'APPROVED') {
+                void refetchExam();
+            }
+        },
+    });
+
+    // Initial atomic bootstrap on mount (check-in, exam metadata, config & admissions in 1 query)
     useEffect(() => {
         if (!id) {
             return;
         }
 
-        void checkIntoExamLobby(apiClient, id)
-            .then(async () => {
-                await Promise.allSettled([
-                    refetchAdmissionStatus(),
-                    refetchExam(),
-                    refetchLobbyCount(),
-                ]);
-            })
-            .catch(async () => {
-                await Promise.allSettled([
-                    refetchAdmissionStatus(),
-                    refetchExam(),
-                    refetchLobbyCount(),
-                ]);
-            });
-    }, [apiClient, id, refetchAdmissionStatus, refetchExam, refetchLobbyCount]);
+        bootstrapLobby(id);
+    }, [bootstrapLobby, id]);
 
     // Track calibration and audio readiness — evaluates immediately and only intervals if incomplete
     useEffect(() => {

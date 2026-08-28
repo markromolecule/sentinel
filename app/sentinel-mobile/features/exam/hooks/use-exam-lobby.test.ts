@@ -120,11 +120,13 @@ vi.mock('@sentinel/hooks', () => ({
         data: mockAdmissionStatus.value,
         refetch: vi.fn().mockResolvedValue({ data: mockAdmissionStatus.value }),
     }),
+    useExamLobbyBootstrapMutation: () => ({
+        mutate: vi.fn(),
+    }),
     useLobbyRealtime: vi.fn(() => ({ presenceCount: 5 })),
 }));
 
 vi.mock('@sentinel/services', () => ({
-    checkIntoExamLobby: vi.fn().mockResolvedValue({ status: 'APPROVED' }),
     startExamSession: vi.fn().mockResolvedValue({ sessionId: 'session-123' }),
 }));
 
