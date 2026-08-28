@@ -124,4 +124,59 @@ describe('bootstrapLobby Service', () => {
         expect(result.runtimeAccess.state).toBe('lobby_approved');
         expect(result.runtimeAccess.canStart).toBe(true);
     });
+
+    it('simulates a 200-student concurrent burst where all students bootstrap simultaneously', async () => {
+        const mockDb = {} as unknown as DbClient;
+        const studentCount = 200;
+
+        vi.mocked(EntitlementsRepository.getStudentProfileByUserId).mockImplementation(
+            async (_db, userId) =>
+                ({
+                    student_id: `student-id-for-${userId}`,
+                    user_id: userId,
+                    institution_id: 'inst-1',
+                }) as any,
+        );
+
+        vi.mocked(checkInLobby).mockImplementation(async (_db, _examId, studentId) => ({
+            status: 'WAITING',
+            checkedInAt: new Date().toISOString(),
+        }));
+
+        vi.mocked(getExamDetail).mockResolvedValue({
+            id: 'exam-burst-1',
+            title: 'Burst Scale Exam',
+            configuration: {
+                lobbyAdmissionMode: 'INSTRUCTOR_GATED',
+                allowedAttempts: 1,
+            },
+            runtimeAccess: {
+                state: 'open',
+                reasonCode: 'OPEN',
+                canStart: false,
+                canResume: false,
+                hasActiveAttempt: false,
+            },
+        } as any);
+
+        vi.mocked(getLobbyCount).mockResolvedValue({ count: studentCount });
+
+        const requests = Array.from({ length: studentCount }, (_, i) =>
+            bootstrapLobby(mockDb, 'exam-burst-1', `user-${i}`, 'inst-1'),
+        );
+
+        const results = await Promise.all(requests);
+
+        expect(results).toHaveLength(studentCount);
+        expect(EntitlementsRepository.getStudentProfileByUserId).toHaveBeenCalledTimes(studentCount);
+        expect(checkInLobby).toHaveBeenCalledTimes(studentCount);
+        expect(getExamDetail).toHaveBeenCalledTimes(studentCount);
+        expect(getLobbyCount).toHaveBeenCalledTimes(studentCount);
+
+        results.forEach((res) => {
+            expect(res.admission.status).toBe('WAITING');
+            expect(res.waitingCount).toBe(studentCount);
+            expect(res.runtimeAccess.state).toBe('lobby_waiting');
+        });
+    });
 });

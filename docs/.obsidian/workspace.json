@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "context/August/28/scale-concurrency-surge-root-cause-and-optimization.md",
+                "file": "tasks/2026/08/2026-08-27/lobby-network-optimization/COMPARISON_AND_METRICS.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "scale-concurrency-surge-root-cause-and-optimization"
+              "title": "COMPARISON_AND_METRICS"
             }
           }
         ]
@@ -184,6 +184,7 @@
   },
   "active": "c78dc5d833cb1146",
   "lastOpenFiles": [
+    "context/August/28/scale-concurrency-surge-root-cause-and-optimization.md",
     "tasks/2026/08/2026-08-28/scale-concurrency-surge-optimization/phase-05-surge-verification-and-concurrency-testing.md",
     "tasks/2026/08/2026-08-28/scale-concurrency-surge-optimization/phase-04-frontend-student-mount-and-instructor-queue-update.md",
     "tasks/2026/08/2026-08-28/scale-concurrency-surge-optimization/phase-03-realtime-channel-consolidation-and-cdc-removal.md",
@@ -212,7 +213,6 @@
     "todo/todo-exam-assign-refactor.md",
     "todo/todo-admin-migration.md",
     "todo/to-do.md",
-    "todo/to-do-subject-management-refactor.md",
     "todo",
     "capstone/theory",
     "capstone/architecture",

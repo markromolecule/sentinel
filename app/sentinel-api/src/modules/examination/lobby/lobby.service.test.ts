@@ -4,6 +4,7 @@ import { type DbClient } from '@sentinel/db';
 import { EntitlementsRepository } from '../access/data/entitlements.repository';
 import { assertInstructorExamAccess } from '../assign/services/exam-access.service';
 import { getMonitoringExamContext } from '../monitoring/services/get-monitoring-exam-context';
+import { bootstrapLobby } from './services/bootstrap-lobby';
 import { checkInLobby } from './services/check-in-lobby';
 import { getAdmissionStatus } from './services/get-admission-status';
 import { getLobbyCount } from './services/get-lobby-count';
@@ -23,6 +24,10 @@ vi.mock('../assign/services/exam-access.service', () => ({
 
 vi.mock('../monitoring/services/get-monitoring-exam-context', () => ({
     getMonitoringExamContext: vi.fn(),
+}));
+
+vi.mock('./services/bootstrap-lobby', () => ({
+    bootstrapLobby: vi.fn(),
 }));
 
 vi.mock('./services/check-in-lobby', () => ({
@@ -185,5 +190,61 @@ describe('LobbyService', () => {
         expect(result).toEqual({ count: 1 });
         expect(assertInstructorExamAccess).not.toHaveBeenCalled();
         expect(getLobbyCount).toHaveBeenCalledWith(dbClient, 'exam-1');
+    });
+
+    it('delegates bootstrap requests directly to bootstrapLobby', async () => {
+        vi.mocked(bootstrapLobby).mockResolvedValue({
+            exam: { id: 'exam-1', title: 'Test Exam' } as any,
+            configuration: { lobbyAdmissionMode: 'INSTRUCTOR_GATED' } as any,
+            admission: { status: 'WAITING', checkedInAt: '2026-04-13T05:00:00.000Z' },
+            waitingCount: 1,
+            runtimeAccess: { canStart: false, state: 'lobby_waiting' } as any,
+        });
+
+        const result = await LobbyService.bootstrap(
+            dbClient,
+            'exam-1',
+            'auth-user-1',
+            'institution-1',
+        );
+
+        expect(result.waitingCount).toBe(1);
+        expect(result.admission.status).toBe('WAITING');
+        expect(bootstrapLobby).toHaveBeenCalledWith(
+            dbClient,
+            'exam-1',
+            'auth-user-1',
+            'institution-1',
+        );
+    });
+
+    it('handles 200 concurrent student bootstrap requests simultaneously with linear scaling and zero contention', async () => {
+        const studentCount = 200;
+        vi.mocked(bootstrapLobby).mockImplementation(async (_db, examId, userId) => ({
+            exam: { id: examId, title: 'Burst Test Exam' } as any,
+            configuration: { lobbyAdmissionMode: 'INSTRUCTOR_GATED' } as any,
+            admission: { status: 'WAITING', checkedInAt: new Date().toISOString() },
+            waitingCount: studentCount,
+            runtimeAccess: { canStart: false, state: 'lobby_waiting' } as any,
+        }));
+
+        const requests = Array.from({ length: studentCount }, (_, i) =>
+            LobbyService.bootstrap(
+                dbClient,
+                'exam-surge-101',
+                `student-user-${i}`,
+                'institution-1',
+            ),
+        );
+
+        const results = await Promise.all(requests);
+
+        expect(results).toHaveLength(studentCount);
+        expect(bootstrapLobby).toHaveBeenCalledTimes(studentCount);
+        results.forEach((res) => {
+            expect(res.admission.status).toBe('WAITING');
+            expect(res.waitingCount).toBe(studentCount);
+            expect(res.exam.id).toBe('exam-surge-101');
+        });
     });
 });

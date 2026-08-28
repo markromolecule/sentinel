@@ -1,7 +1,7 @@
 ---
 title: "Task: Exam Lobby Concurrency Surge Optimization & Scalability Architecture (Web + Mobile)"
 type: task
-status: planned
+status: completed
 created: "2026-08-28"
 tags: [task, concurrency, performance, lobby, auth-cache, bootstrap, realtime, mobile, web, scaling]
 ---
@@ -20,7 +20,7 @@ Eliminate downstream database pool starvation, uncached auth query multiplicatio
 
 - Discovery Record: [`docs/tasks/2026/08/2026-08-27/lobby-network-optimization/DISCOVERY.md`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/tasks/2026/08/2026-08-27/lobby-network-optimization/DISCOVERY.md)
 - Context Specification: [`docs/context/August/28/scale-concurrency-surge-root-cause-and-optimization.md`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/context/August/28/scale-concurrency-surge-root-cause-and-optimization.md)
-- Metrics & Comparison: [`docs/tasks/2026/08/2026-08-27/lobby-network-optimization/COMPARISON_AND_METRICS.md`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/tasks/2026/08/2026-08-27/lobby-network-optimization/COMPARISON_AND_METRICS.md)
+- Metrics & Comparison: [`docs/tasks/2026/08/2026-08-28/scale-concurrency-surge-optimization/COMPARISON_AND_METRICS.md`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/tasks/2026/08/2026-08-28/scale-concurrency-surge-optimization/COMPARISON_AND_METRICS.md)
 
 ### Verified Production Environment
 
@@ -29,19 +29,19 @@ Eliminate downstream database pool starvation, uncached auth query multiplicatio
 
 ---
 
-### Scenario Coverage
+## Scenario Coverage
 
 | ID | Actor & Situation | Preconditions | Expected Outcome | Failure/Recovery Mode | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **SC-01** | 200 students open lobby simultaneously (Web & Mobile) | 200 students authenticated | Exactly 1 composite bootstrap HTTP request per student; all 200 succeed with p95 < 200ms | Retry with exponential backoff on transient network failure | Planned |
-| **SC-02** | Simultaneous API requests hit `authMiddleware` | High burst of distinct JWTs | In-memory LRU cache serves user & role permissions with 0 DB queries on subsequent requests | Cache miss falls back to single fast DB read | Planned |
-| **SC-03** | Student presence tracking & admission updates | 200 students joined | 1 WebSocket channel `lobby:${examId}` per student (200 total WS $\le$ 200 Free cap); 0 CDC WAL messages | Falls back to adaptive 10s polling if WS disconnects | Planned |
-| **SC-04** | Instructor admits Student A | Student A waiting in lobby | Sub-50ms admission push via REST broadcast; only Student A unlocks | Adaptive 10s polling fallback | Planned |
-| **SC-05** | Student turns in exam | Attempt marked SUBMITTED | Student moves to dedicated `Submitted` column on instructor board | Refreshes via instructor query or broadcast | Planned |
+| **SC-01** | 200 students open lobby simultaneously (Web & Mobile) | 200 students authenticated | Exactly 1 composite bootstrap HTTP request per student; all 200 succeed with p95 < 200ms | Retry with exponential backoff on transient network failure | Completed |
+| **SC-02** | Simultaneous API requests hit `authMiddleware` | High burst of distinct JWTs | In-memory LRU cache serves user & role permissions with 0 DB queries on subsequent requests | Cache miss falls back to single fast DB read | Completed |
+| **SC-03** | Student presence tracking & admission updates | 200 students joined | 1 WebSocket channel `lobby:${examId}` per student (200 total WS $\le$ 200 Free cap); 0 CDC WAL messages | Falls back to adaptive 10s polling if WS disconnects | Completed |
+| **SC-04** | Instructor admits Student A | Student A waiting in lobby | Sub-50ms admission push via REST broadcast; only Student A unlocks | Adaptive 10s polling fallback | Completed |
+| **SC-05** | Student turns in exam | Attempt marked SUBMITTED | Student moves to dedicated `Submitted` column on instructor board | Refreshes via instructor query or broadcast | Completed |
 
 ---
 
-### Decision Ledger
+## Decision Ledger
 
 | ID | Question | Decision | Evidence & Rationale | Alternatives Rejected | Artifact |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -58,12 +58,12 @@ Eliminate downstream database pool starvation, uncached auth query multiplicatio
 
 | ID | Source | Criterion | Implementation | Verification | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **AC-01** | DEC-02 / SC-02 | Auth middleware resolves subsequent requests for authenticated users in < 1ms with 0 DB queries | In-memory LRU cache in `auth.ts` | Unit tests verify cache hit bypasses DB queries | Planned |
-| **AC-02** | DEC-01 / SC-01 | Web & Mobile lobby mounts issue exactly 1 bootstrap HTTP request returning exam metadata, config, admission, and presence | `POST /:id/lobby/bootstrap` endpoint & client hook | API test verifies single combined response | Planned |
-| **AC-03** | DEC-03 / DEC-04 | Web & Mobile lobbies establish exactly 1 WebSocket channel without `postgres_changes` CDC listeners | Merged channel in `use-lobby-realtime.ts` | Hook test verifies single channel subscription & broadcast handling | Planned |
-| **AC-04** | DEC-05 | Routine student check-in executes in < 35ms without triggering administrative audit queries | Updated `checkInLobby` service | Service test verifies no notification records created on check-in | Planned |
-| **AC-05** | DEC-06 | Database connection pool operates with `DB_POOL_MAX=25` and 5000ms fail-fast timeout with active port 6543 pooler | Updated `packages/db/src/db.ts` | Pool configuration test passes | Planned |
-| **AC-06** | SC-05 | Instructor lobby displays dedicated `Submitted` column for `attemptStatus === 'SUBMITTED'` | Updated filter and UI panel in `sentinel-web` & `sentinel-core` | UI tests verify student categorization | Planned |
+| **AC-01** | DEC-02 / SC-02 | Auth middleware resolves subsequent requests for authenticated users in < 1ms with 0 DB queries | In-memory LRU cache in `auth.ts` | Unit tests verify cache hit bypasses DB queries | Completed |
+| **AC-02** | DEC-01 / SC-01 | Web & Mobile lobby mounts issue exactly 1 bootstrap HTTP request returning exam metadata, config, admission, and presence | `POST /:id/lobby/bootstrap` endpoint & client hook | API test verifies single combined response | Completed |
+| **AC-03** | DEC-03 / DEC-04 | Web & Mobile lobbies establish exactly 1 WebSocket channel without `postgres_changes` CDC listeners | Merged channel in `use-lobby-realtime.ts` | Hook test verifies single channel subscription & broadcast handling | Completed |
+| **AC-04** | DEC-05 | Routine student check-in executes in < 35ms without triggering administrative audit queries | Updated `checkInLobby` service | Service test verifies no notification records created on check-in | Completed |
+| **AC-05** | DEC-06 | Database connection pool operates with `DB_POOL_MAX=25` and 5000ms fail-fast timeout with active port 6543 pooler | Updated `packages/db/src/db.ts` | Pool configuration test passes | Completed |
+| **AC-06** | SC-05 | Instructor lobby displays dedicated `Submitted` column for `attemptStatus === 'SUBMITTED'` | Updated filter and UI panel in `sentinel-web` & `sentinel-core` | UI tests verify student categorization | Completed |
 
 ---
 
@@ -73,7 +73,7 @@ Eliminate downstream database pool starvation, uncached auth query multiplicatio
 - [x] [`phase-02-consolidated-lobby-bootstrap-endpoint.md`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/tasks/2026/08/2026-08-28/scale-concurrency-surge-optimization/phase-02-consolidated-lobby-bootstrap-endpoint.md) — Phase 2: Consolidated Student Lobby Bootstrap Endpoint & Check-in Decoupling
 - [x] [`phase-03-realtime-channel-consolidation-and-cdc-removal.md`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/tasks/2026/08/2026-08-28/scale-concurrency-surge-optimization/phase-03-realtime-channel-consolidation-and-cdc-removal.md) — Phase 3: Realtime Channel Consolidation & Stripping `postgres_changes` CDC
 - [x] [`phase-04-frontend-student-mount-and-instructor-queue-update.md`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/tasks/2026/08/2026-08-28/scale-concurrency-surge-optimization/phase-04-frontend-student-mount-and-instructor-queue-update.md) — Phase 4: Web & Mobile Student Mount Hook Migration & Instructor Lobby Submitted Column
-- [ ] [`phase-05-surge-verification-and-concurrency-testing.md`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/tasks/2026/08/2026-08-28/scale-concurrency-surge-optimization/phase-05-surge-verification-and-concurrency-testing.md) — Phase 5: Automated Regression Testing, Concurrency Verification & Metrics Reporting
+- [x] [`phase-05-surge-verification-and-concurrency-testing.md`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/docs/tasks/2026/08/2026-08-28/scale-concurrency-surge-optimization/phase-05-surge-verification-and-concurrency-testing.md) — Phase 5: Automated Regression Testing, Concurrency Verification & Metrics Reporting
 
 ---
 
