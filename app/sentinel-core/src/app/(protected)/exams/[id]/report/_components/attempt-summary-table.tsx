@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { AlertTriangle, Search } from 'lucide-react';
+import { useDebounce } from '@sentinel/hooks';
 import {
     Badge,
     Card,
@@ -37,6 +38,7 @@ interface AttemptSummaryTableProps {
 export function AttemptSummaryTable({ students }: AttemptSummaryTableProps) {
     const [searchValue, setSearchValue] = useState('');
     const [sectionFilter, setSectionFilter] = useState('all');
+    const debouncedSearchValue = useDebounce(searchValue, 300);
 
     const sectionOptions = useMemo(
         () =>
@@ -55,7 +57,7 @@ export function AttemptSummaryTable({ students }: AttemptSummaryTableProps) {
     );
 
     const visibleStudents = useMemo(() => {
-        const normalizedSearch = searchValue.trim().toLowerCase();
+        const normalizedSearch = debouncedSearchValue.trim().toLowerCase();
 
         return students.filter((student) => {
             if (sectionFilter !== 'all' && student.sectionId !== sectionFilter) {
@@ -72,7 +74,7 @@ export function AttemptSummaryTable({ students }: AttemptSummaryTableProps) {
                 .toLowerCase()
                 .includes(normalizedSearch);
         });
-    }, [students, searchValue, sectionFilter]);
+    }, [students, debouncedSearchValue, sectionFilter]);
 
     return (
         <Card>
@@ -103,12 +105,18 @@ export function AttemptSummaryTable({ students }: AttemptSummaryTableProps) {
                         <Input
                             value={searchValue}
                             onChange={(event) => setSearchValue(event.target.value)}
+                            onKeyDown={(event) => {
+                                if (event.key === 'Enter') {
+                                    event.preventDefault();
+                                }
+                            }}
                             placeholder="Search student"
                             className="pl-9"
                         />
                     </div>
                 </div>
             </CardHeader>
+
             <CardContent>
                 <ScrollArea className="w-full">
                     <Table>

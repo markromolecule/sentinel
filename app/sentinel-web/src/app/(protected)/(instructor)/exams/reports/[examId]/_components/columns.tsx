@@ -1,10 +1,11 @@
 import { ColumnDef } from '@tanstack/react-table';
 import type { ExamReport } from '@sentinel/shared/types';
-import { Badge, Button } from '@sentinel/ui';
+import { Badge, Button, Checkbox } from '@sentinel/ui';
 import { AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 
 type StudentRow = ExamReport['students'][number];
+
 
 function formatDateTime(value?: string | Date | null) {
     if (!value) {
@@ -86,8 +87,33 @@ function getAttemptKindLabel(attemptKind: StudentRow['attemptKind']) {
 
 export const getColumns = (examId: string): ColumnDef<StudentRow>[] => [
     {
+        id: 'select',
+        header: ({ table }) => (
+            <Checkbox
+                checked={
+                    table.getIsAllPageRowsSelected() ||
+                    (table.getIsSomePageRowsSelected() && 'indeterminate')
+                }
+                onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+                aria-label="Select all students"
+                className="translate-y-[2px]"
+            />
+        ),
+        cell: ({ row }) => (
+            <Checkbox
+                checked={row.getIsSelected()}
+                onCheckedChange={(value) => row.toggleSelected(!!value)}
+                aria-label="Select student"
+                className="translate-y-[2px]"
+            />
+        ),
+        enableSorting: false,
+        enableHiding: false,
+    },
+    {
         accessorKey: 'lastName',
         header: 'Student',
+
         cell: ({ row }) => {
             const student = row.original;
             return (

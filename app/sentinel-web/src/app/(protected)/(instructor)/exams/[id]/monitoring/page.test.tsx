@@ -28,6 +28,7 @@ vi.mock('@/features/exams', () => ({
         </div>
     ),
     MonitoringStats: () => <div data-testid="monitoring-stats" />,
+    LockedStudentsPanel: () => <div data-testid="locked-students-panel" />,
     StudentList: ({
         students,
         onSelect,
@@ -48,6 +49,7 @@ vi.mock('@/features/exams', () => ({
         </div>
     ),
 }));
+
 
 vi.mock('./_components/runtime-access-dialogs', () => ({
     RuntimeAccessDialogs: () => <div data-testid="runtime-access-dialogs" />,

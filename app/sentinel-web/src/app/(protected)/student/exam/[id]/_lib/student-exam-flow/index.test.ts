@@ -25,6 +25,31 @@ describe('resolveStudentExamStage', () => {
         });
     });
 
+    it('redirects turned-in attempt to result stage even if exam schedule is closed or blocked', () => {
+        const input: StudentExamStageResolverInput = {
+            requestedStage: 'lobby',
+            privacyAccepted: true,
+            checkupCompleted: true,
+            mediaPipeStatus: 'ready',
+            admissionMode: 'AUTOMATIC',
+            admissionState: null,
+            runtimeAccess: {
+                isTurnedIn: true,
+                blockedCode: 'CLOSED',
+                state: 'closed',
+            },
+        };
+
+        const result = resolveStudentExamStage(input);
+
+        expect(result).toEqual({
+            targetStage: 'result',
+            reasonCode: 'TURNED_IN',
+            shouldRedirect: true,
+        });
+    });
+
+
     it('redirects locked/closed/superseded lifecycle states to instruction', () => {
         const lockedInput: StudentExamStageResolverInput = {
             requestedStage: 'lobby',

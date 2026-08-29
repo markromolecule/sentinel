@@ -24,6 +24,7 @@ export default function InstructorLobbyPage() {
         refreshLobbyAdmissions,
         handleUpdateLobbyAdmissions,
         handleOverrideReconnect,
+        isFetching,
     } = useInstructorLobby(examId);
 
     return (
@@ -43,13 +44,14 @@ export default function InstructorLobbyPage() {
                     onClick={() => {
                         void refreshLobbyAdmissions();
                     }}
-                    disabled={isUpdatingLobbyAdmissions}
+                    disabled={isUpdatingLobbyAdmissions || isFetching}
                 >
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Refresh Lobby
+                    <RefreshCw className={`mr-2 h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+                    {isFetching ? 'Refreshing...' : 'Refresh Lobby'}
                 </Button>
             </div>
             <Separator />
+
 
             <InstructorLobbyAdmissionPanel
                 lobbyAdmissionGroups={lobbyAdmissionGroups}

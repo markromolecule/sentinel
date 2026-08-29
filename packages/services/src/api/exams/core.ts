@@ -16,6 +16,7 @@ import type {
     GetExamParams,
     CreateExamPayload,
     CreateStudentExamAccessOverridePayload,
+    BatchCreateStudentExamAccessOverridePayload,
     OverrideReconnectLimitPayload,
     UpdateExamPayload,
     UpdateExamRuntimeAccessPayload,
@@ -233,6 +234,32 @@ export async function createStudentExamAccessOverride(
 
     return response.data;
 }
+
+export async function batchCreateStudentExamAccessOverrides(
+    apiClient: ApiClientType,
+    payload: BatchCreateStudentExamAccessOverridePayload,
+) {
+    const response: ApiExamResponse<ApiStudentExamAccessOverride[]> = await apiClient(
+        `/exams/${payload.id}/overrides/batch-makeup`,
+        {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                studentIds: payload.studentIds,
+                overrideType: payload.overrideType ?? 'MAKEUP',
+                availableFrom: payload.availableFrom,
+                availableUntil: payload.availableUntil,
+                allowedAttempts: payload.allowedAttempts ?? 1,
+                notes: payload.notes ?? null,
+            }),
+        },
+    );
+
+    return response.data;
+}
+
 
 export async function overrideReconnectLimit(
     apiClient: ApiClientType,

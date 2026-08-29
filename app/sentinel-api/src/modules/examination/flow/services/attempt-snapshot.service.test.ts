@@ -129,4 +129,46 @@ describe('buildAssessmentSnapshot', () => {
             buildLegacyEssayRubricSnapshot(),
         );
     });
+
+    it('strips choice label prefixes and maps correctAnswer correctly in snapshot across student seeds', () => {
+        const questionsWithLabels = [
+            {
+                question_id: 'q-baked',
+                exam_id: 'exam-1',
+                exam_section_id: null,
+                source_question_bank_question_id: null,
+                source_collection_id: null,
+                source_origin: 'MANUAL',
+                source_file_name: null,
+                source_page_number: null,
+                source_evidence: null,
+                passage_content: null,
+                passage_type: null,
+                question_type: 'MULTIPLE_CHOICE',
+                points: 5,
+                order_index: 0,
+                content: {
+                    prompt: 'What is the capital of France?',
+                    options: ['A. Berlin', 'B. Paris', 'C. Madrid', 'D. Rome'],
+                    correctAnswer: 1, // 'B. Paris'
+                },
+            },
+        ] as const;
+
+        const snapshot = buildAssessmentSnapshot({
+            attemptId: 'attempt-student-seed-1',
+            examId: 'exam-1',
+            configurationState: configurationState as any,
+            questions: questionsWithLabels as any,
+        });
+
+        const snapshotQuestion = snapshot.questions[0];
+        expect(snapshotQuestion?.content.options).toContain('Paris');
+        expect(snapshotQuestion?.content.options).not.toContain('B. Paris');
+
+        const correctIdx = snapshotQuestion?.content.correctAnswer as number;
+        expect(snapshotQuestion?.content.options?.[correctIdx]).toBe('Paris');
+        expect(snapshotQuestion?.content.optionTokens).toHaveLength(4);
+    });
 });
+

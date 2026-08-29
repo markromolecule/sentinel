@@ -63,7 +63,13 @@ function sortQuestions(exam: ProctorExam | null, settings?: ExamSettings): ExamQ
 function resolveLifecycleBlockedState(exam: ProctorExam | null) {
     const runtimeAccess = exam?.runtimeAccess;
 
-    if (!runtimeAccess || runtimeAccess.canStart || runtimeAccess.canResume) {
+    if (
+        !runtimeAccess ||
+        runtimeAccess.canStart ||
+        runtimeAccess.canResume ||
+        exam?.status === 'turned_in' ||
+        exam?.completedAt != null
+    ) {
         return {
             isBlocked: false,
             code: null,

@@ -8,6 +8,8 @@ export function shuffleExamQuestions(questions: ExamQuestion[], seed: string): E
     return deterministicShuffle(questions, seed);
 }
 
+const CHOICE_LABEL_PREFIX_REGEX = /^\s*\(?([A-Z0-9])\)?(?:\s*[\.\):-]|\s+-)\s*/i;
+
 /**
  * Randomizes the choices of a single question and updates the correct answer index/indices.
  */
@@ -20,13 +22,16 @@ export function randomizeQuestionChoices(question: ExamQuestion, seed: string): 
 
     const originalCorrectAnswer = question.content.correctAnswer;
 
+    // Clean options: strip hardcoded choice label prefixes (e.g., "A. ", "(B) ", "1- ") before shuffling
+    const cleanedOptions = options.map((opt) => opt.replace(CHOICE_LABEL_PREFIX_REGEX, '').trim());
+
     // Create an array of indices [0, 1, 2, ...]
-    const indices = options.map((_, i) => i);
+    const indices = cleanedOptions.map((_, i) => i);
     // Shuffle the indices
     const shuffledIndices = deterministicShuffle(indices, seed);
 
     // Create the new options array based on shuffled indices
-    const newOptions = shuffledIndices.map((i) => options[i] ?? '');
+    const newOptions = shuffledIndices.map((i) => cleanedOptions[i] ?? '');
 
     // Create a mapping from old index to new index
     // oldIndex i is now at newIndex j such that shuffledIndices[j] === i
@@ -54,3 +59,4 @@ export function randomizeQuestionChoices(question: ExamQuestion, seed: string): 
         },
     };
 }
+

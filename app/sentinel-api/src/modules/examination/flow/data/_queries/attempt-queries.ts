@@ -48,8 +48,8 @@ export async function findExistingAttempt(
 }
 
 /**
- * Counts all attempts a student has submitted for an exam (across the published window).
- * Used to enforce the per-session cap before creating a new attempt row.
+ * Counts all completed/active attempts a student has for an exam (across the published window).
+ * Excludes superseded attempts to avoid blocking fresh replacement attempts.
  */
 export async function countAttempts(db: DbClient, examId: string, studentId: string) {
     const row = await db
@@ -62,6 +62,12 @@ export async function countAttempts(db: DbClient, examId: string, studentId: str
             eb.or([
                 eb('e.published_at', 'is', null),
                 sql<boolean>`coalesce(ea.started_at, ea.created_at) >= e.published_at`,
+            ]),
+        )
+        .where((eb) =>
+            eb.or([
+                eb('ea.lifecycle_state', 'is', null),
+                eb('ea.lifecycle_state', '!=', 'SUPERSEDED'),
             ]),
         )
         .executeTakeFirst();

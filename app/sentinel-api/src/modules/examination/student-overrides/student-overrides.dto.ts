@@ -14,6 +14,15 @@ export const createStudentExamAccessOverrideSchema = {
     }),
 };
 
+export const batchCreateStudentExamAccessOverrideSchema = {
+    params: Schema.examIdParamsSchema,
+    body: Schema.batchCreateStudentExamAccessOverrideBodySchema,
+    response: z.object({
+        message: z.string(),
+        data: z.array(studentExamAccessOverrideSchema),
+    }),
+};
+
 export const overrideReconnectLimitSchema = {
     params: Schema.examIdParamsSchema.extend({
         studentId: z.string().uuid(),
@@ -31,4 +40,8 @@ export type StudentExamAccessOverride = z.infer<typeof studentExamAccessOverride
 export type CreateStudentExamAccessOverrideBody = z.infer<
     typeof createStudentExamAccessOverrideSchema.body
 >;
+export type BatchCreateStudentExamAccessOverrideBody = z.infer<
+    typeof batchCreateStudentExamAccessOverrideSchema.body
+>;
 export type OverrideReconnectLimitBody = z.infer<typeof overrideReconnectLimitSchema.body>;
+

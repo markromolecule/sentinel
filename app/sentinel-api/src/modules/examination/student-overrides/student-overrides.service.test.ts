@@ -75,4 +75,51 @@ describe('StudentOverridesService reconnect overrides', () => {
             grantedBy: createdOverride.grantedBy,
         });
     });
+
+    it('batch creates student exam access overrides for multiple students', async () => {
+        const dbClient = {} as DbClient;
+        const examId = '22222222-2222-4222-8222-222222222222';
+        const studentIds = [
+            '11111111-1111-4111-8111-111111111111',
+            '33333333-3333-4333-8333-333333333333',
+        ];
+        const createOverrideSpy = vi
+            .spyOn(StudentOverridesService, 'createStudentExamAccessOverride')
+            .mockImplementation(async (args) => ({
+                id: `override-${args.body.studentId}`,
+                examId: args.examId,
+                studentId: args.body.studentId,
+                grantedBy: args.grantedBy ?? null,
+                overrideType: args.body.overrideType,
+                availableFrom: String(args.body.availableFrom),
+                availableUntil: String(args.body.availableUntil),
+                allowedAttempts: args.body.allowedAttempts ?? 1,
+                usedAttempts: 0,
+                usedAttemptIds: [],
+                sourceAttemptId: null,
+                notes: args.body.notes ?? null,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+            }));
+
+        const results = await StudentOverridesService.batchCreateStudentExamAccessOverrides({
+            dbClient,
+            examId,
+            body: {
+                studentIds,
+                overrideType: 'MAKEUP',
+                availableFrom: '2026-04-13T06:00:00.000Z',
+                availableUntil: '2026-04-13T08:00:00.000Z',
+                allowedAttempts: 1,
+                notes: 'Batch makeup window',
+            },
+            grantedBy: 'instructor-1',
+        });
+
+        expect(results).toHaveLength(2);
+        expect(results[0]?.studentId).toBe(studentIds[0]);
+        expect(results[1]?.studentId).toBe(studentIds[1]);
+        expect(createOverrideSpy).toHaveBeenCalledTimes(2);
+    });
 });
+

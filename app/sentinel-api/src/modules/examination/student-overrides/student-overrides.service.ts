@@ -319,7 +319,44 @@ export class StudentOverridesService {
     }
 
     /**
+     * Batch creates and persists student-specific exam access overrides for multiple students.
+     */
+    static async batchCreateStudentExamAccessOverrides(args: {
+        dbClient: DbClient;
+        examId: string;
+        body: {
+            studentIds: string[];
+            overrideType?: 'MAKEUP';
+            availableFrom: string | Date;
+            availableUntil: string | Date;
+            allowedAttempts?: number;
+            notes?: string | null;
+        };
+        grantedBy?: string | null;
+    }): Promise<StudentExamAccessOverride[]> {
+        const results: StudentExamAccessOverride[] = [];
+        for (const studentId of args.body.studentIds) {
+            const override = await StudentOverridesService.createStudentExamAccessOverride({
+                dbClient: args.dbClient,
+                examId: args.examId,
+                body: {
+                    studentId,
+                    overrideType: args.body.overrideType ?? 'MAKEUP',
+                    availableFrom: args.body.availableFrom,
+                    availableUntil: args.body.availableUntil,
+                    allowedAttempts: args.body.allowedAttempts ?? 1,
+                    notes: args.body.notes ?? null,
+                },
+                grantedBy: args.grantedBy ?? null,
+            });
+            results.push(override);
+        }
+        return results;
+    }
+
+    /**
      * Grants a one-time reconnect-limit override for the student's latest
+
      * active attempt when the configured limit has been exhausted.
      */
     static async createReconnectLimitOverride(args: {
