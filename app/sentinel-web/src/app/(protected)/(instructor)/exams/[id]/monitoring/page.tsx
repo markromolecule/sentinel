@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams, usePathname, useRouter } from 'next/navigation';
-import { MonitoringHeader, MonitoringStats, StudentList } from '@/features/exams';
+import { MonitoringHeader, MonitoringStats, StudentList, LockedStudentsPanel } from '@/features/exams';
 import { Spinner } from '@sentinel/ui';
 import { useMonitoring } from './_hooks/use-monitoring';
 import { RuntimeAccessDialogs } from './_components/runtime-access-dialogs';
@@ -86,9 +86,17 @@ export default function ExamMonitoringPage() {
                         stats={monitoring.stats}
                         lobbyAdmissions={monitoring.lobbyAdmissions}
                     />
+
+                    <LockedStudentsPanel
+                        examId={examId}
+                        students={monitoring.students}
+                        maxReconnectAttempts={monitoring.exam.maxReconnectAttempts}
+                        onRefresh={() => refetch()}
+                    />
                 </div>
 
                 <StudentList
+
                     students={filteredStudents}
                     selectedId={null}
                     onSelect={(student) => {

@@ -22,6 +22,7 @@ import {
 export function useInstructorLobby(examId: string) {
     const apiClient = useApi();
     const [isUpdatingLobbyAdmissions, setIsUpdatingLobbyAdmissions] = useState(false);
+    const [isFetching, setIsFetching] = useState(false);
     const [lobbyAdmissions, setLobbyAdmissions] = useState<ExamLobbyWaitingStudent[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<LobbyAdmissionStatusFilter>('all');
@@ -41,6 +42,7 @@ export function useInstructorLobby(examId: string) {
     );
 
     const refreshLobbyAdmissions = useCallback(async () => {
+        setIsFetching(true);
         try {
             const admissions = await getExamLobbyWaitingList(apiClient, examId);
             setLobbyAdmissions(admissions);
@@ -48,8 +50,11 @@ export function useInstructorLobby(examId: string) {
             const message =
                 error instanceof Error ? error.message : 'Failed to load lobby admissions.';
             toast.error(message);
+        } finally {
+            setIsFetching(false);
         }
     }, [apiClient, examId]);
+
 
     useEffect(() => {
         void refreshLobbyAdmissions();
@@ -116,7 +121,9 @@ export function useInstructorLobby(examId: string) {
         statusFilter,
         setStatusFilter,
         isUpdatingLobbyAdmissions,
+        isFetching,
         refreshLobbyAdmissions,
         handleUpdateLobbyAdmissions,
     };
 }
+

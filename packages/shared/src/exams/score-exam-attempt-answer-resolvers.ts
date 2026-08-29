@@ -4,7 +4,7 @@ import { normalizeText } from './score-exam-attempt-utils';
 
 // ─── Shared Utilities ────────────────────────────────────────────────────────
 
-const CHOICE_LABEL_PREFIX_REGEX = /^\s*\(?([A-Z])\)?(?:\s*[\.\):-]|\s+-)\s*/i;
+const CHOICE_LABEL_PREFIX_REGEX = /^\s*\(?([A-Z0-9])\)?(?:\s*[\.\):-]|\s+-)\s*/i;
 
 function toBoolean(value: unknown): boolean | null {
     if (typeof value === 'boolean') return value;
@@ -26,26 +26,31 @@ function resolveOptionToText(value: unknown, options: string[]): string | null {
     if (typeof value === 'number') return normalizeText(options[value] ?? '');
     if (typeof value === 'string') {
         const normalizedValue = normalizeText(value);
+        const strippedValue = normalizeText(value.replace(CHOICE_LABEL_PREFIX_REGEX, '').trim());
         const normalizedOptions = options.map((option) => ({
             raw: option,
             normalized: normalizeText(option),
             stripped: normalizeText(option.replace(CHOICE_LABEL_PREFIX_REGEX, '').trim()),
         }));
 
+        // 1. Direct match on normalized text or stripped option text
         const directMatch = normalizedOptions.find(
             (option) =>
-                option.normalized === normalizedValue || option.stripped === normalizedValue,
+                option.normalized === normalizedValue ||
+                option.stripped === normalizedValue ||
+                (strippedValue.length > 0 && (option.normalized === strippedValue || option.stripped === strippedValue)),
         );
         if (directMatch) return directMatch.stripped;
 
+        // 2. Letter prefix match as fallback for legacy index-like answers
         const labelMatch = value.match(CHOICE_LABEL_PREFIX_REGEX);
-        if (labelMatch?.[1]) {
+        if (labelMatch?.[1] && /^[A-Z]$/i.test(labelMatch[1])) {
             const optionIndex = labelMatch[1].toUpperCase().charCodeAt(0) - 65;
             const option = normalizedOptions[optionIndex];
             if (option) return option.stripped;
         }
 
-        return normalizeText(value.replace(CHOICE_LABEL_PREFIX_REGEX, '').trim());
+        return strippedValue.length > 0 ? strippedValue : normalizedValue;
     }
     return null;
 }
@@ -56,29 +61,34 @@ function resolveOptionToDisplayText(value: unknown, options: string[]): string |
     }
 
     if (typeof value === 'string') {
-        const labelMatch = value.match(CHOICE_LABEL_PREFIX_REGEX);
-        if (labelMatch?.[1]) {
-            const optionIndex = labelMatch[1].toUpperCase().charCodeAt(0) - 65;
-            const option = options[optionIndex];
-            if (option) {
-                return option;
-            }
-        }
-
         const normalizedValue = normalizeText(value);
+        const strippedValue = normalizeText(value.replace(CHOICE_LABEL_PREFIX_REGEX, '').trim());
         const normalizedOptions = options.map((option) => ({
             raw: option,
             normalized: normalizeText(option),
             stripped: normalizeText(option.replace(CHOICE_LABEL_PREFIX_REGEX, '').trim()),
         }));
 
+        // 1. Direct match on normalized or stripped content
         const directMatch = normalizedOptions.find(
             (option) =>
-                option.normalized === normalizedValue || option.stripped === normalizedValue,
+                option.normalized === normalizedValue ||
+                option.stripped === normalizedValue ||
+                (strippedValue.length > 0 && (option.normalized === strippedValue || option.stripped === strippedValue)),
         );
 
         if (directMatch) {
             return directMatch.raw;
+        }
+
+        // 2. Letter prefix match as fallback
+        const labelMatch = value.match(CHOICE_LABEL_PREFIX_REGEX);
+        if (labelMatch?.[1] && /^[A-Z]$/i.test(labelMatch[1])) {
+            const optionIndex = labelMatch[1].toUpperCase().charCodeAt(0) - 65;
+            const option = options[optionIndex];
+            if (option) {
+                return option;
+            }
         }
     }
 

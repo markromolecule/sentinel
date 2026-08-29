@@ -89,6 +89,48 @@ export const createAttemptScopedStudentExamAccessOverrideBodySchema =
         }
     });
 
+export const batchCreateStudentExamAccessOverrideBodySchema = z
+    .object({
+        studentIds: z.array(z.string().uuid()).min(1, 'Select at least one student.'),
+        overrideType: z.literal('MAKEUP').default('MAKEUP'),
+        availableFrom: z.union([z.string(), z.date()]),
+        availableUntil: z.union([z.string(), z.date()]),
+        allowedAttempts: z.number().int().min(1).optional().default(1),
+        notes: z.string().trim().max(1000).nullable().optional(),
+    })
+    .superRefine((value, context) => {
+        const availableFrom = new Date(value.availableFrom);
+        const availableUntil = new Date(value.availableUntil);
+
+        if (Number.isNaN(availableFrom.getTime())) {
+            context.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['availableFrom'],
+                message: 'Provide a valid availability start time.',
+            });
+        }
+
+        if (Number.isNaN(availableUntil.getTime())) {
+            context.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['availableUntil'],
+                message: 'Provide a valid availability end time.',
+            });
+        }
+
+        if (
+            !Number.isNaN(availableFrom.getTime()) &&
+            !Number.isNaN(availableUntil.getTime()) &&
+            availableUntil.getTime() <= availableFrom.getTime()
+        ) {
+            context.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['availableUntil'],
+                message: 'The availability end time must be after the start time.',
+            });
+        }
+    });
+
 export type StudentExamAccessOverrideTypeType = z.infer<typeof studentExamAccessOverrideTypeSchema>;
 export type StudentExamAccessOverrideSchemaType = z.infer<typeof studentExamAccessOverrideSchema>;
 export type CreateStudentExamAccessOverrideBodyType = z.infer<
@@ -97,3 +139,7 @@ export type CreateStudentExamAccessOverrideBodyType = z.infer<
 export type CreateAttemptScopedStudentExamAccessOverrideBodyType = z.infer<
     typeof createAttemptScopedStudentExamAccessOverrideBodySchema
 >;
+export type BatchCreateStudentExamAccessOverrideBodyType = z.infer<
+    typeof batchCreateStudentExamAccessOverrideBodySchema
+>;
+

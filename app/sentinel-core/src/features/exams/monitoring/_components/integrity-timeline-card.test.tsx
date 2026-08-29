@@ -31,10 +31,11 @@ describe('IntegrityTimelineCard', () => {
         expect(screen.getByText('EXAM ID: exam-123')).toBeTruthy();
     });
 
-    it('renders the Force Submit button', () => {
+    it('does not render the deprecated Force Submit button', () => {
         render(<IntegrityTimelineCard {...defaultProps} />);
-        expect(screen.getByText('Force Submit')).toBeTruthy();
+        expect(screen.queryByText('Force Submit')).toBeNull();
     });
+
 
     it('renders the Capture Frame button', () => {
         render(<IntegrityTimelineCard {...defaultProps} />);

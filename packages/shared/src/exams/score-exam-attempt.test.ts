@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildExamAttemptQuestionReports, scoreExamAttempt } from './score-exam-attempt';
+import { randomizeQuestionChoices } from './shuffle-exam';
 import type { ExamAttemptAnswers, ExamQuestion } from '../types';
 import type { EssayQuestionEvaluation } from '../schema/exams/assessment-schema';
 
@@ -321,6 +322,69 @@ describe('scoreExamAttempt', () => {
                 },
             }).score,
         ).toBe(2);
+    });
+
+    it('scores randomized choices with baked-in prefix labels accurately across different seeds', () => {
+        const rawQuestion: ExamQuestion = {
+            id: 'baked-label-mc',
+            examId: 'exam-1',
+            type: 'MULTIPLE_CHOICE',
+            points: 5,
+            orderIndex: 0,
+            tags: [],
+            content: {
+                prompt: 'What is the capital of France?',
+                options: ['A. Berlin', 'B. Paris', 'C. Madrid', 'D. Rome'],
+                correctAnswer: 1, // 'B. Paris' -> 'Paris'
+            },
+        };
+
+        // Seed 1
+        const randomized1 = randomizeQuestionChoices(rawQuestion, 'student-seed-1');
+        // Seed 2
+        const randomized2 = randomizeQuestionChoices(rawQuestion, 'student-seed-2');
+
+        // Check options were stripped of prefixes
+        expect(randomized1.content.options).toContain('Paris');
+        expect(randomized1.content.options).not.toContain('B. Paris');
+        expect(randomized2.content.options).toContain('Paris');
+
+        // The correctAnswer index must point to 'Paris' in both shuffled options
+        const correctIndex1 = randomized1.content.correctAnswer as number;
+        expect(randomized1.content.options?.[correctIndex1]).toBe('Paris');
+
+        const correctIndex2 = randomized2.content.correctAnswer as number;
+        expect(randomized2.content.options?.[correctIndex2]).toBe('Paris');
+
+        // Scoring text answer 'Paris' or 'B. Paris' on both variants
+        expect(
+            scoreExamAttempt({
+                questions: [randomized1],
+                answers: { 'baked-label-mc': 'Paris' },
+            }).score,
+        ).toBe(5);
+
+        expect(
+            scoreExamAttempt({
+                questions: [randomized2],
+                answers: { 'baked-label-mc': 'Paris' },
+            }).score,
+        ).toBe(5);
+
+        // Submitting by option index in the presented snapshot
+        expect(
+            scoreExamAttempt({
+                questions: [randomized1],
+                answers: { 'baked-label-mc': correctIndex1 },
+            }).score,
+        ).toBe(5);
+
+        expect(
+            scoreExamAttempt({
+                questions: [randomized2],
+                answers: { 'baked-label-mc': correctIndex2 },
+            }).score,
+        ).toBe(5);
     });
 });
 

@@ -1,7 +1,9 @@
 export * from './flagging-timeline';
 export * from './monitoring-header';
 export * from './monitoring-stats';
+export * from './locked-students-panel';
 export * from './student-card';
+
 export * from './student-list';
 export * from './attempt-lifecycle-actions';
 export * from './attempt-lifecycle-badge';

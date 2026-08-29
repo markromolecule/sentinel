@@ -510,6 +510,16 @@ export type CreateStudentExamAccessOverridePayload = {
     notes?: string | null;
 };
 
+export type BatchCreateStudentExamAccessOverridePayload = {
+    id: string;
+    studentIds: string[];
+    overrideType?: 'MAKEUP';
+    availableFrom: string;
+    availableUntil: string;
+    allowedAttempts?: number;
+    notes?: string | null;
+};
+
 export type OverrideReconnectLimitPayload = {
     id: string;
     studentId: string;
@@ -517,6 +527,7 @@ export type OverrideReconnectLimitPayload = {
 };
 
 export type ApiStudentExamAccessOverride = StudentExamAccessOverride;
+
 
 export type ExamConfigurationState = {
     settings: NonNullable<ProctorExam['settings']>;

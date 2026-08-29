@@ -75,8 +75,12 @@ export function ExamReportPageContent({ params }: { params: Promise<{ examId: st
                     pageSize={pageSize}
                     onFinalizeAll={handleFinalizeAll}
                     isFinalizingAll={isFinalizingAll}
+                    onRefresh={() => {
+                        void refetch();
+                    }}
                 />
             )}
+
 
             {activeSection === 'queue' && (
                 <ActionQueueView

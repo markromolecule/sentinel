@@ -54,7 +54,12 @@ vi.mock('@sentinel/hooks', () => ({
     useApi: () => mockApiClient,
     useExamReportQuery: mockUseExamReportQuery,
     useExamQuery: mockUseExamQuery,
+    useBatchCreateExamOverridesMutation: () => ({
+        mutateAsync: vi.fn(),
+        isPending: false,
+    }),
 }));
+
 
 vi.mock('@sentinel/services', () => ({
     createStudentExamAccessOverride: vi.fn(),
@@ -188,6 +193,28 @@ vi.mock('@sentinel/ui', () => ({
             </div>
         );
     },
+    Checkbox: ({ checked, onCheckedChange, 'aria-label': ariaLabel }: any) => (
+        <input
+            type="checkbox"
+            checked={!!checked}
+            onChange={(e) => onCheckedChange?.(e.target.checked)}
+            aria-label={ariaLabel}
+        />
+    ),
+    Dialog: ({ children, open }: { children: React.ReactNode; open?: boolean }) =>
+        open !== false ? <div>{children}</div> : null,
+    DialogTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+    DialogContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    DialogHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    DialogTitle: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    DialogDescription: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    DialogFooter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    Label: ({ children, htmlFor }: { children: React.ReactNode; htmlFor?: string }) => (
+        <label htmlFor={htmlFor}>{children}</label>
+    ),
+    Textarea: ({ value, onChange, placeholder }: any) => (
+        <textarea value={value} onChange={onChange} placeholder={placeholder} />
+    ),
     DataTable: ({ columns, data, toolbarActions }: any) => {
         return (
             <div>
@@ -205,7 +232,13 @@ vi.mock('@sentinel/ui', () => ({
                             <tr key={i}>
                                 {columns.map((c: any, j: number) => {
                                     const cellContent = c.cell
-                                        ? c.cell({ row: { original: row } })
+                                        ? c.cell({
+                                              row: {
+                                                  original: row,
+                                                  getIsSelected: () => false,
+                                                  toggleSelected: () => {},
+                                              },
+                                          })
                                         : null;
                                     return <td key={j}>{cellContent}</td>;
                                 })}
@@ -217,6 +250,7 @@ vi.mock('@sentinel/ui', () => ({
         );
     },
 }));
+
 
 vi.mock('sonner', () => ({
     toast: {

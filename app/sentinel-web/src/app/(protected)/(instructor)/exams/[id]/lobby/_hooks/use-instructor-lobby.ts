@@ -31,7 +31,9 @@ export function useInstructorLobby(examId: string) {
         data: lobbyAdmissions = [],
         refetch: refreshLobbyAdmissions,
         isLoading,
+        isFetching,
     } = useExamLobbyWaitingListQuery(examId);
+
 
     // Subscribe to real-time lobby admission changes
     useLobbyRealtime({ examId });
@@ -129,5 +131,7 @@ export function useInstructorLobby(examId: string) {
         handleUpdateLobbyAdmissions,
         handleOverrideReconnect,
         isLoading,
+        isFetching,
     };
 }
+

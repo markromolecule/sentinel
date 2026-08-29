@@ -2,8 +2,9 @@
 
 import { type ExamAttemptLifecycleEvent, Flag } from '@sentinel/shared/types';
 import { Button } from '@sentinel/ui';
-import { Eye, ShieldAlert } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import { FlaggingTimeline } from './flagging-timeline';
+
 
 interface IntegrityTimelineCardProps {
     flags: Flag[];
@@ -61,15 +62,9 @@ export function IntegrityTimelineCard({
                             View Evidence
                         </Button>
                     ) : null}
-                    <Button
-                        className="h-9 border-none bg-red-600 text-xs font-semibold text-white shadow-lg shadow-red-500/20 hover:bg-red-700"
-                        size="sm"
-                    >
-                        <ShieldAlert className="mr-1.5 h-3.5 w-3.5" />
-                        Force Submit
-                    </Button>
                 </div>
             </div>
+
             <div className="py-1 pl-4">
                 <FlaggingTimeline
                     flags={flags}

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import type { ExamReport } from '@sentinel/shared/types';
+import type { ExamReport, ExamReportStudentSummary } from '@sentinel/shared/types';
 import {
     DataTable,
     FacetedFilter,
@@ -14,7 +14,9 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from '@sentinel/ui';
-import type { ColumnDef } from '@tanstack/react-table';
+import type { ColumnDef, RowSelectionState } from '@tanstack/react-table';
+import { CalendarPlus } from 'lucide-react';
+import { BatchMakeupDialog } from './batch-makeup-dialog';
 
 type AttemptsViewProps = {
     report: ExamReport;
@@ -29,7 +31,9 @@ type AttemptsViewProps = {
     pageSize: number;
     onFinalizeAll?: () => Promise<void> | void;
     isFinalizingAll?: boolean;
+    onRefresh?: () => void;
 };
+
 
 /**
  * Renders the Attempt Summary View containing:
@@ -50,8 +54,18 @@ export function AttemptsView({
     pageSize,
     onFinalizeAll,
     isFinalizingAll,
+    onRefresh,
 }: AttemptsViewProps) {
+    const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
+    const [isBatchMakeupOpen, setIsBatchMakeupOpen] = React.useState(false);
     const hasSubmittedAttempts = report.summary.totalSubmitted > 0;
+
+    const selectedStudents: ExamReportStudentSummary[] = React.useMemo(() => {
+        return Object.keys(rowSelection)
+            .filter((key) => rowSelection[key])
+            .map((indexStr) => report.students[Number(indexStr)])
+            .filter((s): s is ExamReportStudentSummary => Boolean(s));
+    }, [rowSelection, report.students]);
 
     return (
         <div className="space-y-4">
@@ -63,38 +77,50 @@ export function AttemptsView({
                         workflows in one place.
                     </p>
                 </div>
-                {onFinalizeAll && (
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button
-                                variant="outline"
-                                className="border-[#323d8f] text-[#323d8f] hover:bg-[#323d8f]/10"
-                                disabled={!hasSubmittedAttempts || isFinalizingAll}
-                            >
-                                {isFinalizingAll ? 'Finalizing...' : 'Finalize All'}
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Finalize All Submissions</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Are you sure you want to finalize all submitted attempts for
-                                    this exam? This will release the final grades and feedback to
-                                    all students. This action cannot be undone.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                    onClick={onFinalizeAll}
-                                    className="bg-[#323d8f] text-white hover:bg-[#323d8f]/90"
+                <div className="flex items-center gap-2">
+                    {selectedStudents.length > 0 && (
+                        <Button
+                            variant="default"
+                            className="bg-[#323d8f] text-white hover:bg-[#323d8f]/90"
+                            onClick={() => setIsBatchMakeupOpen(true)}
+                        >
+                            <CalendarPlus className="mr-2 h-4 w-4" />
+                            Schedule Group Make-Up ({selectedStudents.length})
+                        </Button>
+                    )}
+                    {onFinalizeAll && (
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    className="border-[#323d8f] text-[#323d8f] hover:bg-[#323d8f]/10"
+                                    disabled={!hasSubmittedAttempts || isFinalizingAll}
                                 >
-                                    Confirm Finalize
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                )}
+                                    {isFinalizingAll ? 'Finalizing...' : 'Finalize All'}
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Finalize All Submissions</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Are you sure you want to finalize all submitted attempts for
+                                        this exam? This will release the final grades and feedback to
+                                        all students. This action cannot be undone.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                        onClick={onFinalizeAll}
+                                        className="bg-[#323d8f] text-white hover:bg-[#323d8f]/90"
+                                    >
+                                        Confirm Finalize
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    )}
+                </div>
             </div>
 
             <DataTable
@@ -104,6 +130,8 @@ export function AttemptsView({
                 searchPlaceholder="Search student..."
                 searchValue={searchValue}
                 onSearchChange={setSearchValue}
+                rowSelection={rowSelection}
+                onRowSelectionChange={setRowSelection}
                 manualPagination
                 pageCount={Math.max(report.studentsPagination.totalPages, 1)}
                 totalCount={report.studentsPagination.total}
@@ -128,6 +156,18 @@ export function AttemptsView({
                     />
                 }
             />
+
+            <BatchMakeupDialog
+                open={isBatchMakeupOpen}
+                onOpenChange={setIsBatchMakeupOpen}
+                examId={report.exam.id}
+                students={selectedStudents}
+                onSuccess={() => {
+                    setRowSelection({});
+                    onRefresh?.();
+                }}
+            />
         </div>
     );
 }
+

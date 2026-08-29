@@ -212,6 +212,53 @@ describe('SessionRepository.createSession', () => {
         );
     });
 
+    it('permits initial fresh attempt creation when maxReconnectAttempts is 0 without override', async () => {
+        const existingAttemptSelect = createExistingAttemptSelect(undefined);
+        const attemptCountSelect = {
+            innerJoin: vi.fn().mockReturnThis(),
+            select: vi.fn().mockReturnThis(),
+            where: vi.fn().mockReturnThis(),
+            executeTakeFirst: vi.fn().mockResolvedValue({
+                attempt_count: '0',
+            }),
+        };
+        const insertBuilder = {
+            values: vi.fn().mockReturnThis(),
+            returning: vi.fn().mockReturnThis(),
+            executeTakeFirst: vi.fn().mockResolvedValue({
+                attempt_id: 'attempt-first-time',
+            }),
+        };
+        const dbClient = {
+            selectFrom: vi
+                .fn()
+                .mockReturnValueOnce(createRemediationSelect(undefined))
+                .mockReturnValueOnce(existingAttemptSelect)
+                .mockReturnValueOnce(attemptCountSelect),
+            insertInto: vi.fn().mockReturnValue(insertBuilder),
+        } as unknown as DbClient;
+
+        const result = await SessionRepository.createSession(dbClient, {
+            examId: 'exam-1',
+            studentId: 'student-1',
+            maxReconnectAttempts: 0,
+        });
+
+        expect(result).toEqual({
+            sessionId: 'attempt-first-time',
+            isResumed: false,
+            reconnectAttemptCount: 0,
+            maxReconnectAttempts: 0,
+        });
+        expect(insertBuilder.values).toHaveBeenCalledWith(
+            expect.objectContaining({
+                lifecycle_state: 'IN_PROGRESS',
+                status: 'IN_PROGRESS',
+            }),
+        );
+    });
+
+
     it('does not treat a remediation exam as a same-exam retake override source', async () => {
         const dbClient = {
             selectFrom: vi
