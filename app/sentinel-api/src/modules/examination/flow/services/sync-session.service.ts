@@ -2,7 +2,6 @@ import { type DbClient } from '@sentinel/db';
 import { HTTPException } from 'hono/http-exception';
 import { type ExamAttemptAnswers } from '@sentinel/shared';
 import { SessionRepository } from '../data/session.repository';
-import { LogsService } from '../../../general/logs/logs.service';
 import type { SyncSessionBody } from '../flow.dto';
 
 export type SyncSessionServiceArgs = {
@@ -75,24 +74,6 @@ export async function syncSessionService({
         });
     }
 
-    // Telemetry logging
-    if (attempt.institution_id) {
-        try {
-            await LogsService.createLog(dbClient, {
-                userId: studentUserId,
-                action: 'exam.heartbeat_synced',
-                resourceType: 'exam_attempt',
-                resourceId: attempt.attempt_id,
-                activeInstitutionId: attempt.institution_id,
-                details: {
-                    sessionId: body.sessionId,
-                    answeredCount: body.answeredCount,
-                    timeSpentMinutes:
-                        body.elapsedSeconds > 0 ? Math.ceil(body.elapsedSeconds / 60) : 0,
-                },
-            });
-        } catch (logErr) {
-            console.error('Failed to log exam.heartbeat_synced:', logErr);
-        }
-    }
+    // Note: Routine progress syncs update attempt state atomically in database
+    // without writing non-actionable heartbeat rows to persistent activity_logs.
 }

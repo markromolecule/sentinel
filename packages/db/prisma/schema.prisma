@@ -1626,6 +1626,8 @@ model live_inspection_leases {
   @@index([state, expires_at], map: "live_inspection_leases_state_expires_idx")
   @@index([institution_id], map: "live_inspection_leases_institution_idx")
   @@index([provider_room_name], map: "live_inspection_leases_room_idx")
+  @@index([attempt_id], map: "live_inspection_leases_attempt_idx")
+  @@index([exam_id], map: "live_inspection_leases_exam_idx")
   @@schema("public")
 }
 
@@ -1727,6 +1729,7 @@ model flagged_incidents {
   telemetry_incident_evidence telemetry_incident_evidence[]
 
   @@unique([attempt_id, rule_key, platform, dedupe_key], map: "flagged_incidents_dedupe_key_unique", where: raw("(dedupe_key IS NOT NULL)"))
+  @@index([attempt_id, timestamp(sort: Desc)], map: "flagged_incidents_attempt_timestamp_idx")
   @@schema("public")
 }
 

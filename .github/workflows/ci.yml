@@ -36,12 +36,18 @@ jobs:
 
       - name: Run Affected Lint, Test & Build (Pull Requests)
         if: github.event_name == 'pull_request'
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/sentinel_test?sslmode=disable
+          DIRECT_URL: postgresql://postgres:postgres@localhost:5432/sentinel_test?sslmode=disable
         run: |
           echo "Running selective validation against base branch origin/${{ github.base_ref }}..."
           pnpm turbo run lint test build --filter="...[origin/${{ github.base_ref }}]"
 
       - name: Run Full Lint, Test & Build (Push to Main/Master)
         if: github.event_name == 'push'
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/sentinel_test?sslmode=disable
+          DIRECT_URL: postgresql://postgres:postgres@localhost:5432/sentinel_test?sslmode=disable
         run: |
           echo "Running monorepo validation on direct push..."
           pnpm turbo run lint test build

@@ -839,7 +839,7 @@ describe('Examination Flow Integration', () => {
         expect(getExamConfigurationState).not.toHaveBeenCalled();
     });
 
-    it('syncs active attempt progress and logs a heartbeat on success', async () => {
+    it('syncs active attempt progress atomically without routine activity log churn', async () => {
         vi.mocked(SessionRepository.getOwnedSessionAttempt).mockResolvedValue({
             attempt_id: 'attempt-sync-1',
             exam_id: examId,
@@ -868,18 +868,7 @@ describe('Examination Flow Integration', () => {
                 'question-1': 'A',
             },
         });
-        expect(LogsService.createLog).toHaveBeenCalledWith(
-            mockDb,
-            expect.objectContaining({
-                action: 'exam.heartbeat_synced',
-                resourceId: 'attempt-sync-1',
-                details: {
-                    sessionId: 'attempt-sync-1',
-                    answeredCount: 21,
-                    timeSpentMinutes: 3,
-                },
-            }),
-        );
+        expect(LogsService.createLog).not.toHaveBeenCalled();
     });
 
     it('converts a zero-row guarded sync update into a terminal 409', async () => {
