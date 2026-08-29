@@ -16,6 +16,7 @@ import type {
     GetExamParams,
     CreateExamPayload,
     CreateStudentExamAccessOverridePayload,
+    BatchCreateStudentExamAccessOverridePayload,
     OverrideReconnectLimitPayload,
     UpdateExamPayload,
     UpdateExamRuntimeAccessPayload,
