@@ -5,9 +5,18 @@ import { AsyncLocalStorage } from 'async_hooks';
  * Shared Kysely database query client instance.
  * Provides type-safe querying leveraging the Kysely query builder and auto-generated database types.
  */
-export const dbClient = prisma.$kysely;
+export type DbClient = typeof prisma.$kysely;
 
-export type DbClient = typeof dbClient;
+export const dbClient = new Proxy({} as DbClient, {
+    get(target, prop, receiver) {
+        const kysely = prisma.$kysely;
+        const value = Reflect.get(kysely as any, prop, receiver);
+        if (typeof value === 'function') {
+            return value.bind(kysely);
+        }
+        return value;
+    },
+});
 export type TransactionOptions = {
     maxWait?: number;
     timeout?: number;

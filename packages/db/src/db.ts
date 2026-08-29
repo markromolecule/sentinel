@@ -86,6 +86,21 @@ const globalForPrisma = globalThis as unknown as {
     prisma: PrismaKyselyClient | undefined;
 };
 
-export const prisma = globalForPrisma.prisma ?? createClient();
-globalForPrisma.prisma = prisma;
+export const getPrismaClient = (): PrismaKyselyClient => {
+    if (!globalForPrisma.prisma) {
+        globalForPrisma.prisma = createClient();
+    }
+    return globalForPrisma.prisma;
+};
+
+export const prisma = new Proxy({} as PrismaKyselyClient, {
+    get(target, prop, receiver) {
+        const client = getPrismaClient();
+        const value = Reflect.get(client as any, prop, receiver);
+        if (typeof value === 'function') {
+            return value.bind(client);
+        }
+        return value;
+    },
+});
 
