@@ -113,35 +113,14 @@ export const getColumns = (examId: string): ColumnDef<StudentRow>[] => [
     {
         accessorKey: 'lastName',
         header: 'Student',
-
         cell: ({ row }) => {
             const student = row.original;
             return (
-                <div className="min-w-[14rem] space-y-1">
+                <div className="min-w-[12rem] space-y-0.5">
                     <div className="font-medium">
                         {student.lastName}, {student.firstName}
                     </div>
                     <div className="text-muted-foreground text-sm">{student.studentNo}</div>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                        {student.needsReview && (
-                            <Badge variant="destructive">
-                                <AlertTriangle className="mr-1 h-3 w-3" />
-                                Review
-                            </Badge>
-                        )}
-                        {student.needsMakeup && <Badge variant="secondary">Makeup</Badge>}
-                        {student.needsRetake && <Badge variant="outline">Retake</Badge>}
-                        {student.lifecycleState === 'LOCKED' && (
-                            <Badge variant="destructive">Locked</Badge>
-                        )}
-                        {student.lifecycleState === 'CLOSED' && (
-                            <Badge variant="secondary">Closed</Badge>
-                        )}
-                        {student.lifecycleState === 'SUPERSEDED' && (
-                            <Badge variant="outline">Superseded</Badge>
-                        )}
-                        {student.isFinalized && <Badge variant="default">Finalized</Badge>}
-                    </div>
                 </div>
             );
         },
@@ -154,11 +133,34 @@ export const getColumns = (examId: string): ColumnDef<StudentRow>[] => [
     {
         accessorKey: 'status',
         header: 'Status',
-        cell: ({ row }) => (
-            <Badge variant={getStatusBadgeVariant(row.original.status)}>
-                {getStatusLabel(row.original.status)}
-            </Badge>
-        ),
+        cell: ({ row }) => {
+            const student = row.original;
+            return (
+                <div className="flex flex-wrap items-center gap-1.5">
+                    <Badge variant={getStatusBadgeVariant(student.status)}>
+                        {getStatusLabel(student.status)}
+                    </Badge>
+                    {student.needsReview && (
+                        <Badge variant="destructive">
+                            <AlertTriangle className="mr-1 h-3 w-3" />
+                            Review
+                        </Badge>
+                    )}
+                    {student.needsMakeup && <Badge variant="secondary">Makeup</Badge>}
+                    {student.needsRetake && <Badge variant="outline">Retake</Badge>}
+                    {student.lifecycleState === 'LOCKED' && (
+                        <Badge variant="destructive">Locked</Badge>
+                    )}
+                    {student.lifecycleState === 'CLOSED' && (
+                        <Badge variant="secondary">Closed</Badge>
+                    )}
+                    {student.lifecycleState === 'SUPERSEDED' && (
+                        <Badge variant="outline">Superseded</Badge>
+                    )}
+                    {student.isFinalized && <Badge variant="default">Finalized</Badge>}
+                </div>
+            );
+        },
     },
     {
         accessorKey: 'score',

@@ -89,7 +89,6 @@ export function useExamBuilder(): UseExamBuilderResult {
 
         // Workspace Actions
         isSaving: workspaceActions.isSaving,
-        isPublishing: workspaceActions.isPublishing,
         isUpdatingTitle: workspaceActions.isUpdatingTitle,
         handleToggleExamSetting: workspaceActions.handleToggleExamSetting,
         handleToggleLobbyAdmissionMode: workspaceActions.handleToggleLobbyAdmissionMode,
@@ -97,7 +96,6 @@ export function useExamBuilder(): UseExamBuilderResult {
         handleToggleStrictMode: workspaceActions.handleToggleStrictMode,
         handleUpdateTitle: workspaceActions.handleUpdateTitle,
         handleSave: workspaceActions.handleSave,
-        handlePublish: workspaceActions.handlePublish,
 
         // Question Management
         isAddingQuestionToBank: questionManagement.isAddingQuestionToBank,

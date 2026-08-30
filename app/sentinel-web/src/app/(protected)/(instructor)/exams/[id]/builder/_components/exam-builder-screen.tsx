@@ -62,11 +62,9 @@ export function ExamBuilderScreen() {
                         titleParam={builder.titleParam}
                         status={builder.status}
                         isSaving={builder.isSaving}
-                        isPublishing={builder.isPublishing}
                         isUpdatingTitle={builder.isUpdatingTitle}
                         handleUpdateTitle={builder.handleUpdateTitle}
                         handleSave={builder.handleSave}
-                        handlePublish={builder.handlePublish}
                     />
                 ) : null}
 

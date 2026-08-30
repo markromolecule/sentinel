@@ -76,9 +76,11 @@ export function QuestionBucketEmptyState({
 export function EmptySectionState({
     onAddQuestion,
     onImportQuestions,
+    isTyped = true,
 }: {
-    onAddQuestion: () => void;
-    onImportQuestions: () => void;
+    onAddQuestion?: () => void;
+    onImportQuestions?: () => void;
+    isTyped?: boolean;
 }) {
     return (
         <div className="flex flex-col items-center justify-center gap-3 px-6 py-10 text-center">
@@ -86,21 +88,33 @@ export function EmptySectionState({
                 <FileText className="text-muted-foreground h-5 w-5" />
             </div>
             <div className="space-y-1">
-                <h4 className="text-sm font-semibold">No questions in this section yet</h4>
+                <h4 className="text-sm font-semibold">
+                    {isTyped
+                        ? 'No questions in this section yet'
+                        : 'Select a question type to begin'}
+                </h4>
                 <p className="text-muted-foreground text-sm">
-                    Add or import questions here to keep the exam organized and easier to manage.
+                    {isTyped
+                        ? 'Add or import questions here to keep the exam organized and easier to manage.'
+                        : 'Choose a question type from the dropdown on the right to start adding questions to this section.'}
                 </p>
             </div>
-            <div className="flex flex-wrap justify-center gap-2">
-                <Button variant="outline" onClick={onImportQuestions} className="gap-2">
-                    <Database className="h-4 w-4" />
-                    Import from Bank
-                </Button>
-                <Button onClick={onAddQuestion} className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Add First Question
-                </Button>
-            </div>
+            {isTyped && (
+                <div className="flex flex-wrap justify-center gap-2">
+                    {onImportQuestions && (
+                        <Button variant="outline" onClick={onImportQuestions} className="gap-2">
+                            <Database className="h-4 w-4" />
+                            Import from Bank
+                        </Button>
+                    )}
+                    {onAddQuestion && (
+                        <Button onClick={onAddQuestion} className="gap-2">
+                            <Plus className="h-4 w-4" />
+                            Add First Question
+                        </Button>
+                    )}
+                </div>
+            )}
         </div>
     );
 }

@@ -102,12 +102,41 @@ export function QuestionSectionCard({
                                 />
                             </button>
 
-                            {/* Title area & type selection & Stats */}
+                            {/* Title area & Stats */}
                             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
                                 {isTyped ? (
-                                    <span className="text-sm font-semibold text-zinc-900 select-none">
-                                        {section.title}
-                                    </span>
+                                    <>
+                                        <span className="text-sm font-semibold text-zinc-900 select-none">
+                                            {section.title}
+                                        </span>
+                                        <div className="flex items-center gap-1.5">
+                                            <select
+                                                aria-label="Section question type"
+                                                role="combobox"
+                                                value={section.questionType || ''}
+                                                disabled={!canChangeQuestionType}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    onSectionQuestionTypeChange?.(
+                                                        val === '' ? null : (val as QuestionType),
+                                                    );
+                                                }}
+                                                className="focus:bg-background rounded-md border border-zinc-200 bg-transparent px-2 py-0.5 text-xs shadow-none focus:outline-none disabled:bg-zinc-50 disabled:text-zinc-400"
+                                            >
+                                                <option value="">Select question type</option>
+                                                {questionTypes.map((t) => (
+                                                    <option key={t.value} value={t.value}>
+                                                        {t.label}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            {!canChangeQuestionType && (
+                                                <span className="text-[10px] text-zinc-400 select-none">
+                                                    Remove all questions to change type
+                                                </span>
+                                            )}
+                                        </div>
+                                    </>
                                 ) : (
                                     <input
                                         aria-label={`${section.title} title`}
@@ -119,7 +148,16 @@ export function QuestionSectionCard({
                                     />
                                 )}
 
-                                {/* Question Type Selection Dropdown */}
+                                <span className="shrink-0 text-xs font-normal text-zinc-400 select-none">
+                                    {questionCount} question{questionCount === 1 ? '' : 's'} ·{' '}
+                                    {totalPoints} pt{totalPoints === 1 ? '' : 's'}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Action Buttons / Type Selector */}
+                        <div className="flex items-center gap-1.5 pl-4">
+                            {!isTyped ? (
                                 <div className="flex items-center gap-1.5">
                                     <select
                                         aria-label="Section question type"
@@ -132,7 +170,7 @@ export function QuestionSectionCard({
                                                 val === '' ? null : (val as QuestionType),
                                             );
                                         }}
-                                        className="focus:bg-background rounded-md border border-zinc-200 bg-transparent px-2 py-0.5 text-xs shadow-none focus:outline-none disabled:bg-zinc-50 disabled:text-zinc-400"
+                                        className="focus:bg-background h-8 rounded-md border border-zinc-200 bg-transparent px-2.5 py-1 text-xs font-medium text-zinc-700 shadow-none focus:outline-none disabled:bg-zinc-50 disabled:text-zinc-400"
                                     >
                                         <option value="">Select question type</option>
                                         {questionTypes.map((t) => (
@@ -147,53 +185,29 @@ export function QuestionSectionCard({
                                         </span>
                                     )}
                                 </div>
+                            ) : (
+                                <>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={onImportQuestions}
+                                        className="bg-background h-8 gap-1.5 rounded-md border-zinc-200 px-3 text-xs text-zinc-700 shadow-none hover:bg-zinc-50"
+                                    >
+                                        <Database className="h-3.5 w-3.5" />
+                                        Import from Bank
+                                    </Button>
 
-                                <span className="shrink-0 text-xs font-normal text-zinc-400 select-none">
-                                    {questionCount} question{questionCount === 1 ? '' : 's'} ·{' '}
-                                    {totalPoints} pt{totalPoints === 1 ? '' : 's'}
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex items-center gap-1.5 pl-4">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={onImportQuestions}
-                                className="bg-background h-8 gap-1.5 rounded-md border-zinc-200 px-3 text-xs text-zinc-700 shadow-none hover:bg-zinc-50"
-                            >
-                                <Database className="h-3.5 w-3.5" />
-                                Import from Bank
-                            </Button>
-
-                            <Button
-                                type="button"
-                                size="sm"
-                                onClick={onAddQuestion}
-                                className="bg-primary text-primary-foreground hover:bg-primary/90 h-8 gap-1.5 rounded-md px-3 text-xs shadow-none"
-                            >
-                                <Plus className="h-3.5 w-3.5" />
-                                Add Question
-                            </Button>
-
-                            {/* Pencil to Edit Instructions (only for legacy mixed sections) */}
-                            {!isTyped && (
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => setIsInstructionEditorOpen((curr) => !curr)}
-                                    className={cn(
-                                        'h-8 w-8 rounded-md text-zinc-400 hover:text-zinc-600',
-                                        isInstructionEditorOpen &&
-                                            'text-primary bg-primary/5 hover:text-primary hover:bg-primary/10',
-                                    )}
-                                    title={hasInstruction ? 'Edit Instruction' : 'Add Instruction'}
-                                >
-                                    <PencilLine className="h-4 w-4" />
-                                </Button>
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        onClick={onAddQuestion}
+                                        className="bg-primary text-primary-foreground hover:bg-primary/90 h-8 gap-1.5 rounded-md px-3 text-xs shadow-none"
+                                    >
+                                        <Plus className="h-3.5 w-3.5" />
+                                        Add Question
+                                    </Button>
+                                </>
                             )}
 
                             {/* Delete Section */}

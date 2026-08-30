@@ -31,6 +31,7 @@ type AttemptsViewProps = {
     pageSize: number;
     onFinalizeAll?: () => Promise<void> | void;
     isFinalizingAll?: boolean;
+    isFetching?: boolean;
     onRefresh?: () => void;
 };
 
@@ -54,6 +55,7 @@ export function AttemptsView({
     pageSize,
     onFinalizeAll,
     isFinalizingAll,
+    isFetching,
     onRefresh,
 }: AttemptsViewProps) {
     const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
@@ -130,6 +132,7 @@ export function AttemptsView({
                 searchPlaceholder="Search student..."
                 searchValue={searchValue}
                 onSearchChange={setSearchValue}
+                isLoading={isFetching}
                 rowSelection={rowSelection}
                 onRowSelectionChange={setRowSelection}
                 manualPagination

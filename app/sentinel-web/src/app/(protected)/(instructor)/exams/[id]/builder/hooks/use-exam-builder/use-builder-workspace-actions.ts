@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import {
-    usePublishBuilderWorkspaceMutation,
     useSaveBuilderWorkspaceMutation,
     useUpdateExamMutation,
 } from '@sentinel/hooks';
@@ -29,7 +28,6 @@ export function useBuilderWorkspaceActions({
     const queryClient = useQueryClient();
 
     const saveBuilderWorkspaceMutation = useSaveBuilderWorkspaceMutation();
-    const publishBuilderWorkspaceMutation = usePublishBuilderWorkspaceMutation();
     const updateExamMutation = useUpdateExamMutation({
         onSuccess: async () => {
             await queryClient.invalidateQueries({
@@ -119,26 +117,8 @@ export function useBuilderWorkspaceActions({
         router.push('/exams');
     };
 
-    const handlePublish = async () => {
-        const examId = useExamStore.getState().examId ?? id;
-
-        if (!examId) {
-            toast.error('Exam not found.');
-            return;
-        }
-
-        await saveBuilderWorkspaceMutation.mutateAsync({
-            id: examId,
-            payload: buildBuilderWorkspacePayload(useExamStore.getState()),
-        });
-        await publishBuilderWorkspaceMutation.mutateAsync(examId);
-        markClean();
-        router.push('/exams');
-    };
-
     return {
         isSaving: saveBuilderWorkspaceMutation.isPending,
-        isPublishing: publishBuilderWorkspaceMutation.isPending,
         isUpdatingTitle: updateExamMutation.isPending,
         handleToggleExamSetting,
         handleToggleLobbyAdmissionMode,
@@ -146,6 +126,5 @@ export function useBuilderWorkspaceActions({
         handleToggleStrictMode,
         handleUpdateTitle,
         handleSave,
-        handlePublish,
     };
 }

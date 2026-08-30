@@ -14,5 +14,6 @@ export function useExamReportQuery(examId?: string, params?: GetExamReportParams
             : [...EXAM_QUERY_KEYS.all, 'report', params ?? {}],
         queryFn: () => getExamReport(apiClient, examId as string, params),
         enabled: Boolean(examId) && isAuthenticatedQueryEnabled,
+        placeholderData: (previousData) => previousData,
     });
 }

@@ -1,8 +1,9 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import { Badge, Button, Input, Separator } from '@sentinel/ui';
-import { LayoutGrid, Pencil, Save } from 'lucide-react';
+import { ArrowLeft, Pencil, Save } from 'lucide-react';
 import type { UseExamBuilderResult } from '@/app/(protected)/exams/[id]/builder/hooks/use-exam-builder/_types';
 
 type ExamBuilderHeaderProps = Pick<
@@ -11,11 +12,9 @@ type ExamBuilderHeaderProps = Pick<
     | 'titleParam'
     | 'status'
     | 'isSaving'
-    | 'isPublishing'
     | 'isUpdatingTitle'
     | 'handleUpdateTitle'
     | 'handleSave'
-    | 'handlePublish'
 >;
 
 export function ExamBuilderHeader({
@@ -23,11 +22,9 @@ export function ExamBuilderHeader({
     titleParam,
     status,
     isSaving,
-    isPublishing,
     isUpdatingTitle,
     handleUpdateTitle,
     handleSave,
-    handlePublish,
 }: ExamBuilderHeaderProps) {
     const resolvedTitle = title || titleParam;
     const [isEditingTitle, setIsEditingTitle] = React.useState(false);
@@ -106,19 +103,16 @@ export function ExamBuilderHeader({
                         size="sm"
                         className="gap-2"
                         onClick={() => void handleSave()}
-                        disabled={isSaving || isPublishing}
+                        disabled={isSaving}
                     >
                         <Save className="h-4 w-4" />
                         {isSaving ? 'Saving...' : 'Save Draft'}
                     </Button>
-                    <Button
-                        size="sm"
-                        className="gap-2 bg-[#323d8f] text-white hover:bg-[#323d8f]/90"
-                        onClick={() => void handlePublish()}
-                        disabled={isSaving || isPublishing}
-                    >
-                        <LayoutGrid className="h-4 w-4" />
-                        {isPublishing ? 'Publishing...' : 'Publish'}
+                    <Button variant="outline" size="sm" className="gap-2" asChild>
+                        <Link href="/exams">
+                            <ArrowLeft className="h-4 w-4" />
+                            Back to Exams
+                        </Link>
                     </Button>
                 </div>
             </div>
