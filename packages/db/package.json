@@ -22,12 +22,12 @@
         "test": "vitest run"
     },
     "dependencies": {
-        "@prisma/adapter-pg": "^7.5.0",
-        "@prisma/client": "~7.5.0",
-        "@prisma/client-runtime-utils": "~7.5.0",
-        "@prisma/config": "~7.5.0",
+        "@prisma/adapter-pg": "^7.10.0",
+        "@prisma/client": "~7.10.0",
+        "@prisma/client-runtime-utils": "~7.10.0",
+        "@prisma/config": "~7.10.0",
         "@prisma/extension-accelerate": "^3.0.1",
-        "kysely": "^0.28.12",
+        "kysely": "^0.29.5",
         "pg": "^8.20.0",
         "prisma-extension-kysely": "^4.0.0",
         "prisma-kysely": "^3.1.0"
@@ -36,7 +36,7 @@
         "@types/node": "^25.4.0",
         "@types/pg": "^8.11.11",
         "dotenv": "^16.4.7",
-        "prisma": "~7.5.0",
+        "prisma": "~7.10.0",
         "tsup": "^8.3.6",
         "typescript": "^5.3.3",
         "vitest": "^4.0.18"

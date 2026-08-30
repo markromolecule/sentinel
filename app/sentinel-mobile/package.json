@@ -19,7 +19,7 @@
         "@sentinel/hooks": "workspace:*",
         "@sentinel/services": "workspace:*",
         "@sentinel/shared": "workspace:*",
-        "@supabase/supabase-js": "^2.105.3",
+        "@supabase/supabase-js": "^2.112.4",
         "@tanstack/react-query": "^5.74.4",
         "expo": "~54.0.33",
         "expo-audio": "~1.1.1",
