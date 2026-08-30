@@ -7,6 +7,8 @@ export interface StudentAttemptRow {
     lastName: string;
     sectionName: string;
     score: number | null;
+    totalScore: number | null;
+    percentage: number | null;
     status: string;
     attemptKind: 'makeup' | 'retake' | null;
     activeOverrideType: string | null;
@@ -81,21 +83,35 @@ export function mapSourceToViewModel(source: ExamReportExportSource): ExamResult
     const studentsList: any[] = report.students || [];
 
     // 1. Map student attempts
-    const students: StudentAttemptRow[] = studentsList.map((s) => ({
-        studentId: s.studentId || s.id || '',
-        studentNo: s.studentNo || s.student_number || 'N/A',
-        firstName: s.firstName || s.first_name || 'Unknown',
-        lastName: s.lastName || s.last_name || 'Student',
-        sectionName: s.sectionName || s.section_name || 'Unassigned',
-        score: s.score ?? null,
-        status: (s.status || 'ABSENT').toUpperCase(),
-        attemptKind: s.attemptKind || s.attempt_kind || null,
-        activeOverrideType: s.activeOverrideType || s.active_override_type || null,
-        incidentsPending: s.incidentOutcomes?.pending || s.incident_outcomes?.pending || 0,
-        incidentsReviewed: s.incidentOutcomes?.reviewed || s.incident_outcomes?.reviewed || 0,
-        incidentsConfirmed: s.incidentOutcomes?.confirmed || s.incident_outcomes?.confirmed || 0,
-        incidentsDismissed: s.incidentOutcomes?.dismissed || s.incident_outcomes?.dismissed || 0,
-    }));
+    const students: StudentAttemptRow[] = studentsList.map((s) => {
+        const rawScore = s.score ?? null;
+        const totalScore = s.totalScore ?? s.total_score ?? null;
+        const percentage =
+            s.percentage ??
+            (rawScore !== null && totalScore && totalScore > 0
+                ? sanitizeRoundedNumber((rawScore / totalScore) * 100)
+                : rawScore !== null
+                  ? rawScore
+                  : null);
+
+        return {
+            studentId: s.studentId || s.id || '',
+            studentNo: s.studentNo || s.student_number || 'N/A',
+            firstName: s.firstName || s.first_name || 'Unknown',
+            lastName: s.lastName || s.last_name || 'Student',
+            sectionName: s.sectionName || s.section_name || 'Unassigned',
+            score: rawScore,
+            totalScore,
+            percentage,
+            status: (s.status || 'ABSENT').toUpperCase(),
+            attemptKind: s.attemptKind || s.attempt_kind || null,
+            activeOverrideType: s.activeOverrideType || s.active_override_type || null,
+            incidentsPending: s.incidentOutcomes?.pending || s.incident_outcomes?.pending || 0,
+            incidentsReviewed: s.incidentOutcomes?.reviewed || s.incident_outcomes?.reviewed || 0,
+            incidentsConfirmed: s.incidentOutcomes?.confirmed || s.incident_outcomes?.confirmed || 0,
+            incidentsDismissed: s.incidentOutcomes?.dismissed || s.incident_outcomes?.dismissed || 0,
+        };
+    });
 
     // 2. Map section summaries
     const sectionMap = new Map<
@@ -112,7 +128,13 @@ export function mapSourceToViewModel(source: ExamReportExportSource): ExamResult
         if (s.score !== null) {
             stats.sumScore += s.score;
             stats.completionCount++;
-            if (s.score >= source.passingScore) {
+            const studentPct =
+                s.percentage !== null
+                    ? s.percentage
+                    : s.totalScore && s.totalScore > 0
+                      ? (s.score / s.totalScore) * 100
+                      : s.score;
+            if (studentPct >= source.passingScore) {
                 stats.passCount++;
             }
         }

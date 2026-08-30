@@ -42,7 +42,7 @@ export function ExamReportPageContent({ params }: { params: Promise<{ examId: st
         handleGrantOverride,
     } = useExamReport({ examId });
 
-    if (isLoading) {
+    if (isLoading && !report) {
         return <ReportLoading />;
     }
 
@@ -75,6 +75,7 @@ export function ExamReportPageContent({ params }: { params: Promise<{ examId: st
                     pageSize={pageSize}
                     onFinalizeAll={handleFinalizeAll}
                     isFinalizingAll={isFinalizingAll}
+                    isFetching={isFetching}
                     onRefresh={() => {
                         void refetch();
                     }}

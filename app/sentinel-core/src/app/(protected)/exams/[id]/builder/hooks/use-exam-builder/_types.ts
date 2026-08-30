@@ -25,7 +25,6 @@ export type UseExamBuilderResult = {
     questionTypes: QuestionTypeDefinition[];
     isWorkspaceLoading: boolean;
     isSaving: boolean;
-    isPublishing: boolean;
     isQuestionTypesLoading: boolean;
     isUpdatingTitle: boolean;
     isAddingQuestionToBank: boolean;
@@ -60,5 +59,4 @@ export type UseExamBuilderResult = {
     handleUpdateTitle: (title: string) => Promise<boolean>;
     handleBackFromBuilder: () => void;
     handleSave: () => Promise<void>;
-    handlePublish: () => Promise<void>;
 };

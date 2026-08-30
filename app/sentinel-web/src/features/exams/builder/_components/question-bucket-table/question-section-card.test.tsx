@@ -102,6 +102,10 @@ describe('QuestionSectionCard', () => {
 
         // Should render select placeholder or select element
         expect(screen.getByRole('combobox')).toBeTruthy();
+
+        // Should NOT render Add Question or Import from Bank buttons before type is selected
+        expect(screen.queryByRole('button', { name: /add question/i })).toBeNull();
+        expect(screen.queryByRole('button', { name: /import from bank/i })).toBeNull();
     });
 
     it('disables the dropdown and shows helper text when section contains questions', () => {

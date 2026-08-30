@@ -34,10 +34,10 @@ function checkPageBreak(doc: typeof PDFDocument, currentY: number, heightNeeded:
 }
 
 const studentCols = [
-    { name: 'Student Name / No.', width: 140, align: 'left' },
-    { name: 'Section', width: 80, align: 'left' },
+    { name: 'Student Name / No.', width: 135, align: 'left' },
+    { name: 'Section', width: 75, align: 'left' },
     { name: 'Status', width: 75, align: 'center' },
-    { name: 'Score', width: 50, align: 'right' },
+    { name: 'Score', width: 60, align: 'right' },
     { name: 'Attempt', width: 52, align: 'center' },
     { name: 'Incidents (P/R/C/D)', width: 90, align: 'right' },
 ] as const;
@@ -301,8 +301,17 @@ export function drawExamResultsReportBody(
             curX += studentCols[2].width;
 
             // Score
-            const scoreText = student.score !== null ? `${student.score}%` : '—';
-            if (student.score !== null && student.score < data.passingScore) {
+            const scoreText =
+                student.score !== null
+                    ? `${student.score} / ${student.totalScore ?? '—'}`
+                    : '—';
+            const studentPct =
+                student.percentage !== null
+                    ? student.percentage
+                    : student.score !== null && student.totalScore && student.totalScore > 0
+                      ? (student.score / student.totalScore) * 100
+                      : null;
+            if (studentPct !== null && studentPct < data.passingScore) {
                 doc.fillColor('#EF4444').font(PDF_LAYOUT.fonts.bold);
             }
             doc.text(scoreText, curX - 6, y + valignOffset, {

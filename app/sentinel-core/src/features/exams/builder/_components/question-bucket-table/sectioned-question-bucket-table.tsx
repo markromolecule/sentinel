@@ -99,6 +99,7 @@ export function SectionedQuestionBucketTable({
                                     }
                                 >
                                     <EmptySectionState
+                                        isTyped={Boolean(section.questionType)}
                                         onImportQuestions={() => onImport(section.id)}
                                         onAddQuestion={() => onAdd(section.id)}
                                     />
@@ -166,6 +167,7 @@ export function SectionedQuestionBucketTable({
                         >
                             {sectionQuestions.length === 0 ? (
                                 <EmptySectionState
+                                    isTyped={Boolean(section.questionType)}
                                     onImportQuestions={() => onImport(section.id)}
                                     onAddQuestion={() => onAdd(section.id)}
                                 />
