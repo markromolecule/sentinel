@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "bridgeVersion": "1.2.0",
-  "factoryPath": "../context-factory",
+  "factoryPath": "./context-factory",
   "integrationMethod": "submodule",
   "packageManager": "pnpm",
   "ides": [
@@ -13,7 +13,7 @@
     "copilot",
     "codex"
   ],
-  "createdAt": "2026-08-29T12:41:08.990Z",
+  "createdAt": "2026-08-30T01:19:19.400Z",
   "scoping": {
     "tasks": "./docs/tasks",
     "decisions": "./docs/decisions",
@@ -23,39 +23,39 @@
   "symlinks": [
     {
       "id": ".agents/skills",
-      "target": "../../context-factory/skills",
+      "target": "../context-factory/skills",
       "type": "dir"
     },
     {
       "id": ".agents/rules",
-      "target": "../../context-factory/rules",
+      "target": "../context-factory/rules",
       "type": "dir"
     },
     {
       "id": ".agents/agents",
-      "target": "../../context-factory/agents",
+      "target": "../context-factory/agents",
       "type": "dir"
     },
     {
       "id": ".agents/workflows",
-      "target": "../../context-factory/workflows",
+      "target": "../context-factory/workflows",
       "type": "dir"
     },
     {
       "id": ".agents/AGENTS.md",
-      "target": "../../context-factory/AGENTS.md",
+      "target": "../context-factory/AGENTS.md",
       "type": "file"
     },
     {
       "id": ".agents/GEMINI.md",
-      "target": "../../context-factory/GEMINI.md",
+      "target": "../context-factory/GEMINI.md",
       "type": "file"
     }
   ],
   "commands": {
-    "resolve": "node ../context-factory/scripts/context.mjs resolve",
-    "bundle": "node ../context-factory/scripts/context.mjs bundle",
-    "doctor": "node ../context-factory/scripts/context.mjs doctor",
-    "cli": "node ../context-factory/app/cli/bin/context-cli.mjs"
+    "resolve": "node ./context-factory/scripts/context.mjs resolve",
+    "bundle": "node ./context-factory/scripts/context.mjs bundle",
+    "doctor": "node ./context-factory/scripts/context.mjs doctor",
+    "cli": "node ./context-factory/app/cli/bin/context-cli.mjs"
   }
 }
