@@ -29,7 +29,7 @@ describe('QuestionBankWorkspaceShell', () => {
         );
 
         expect(screen.getByText('Question Bank')).toBeTruthy();
-        expect(screen.getByTestId('question-bank-nav')).toBeTruthy();
+        expect(screen.getAllByTestId('question-bank-nav')).toHaveLength(2);
         expect(screen.getByTestId('shell-children')).toBeTruthy();
     });
 
@@ -43,7 +43,7 @@ describe('QuestionBankWorkspaceShell', () => {
         );
 
         expect(screen.queryByText('Question Bank')).toBeNull();
-        expect(screen.queryByTestId('question-bank-nav')).toBeNull();
+        expect(screen.queryAllByTestId('question-bank-nav')).toHaveLength(0);
         expect(screen.getByTestId('shell-children')).toBeTruthy();
     });
 });

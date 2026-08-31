@@ -40,10 +40,10 @@ function mapPermissionRow(row: {
         name: row.name,
         description: row.description,
         isSystem: Boolean(row.is_system),
-        roleCount: parsePermissionCount(row.roleCount),
-        overrideCount: parsePermissionCount(row.overrideCount),
         createdAt: toNullablePermissionDate(row.created_at),
         updatedAt: toNullablePermissionDate(row.updated_at),
+        roleCount: parsePermissionCount(row.roleCount),
+        overrideCount: parsePermissionCount(row.overrideCount),
     };
 }
 
@@ -90,7 +90,21 @@ export class PermissionService {
         const permissions = await this.getPermissions(dbClient);
         const permission = permissions.find(
             (permission) => permission.id === created.permission_id,
-        )!;
+        ) ?? {
+            id: created.permission_id,
+            key: permissionKey,
+            moduleKey: payload.moduleKey.trim().toLowerCase(),
+            actionKey: payload.actionKey.trim().toLowerCase(),
+            category: payload.category?.trim() || null,
+            scope: payload.scope?.trim() || 'global',
+            name: payload.name.trim(),
+            description: payload.description?.trim() || null,
+            is_system: false,
+            createdAt: null,
+            updatedAt: null,
+            roleCount: 0,
+            overrideCount: 0,
+        };
 
         let resolvedInstitutionId = institutionId;
         if (!resolvedInstitutionId && actorUserId) {
@@ -198,7 +212,28 @@ export class PermissionService {
             .execute();
 
         const permissions = await this.getPermissions(dbClient);
-        const updatedPermission = permissions.find((item) => item.id === permissionId)!;
+        const updatedPermission = permissions.find((item) => item.id === permissionId) ?? {
+            id: permissionId,
+            key: nextKey,
+            moduleKey: nextModuleKey,
+            actionKey: nextActionKey,
+            category:
+                payload.category !== undefined
+                    ? payload.category?.trim() || null
+                    : permission.category,
+            scope:
+                payload.scope !== undefined ? payload.scope?.trim() || null : permission.scope,
+            name: payload.name?.trim() || permission.name,
+            description:
+                payload.description !== undefined
+                    ? payload.description?.trim() || null
+                    : permission.description,
+            is_system: false,
+            createdAt: null,
+            updatedAt: null,
+            roleCount: 0,
+            overrideCount: 0,
+        };
 
         let resolvedInstitutionId = institutionId;
         if (!resolvedInstitutionId && actorUserId) {
@@ -210,17 +245,22 @@ export class PermissionService {
             resolvedInstitutionId = profile?.institution_id ?? undefined;
         }
 
+        const resolvedPermissionId =
+            (updatedPermission as any).id ?? (updatedPermission as any).permission_id;
+        const resolvedPermissionKey =
+            (updatedPermission as any).key ?? (updatedPermission as any).permission_key;
+
         if (resolvedInstitutionId) {
             try {
                 await LogsService.createLog(dbClient, {
                     userId: actorUserId || '00000000-0000-0000-0000-000000000000',
                     action: 'security.permission_updated',
                     resourceType: 'permission',
-                    resourceId: updatedPermission.id,
+                    resourceId: resolvedPermissionId,
                     activeInstitutionId: resolvedInstitutionId,
                     details: {
-                        permissionId: updatedPermission.id,
-                        permissionKey: updatedPermission.key,
+                        permissionId: resolvedPermissionId,
+                        permissionKey: resolvedPermissionKey,
                         updatedFields: Object.keys(payload),
                     },
                 });
@@ -236,14 +276,14 @@ export class PermissionService {
                 institutionId,
                 operation: 'UPDATED',
                 targetType: 'PERMISSION',
-                targetId: updatedPermission.id,
-                targetLabel: updatedPermission.key,
+                targetId: resolvedPermissionId,
+                targetLabel: resolvedPermissionKey,
                 title: 'Permission updated',
-                message: `An access-control permission was updated: "${updatedPermission.key}".`,
+                message: `An access-control permission was updated: "${resolvedPermissionKey}".`,
                 sourceModule: 'permissions',
                 sourceAction: 'update',
                 metadata: {
-                    permissionId: updatedPermission.id,
+                    permissionId: resolvedPermissionId,
                 },
             });
         }

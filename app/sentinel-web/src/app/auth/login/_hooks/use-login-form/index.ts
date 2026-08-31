@@ -28,7 +28,7 @@ export function useLoginForm() {
     });
 
     useEffect(() => {
-        if (typeof window !== 'undefined') {
+        if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
             const savedEmail = localStorage.getItem(REMEMBERED_EMAIL_KEYS.WEB);
             if (savedEmail) {
                 form.setValue('email', savedEmail);
@@ -47,11 +47,13 @@ export function useLoginForm() {
             }
 
             // Handle Remember Me persistence
-            const rememberMe = form.getValues('remember');
-            if (rememberMe) {
-                localStorage.setItem(REMEMBERED_EMAIL_KEYS.WEB, user.email || '');
-            } else {
-                localStorage.removeItem(REMEMBERED_EMAIL_KEYS.WEB);
+            if (typeof localStorage !== 'undefined') {
+                const rememberMe = form.getValues('remember');
+                if (rememberMe) {
+                    localStorage.setItem(REMEMBERED_EMAIL_KEYS.WEB, user.email || '');
+                } else {
+                    localStorage.removeItem(REMEMBERED_EMAIL_KEYS.WEB);
+                }
             }
 
             const authState = await resolveWebAuthState(supabase, user);

@@ -48,30 +48,39 @@ const mockRetiredQuestions = vi.hoisted(() => [
     },
 ]);
 
-vi.mock('@sentinel/hooks', () => ({
-    useQuestionsQuery: vi.fn().mockReturnValue({
-        data: {
-            items: mockRetiredQuestions,
-            total: 1,
-            totalPages: 1,
-        },
-        isLoading: false,
-        isFetching: false,
-    }),
-    useUpdateQuestionMutation: vi.fn().mockReturnValue({
-        mutateAsync: mockUpdateMutateAsync,
-        isPending: false,
-    }),
-    useDeleteQuestionMutation: vi.fn().mockReturnValue({
-        mutateAsync: mockDeleteMutateAsync,
-        isPending: false,
-    }),
-    useStableValue: (fn: () => any) => fn(),
-    useServerPagination: vi.fn((watchDeps, initialState = { pageIndex: 0, pageSize: 10 }) => {
-        const [pagination, setPagination] = require('react').useState(initialState);
-        return { pagination, setPagination };
-    }),
-}));
+vi.mock('@sentinel/hooks', async (importOriginal) => {
+    const actual = await importOriginal<any>();
+    return {
+        ...actual,
+        useQuestionsQuery: vi.fn().mockReturnValue({
+            data: {
+                items: mockRetiredQuestions,
+                total: 1,
+                totalPages: 1,
+            },
+            isLoading: false,
+            isFetching: false,
+        }),
+        useUpdateQuestionMutation: vi.fn().mockReturnValue({
+            mutateAsync: mockUpdateMutateAsync,
+            isPending: false,
+        }),
+        useDeleteQuestionMutation: vi.fn().mockReturnValue({
+            mutateAsync: mockDeleteMutateAsync,
+            isPending: false,
+        }),
+        useActivePermissions: vi.fn().mockReturnValue({
+            hasPermission: vi.fn().mockReturnValue(true),
+            permissions: [],
+            isLoading: false,
+        }),
+        useStableValue: (fn: () => any) => fn(),
+        useServerPagination: vi.fn((watchDeps, initialState = { pageIndex: 0, pageSize: 10 }) => {
+            const [pagination, setPagination] = require('react').useState(initialState);
+            return { pagination, setPagination };
+        }),
+    };
+});
 
 vi.mock('sonner', () => ({
     toast: {

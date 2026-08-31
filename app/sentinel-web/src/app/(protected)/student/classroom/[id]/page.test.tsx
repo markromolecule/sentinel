@@ -197,7 +197,7 @@ describe('StudentClassroomDetailPage', () => {
         render(<StudentClassroomDetailPage />);
 
         expect(useExamsQuery).toHaveBeenCalledWith(
-            { classroomId: 'classroom-1' },
+            { classroomId: 'classroom-1', viewer: 'student' },
             expect.objectContaining({
                 staleTime: 0,
                 refetchOnMount: 'always',
@@ -282,7 +282,7 @@ describe('StudentClassroomDetailPage', () => {
         render(<StudentClassroomDetailPage />);
 
         expect(useExamsQuery).toHaveBeenCalledWith(
-            { classroomId: 'classroom-1' },
+            { classroomId: 'classroom-1', viewer: 'student' },
             expect.objectContaining({
                 staleTime: 0,
                 refetchOnMount: 'always',

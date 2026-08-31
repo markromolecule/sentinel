@@ -3,9 +3,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AnnouncementsContainer } from './announcements-container';
 import { useAnnouncementsQuery } from '@sentinel/hooks';
 
-vi.mock('@sentinel/hooks', () => ({
-    useAnnouncementsQuery: vi.fn(),
-}));
+vi.mock('@sentinel/hooks', async (importOriginal) => {
+    const actual = (await importOriginal()) as any;
+    return {
+        ...actual,
+        useAnnouncementsQuery: vi.fn(),
+    };
+});
 
 vi.mock('./announcements-list', () => ({
     AnnouncementsList: ({ announcements }: any) => (

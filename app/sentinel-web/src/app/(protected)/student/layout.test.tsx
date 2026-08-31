@@ -48,7 +48,7 @@ describe('StudentLayout', () => {
         expect(screen.getByTestId('test-child')).toBeTruthy();
     });
 
-    it('omits the footer on the student message page', () => {
+    it('hides the footer on mobile for the student message page', () => {
         mockUsePathname.mockReturnValue('/student/message');
 
         render(
@@ -58,7 +58,9 @@ describe('StudentLayout', () => {
         );
 
         expect(screen.getByTestId('student-header')).toBeTruthy();
-        expect(screen.queryByTestId('student-footer')).toBeNull(); // Footer should be omitted!
+        expect(screen.getByTestId('student-footer').parentElement?.className).toContain(
+            'hidden md:block',
+        );
         expect(screen.getByTestId('student-bottom-nav')).toBeTruthy();
         expect(screen.getByTestId('test-child')).toBeTruthy();
     });
