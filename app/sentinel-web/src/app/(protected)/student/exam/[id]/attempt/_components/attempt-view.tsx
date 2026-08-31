@@ -88,7 +88,7 @@ export function AttemptView({ attempt }: AttemptViewProps) {
                     fullScreenContainerRef.current = node;
                 }
             }}
-            className="bg-background flex h-[100dvh] h-[100vh] min-h-0 flex-col overflow-hidden"
+            className={`bg-background flex h-[100dvh] h-[100vh] min-h-0 flex-col overflow-hidden transition-[filter] duration-150 ${Boolean(securityLockReason) ? 'blur-md select-none pointer-events-none' : ''}`}
         >
             <video
                 ref={mediaPipeVideoRef}

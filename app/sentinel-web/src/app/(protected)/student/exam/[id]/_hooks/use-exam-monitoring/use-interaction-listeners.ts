@@ -49,6 +49,7 @@ export function useInteractionListeners(args: {
     } = args;
 
     const lastNavigationShortcutAtRef = useRef(0);
+    const lastCaptureModifierAtRef = useRef(0);
 
     const baseOptions = {
         configuration,
@@ -68,6 +69,7 @@ export function useInteractionListeners(args: {
         shouldMonitorVisibility,
         setTabSwitches,
         lastNavigationShortcutAtRef,
+        lastCaptureModifierAtRef,
     });
 
     // 3. Fullscreen checks
@@ -85,6 +87,7 @@ export function useInteractionListeners(args: {
         ...baseOptions,
         shouldMonitorVisibility,
         lastNavigationShortcutAtRef,
+        lastCaptureModifierAtRef,
         registerClipboardIncident,
     });
 

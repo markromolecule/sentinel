@@ -8,6 +8,7 @@ export interface FocusListenerOptions extends BaseListenerOptions {
     shouldMonitorVisibility: boolean;
     setTabSwitches: (fn: (c: number) => number) => void;
     lastNavigationShortcutAtRef: React.MutableRefObject<number>;
+    lastCaptureModifierAtRef?: React.MutableRefObject<number>;
 }
 
 export function useFocusListener(options: FocusListenerOptions) {
@@ -21,6 +22,7 @@ export function useFocusListener(options: FocusListenerOptions) {
         shouldMonitorVisibility,
         setTabSwitches,
         lastNavigationShortcutAtRef,
+        lastCaptureModifierAtRef,
     } = options;
 
     const lastFocusIncidentAtRef = useRef(0);
@@ -40,6 +42,35 @@ export function useFocusListener(options: FocusListenerOptions) {
             });
             lastFocusIncidentAtRef.current = burstResult.nextAcceptedAt;
             if (!burstResult.accepted) return;
+
+            const captureModifierDetected =
+                !isMobile &&
+                (configuration?.webSecurity.print_screen_disable ?? true) &&
+                Boolean(lastCaptureModifierAtRef && now - lastCaptureModifierAtRef.current < 1500);
+
+            if (captureModifierDetected) {
+                // Purge clipboard immediately to prevent saving copied screenshot data
+                if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+                    navigator.clipboard.writeText('').catch(() => { });
+                }
+
+                const metadata = createTelemetryActionMetadata({
+                    eventType: 'PRINT_SCREEN_ATTEMPT',
+                    examSessionId,
+                    actionSource: 'screen-capture',
+                    actionBucketId: 'screen-capture',
+                    clientActionAt,
+                    bucketMs: 1000,
+                });
+
+                emitTelemetryEvent('PRINT_SCREEN_ATTEMPT', metadata);
+                lockExam('screen-capture');
+                toast.warning('A screen capture shortcut was detected for this exam.', {
+                    description:
+                        'Close any capture tool before returning to the protected session.',
+                });
+                return;
+            }
 
             const shortcutNavigationDetected = now - lastNavigationShortcutAtRef.current < 1500;
             setTabSwitches((current) => current + 1);
@@ -79,6 +110,7 @@ export function useFocusListener(options: FocusListenerOptions) {
             });
         },
         [
+            configuration?.webSecurity,
             emitTelemetryEvent,
             examSessionId,
             isMobile,
@@ -86,6 +118,7 @@ export function useFocusListener(options: FocusListenerOptions) {
             isMonitoringSuspended,
             setTabSwitches,
             lastNavigationShortcutAtRef,
+            lastCaptureModifierAtRef,
         ],
     );
 
@@ -116,8 +149,23 @@ export function useFocusListener(options: FocusListenerOptions) {
             }, 100);
         };
 
+        const handleWindowFocus = () => {
+            if (
+                !isMonitoringSuspended.current &&
+                !isMobile &&
+                (configuration?.webSecurity.print_screen_disable ?? true) &&
+                lastCaptureModifierAtRef &&
+                Date.now() - lastCaptureModifierAtRef.current < 3000
+            ) {
+                if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+                    navigator.clipboard.writeText('').catch(() => { });
+                }
+            }
+        };
+
         document.addEventListener('visibilitychange', handleVisibilityChange);
         window.addEventListener('blur', handleWindowBlur);
+        window.addEventListener('focus', handleWindowFocus);
 
         return () => {
             if (blurTimeout) {
@@ -125,8 +173,16 @@ export function useFocusListener(options: FocusListenerOptions) {
             }
             document.removeEventListener('visibilitychange', handleVisibilityChange);
             window.removeEventListener('blur', handleWindowBlur);
+            window.removeEventListener('focus', handleWindowFocus);
         };
-    }, [isMobile, registerFocusIncident, shouldMonitorVisibility, isMonitoringSuspended]);
+    }, [
+        configuration?.webSecurity,
+        isMobile,
+        registerFocusIncident,
+        shouldMonitorVisibility,
+        isMonitoringSuspended,
+        lastCaptureModifierAtRef,
+    ]);
 
     return { registerFocusIncident };
 }

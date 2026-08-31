@@ -914,6 +914,116 @@ describe('use-exam-monitoring', () => {
         });
     });
 
+    it('intercepts PrintScreen delivered on keyup and locks the exam with screen-capture', async () => {
+        const { result } = renderHook(() =>
+            useExamMonitoring({
+                configuration: createExamConfiguration({ print_screen_disable: true }),
+                examSessionId: '123e4567-e89b-12d3-a456-426614174000',
+                examId: '123e4567-e89b-12d3-a456-426614174999',
+            }),
+        );
+
+        act(() => {
+            document.dispatchEvent(
+                new KeyboardEvent('keyup', {
+                    key: 'PrintScreen',
+                    code: 'PrintScreen',
+                    bubbles: true,
+                    cancelable: true,
+                }),
+            );
+        });
+
+        await waitFor(() => {
+            expect(result.current.securityLockReason).toBe('screen-capture');
+            expect(emitWebTelemetryEvent).toHaveBeenCalledWith(
+                mockApiClient,
+                expect.objectContaining({
+                    eventType: 'PRINT_SCREEN_ATTEMPT',
+                }),
+            );
+        });
+    });
+
+    it('intercepts macOS Cmd+Shift+4 and Windows Win+Shift+S shortcuts and locks with screen-capture', async () => {
+        const { result } = renderHook(() =>
+            useExamMonitoring({
+                configuration: createExamConfiguration({ print_screen_disable: true }),
+                examSessionId: '123e4567-e89b-12d3-a456-426614174000',
+                examId: '123e4567-e89b-12d3-a456-426614174999',
+            }),
+        );
+
+        // macOS Cmd+Shift+4
+        act(() => {
+            document.dispatchEvent(
+                new KeyboardEvent('keydown', {
+                    key: '4',
+                    code: 'Digit4',
+                    metaKey: true,
+                    shiftKey: true,
+                    bubbles: true,
+                    cancelable: true,
+                }),
+            );
+        });
+
+        await waitFor(() => {
+            expect(result.current.securityLockReason).toBe('screen-capture');
+            expect(emitWebTelemetryEvent).toHaveBeenCalledWith(
+                mockApiClient,
+                expect.objectContaining({
+                    eventType: 'PRINT_SCREEN_ATTEMPT',
+                }),
+            );
+        });
+    });
+
+    it('correlates recent Meta+Shift modifier state with window blur to trigger screen-capture lock', async () => {
+        const { result } = renderHook(() =>
+            useExamMonitoring({
+                configuration: createExamConfiguration({
+                    tab_switching_monitor: true,
+                    print_screen_disable: true,
+                }),
+                examSessionId: '123e4567-e89b-12d3-a456-426614174000',
+                examId: '123e4567-e89b-12d3-a456-426614174999',
+            }),
+        );
+
+        // Student presses Cmd+Shift (OS screenshot overlay / snipping tool activates and blurs the browser)
+        act(() => {
+            document.dispatchEvent(
+                new KeyboardEvent('keydown', {
+                    key: 'Shift',
+                    code: 'ShiftLeft',
+                    metaKey: true,
+                    shiftKey: true,
+                    bubbles: true,
+                    cancelable: true,
+                }),
+            );
+            window.dispatchEvent(new Event('blur'));
+        });
+
+        await waitFor(() => {
+            expect(result.current.securityLockReason).toBe('screen-capture');
+            expect(emitWebTelemetryEvent).toHaveBeenCalledWith(
+                mockApiClient,
+                expect.objectContaining({
+                    eventType: 'PRINT_SCREEN_ATTEMPT',
+                }),
+            );
+        });
+
+        expect(mockToastWarning).toHaveBeenCalledWith(
+            'A screen capture shortcut was detected for this exam.',
+            expect.objectContaining({
+                description: expect.stringContaining('Close any capture tool'),
+            }),
+        );
+    });
+
     it('does not emit desktop right-click or print-screen telemetry on mobile', async () => {
         Object.defineProperty(window.navigator, 'userAgent', {
             value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148',

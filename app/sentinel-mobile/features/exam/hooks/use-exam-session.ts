@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useApi, useAuth, useExamQuery } from '@sentinel/hooks';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Alert, AppState, type AppStateStatus } from 'react-native';
+import * as ScreenCapture from 'expo-screen-capture';
 import { syncExamProgress, completeExamSession } from '@sentinel/services';
 import { emitMobileTelemetryEvent } from '@/features/exam/lib/mobile-telemetry-client';
 import {
@@ -58,6 +59,7 @@ export const useExamSession = () => {
     const hasLeftForegroundRef = useRef(false);
     const hasEmittedBackgroundViolationRef = useRef(false);
     const lastNotificationViolationAtRef = useRef(0);
+    const lastScreenshotAtRef = useRef(0);
 
     const answersRef = useRef(answers);
     answersRef.current = answers;
@@ -142,7 +144,7 @@ export const useExamSession = () => {
                 router.replace(`/exam/${id}/lobby`);
             }
         });
-    }, [id, router, sessionId]);
+    }, [id, sessionId, router]);
 
     // Duration sync effect: updates timeLeft once exam details load asynchronously
     useEffect(() => {
@@ -190,7 +192,9 @@ export const useExamSession = () => {
 
             // Background transition (home button, app switcher) — works even after 'inactive'
             if (nextState === 'background' && hasLeftForegroundRef.current) {
-                if (!hasEmittedBackgroundViolationRef.current) {
+                const isRecentScreenshot = Date.now() - lastScreenshotAtRef.current < 2000;
+
+                if (!hasEmittedBackgroundViolationRef.current && !isRecentScreenshot) {
                     if (configuration.prevent_backgrounding) {
                         emitSessionTelemetry('APP_BACKGROUNDING');
                     }
@@ -198,12 +202,12 @@ export const useExamSession = () => {
                         emitSessionTelemetry('APP_PINNING_VIOLATION');
                     }
                     hasEmittedBackgroundViolationRef.current = true;
-                }
 
-                Alert.alert(
-                    'Focus Required',
-                    'Leaving the exam app is prohibited and has been recorded in the security audit.',
-                );
+                    Alert.alert(
+                        'Focus Required',
+                        'Leaving the exam app is prohibited and has been recorded in the security audit.',
+                    );
+                }
             }
 
             // Return to active foreground
@@ -231,6 +235,43 @@ export const useExamSession = () => {
         emitSessionTelemetry,
         exam?.configuration?.mobileSecurity,
     ]);
+
+    // Hardware Screen Capture Prevention (enforces FLAG_SECURE on Android, preventing screenshots and recording)
+    useEffect(() => {
+        const configuration = exam?.configuration?.mobileSecurity;
+        const shouldBlockScreenshot = configuration ? configuration.screenshot_block : true;
+
+        if (shouldBlockScreenshot) {
+            ScreenCapture.preventScreenCaptureAsync().catch(() => {});
+        }
+
+        return () => {
+            ScreenCapture.allowScreenCaptureAsync().catch(() => {});
+        };
+    }, [exam?.configuration?.mobileSecurity]);
+
+    // Native Screenshot Listener (iOS & Android)
+    useEffect(() => {
+        const configuration = exam?.configuration?.mobileSecurity;
+        const shouldBlockScreenshot = configuration ? configuration.screenshot_block : true;
+
+        if (!shouldBlockScreenshot) {
+            return;
+        }
+
+        const subscription = ScreenCapture.addScreenshotListener(() => {
+            lastScreenshotAtRef.current = Date.now();
+            emitSessionTelemetry('SCREENSHOT_ATTEMPT');
+            Alert.alert(
+                'Screenshot Detected',
+                'Taking screenshots during this exam is strictly prohibited and has been recorded in the security audit.',
+            );
+        });
+
+        return () => {
+            subscription.remove();
+        };
+    }, [emitSessionTelemetry, exam?.configuration?.mobileSecurity]);
 
     // Core progress sync execution function (reads latest refs, guarded against concurrent races)
     const syncProgressNow = useCallback(async () => {

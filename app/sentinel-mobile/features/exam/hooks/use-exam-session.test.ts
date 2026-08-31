@@ -38,13 +38,19 @@ vi.mock('react', () => {
 });
 
 // ─── React Native Mocks ───
+let appStateListeners: Record<string, (state: string) => void> = {};
+let screenshotListeners: Array<() => void> = [];
+
 vi.mock('react-native', () => ({
     Alert: {
         alert: vi.fn(),
     },
     AppState: {
         currentState: 'active',
-        addEventListener: vi.fn(() => ({ remove: vi.fn() })),
+        addEventListener: vi.fn((event: string, cb: (state: string) => void) => {
+            appStateListeners[event] = cb;
+            return { remove: vi.fn() };
+        }),
     },
     Platform: {
         OS: 'ios',
@@ -56,8 +62,21 @@ vi.mock('react-native', () => ({
     },
 }));
 
+const mockPreventScreenCaptureAsync = vi.fn().mockResolvedValue(undefined);
+const mockAllowScreenCaptureAsync = vi.fn().mockResolvedValue(undefined);
+
+vi.mock('expo-screen-capture', () => ({
+    preventScreenCaptureAsync: () => mockPreventScreenCaptureAsync(),
+    allowScreenCaptureAsync: () => mockAllowScreenCaptureAsync(),
+    addScreenshotListener: vi.fn((cb: () => void) => {
+        screenshotListeners.push(cb);
+        return { remove: vi.fn() };
+    }),
+}));
+
+const mockEmitMobileTelemetryEvent = vi.fn().mockResolvedValue(undefined);
 vi.mock('@/features/exam/lib/mobile-telemetry-client', () => ({
-    emitMobileTelemetryEvent: vi.fn().mockResolvedValue(undefined),
+    emitMobileTelemetryEvent: (args: any) => mockEmitMobileTelemetryEvent(args),
 }));
 
 const mockCompleteExamSession = vi.fn();
@@ -77,6 +96,15 @@ vi.mock('@sentinel/hooks', () => ({
             title: 'Math Final',
             duration: 60,
             passingScore: 50,
+            configuration: {
+                mobileSecurity: {
+                    prevent_backgrounding: true,
+                    screenshot_block: true,
+                    app_pinning_required: true,
+                    notification_block: true,
+                    root_jailbreak_detection: true,
+                },
+            },
             questions: [
                 { id: 'q1', content: { prompt: 'Q1' }, type: 'MULTIPLE_CHOICE', points: 1 },
             ],
@@ -115,6 +143,8 @@ describe('useExamSession Hook', () => {
         stateValues = [];
         stateIndex = 0;
         effectCallbacks = [];
+        appStateListeners = {};
+        screenshotListeners = [];
         vi.useFakeTimers();
         vi.clearAllMocks();
     });
@@ -191,6 +221,92 @@ describe('useExamSession Hook', () => {
         expect(Alert.alert).toHaveBeenCalledWith(
             'Submission Failed',
             'API Error',
+        );
+    });
+
+    it('enforces hardware screen capture prevention on mount and allows on unmount', () => {
+        useExamSession();
+
+        const cleanups: Array<() => void> = [];
+        effectCallbacks.forEach((cb) => {
+            const cleanup = cb();
+            if (typeof cleanup === 'function') {
+                cleanups.push(cleanup);
+            }
+        });
+
+        expect(mockPreventScreenCaptureAsync).toHaveBeenCalled();
+
+        cleanups.forEach((cleanup) => cleanup());
+        expect(mockAllowScreenCaptureAsync).toHaveBeenCalled();
+    });
+
+    it('emits SCREENSHOT_ATTEMPT and shows alert when a native screenshot occurs', () => {
+        useExamSession();
+        effectCallbacks.forEach((cb) => cb());
+
+        expect(screenshotListeners.length).toBeGreaterThan(0);
+
+        // Trigger native screenshot
+        screenshotListeners.forEach((listener) => listener());
+
+        expect(mockEmitMobileTelemetryEvent).toHaveBeenCalledWith(
+            expect.objectContaining({
+                eventType: 'SCREENSHOT_ATTEMPT',
+                examSessionId: 'session-456',
+                studentId: 'student-789',
+            }),
+        );
+
+        expect(Alert.alert).toHaveBeenCalledWith(
+            'Screenshot Detected',
+            expect.stringContaining('Taking screenshots during this exam is strictly prohibited'),
+        );
+    });
+
+    it('suppresses APP_PINNING_VIOLATION when background transition follows a screenshot within 2000ms', () => {
+        useExamSession();
+        effectCallbacks.forEach((cb) => cb());
+
+        expect(screenshotListeners.length).toBeGreaterThan(0);
+        expect(appStateListeners['change']).toBeDefined();
+
+        // 1. Take a screenshot
+        screenshotListeners.forEach((listener) => listener());
+        expect(mockEmitMobileTelemetryEvent).toHaveBeenCalledWith(
+            expect.objectContaining({ eventType: 'SCREENSHOT_ATTEMPT' }),
+        );
+        mockEmitMobileTelemetryEvent.mockClear();
+
+        // 2. AppState changes to background due to iOS screenshot UI flash
+        appStateListeners['change']('inactive');
+        appStateListeners['change']('background');
+
+        // APP_PINNING_VIOLATION and APP_BACKGROUNDING should be suppressed
+        expect(mockEmitMobileTelemetryEvent).not.toHaveBeenCalledWith(
+            expect.objectContaining({ eventType: 'APP_PINNING_VIOLATION' }),
+        );
+    });
+
+    it('emits APP_PINNING_VIOLATION on background transition when no screenshot occurred', () => {
+        useExamSession();
+        effectCallbacks.forEach((cb) => cb());
+
+        expect(appStateListeners['change']).toBeDefined();
+
+        // AppState changes to background normally
+        appStateListeners['change']('inactive');
+        appStateListeners['change']('background');
+
+        expect(mockEmitMobileTelemetryEvent).toHaveBeenCalledWith(
+            expect.objectContaining({
+                eventType: 'APP_PINNING_VIOLATION',
+            }),
+        );
+        expect(mockEmitMobileTelemetryEvent).toHaveBeenCalledWith(
+            expect.objectContaining({
+                eventType: 'APP_BACKGROUNDING',
+            }),
         );
     });
 });
