@@ -2,7 +2,7 @@ import { type DbClient } from '@sentinel/db';
 import { HTTPException } from 'hono/http-exception';
 import type { AccessControlRoleInput } from '@sentinel/shared/types';
 import { RolesRepository } from '../roles.repository';
-import { validateOptionABoundaries } from './validate-role-boundaries';
+import { validateOptionABoundaries } from './validate-role-boundaries.service';
 import { readRoles } from './get-roles.service';
 import { ActivityNotificationService } from '../../../general/notification/services/activity-notification.service';
 import { normalizeRoleName } from './utils';

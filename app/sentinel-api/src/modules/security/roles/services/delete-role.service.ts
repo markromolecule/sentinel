@@ -2,7 +2,7 @@ import { type DbClient } from '@sentinel/db';
 import { HTTPException } from 'hono/http-exception';
 import { RolesRepository } from '../roles.repository';
 import { getRoleRecord } from './get-role-record.service';
-import { validateOptionABoundaries } from './validate-role-boundaries';
+import { validateOptionABoundaries } from './validate-role-boundaries.service';
 import { ActivityNotificationService } from '../../../general/notification/services/activity-notification.service';
 
 /**
