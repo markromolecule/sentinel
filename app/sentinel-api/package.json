@@ -63,7 +63,7 @@
         "@supabase/supabase-js": "^2.91.0",
         "bcrypt": "^6.0.0",
         "bullmq": "^5.73.5",
-        "hono": "^4.11.10",
+        "hono": "^4.12.34",
         "http-status-codes": "^2.3.0",
         "ioredis": "^5.10.1",
         "kysely": "^0.28.12",
