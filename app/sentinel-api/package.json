@@ -52,7 +52,7 @@
         "seed:passwords": "tsx prisma/update-user-passwords.ts"
     },
     "dependencies": {
-        "@hono/node-server": "^1.19.9",
+        "@hono/node-server": "^1.19.15",
         "@hono/zod-openapi": "^1.2.2",
         "@prisma/client": "~7.5.0",
         "@prisma/client-runtime-utils": "~7.5.0",
