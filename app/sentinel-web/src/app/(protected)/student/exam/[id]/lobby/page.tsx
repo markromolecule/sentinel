@@ -6,7 +6,6 @@ import { StudentExamLoadingState } from '../_components/student-exam-loading-sta
 import { StudentFlowShell } from '../_components/student-flow-shell';
 import { useStudentExamStageGuard } from '../_hooks/use-student-exam-stage-guard';
 import { useLobbyState } from './_hooks/use-lobby-state';
-import { useLobbyPresence } from './_hooks/use-lobby-presence';
 import { LobbyHeader } from './_components/lobby-header';
 import { LobbyLayout } from './_components/lobby-layout';
 import { LobbyFooterActions } from './_components/lobby-footer-actions';
@@ -25,14 +24,7 @@ export default function StudentExamLobbyPage() {
     const {
         data: lobbyCount,
         isLoading: isLobbyCountLoading,
-        refetch: refetchLobbyCount,
     } = useExamLobbyCountQuery(examId);
-    const { presenceCount } = useLobbyPresence(examId);
-
-    const numericDbCount = typeof lobbyCount?.count === 'number' ? lobbyCount.count : 0;
-    const effectiveCount = Math.max(numericDbCount, presenceCount);
-    const displayCount =
-        effectiveCount > 0 ? effectiveCount : isResolving || isLobbyCountLoading ? 'Syncing' : 0;
 
     const {
         countdownLabel,
@@ -43,6 +35,7 @@ export default function StudentExamLobbyPage() {
         storedSession,
         mediaPipeLobbyMessage,
         admissionStatus,
+        presenceCount,
         isStartingSession,
         handleEnterExam,
     } = useLobbyState({
@@ -52,6 +45,11 @@ export default function StudentExamLobbyPage() {
         mediaPipeSandbox,
         refetchExam,
     });
+
+    const numericDbCount = typeof lobbyCount?.count === 'number' ? lobbyCount.count : 0;
+    const effectiveCount = Math.max(numericDbCount, presenceCount);
+    const displayCount =
+        effectiveCount > 0 ? effectiveCount : isResolving || isLobbyCountLoading ? 'Syncing' : 0;
 
     if (isResolving) {
         return <StudentExamLoadingState />;

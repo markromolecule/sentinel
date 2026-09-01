@@ -19,7 +19,7 @@ const {
     mockUseLobbyMediaPipe: vi.fn(),
     mockUseLobbyReadiness: vi.fn(),
     mockUseLobbyActions: vi.fn(),
-    mockUseLobbyRealtime: vi.fn(),
+    mockUseLobbyRealtime: vi.fn((..._args: unknown[]) => ({ presenceCount: 0 })),
     mockUseExamLobbyAdmissionStatusQuery: vi.fn(),
     mockToastSuccess: vi.fn(),
 }));

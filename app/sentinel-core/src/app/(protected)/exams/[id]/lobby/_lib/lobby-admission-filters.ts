@@ -21,6 +21,10 @@ type FilterLobbyAdmissionsArgs = {
     statusFilter: LobbyAdmissionStatusFilter;
 };
 
+function isSubmittedAttempt(student: ExamLobbyWaitingStudent): boolean {
+    return student.attemptStatus === 'SUBMITTED' || student.attemptStatus === 'COMPLETED';
+}
+
 /**
  * getLobbyAdmissionGroups partitions lobby admissions into the queues shown to instructors.
  *
@@ -30,19 +34,17 @@ export function getLobbyAdmissionGroups(
     admissions: ExamLobbyWaitingStudent[],
 ): LobbyAdmissionGroups {
     return {
-        waitingStudents: admissions.filter(
-            (student) => student.status === 'WAITING' && !student.hasActiveAttempt,
-        ),
+        waitingStudents: admissions.filter((student) => student.status === 'WAITING'),
         approvedStudents: admissions.filter(
             (student) =>
                 student.status === 'APPROVED' &&
                 !student.hasActiveAttempt &&
-                student.attemptStatus !== 'SUBMITTED',
+                !isSubmittedAttempt(student),
         ),
-        inAttemptStudents: admissions.filter((student) => student.hasActiveAttempt),
-        submittedStudents: admissions.filter(
-            (student) => student.attemptStatus === 'SUBMITTED',
+        inAttemptStudents: admissions.filter(
+            (student) => student.hasActiveAttempt && student.status === 'APPROVED',
         ),
+        submittedStudents: admissions.filter((student) => isSubmittedAttempt(student)),
         rejectedStudents: admissions.filter(
             (student) => student.status === 'REJECTED' && !student.hasActiveAttempt,
         ),
@@ -73,17 +75,17 @@ export function filterLobbyAdmissions(
 
         switch (args.statusFilter) {
             case 'waiting':
-                return student.status === 'WAITING' && !student.hasActiveAttempt;
+                return student.status === 'WAITING';
             case 'approved':
                 return (
                     student.status === 'APPROVED' &&
                     !student.hasActiveAttempt &&
-                    student.attemptStatus !== 'SUBMITTED'
+                    !isSubmittedAttempt(student)
                 );
             case 'inAttempt':
-                return student.hasActiveAttempt;
+                return student.hasActiveAttempt && student.status === 'APPROVED';
             case 'submitted':
-                return student.attemptStatus === 'SUBMITTED';
+                return isSubmittedAttempt(student);
             case 'rejected':
                 return student.status === 'REJECTED' && !student.hasActiveAttempt;
             case 'all':
@@ -92,3 +94,4 @@ export function filterLobbyAdmissions(
         }
     });
 }
+

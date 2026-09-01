@@ -68,6 +68,15 @@ const admissions: ExamLobbyWaitingStudent[] = [
         hasActiveAttempt: false,
         attemptStatus: 'SUBMITTED',
     }),
+    createAdmission({
+        admissionId: 'completed-1',
+        studentId: 'student-7',
+        studentName: 'Sam Completed',
+        studentNumber: '2026-007',
+        status: 'APPROVED',
+        hasActiveAttempt: false,
+        attemptStatus: 'COMPLETED',
+    }),
 ];
 
 describe('getLobbyAdmissionGroups', () => {
@@ -80,7 +89,10 @@ describe('getLobbyAdmissionGroups', () => {
         ]);
         expect(groups.approvedStudents.map((student) => student.studentId)).toEqual(['student-2']);
         expect(groups.inAttemptStudents.map((student) => student.studentId)).toEqual(['student-4']);
-        expect(groups.submittedStudents.map((student) => student.studentId)).toEqual(['student-6']);
+        expect(groups.submittedStudents.map((student) => student.studentId)).toEqual([
+            'student-6',
+            'student-7',
+        ]);
         expect(groups.rejectedStudents?.map((student) => student.studentId)).toEqual(['student-3']);
     });
 });
@@ -105,11 +117,22 @@ describe('filterLobbyAdmissions', () => {
     });
 
     it.each([
-        ['all', ['student-1', 'student-2', 'student-3', 'student-5', 'student-4', 'student-6']],
+        [
+            'all',
+            [
+                'student-1',
+                'student-2',
+                'student-3',
+                'student-5',
+                'student-4',
+                'student-6',
+                'student-7',
+            ],
+        ],
         ['waiting', ['student-1', 'student-5']],
         ['approved', ['student-2']],
         ['inAttempt', ['student-4']],
-        ['submitted', ['student-6']],
+        ['submitted', ['student-6', 'student-7']],
         ['rejected', ['student-3']],
     ] as const)('filters %s status admissions', (statusFilter, expectedIds) => {
         const filteredAdmissions = filterLobbyAdmissions(admissions, {
@@ -120,3 +143,4 @@ describe('filterLobbyAdmissions', () => {
         expect(filteredAdmissions.map((student) => student.studentId)).toEqual(expectedIds);
     });
 });
+

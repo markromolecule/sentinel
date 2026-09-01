@@ -93,15 +93,17 @@ export function useLobbyState(args: {
     );
 
     // Real-time admission event listener for instant sub-second unlock (broadcast + CDC)
-    useLobbyRealtime({
+    const lobbyRealtime = useLobbyRealtime({
         examId,
         studentId,
         enabled: !shouldSkipLobbySync,
+        trackPresence: true,
         onAdmissionChange: () => {
             void refetchAdmissionStatus();
             void refetchExam();
         },
     });
+    const presenceCount = lobbyRealtime?.presenceCount ?? 0;
 
     // Detect transition from WAITING/REJECTED to APPROVED to show toast and refresh runtime access in background
     useEffect(() => {
@@ -149,6 +151,7 @@ export function useLobbyState(args: {
         storedSession,
         mediaPipeLobbyMessage,
         admissionStatus,
+        presenceCount,
         isStartingSession,
         handleEnterExam,
     };

@@ -9,6 +9,7 @@ export interface FocusListenerOptions extends BaseListenerOptions {
     setTabSwitches: (fn: (c: number) => number) => void;
     lastNavigationShortcutAtRef: React.MutableRefObject<number>;
     lastCaptureModifierAtRef?: React.MutableRefObject<number>;
+    lastPrintScreenIncidentAtRef?: React.MutableRefObject<number>;
 }
 
 export function useFocusListener(options: FocusListenerOptions) {
@@ -23,9 +24,13 @@ export function useFocusListener(options: FocusListenerOptions) {
         setTabSwitches,
         lastNavigationShortcutAtRef,
         lastCaptureModifierAtRef,
+        lastPrintScreenIncidentAtRef,
     } = options;
 
     const lastFocusIncidentAtRef = useRef(0);
+    const internalPrintScreenIncidentAtRef = useRef(0);
+    const effectivePrintScreenIncidentRef =
+        lastPrintScreenIncidentAtRef ?? internalPrintScreenIncidentAtRef;
 
     const registerFocusIncident = useCallback(
         (
@@ -49,6 +54,14 @@ export function useFocusListener(options: FocusListenerOptions) {
                 Boolean(lastCaptureModifierAtRef && now - lastCaptureModifierAtRef.current < 1500);
 
             if (captureModifierDetected) {
+                const screenCaptureBurstResult = evaluateActionBurst({
+                    lastAcceptedAt: effectivePrintScreenIncidentRef.current,
+                    candidateAt: now,
+                    windowMs: 1500,
+                });
+                effectivePrintScreenIncidentRef.current = screenCaptureBurstResult.nextAcceptedAt;
+                if (!screenCaptureBurstResult.accepted) return;
+
                 // Purge clipboard immediately to prevent saving copied screenshot data
                 if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
                     navigator.clipboard.writeText('').catch(() => { });
@@ -60,7 +73,7 @@ export function useFocusListener(options: FocusListenerOptions) {
                     actionSource: 'screen-capture',
                     actionBucketId: 'screen-capture',
                     clientActionAt,
-                    bucketMs: 1000,
+                    bucketMs: 1500,
                 });
 
                 emitTelemetryEvent('PRINT_SCREEN_ATTEMPT', metadata);
@@ -119,6 +132,7 @@ export function useFocusListener(options: FocusListenerOptions) {
             setTabSwitches,
             lastNavigationShortcutAtRef,
             lastCaptureModifierAtRef,
+            lastPrintScreenIncidentAtRef,
         ],
     );
 

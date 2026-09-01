@@ -5,6 +5,7 @@ import { sql } from 'kysely';
 type AttemptRecord = {
     student_id: string | null;
     status: string | null;
+    lifecycle_state: string | null;
     reconnect_attempt_count: number | null;
 };
 
@@ -57,7 +58,13 @@ export const getWaitingList = async (dbClient: DbClient, examId: string) => {
     if (studentIds.length > 0) {
         attempts = await dbClient
             .selectFrom('exam_attempts')
-            .select(['student_id', 'status', 'created_at', 'reconnect_attempt_count'])
+            .select([
+                'student_id',
+                'status',
+                'lifecycle_state',
+                'created_at',
+                'reconnect_attempt_count',
+            ])
             .where('exam_id', '=', examId)
             .where('student_id', 'in', studentIds)
             .orderBy('created_at', 'desc')
@@ -67,8 +74,12 @@ export const getWaitingList = async (dbClient: DbClient, examId: string) => {
     const attemptByStudent = new Map<string, { status: string | null; reconnectCount: number }>();
     for (const attempt of attempts) {
         if (attempt.student_id && !attemptByStudent.has(attempt.student_id)) {
+            const isSubmitted =
+                attempt.status === 'COMPLETED' || attempt.lifecycle_state === 'SUBMITTED';
+            const normalizedStatus = isSubmitted ? 'SUBMITTED' : attempt.status;
+
             attemptByStudent.set(attempt.student_id, {
-                status: attempt.status,
+                status: normalizedStatus,
                 reconnectCount: Number(attempt.reconnect_attempt_count ?? 0),
             });
         }

@@ -36,6 +36,7 @@ export async function broadcastLobbyEvent(
 
         const broadcastUrl = `${url.replace(/\/$/, '')}/realtime/v1/api/broadcast`;
         const channelTopic = `lobby:${examId}`;
+        const phoenixTopic = `realtime:${channelTopic}`;
 
         const response = await fetch(broadcastUrl, {
             method: 'POST',
@@ -46,6 +47,11 @@ export async function broadcastLobbyEvent(
             },
             body: JSON.stringify({
                 messages: [
+                    {
+                        topic: phoenixTopic,
+                        event,
+                        payload,
+                    },
                     {
                         topic: channelTopic,
                         event,

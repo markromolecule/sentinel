@@ -175,4 +175,43 @@ describe('getWaitingList', () => {
             DEFAULT_EXAMINATION_GLOBAL_SETTINGS.defaultMaxReconnectAttempts,
         );
     });
+
+    it('normalizes COMPLETED status and SUBMITTED lifecycle_state to attemptStatus SUBMITTED', async () => {
+        const configSelect = createSelectBuilder({ max_reconnect_attempts: 3 });
+        const admissionsSelect = createSelectBuilder([
+            {
+                admission_id: 'admission-1',
+                student_id: 'student-1',
+                status: 'APPROVED',
+                checked_in_at: new Date('2026-08-08T09:00:00.000Z'),
+                decided_at: new Date('2026-08-08T09:01:00.000Z'),
+                student_number: '2026-102',
+                first_name: 'Jordan',
+                last_name: 'Completed',
+            },
+        ]);
+        const attemptsSelect = createSelectBuilder([
+            {
+                student_id: 'student-1',
+                status: 'COMPLETED',
+                lifecycle_state: 'SUBMITTED',
+                created_at: new Date('2026-08-08T09:05:00.000Z'),
+                reconnect_attempt_count: 0,
+            },
+        ]);
+        const dbClient = {
+            selectFrom: vi
+                .fn()
+                .mockReturnValueOnce(configSelect)
+                .mockReturnValueOnce(admissionsSelect)
+                .mockReturnValueOnce(attemptsSelect),
+        } as unknown as DbClient;
+
+        const result = await getWaitingList(dbClient, 'exam-4');
+
+        expect(result).toHaveLength(1);
+        expect(result[0].attemptStatus).toBe('SUBMITTED');
+        expect(result[0].hasActiveAttempt).toBe(false);
+    });
 });
+

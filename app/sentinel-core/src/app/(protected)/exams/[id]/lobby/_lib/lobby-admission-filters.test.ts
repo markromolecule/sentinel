@@ -58,6 +58,15 @@ const admissions: ExamLobbyWaitingStudent[] = [
         hasActiveAttempt: false,
         attemptStatus: 'SUBMITTED',
     }),
+    createAdmission({
+        admissionId: 'completed-1',
+        studentId: 'student-6',
+        studentName: 'Sam Completed',
+        studentNumber: '2026-006',
+        status: 'APPROVED',
+        hasActiveAttempt: false,
+        attemptStatus: 'COMPLETED',
+    }),
 ];
 
 describe('getLobbyAdmissionGroups', () => {
@@ -67,7 +76,10 @@ describe('getLobbyAdmissionGroups', () => {
         expect(groups.waitingStudents.map((student) => student.studentId)).toEqual(['student-1']);
         expect(groups.approvedStudents.map((student) => student.studentId)).toEqual(['student-2']);
         expect(groups.inAttemptStudents.map((student) => student.studentId)).toEqual(['student-4']);
-        expect(groups.submittedStudents.map((student) => student.studentId)).toEqual(['student-5']);
+        expect(groups.submittedStudents.map((student) => student.studentId)).toEqual([
+            'student-5',
+            'student-6',
+        ]);
         expect(groups.rejectedStudents?.map((student) => student.studentId)).toEqual(['student-3']);
     });
 });
@@ -92,11 +104,11 @@ describe('filterLobbyAdmissions', () => {
     });
 
     it.each([
-        ['all', ['student-1', 'student-2', 'student-3', 'student-4', 'student-5']],
+        ['all', ['student-1', 'student-2', 'student-3', 'student-4', 'student-5', 'student-6']],
         ['waiting', ['student-1']],
         ['approved', ['student-2']],
         ['inAttempt', ['student-4']],
-        ['submitted', ['student-5']],
+        ['submitted', ['student-5', 'student-6']],
         ['rejected', ['student-3']],
     ] as const)('filters %s status admissions', (statusFilter, expectedIds) => {
         const filteredAdmissions = filterLobbyAdmissions(admissions, {
@@ -107,3 +119,4 @@ describe('filterLobbyAdmissions', () => {
         expect(filteredAdmissions.map((student) => student.studentId)).toEqual(expectedIds);
     });
 });
+

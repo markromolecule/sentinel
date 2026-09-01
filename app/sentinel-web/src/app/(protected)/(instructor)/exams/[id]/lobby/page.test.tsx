@@ -43,7 +43,7 @@ function createLobbyHookValue() {
         statusFilter: 'all',
         setStatusFilter: vi.fn(),
         isUpdatingLobbyAdmissions: false,
-        overridingStudentId: null,
+        overridingStudentId: null as string | null,
         refreshLobbyAdmissions: mockRefreshLobbyAdmissions,
         handleUpdateLobbyAdmissions: vi.fn(),
         handleOverrideReconnect: vi.fn(),

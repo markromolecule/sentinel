@@ -11,7 +11,7 @@ const {
     mockToastError,
 } = vi.hoisted(() => ({
     mockUseApi: vi.fn(),
-    mockUseDebounce: vi.fn((value: string) => value),
+    mockUseDebounce: vi.fn((value: string, _delay?: number) => value),
     mockGetExamLobbyWaitingList: vi.fn(),
     mockUpdateExamLobbyAdmissions: vi.fn(),
     mockToastSuccess: vi.fn(),
