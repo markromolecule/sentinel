@@ -3,7 +3,7 @@ import { type DbClient } from '@sentinel/db';
 import { getLobbyCount } from './get-lobby-count';
 
 describe('getLobbyCount', () => {
-    it('counts waiting and approved lobby admissions that have not entered an active attempt', async () => {
+    it('counts waiting and approved lobby admissions that have not entered an active attempt or submitted', async () => {
         const countBuilder = {
             leftJoin: vi.fn().mockReturnThis(),
             select: vi.fn().mockReturnThis(),
@@ -23,7 +23,7 @@ describe('getLobbyCount', () => {
             'WAITING',
             'APPROVED',
         ]);
-        expect(countBuilder.where).toHaveBeenCalledWith('ea.attempt_id', 'is', null);
+        expect(countBuilder.where).toHaveBeenCalledWith('ea_completed.attempt_id', 'is', null);
     });
 
     it('returns zero when the count query yields no row', async () => {

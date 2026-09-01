@@ -35,8 +35,8 @@ export function useInstructorLobby(examId: string) {
     } = useExamLobbyWaitingListQuery(examId);
 
 
-    // Subscribe to real-time lobby admission changes
-    useLobbyRealtime({ examId });
+    // Subscribe to real-time lobby admission changes with presence tracking disabled
+    useLobbyRealtime({ examId, trackPresence: false });
 
     const updateAdmissionsMutation = useUpdateExamLobbyAdmissionsMutation();
 

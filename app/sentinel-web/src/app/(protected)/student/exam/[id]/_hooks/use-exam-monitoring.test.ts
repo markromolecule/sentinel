@@ -3,6 +3,7 @@ import { act, createElement, StrictMode, type ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ExamConfig } from '@sentinel/shared';
 import { useExamMonitoring } from './use-exam-monitoring';
+import type { AttemptMonitoringPhase } from './use-exam-monitoring/_types';
 import { emitWebTelemetryEvent } from '../_lib/web-telemetry-client';
 import { detectScreenCaptureShortcut } from '../_lib/web-telemetry-client/_utils/screen-capture-shortcut';
 
@@ -1024,6 +1025,44 @@ describe('use-exam-monitoring', () => {
         );
     });
 
+    it('emits exactly one PRINT_SCREEN_ATTEMPT event when shortcut keydown is followed immediately by window blur', async () => {
+        const { result } = renderHook(() =>
+            useExamMonitoring({
+                configuration: createExamConfiguration({
+                    tab_switching_monitor: true,
+                    print_screen_disable: true,
+                }),
+                examSessionId: '123e4567-e89b-12d3-a456-426614174000',
+                examId: '123e4567-e89b-12d3-a456-426614174999',
+            }),
+        );
+
+        // Student presses Cmd+Shift+4: keydown fires first, then snipping tool takes focus and fires window blur
+        act(() => {
+            document.dispatchEvent(
+                new KeyboardEvent('keydown', {
+                    key: '4',
+                    code: 'Digit4',
+                    metaKey: true,
+                    shiftKey: true,
+                    bubbles: true,
+                    cancelable: true,
+                }),
+            );
+            window.dispatchEvent(new Event('blur'));
+        });
+
+        await waitFor(() => {
+            expect(result.current.securityLockReason).toBe('screen-capture');
+        });
+
+        const printScreenEmissions = vi
+            .mocked(emitWebTelemetryEvent)
+            .mock.calls.filter((call) => call[1]?.eventType === 'PRINT_SCREEN_ATTEMPT');
+
+        expect(printScreenEmissions).toHaveLength(1);
+    });
+
     it('does not emit desktop right-click or print-screen telemetry on mobile', async () => {
         Object.defineProperty(window.navigator, 'userAgent', {
             value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148',
@@ -1439,7 +1478,7 @@ describe('use-exam-monitoring', () => {
                 }),
             {
                 initialProps: {
-                    monitoringPhase: 'active' as const,
+                    monitoringPhase: 'active' as AttemptMonitoringPhase,
                 },
             },
         );

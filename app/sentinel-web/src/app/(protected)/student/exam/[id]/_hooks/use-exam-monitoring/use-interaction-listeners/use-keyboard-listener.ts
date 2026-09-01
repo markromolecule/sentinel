@@ -11,6 +11,7 @@ export interface KeyboardListenerOptions extends BaseListenerOptions {
     shouldMonitorVisibility: boolean;
     lastNavigationShortcutAtRef: React.MutableRefObject<number>;
     lastCaptureModifierAtRef?: React.MutableRefObject<number>;
+    lastPrintScreenIncidentAtRef?: React.MutableRefObject<number>;
     registerClipboardIncident: (clientActionAt?: string) => void;
 }
 
@@ -25,10 +26,13 @@ export function useKeyboardListener(options: KeyboardListenerOptions) {
         shouldMonitorVisibility,
         lastNavigationShortcutAtRef,
         lastCaptureModifierAtRef,
+        lastPrintScreenIncidentAtRef,
         registerClipboardIncident,
     } = options;
 
-    const lastPrintScreenIncidentAtRef = useRef(0);
+    const internalPrintScreenIncidentAtRef = useRef(0);
+    const effectivePrintScreenIncidentRef =
+        lastPrintScreenIncidentAtRef ?? internalPrintScreenIncidentAtRef;
 
     useEffect(() => {
         const handleKeyEvent = (event: KeyboardEvent) => {
@@ -85,11 +89,11 @@ export function useKeyboardListener(options: KeyboardListenerOptions) {
                 const now = new Date(clientActionAt).getTime();
 
                 const burstResult = evaluateActionBurst({
-                    lastAcceptedAt: lastPrintScreenIncidentAtRef.current,
+                    lastAcceptedAt: effectivePrintScreenIncidentRef.current,
                     candidateAt: now,
-                    windowMs: 800,
+                    windowMs: 1500,
                 });
-                lastPrintScreenIncidentAtRef.current = burstResult.nextAcceptedAt;
+                effectivePrintScreenIncidentRef.current = burstResult.nextAcceptedAt;
                 if (!burstResult.accepted) return;
 
                 event.preventDefault();
@@ -105,7 +109,7 @@ export function useKeyboardListener(options: KeyboardListenerOptions) {
                     actionSource: 'screen-capture',
                     actionBucketId: 'screen-capture',
                     clientActionAt,
-                    bucketMs: 800,
+                    bucketMs: 1500,
                 });
 
                 emitTelemetryEvent('PRINT_SCREEN_ATTEMPT', metadata);
@@ -119,14 +123,10 @@ export function useKeyboardListener(options: KeyboardListenerOptions) {
 
         document.addEventListener('keydown', handleKeyEvent, true);
         document.addEventListener('keyup', handleKeyEvent, true);
-        window.addEventListener('keydown', handleKeyEvent, true);
-        window.addEventListener('keyup', handleKeyEvent, true);
 
         return () => {
             document.removeEventListener('keydown', handleKeyEvent, true);
             document.removeEventListener('keyup', handleKeyEvent, true);
-            window.removeEventListener('keydown', handleKeyEvent, true);
-            window.removeEventListener('keyup', handleKeyEvent, true);
         };
     }, [
         configuration?.webSecurity,

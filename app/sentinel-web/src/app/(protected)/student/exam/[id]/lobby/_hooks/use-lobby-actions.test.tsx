@@ -29,7 +29,7 @@ const {
     mockClearStoredExamTurnInPreview: vi.fn(),
     mockWriteStoredReconnectIntent: vi.fn(),
     mockGetStudentExamSessionAttemptId: vi.fn(),
-    mockIsStudentExamAlreadyTurnedInError: vi.fn(() => false),
+    mockIsStudentExamAlreadyTurnedInError: vi.fn((_arg?: unknown) => false),
 }));
 
 vi.mock('next/navigation', () => ({
@@ -81,8 +81,8 @@ vi.mock('../../_lib/student-exam-flow', () => ({
 vi.mock('../../_lib/student-exam-session-feedback', () => ({
     getStudentExamSessionAttemptId: (...args: unknown[]) =>
         mockGetStudentExamSessionAttemptId(...args),
-    isStudentExamAlreadyTurnedInError: (...args: unknown[]) =>
-        mockIsStudentExamAlreadyTurnedInError(...args),
+    isStudentExamAlreadyTurnedInError: (arg: unknown) =>
+        mockIsStudentExamAlreadyTurnedInError(arg),
     resolveStudentExamSessionError: () => 'Unable to start exam.',
 }));
 

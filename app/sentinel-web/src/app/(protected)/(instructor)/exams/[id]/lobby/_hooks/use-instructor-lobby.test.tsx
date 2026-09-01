@@ -14,25 +14,25 @@ const {
     mockToastSuccess,
     mockToastError,
 } = vi.hoisted(() => ({
-    mockUseDebounce: vi.fn((value: string) => value),
-    mockUseExamLobbyWaitingListQuery: vi.fn(),
-    mockUseUpdateExamLobbyAdmissionsMutation: vi.fn(),
-    mockUpdateMutateAsync: vi.fn(),
-    mockUseLobbyRealtime: vi.fn(),
-    mockUseOverrideReconnectLimitMutation: vi.fn(),
-    mockOverrideReconnectMutateAsync: vi.fn(),
-    mockRefetchWaitingList: vi.fn(),
-    mockToastSuccess: vi.fn(),
-    mockToastError: vi.fn(),
+    mockUseDebounce: vi.fn<(...args: unknown[]) => unknown>((...args: unknown[]) => args[0]),
+    mockUseExamLobbyWaitingListQuery: vi.fn<(..._args: unknown[]) => unknown>((..._args: unknown[]) => ({})),
+    mockUseUpdateExamLobbyAdmissionsMutation: vi.fn<(..._args: unknown[]) => unknown>((..._args: unknown[]) => ({})),
+    mockUpdateMutateAsync: vi.fn<(..._args: unknown[]) => unknown>((..._args: unknown[]) => ({})),
+    mockUseLobbyRealtime: vi.fn<(..._args: unknown[]) => unknown>((..._args: unknown[]) => ({})),
+    mockUseOverrideReconnectLimitMutation: vi.fn<(..._args: unknown[]) => unknown>((..._args: unknown[]) => ({})),
+    mockOverrideReconnectMutateAsync: vi.fn<(..._args: unknown[]) => unknown>((..._args: unknown[]) => ({})),
+    mockRefetchWaitingList: vi.fn<(..._args: unknown[]) => unknown>((..._args: unknown[]) => ({})),
+    mockToastSuccess: vi.fn<(..._args: unknown[]) => unknown>((..._args: unknown[]) => ({})),
+    mockToastError: vi.fn<(..._args: unknown[]) => unknown>((..._args: unknown[]) => ({})),
 }));
 
 vi.mock('@sentinel/hooks', () => ({
-    useDebounce: (value: string, delay: number) => mockUseDebounce(value, delay),
-    useExamLobbyWaitingListQuery: (examId: string) => mockUseExamLobbyWaitingListQuery(examId),
-    useLobbyRealtime: (args: unknown) => mockUseLobbyRealtime(args),
-    useUpdateExamLobbyAdmissionsMutation: () => mockUseUpdateExamLobbyAdmissionsMutation(),
-    useOverrideReconnectLimitMutation: (options: unknown) =>
-        mockUseOverrideReconnectLimitMutation(options),
+    useDebounce: (...args: unknown[]) => mockUseDebounce(...args),
+    useExamLobbyWaitingListQuery: (...args: unknown[]) => mockUseExamLobbyWaitingListQuery(...args),
+    useLobbyRealtime: (...args: unknown[]) => mockUseLobbyRealtime(...args),
+    useUpdateExamLobbyAdmissionsMutation: (...args: unknown[]) => mockUseUpdateExamLobbyAdmissionsMutation(...args),
+    useOverrideReconnectLimitMutation: (...args: unknown[]) =>
+        mockUseOverrideReconnectLimitMutation(...args),
 }));
 
 vi.mock('sonner', () => ({
@@ -45,7 +45,7 @@ vi.mock('sonner', () => ({
 describe('useInstructorLobby', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        mockUseDebounce.mockImplementation((value: string) => value);
+        mockUseDebounce.mockImplementation(((value: string) => value) as unknown as (...args: unknown[]) => unknown);
         mockUseExamLobbyWaitingListQuery.mockReturnValue({
             data: [
                 {
@@ -96,7 +96,10 @@ describe('useInstructorLobby', () => {
     it('subscribes to realtime events and debounces search input', async () => {
         const { result } = renderHook(() => useInstructorLobby('exam-1'));
 
-        expect(mockUseLobbyRealtime).toHaveBeenCalledWith({ examId: 'exam-1' });
+        expect(mockUseLobbyRealtime).toHaveBeenCalledWith({
+            examId: 'exam-1',
+            trackPresence: false,
+        });
 
         act(() => {
             result.current.setSearchTerm('alex');

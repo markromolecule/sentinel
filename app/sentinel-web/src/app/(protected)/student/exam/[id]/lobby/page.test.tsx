@@ -92,7 +92,7 @@ describe('StudentExamLobbyPage', () => {
             refetchExam: vi.fn(),
             isLoading: false,
         });
-        mockLobbyState.mockReturnValue({
+        mockLobbyState.mockImplementation(() => ({
             countdownLabel: '00:10:00',
             hasCompletedFlow: true,
             runtimeAccess: {
@@ -110,10 +110,11 @@ describe('StudentExamLobbyPage', () => {
             storedSession: null,
             mediaPipeLobbyMessage: null,
             admissionStatus: 'WAITING',
+            presenceCount: mockLobbyPresence()?.presenceCount ?? 0,
             isStartingSession: false,
             isAdmissionPendingRefresh: false,
             handleEnterExam: vi.fn(),
-        });
+        }));
     });
 
     it('uses the higher count between API and presence and shows reconnect used versus remaining', () => {

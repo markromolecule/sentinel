@@ -21,6 +21,10 @@ type FilterLobbyAdmissionsArgs = {
     statusFilter: LobbyAdmissionStatusFilter;
 };
 
+function isSubmittedAttempt(student: ExamLobbyWaitingStudent): boolean {
+    return student.attemptStatus === 'SUBMITTED' || student.attemptStatus === 'COMPLETED';
+}
+
 /**
  * getLobbyAdmissionGroups partitions lobby admissions into the queues shown to instructors.
  *
@@ -35,14 +39,12 @@ export function getLobbyAdmissionGroups(
             (student) =>
                 student.status === 'APPROVED' &&
                 !student.hasActiveAttempt &&
-                student.attemptStatus !== 'SUBMITTED',
+                !isSubmittedAttempt(student),
         ),
         inAttemptStudents: admissions.filter(
             (student) => student.hasActiveAttempt && student.status === 'APPROVED',
         ),
-        submittedStudents: admissions.filter(
-            (student) => student.attemptStatus === 'SUBMITTED',
-        ),
+        submittedStudents: admissions.filter((student) => isSubmittedAttempt(student)),
         rejectedStudents: admissions.filter(
             (student) => student.status === 'REJECTED' && !student.hasActiveAttempt,
         ),
@@ -78,12 +80,12 @@ export function filterLobbyAdmissions(
                 return (
                     student.status === 'APPROVED' &&
                     !student.hasActiveAttempt &&
-                    student.attemptStatus !== 'SUBMITTED'
+                    !isSubmittedAttempt(student)
                 );
             case 'inAttempt':
                 return student.hasActiveAttempt && student.status === 'APPROVED';
             case 'submitted':
-                return student.attemptStatus === 'SUBMITTED';
+                return isSubmittedAttempt(student);
             case 'rejected':
                 return student.status === 'REJECTED' && !student.hasActiveAttempt;
             case 'all':
@@ -92,3 +94,4 @@ export function filterLobbyAdmissions(
         }
     });
 }
+
