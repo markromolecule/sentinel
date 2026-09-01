@@ -15,12 +15,12 @@ afterEach(() => {
 
 describe('QuestionBankNav', () => {
     it.each([
-        ['/question', 'All Questions'],
-        ['/question/bank', 'All Questions'],
+        ['/question', 'Questions'],
+        ['/question/bank', 'Questions'],
         ['/question/bank/collections', 'Collections'],
         ['/question/bank/collections/abc', 'Collections'],
-        ['/question/bank/tos', 'TOS Matrix'],
-        ['/question/bank/import/preview', 'All Questions'],
+        ['/question/bank/tos', 'Table of Specifications'],
+        ['/question/bank/import/preview', 'Questions'],
     ])('highlights %s as %s', (pathname, expectedLabel) => {
         mockPathname.mockReturnValue(pathname);
 
@@ -36,14 +36,14 @@ describe('QuestionBankNav', () => {
 
         render(<QuestionBankNav />);
 
-        expect(screen.getByRole('link', { name: 'All Questions' }).getAttribute('href')).toBe(
+        expect(screen.getByRole('link', { name: 'Questions' }).getAttribute('href')).toBe(
             '/question/bank',
         );
         expect(screen.getByRole('link', { name: 'Collections' }).getAttribute('href')).toBe(
             '/question/bank/collections',
         );
-        expect(screen.getByRole('link', { name: 'TOS Matrix' }).getAttribute('href')).toBe(
-            '/question/bank/tos',
-        );
+        expect(
+            screen.getByRole('link', { name: 'Table of Specifications' }).getAttribute('href'),
+        ).toBe('/question/bank/tos');
     });
 });
