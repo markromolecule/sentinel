@@ -526,6 +526,19 @@ export type OverrideReconnectLimitPayload = {
     reason?: string | null;
 };
 
+export type AuthorizeStudentReentryPayload = {
+    id: string;
+    studentId: string;
+    reason?: string | null;
+};
+
+export type AuthorizeStudentReentryResult = {
+    attemptId: string | null;
+    status: string;
+    reconnectAttemptCount: number;
+    reopenedUntil: string;
+};
+
 export type ApiStudentExamAccessOverride = StudentExamAccessOverride;
 
 

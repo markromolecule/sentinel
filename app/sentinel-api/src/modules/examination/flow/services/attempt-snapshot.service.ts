@@ -130,10 +130,10 @@ export function resolveAssessmentSnapshotRubric(
     return buildLegacyEssayRubricSnapshot();
 }
 
-function buildOptionTokens(attemptId: string, questionId: string, options: string[]) {
+export function buildOptionTokens(seed: string, questionId: string, options: string[]) {
     return options.map((option, index) =>
         createHash('sha256')
-            .update(`${attemptId}:${questionId}:${index}:${option}`)
+            .update(`${seed}:${questionId}:${index}:${option}`)
             .digest('hex')
             .slice(0, 24),
     );

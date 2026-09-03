@@ -59,11 +59,27 @@ export function resolveReconnectDisplay(
             };
         }
 
+        if (total === 0 && (configuredTotal === 0 || configuredTotal === null)) {
+            return {
+                headerValue: 'Strict proctor mode • 0 reconnects',
+                statusMessage:
+                    'This exam does not permit unapproved reconnections. If you disconnect, instructor approval will be required to resume.',
+            };
+        }
+
         const used = Math.max(0, total - remaining);
 
         return {
             headerValue: `${used} used • ${remaining} left`,
             statusMessage: `Reconnect attempts used: ${used} of ${total}. Remaining: ${remaining}.`,
+        };
+    }
+
+    if (configuredTotal === 0) {
+        return {
+            headerValue: 'Strict proctor mode • 0 reconnects',
+            statusMessage:
+                'This exam does not permit unapproved reconnections. If you disconnect, instructor approval will be required to resume.',
         };
     }
 

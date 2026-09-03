@@ -17,6 +17,7 @@ export * from './use-update-exam-mutation';
 export * from './use-update-exam-configuration-mutation';
 export * from './use-update-exam-status-mutation';
 export * from './use-override-reconnect-limit-mutation';
+export * from './use-authorize-student-reentry-mutation';
 export * from './use-batch-create-exam-overrides-mutation';
 export * from './use-delete-exam-mutation';
 

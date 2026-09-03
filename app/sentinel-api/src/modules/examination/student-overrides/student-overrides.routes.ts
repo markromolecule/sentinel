@@ -13,6 +13,10 @@ import {
     overrideReconnectLimitRoute,
     overrideReconnectLimitRouteHandler,
 } from './controllers/override-reconnect-limit.controller';
+import {
+    authorizeStudentReentryRoute,
+    authorizeStudentReentryRouteHandler,
+} from './controllers/authorize-student-reentry.controller';
 
 export function registerStudentOverridesRoutes(app: OpenAPIHono<HonoEnv>) {
     app.openapi(createStudentExamAccessOverrideRoute, createStudentExamAccessOverrideRouteHandler);
@@ -21,5 +25,5 @@ export function registerStudentOverridesRoutes(app: OpenAPIHono<HonoEnv>) {
         batchCreateStudentExamAccessOverrideRouteHandler,
     );
     app.openapi(overrideReconnectLimitRoute, overrideReconnectLimitRouteHandler);
+    app.openapi(authorizeStudentReentryRoute, authorizeStudentReentryRouteHandler);
 }
-

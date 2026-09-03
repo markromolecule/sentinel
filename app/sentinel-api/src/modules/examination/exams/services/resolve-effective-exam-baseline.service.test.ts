@@ -40,6 +40,8 @@ describe('resolveEffectiveExamBaseline', () => {
                 defaultDurationMinutes: 75,
                 defaultPassingScore: 68,
                 defaultShuffleQuestions: true,
+                defaultAllowReview: false,
+                defaultRandomizeChoices: false,
             },
         );
 

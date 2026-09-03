@@ -85,13 +85,15 @@ export function resolveExamRuntimeAccess(
         now,
     });
     const reopenedUntil = parseDateValue(args.persistedAccess?.reopenedUntil);
+    const hasActiveReopenWindow = Boolean(reopenedUntil && reopenedUntil.getTime() > now.getTime());
 
     const totalReconnectAttempts = args.maxReconnectAttempts ?? 0;
     const reconnectAttemptsRemaining = Math.max(
         0,
         totalReconnectAttempts - (args.reconnectAttemptCount ?? 0),
     );
-    const canResumeActiveAttempt = hasActiveAttempt && reconnectAttemptsRemaining > 0;
+    const canResumeActiveAttempt =
+        hasActiveAttempt && (reconnectAttemptsRemaining > 0 || hasActiveReopenWindow);
 
     const baseProps = {
         hasActiveAttempt,
@@ -123,7 +125,7 @@ export function resolveExamRuntimeAccess(
             reasonCode: 'REOPENED',
             message: `This exam was reopened until ${reopenedUntil.toLocaleString()}.`,
             canStart: true,
-            canResume: canResumeActiveAttempt,
+            canResume: hasActiveAttempt || canResumeActiveAttempt,
             reopenedUntil,
         });
     }

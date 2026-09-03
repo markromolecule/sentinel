@@ -10,6 +10,8 @@ const {
     mockUseLobbyRealtime,
     mockUseOverrideReconnectLimitMutation,
     mockOverrideReconnectMutateAsync,
+    mockUseAuthorizeStudentReentryMutation,
+    mockAuthorizeReentryMutateAsync,
     mockRefetchWaitingList,
     mockToastSuccess,
     mockToastError,
@@ -21,6 +23,8 @@ const {
     mockUseLobbyRealtime: vi.fn<(..._args: unknown[]) => unknown>((..._args: unknown[]) => ({})),
     mockUseOverrideReconnectLimitMutation: vi.fn<(..._args: unknown[]) => unknown>((..._args: unknown[]) => ({})),
     mockOverrideReconnectMutateAsync: vi.fn<(..._args: unknown[]) => unknown>((..._args: unknown[]) => ({})),
+    mockUseAuthorizeStudentReentryMutation: vi.fn<(..._args: unknown[]) => unknown>((..._args: unknown[]) => ({})),
+    mockAuthorizeReentryMutateAsync: vi.fn<(..._args: unknown[]) => unknown>((..._args: unknown[]) => ({})),
     mockRefetchWaitingList: vi.fn<(..._args: unknown[]) => unknown>((..._args: unknown[]) => ({})),
     mockToastSuccess: vi.fn<(..._args: unknown[]) => unknown>((..._args: unknown[]) => ({})),
     mockToastError: vi.fn<(..._args: unknown[]) => unknown>((..._args: unknown[]) => ({})),
@@ -33,6 +37,8 @@ vi.mock('@sentinel/hooks', () => ({
     useUpdateExamLobbyAdmissionsMutation: (...args: unknown[]) => mockUseUpdateExamLobbyAdmissionsMutation(...args),
     useOverrideReconnectLimitMutation: (...args: unknown[]) =>
         mockUseOverrideReconnectLimitMutation(...args),
+    useAuthorizeStudentReentryMutation: (...args: unknown[]) =>
+        mockUseAuthorizeStudentReentryMutation(...args),
 }));
 
 vi.mock('sonner', () => ({
@@ -86,6 +92,12 @@ describe('useInstructorLobby', () => {
         mockUseOverrideReconnectLimitMutation.mockImplementation((options) => ({
             mutateAsync: async (payload: unknown) => {
                 await mockOverrideReconnectMutateAsync(payload);
+                await (options as { onSuccess?: () => Promise<void> | void })?.onSuccess?.();
+            },
+        }));
+        mockUseAuthorizeStudentReentryMutation.mockImplementation((options) => ({
+            mutateAsync: async (payload: unknown) => {
+                await mockAuthorizeReentryMutateAsync(payload);
                 await (options as { onSuccess?: () => Promise<void> | void })?.onSuccess?.();
             },
         }));
@@ -183,5 +195,38 @@ describe('useInstructorLobby', () => {
         expect(result.current.overridingStudentId).toBeNull();
         expect(mockRefetchWaitingList).toHaveBeenCalledTimes(1);
         expect(mockToastSuccess).toHaveBeenCalledWith('Reconnect override granted successfully.');
+    });
+
+    it('submits student re-entry authorization and tracks pending state', async () => {
+        let resolveMutation: (() => void) | undefined;
+        mockAuthorizeReentryMutateAsync.mockImplementation(
+            () =>
+                new Promise<void>((resolve) => {
+                    resolveMutation = resolve;
+                }),
+        );
+
+        const { result } = renderHook(() => useInstructorLobby('exam-1'));
+
+        let pendingPromise: Promise<void> | undefined;
+        act(() => {
+            pendingPromise = result.current.handleAuthorizeReentry('student-1');
+        });
+
+        expect(result.current.authorizingReentryStudentId).toBe('student-1');
+        expect(mockAuthorizeReentryMutateAsync).toHaveBeenCalledWith({
+            id: 'exam-1',
+            studentId: 'student-1',
+            reason: 'Instructor authorized student re-entry from the exam lobby.',
+        });
+
+        resolveMutation?.();
+        await act(async () => {
+            await pendingPromise;
+        });
+
+        expect(result.current.authorizingReentryStudentId).toBeNull();
+        expect(mockRefetchWaitingList).toHaveBeenCalledTimes(1);
+        expect(mockToastSuccess).toHaveBeenCalledWith('Re-entry authorized successfully.');
     });
 });

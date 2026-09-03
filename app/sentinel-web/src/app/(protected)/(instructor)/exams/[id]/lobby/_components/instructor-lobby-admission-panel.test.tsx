@@ -81,6 +81,8 @@ function renderPanel(overrides?: {
     ) => Promise<void>;
     overridingStudentId?: string | null;
     onOverrideReconnect?: (studentId: string) => Promise<void>;
+    authorizingReentryStudentId?: string | null;
+    onAuthorizeReentry?: (studentId: string) => Promise<void>;
 }) {
     const sourceAdmissions = overrides?.admissions ?? admissions;
     const groups = getLobbyAdmissionGroups(sourceAdmissions);
@@ -96,6 +98,8 @@ function renderPanel(overrides?: {
             onUpdateLobbyAdmissions={overrides?.onUpdateLobbyAdmissions ?? vi.fn()}
             overridingStudentId={overrides?.overridingStudentId ?? null}
             onOverrideReconnect={overrides?.onOverrideReconnect ?? vi.fn()}
+            authorizingReentryStudentId={overrides?.authorizingReentryStudentId ?? null}
+            onAuthorizeReentry={overrides?.onAuthorizeReentry}
         />,
     );
 }
@@ -165,8 +169,8 @@ describe('InstructorLobbyAdmissionPanel', () => {
         expect(onUpdateLobbyAdmissions).toHaveBeenNthCalledWith(2, ['student-1'], 'REJECTED');
     });
 
-    it('shows Override Limit only for waiting students with an active attempt at the limit', () => {
-        const onOverrideReconnect = vi.fn().mockResolvedValue(undefined);
+    it('shows Authorize Re-entry for students with active attempt requiring re-entry', () => {
+        const onAuthorizeReentry = vi.fn().mockResolvedValue(undefined);
         renderPanel({
             admissions: [
                 createAdmission({
@@ -182,20 +186,20 @@ describe('InstructorLobbyAdmissionPanel', () => {
                     admissionId: 'waiting-below-limit-1',
                     studentId: 'student-9',
                     status: 'WAITING',
-                    hasActiveAttempt: true,
-                    attemptStatus: 'IN_PROGRESS',
-                    reconnectCount: 2,
+                    hasActiveAttempt: false,
+                    attemptStatus: null,
+                    reconnectCount: 0,
                     maxReconnectAttempts: 3,
                 }),
             ],
-            onOverrideReconnect,
+            onAuthorizeReentry,
         });
 
-        fireEvent.click(screen.getByRole('button', { name: 'Override Limit' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Authorize Re-entry' }));
 
-        expect(onOverrideReconnect).toHaveBeenCalledWith('student-8');
+        expect(onAuthorizeReentry).toHaveBeenCalledWith('student-8');
         expect(screen.getAllByRole('button', { name: 'Admit' })).toHaveLength(2);
-        expect(screen.queryAllByRole('button', { name: 'Override Limit' })).toHaveLength(1);
+        expect(screen.queryAllByRole('button', { name: 'Authorize Re-entry' })).toHaveLength(1);
     });
 
     it('renders avatar image with provided avatarUrl and falls back to student initials', () => {

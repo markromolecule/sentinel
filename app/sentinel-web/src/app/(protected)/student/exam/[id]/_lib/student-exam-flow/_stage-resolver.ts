@@ -130,7 +130,12 @@ export function resolveStudentExamStage(
     );
 
     if (isAttemptActive) {
-        if (reconnectCount >= maxReconnect && !runtimeAccess?.canResume) {
+        const isReconnectLimitExceeded =
+            reconnectCount > 0 &&
+            reconnectCount >= maxReconnect &&
+            !runtimeAccess?.canResume;
+
+        if (isReconnectLimitExceeded) {
             return {
                 targetStage: 'lobby',
                 reasonCode: 'MAX_RECONNECT_EXCEEDED',

@@ -68,9 +68,10 @@ export async function getStudentExamHistoryDetail(
             'ea.total_score as attempt_total_score',
             'ea.score_snapshot as attempt_score_snapshot',
             'ea.time_spent_minutes as attempt_time_spent_minutes',
-            sql<string | null>`(ea.answer_snapshot->'_grading'->>'finalizedAt')::text`.as(
-                'attempt_finalized_at',
-            ),
+            sql<string | null>`coalesce(
+                ea.finalized_at::text,
+                (ea.answer_snapshot->'_grading'->>'finalizedAt')::text
+            )`.as('attempt_finalized_at'),
             sql<number>`coalesce((
                 select count(*)::int
                 from flagged_incidents as fi

@@ -8,6 +8,7 @@ import {
     useOverrideReconnectLimitMutation,
     useReopenExamAttemptMutation,
     useResetExamAttemptMutation,
+    useAuthorizeStudentReentryMutation,
 } from '@sentinel/hooks';
 import type { MonitoringLifecycleAction, StudentSession } from '@sentinel/shared/types';
 
@@ -34,6 +35,14 @@ export function useLifecycle({ examId, refetch }: UseLifecycleProps) {
         onError: (error: Error) => toast.error(error.message),
     });
 
+    const authorizeStudentReentryMutation = useAuthorizeStudentReentryMutation({
+        onSuccess: async () => {
+            toast.success('Re-entry authorized and reconnects reset successfully.');
+            await refetch();
+        },
+        onError: (error: Error) => toast.error(error.message),
+    });
+
     const lockAttemptMutation = useLockExamAttemptMutation();
     const reopenAttemptMutation = useReopenExamAttemptMutation();
     const resetAttemptMutation = useResetExamAttemptMutation();
@@ -48,6 +57,19 @@ export function useLifecycle({ examId, refetch }: UseLifecycleProps) {
                 id: examId,
                 studentId: recordId ?? studentId,
                 reason: 'Instructor granted a one-time reconnect override from monitoring.',
+            });
+        } finally {
+            setOverridingStudentId(null);
+        }
+    };
+
+    const handleAuthorizeReentry = async (studentId: string, recordId?: string | null) => {
+        setOverridingStudentId(studentId);
+        try {
+            await authorizeStudentReentryMutation.mutateAsync({
+                id: examId,
+                studentId: recordId ?? studentId,
+                reason: 'Instructor authorized student re-entry from monitoring.',
             });
         } finally {
             setOverridingStudentId(null);
@@ -136,6 +158,7 @@ export function useLifecycle({ examId, refetch }: UseLifecycleProps) {
         overridingStudentId,
         activeLifecycleActionId,
         handleOverrideReconnect,
+        handleAuthorizeReentry,
         handleLifecycleAction,
     };
 }

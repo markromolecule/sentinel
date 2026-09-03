@@ -23,6 +23,8 @@ describe('buildStudentAttemptSelects', () => {
 
         expect(compiled.sql).toContain('coalesce(ea.started_at, ea.created_at) >= e.published_at');
         expect(compiled.sql).toContain('st_attempt.user_id = $1');
+        expect(compiled.sql).toContain('ea.finalized_at::text');
+        expect(compiled.sql).toContain("ea.answer_snapshot->'_grading'->>'finalizedAt'");
 
         void db.destroy();
     });

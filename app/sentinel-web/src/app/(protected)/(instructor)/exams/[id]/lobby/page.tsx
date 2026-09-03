@@ -21,9 +21,11 @@ export default function InstructorLobbyPage() {
         isUpdatingLobbyAdmissions,
         updatingStudentIds,
         overridingStudentId,
+        authorizingReentryStudentId,
         refreshLobbyAdmissions,
         handleUpdateLobbyAdmissions,
         handleOverrideReconnect,
+        handleAuthorizeReentry,
         isFetching,
     } = useInstructorLobby(examId);
 
@@ -64,6 +66,8 @@ export default function InstructorLobbyPage() {
                 onUpdateLobbyAdmissions={handleUpdateLobbyAdmissions}
                 overridingStudentId={overridingStudentId}
                 onOverrideReconnect={handleOverrideReconnect}
+                authorizingReentryStudentId={authorizingReentryStudentId}
+                onAuthorizeReentry={handleAuthorizeReentry}
             />
         </div>
     );

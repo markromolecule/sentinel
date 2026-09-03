@@ -18,6 +18,8 @@ import type {
     CreateStudentExamAccessOverridePayload,
     BatchCreateStudentExamAccessOverridePayload,
     OverrideReconnectLimitPayload,
+    AuthorizeStudentReentryPayload,
+    AuthorizeStudentReentryResult,
     UpdateExamPayload,
     UpdateExamRuntimeAccessPayload,
     UpdateExamStatusPayload,
@@ -267,6 +269,26 @@ export async function overrideReconnectLimit(
 ) {
     const response: ApiExamResponse<ApiStudentExamAccessOverride> = await apiClient(
         `/exams/${payload.id}/student-overrides/reconnect-override/${payload.studentId}`,
+        {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                reason: payload.reason ?? undefined,
+            }),
+        },
+    );
+
+    return response.data;
+}
+
+export async function authorizeStudentReentry(
+    apiClient: ApiClientType,
+    payload: AuthorizeStudentReentryPayload,
+): Promise<AuthorizeStudentReentryResult> {
+    const response: ApiExamResponse<AuthorizeStudentReentryResult> = await apiClient(
+        `/exams/${payload.id}/student-overrides/authorize-reentry/${payload.studentId}`,
         {
             method: 'POST',
             headers: {

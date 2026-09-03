@@ -7,6 +7,7 @@ import {
     useLobbyRealtime,
     useOverrideReconnectLimitMutation,
     useUpdateExamLobbyAdmissionsMutation,
+    useAuthorizeStudentReentryMutation,
 } from '@sentinel/hooks';
 import { toast } from 'sonner';
 import {
@@ -23,6 +24,7 @@ import {
 export function useInstructorLobby(examId: string) {
     const [updatingStudentIds, setUpdatingStudentIds] = useState<Set<string>>(() => new Set());
     const [overridingStudentId, setOverridingStudentId] = useState<string | null>(null);
+    const [authorizingReentryStudentId, setAuthorizingReentryStudentId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<LobbyAdmissionStatusFilter>('all');
     const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -57,6 +59,14 @@ export function useInstructorLobby(examId: string) {
     const overrideReconnectLimitMutation = useOverrideReconnectLimitMutation({
         onSuccess: async () => {
             toast.success('Reconnect override granted successfully.');
+            await refreshLobbyAdmissions();
+        },
+        onError: (error: Error) => toast.error(error.message),
+    });
+
+    const authorizeStudentReentryMutation = useAuthorizeStudentReentryMutation({
+        onSuccess: async () => {
+            toast.success('Re-entry authorized successfully.');
             await refreshLobbyAdmissions();
         },
         onError: (error: Error) => toast.error(error.message),
@@ -115,6 +125,20 @@ export function useInstructorLobby(examId: string) {
         }
     };
 
+    const handleAuthorizeReentry = async (studentId: string) => {
+        setAuthorizingReentryStudentId(studentId);
+
+        try {
+            await authorizeStudentReentryMutation.mutateAsync({
+                id: examId,
+                studentId,
+                reason: 'Instructor authorized student re-entry from the exam lobby.',
+            });
+        } finally {
+            setAuthorizingReentryStudentId(null);
+        }
+    };
+
     return {
         lobbyAdmissions,
         filteredLobbyAdmissions,
@@ -127,9 +151,11 @@ export function useInstructorLobby(examId: string) {
         isUpdatingLobbyAdmissions,
         updatingStudentIds,
         overridingStudentId,
+        authorizingReentryStudentId,
         refreshLobbyAdmissions,
         handleUpdateLobbyAdmissions,
         handleOverrideReconnect,
+        handleAuthorizeReentry,
         isLoading,
         isFetching,
     };

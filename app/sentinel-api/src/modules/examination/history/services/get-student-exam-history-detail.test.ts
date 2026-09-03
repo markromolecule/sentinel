@@ -226,4 +226,30 @@ describe('getStudentExamHistoryDetail', () => {
 
         expect(builder.where).toHaveBeenCalledWith('e.published_at', 'is not', null);
     });
+
+    it('passes attempt_finalized_at from table column to history detail mapper', async () => {
+        const rawRecord = {
+            exam_id: 'exam-1',
+            attempt_id: 'attempt-1',
+            attempt_status: 'COMPLETED',
+            attempt_score: 85,
+            attempt_total_score: 100,
+            release_score_mode: 'MANUAL_RELEASE',
+            essay_question_count: 0,
+            attempt_finalized_at: '2026-09-03T10:00:00.000Z',
+        };
+        const builder = createQueryBuilder(rawRecord);
+        const dbClient = {
+            selectFrom: vi.fn(() => builder),
+        } as any;
+
+        await getStudentExamHistoryDetail(dbClient, 'attempt-1', 'student-user-1');
+
+        expect(mapExamHistoryDetailResponse).toHaveBeenCalledWith(
+            expect.objectContaining({
+                release_score_mode: 'MANUAL_RELEASE',
+                attempt_finalized_at: '2026-09-03T10:00:00.000Z',
+            }),
+        );
+    });
 });

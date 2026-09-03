@@ -1,7 +1,9 @@
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { useApi } from '@sentinel/hooks';
 import { startExamSession } from '@sentinel/services';
+import { EXAM_QUERY_KEYS } from '@sentinel/shared/constants';
 import { toast } from 'sonner';
 
 import { buildStudentExamHref } from '../../_lib/student-exam-flow';
@@ -45,6 +47,7 @@ export function useLobbyActions({
 }: UseLobbyActionsArgs) {
     const router = useRouter();
     const apiClient = useApi();
+    const queryClient = useQueryClient();
     const [isStartingSession, setIsStartingSession] = useState(false);
     const inFlightRequestRef = useRef(false);
 
@@ -126,6 +129,7 @@ export function useLobbyActions({
 
             writeStoredLobbyEntry(examId, nextStoredSession.sessionId);
             clearStoredReconnectIntent(examId);
+            await queryClient.invalidateQueries({ queryKey: EXAM_QUERY_KEYS.details(examId) });
             router.push(buildStudentExamHref(examId, 'attempt'));
         } catch (error) {
             if (isStudentExamAlreadyTurnedInError(error)) {

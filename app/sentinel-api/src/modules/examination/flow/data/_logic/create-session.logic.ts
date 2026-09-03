@@ -22,24 +22,24 @@ export type CreateSessionArgs = {
 
 export type CreateSessionResult =
     | {
-        sessionId: string;
-        isResumed: false;
-        reconnectAttemptCount: number;
-        maxReconnectAttempts: number;
-    }
+          sessionId: string;
+          isResumed: false;
+          reconnectAttemptCount: number;
+          maxReconnectAttempts: number;
+      }
     | {
-        sessionId: string;
-        isResumed: true;
-        answers: ExamAttemptAnswers;
-        elapsedSeconds: number;
-        reconnectAttemptCount: number;
-        maxReconnectAttempts: number;
-    }
+          sessionId: string;
+          isResumed: true;
+          answers: ExamAttemptAnswers;
+          elapsedSeconds: number;
+          reconnectAttemptCount: number;
+          maxReconnectAttempts: number;
+      }
     | {
-        attemptId: string;
-        error: string;
-        errorCode: 'ATTEMPT_ALREADY_COMPLETED';
-    };
+          attemptId: string;
+          error: string;
+          errorCode: 'ATTEMPT_ALREADY_COMPLETED';
+      };
 
 // ---------------------------------------------------------------------------
 // Orchestration
@@ -108,6 +108,18 @@ export async function executeCreateSession(
             accessOverride,
             updatedBy: args.updatedBy,
             resumeRequestId,
+        });
+    }
+
+    if (
+        existingAttempt?.status === 'IN_PROGRESS' &&
+        (existingAttempt.lifecycle_state === 'LOCKED' ||
+            existingAttempt.lifecycle_state === 'CLOSED') &&
+        !isFreshAttemptOverride
+    ) {
+        throw new HTTPException(403, {
+            message:
+                'This exam attempt is currently locked and requires instructor authorization to resume.',
         });
     }
 
@@ -243,8 +255,13 @@ async function resumeLockedAttempt(
     const reconnectAttemptCount = Number(existingAttempt.reconnect_attempt_count ?? 0);
 
     const isIdempotentResume = existingAttempt.last_reconnect_request_id === resumeRequestId;
+    const isAuthorizedReopen = Boolean(hasActiveReopenWindow || accessOverride);
 
-    if (!accessOverride && !isIdempotentResume && reconnectAttemptCount >= maxReconnectAttempts) {
+    if (
+        !isAuthorizedReopen &&
+        !isIdempotentResume &&
+        reconnectAttemptCount >= maxReconnectAttempts
+    ) {
         throw new HTTPException(403, {
             message: 'Maximum reconnect attempts reached for this exam session.',
         });
@@ -297,11 +314,10 @@ async function handleFreshAttempt(
         args;
 
     const attemptCount = await countAttempts(db, examId, studentId);
-    const maxSessionsAllowed = Math.max(1, maxReconnectAttempts + 1);
 
-    if (!isFreshAttemptOverride && attemptCount >= maxSessionsAllowed) {
+    if (!isFreshAttemptOverride && attemptCount >= 1) {
         throw new HTTPException(403, {
-            message: 'Maximum reconnect attempts reached for this exam session.',
+            message: 'Maximum attempts reached for this exam.',
         });
     }
 

@@ -73,8 +73,8 @@ describe('resolveReconnectDisplay', () => {
         expect(result.statusMessage).toBe('Reconnect attempts used: 0 of 2. Remaining: 2.');
     });
 
-    it('does NOT treat 0/0 as a placeholder when configuredTotal is also 0', () => {
-        // If the exam truly has 0 reconnect attempts allowed, display it directly.
+    it('shows strict proctor mode copy when configuredTotal is 0 and total is 0', () => {
+        // If the exam truly has 0 reconnect attempts allowed, display strict proctor mode copy.
         const runtimeAccess = buildRuntimeAccess({
             totalReconnectAttempts: 0,
             reconnectAttemptsRemaining: 0,
@@ -82,7 +82,10 @@ describe('resolveReconnectDisplay', () => {
 
         const result = resolveReconnectDisplay(runtimeAccess, 0);
 
-        expect(result.headerValue).toBe('0 used • 0 left');
+        expect(result.headerValue).toBe('Strict proctor mode • 0 reconnects');
+        expect(result.statusMessage).toBe(
+            'This exam does not permit unapproved reconnections. If you disconnect, instructor approval will be required to resume.',
+        );
     });
 
     it('shows configuredTotal summary when runtimeAccess is null', () => {

@@ -1,5 +1,5 @@
 import type { ChangeEvent, ReactNode } from 'react';
-import { Activity, CheckCircle, Clock, FileCheck, Search, XCircle } from 'lucide-react';
+import { Activity, CheckCircle, Clock, FileCheck, Search } from 'lucide-react';
 import {
     Avatar,
     AvatarImage,
@@ -30,6 +30,8 @@ type InstructorLobbyAdmissionPanelProps = {
     ) => Promise<void>;
     overridingStudentId: string | null;
     onOverrideReconnect: (studentId: string) => Promise<void>;
+    authorizingReentryStudentId?: string | null;
+    onAuthorizeReentry?: (studentId: string) => Promise<void>;
 };
 
 type QueueSectionProps = {
@@ -168,16 +170,15 @@ export function InstructorLobbyAdmissionPanel({
     isUpdatingLobbyAdmissions,
     updatingStudentIds,
     onUpdateLobbyAdmissions,
-    overridingStudentId,
-    onOverrideReconnect,
+    authorizingReentryStudentId = null,
+    onAuthorizeReentry,
 }: InstructorLobbyAdmissionPanelProps) {
-    const { 
-        waitingStudents, 
-        approvedStudents, 
+    const {
+        waitingStudents,
+        approvedStudents,
         inAttemptStudents,
         submittedStudents = [],
     } = lobbyAdmissionGroups;
-    const hasActiveFilter = searchTerm.trim().length > 0 || statusFilter !== 'all';
     const waitingStudentIds = waitingStudents.map((student) => student.studentId);
 
     const handleStatusFilterChange = (event: ChangeEvent<HTMLSelectElement>) => {
@@ -238,14 +239,35 @@ export function InstructorLobbyAdmissionPanel({
                         const isRowUpdating = updatingStudentIds
                             ? updatingStudentIds.has(student.studentId)
                             : isUpdatingLobbyAdmissions;
+                        const isAuthorizingThisStudent =
+                            authorizingReentryStudentId === student.studentId;
+                        const isLockedOrExhausted =
+                            (student.maxReconnectAttempts >= 0 &&
+                                student.reconnectCount >= student.maxReconnectAttempts) ||
+                            student.attemptStatus === 'LOCKED' ||
+                            student.attemptStatus === 'CLOSED';
+                        const needsReentry =
+                            isLockedOrExhausted || student.hasActiveAttempt;
 
                         return (
-                            <div className="flex flex-col gap-1">
+                            <div className="flex flex-col gap-1.5">
+                                {needsReentry && onAuthorizeReentry ? (
+                                    <Button
+                                        size="sm"
+                                        className="w-full text-xs bg-amber-600 hover:bg-amber-700 text-white font-medium"
+                                        disabled={isRowUpdating || isAuthorizingThisStudent}
+                                        onClick={() => void onAuthorizeReentry(student.studentId)}
+                                    >
+                                        {isAuthorizingThisStudent
+                                            ? 'Authorizing...'
+                                            : 'Authorize Re-entry'}
+                                    </Button>
+                                ) : null}
                                 <div className="flex gap-1">
                                     <Button
                                         size="sm"
                                         className="flex-1 text-xs"
-                                        disabled={isRowUpdating}
+                                        disabled={isRowUpdating || isAuthorizingThisStudent}
                                         onClick={() =>
                                             void onUpdateLobbyAdmissions(
                                                 [student.studentId],
@@ -259,7 +281,7 @@ export function InstructorLobbyAdmissionPanel({
                                         size="sm"
                                         variant="outline"
                                         className="flex-1 text-xs"
-                                        disabled={isRowUpdating}
+                                        disabled={isRowUpdating || isAuthorizingThisStudent}
                                         onClick={() =>
                                             void onUpdateLobbyAdmissions(
                                                 [student.studentId],
@@ -270,18 +292,6 @@ export function InstructorLobbyAdmissionPanel({
                                         Reject
                                     </Button>
                                 </div>
-                                {student.hasActiveAttempt &&
-                                    student.reconnectCount >= student.maxReconnectAttempts ? (
-                                    <Button
-                                        size="sm"
-                                        variant="secondary"
-                                        className="w-full text-xs"
-                                        disabled={overridingStudentId === student.studentId}
-                                        onClick={() => void onOverrideReconnect(student.studentId)}
-                                    >
-                                        Override Limit
-                                    </Button>
-                                ) : null}
                             </div>
                         );
                     }}
@@ -304,13 +314,45 @@ export function InstructorLobbyAdmissionPanel({
                     students={inAttemptStudents}
                     emptyLabel="No active attempts."
                 >
-                    {(student) => (
-                        <Badge variant="outline" className="justify-center text-[10px]">
-                            {student.attemptStatus === 'IN_PROGRESS'
-                                ? 'Writing'
-                                : (student.attemptStatus ?? 'In Progress')}
-                        </Badge>
-                    )}
+                    {(student) => {
+                        const isAuthorizingThisStudent =
+                            authorizingReentryStudentId === student.studentId;
+                        const isLockedOrExhausted =
+                            (student.maxReconnectAttempts >= 0 &&
+                                student.reconnectCount >= student.maxReconnectAttempts) ||
+                            student.attemptStatus === 'LOCKED' ||
+                            student.attemptStatus === 'CLOSED';
+
+                        return (
+                            <div className="flex flex-col gap-1.5">
+                                <div className="flex items-center justify-between gap-1">
+                                    <Badge variant="outline" className="justify-center text-[10px]">
+                                        {student.attemptStatus === 'IN_PROGRESS'
+                                            ? 'Writing'
+                                            : (student.attemptStatus ?? 'In Progress')}
+                                    </Badge>
+                                    {isLockedOrExhausted ? (
+                                        <Badge variant="destructive" className="text-[10px]">
+                                            Lockout
+                                        </Badge>
+                                    ) : null}
+                                </div>
+                                {isLockedOrExhausted && onAuthorizeReentry ? (
+                                    <Button
+                                        size="sm"
+                                        variant="secondary"
+                                        className="w-full text-xs text-amber-700 hover:text-amber-800"
+                                        disabled={isAuthorizingThisStudent}
+                                        onClick={() => void onAuthorizeReentry(student.studentId)}
+                                    >
+                                        {isAuthorizingThisStudent
+                                            ? 'Authorizing...'
+                                            : 'Authorize Re-entry'}
+                                    </Button>
+                                ) : null}
+                            </div>
+                        );
+                    }}
                 </QueueSection>
 
                 <QueueSection

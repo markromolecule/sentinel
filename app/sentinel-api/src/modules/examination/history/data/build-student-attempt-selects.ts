@@ -129,7 +129,10 @@ export function buildStudentAttemptSelects(studentUserId?: string) {
             limit 1
         )`.as('attempt_answered_count'),
         sql<string | null>`(
-            select (ea.answer_snapshot->'_grading'->>'finalizedAt')::text
+            select coalesce(
+                ea.finalized_at::text,
+                (ea.answer_snapshot->'_grading'->>'finalizedAt')::text
+            )
             from exam_attempts as ea
             inner join students as st_attempt on st_attempt.student_id = ea.student_id
             where st_attempt.user_id = ${studentUserId}

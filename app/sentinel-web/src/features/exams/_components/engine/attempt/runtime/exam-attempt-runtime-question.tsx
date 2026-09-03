@@ -1,4 +1,5 @@
 'use client';
+
 import { Bookmark, BookmarkCheck, CircleOff } from 'lucide-react';
 import { Button, cn } from '@sentinel/ui';
 import type { ExamQuestion } from '@sentinel/shared/types';
@@ -64,6 +65,7 @@ export function ExamAttemptRuntimeQuestion({
                         </div>
                     </div>
                     <ExamQuestionRenderer
+                        key={currentQuestion.id}
                         mode="runtime"
                         question={currentQuestion}
                         value={selectedAnswer}
