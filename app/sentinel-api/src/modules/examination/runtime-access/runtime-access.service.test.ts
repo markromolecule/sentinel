@@ -68,6 +68,31 @@ describe('resolveExamRuntimeAccess', () => {
         });
     });
 
+    it('allows resumption for a reopened active attempt even when maxReconnectAttempts is 0 and reconnect attempts remaining is 0', () => {
+        const access = resolveExamRuntimeAccess({
+            scheduledDate: '2026-04-20T10:00:00.000Z',
+            endDateTime: '2026-04-20T11:00:00.000Z',
+            durationMinutes: 60,
+            now: new Date('2026-04-20T11:10:00.000Z'),
+            hasActiveAttempt: true,
+            reconnectAttemptCount: 0,
+            maxReconnectAttempts: 0,
+            persistedAccess: {
+                state: 'reopened',
+                reopenedUntil: '2026-04-20T11:30:00.000Z',
+            },
+        });
+
+        expect(access).toMatchObject({
+            state: 'reopened',
+            reasonCode: 'REOPENED',
+            canStart: true,
+            canResume: true,
+            hasActiveAttempt: true,
+            reopenedUntil: '2026-04-20T11:30:00.000Z',
+        });
+    });
+
     it('keeps active attempts resumable after the normal schedule cutoff', () => {
         const access = resolveExamRuntimeAccess({
             scheduledDate: '2026-04-20T10:00:00.000Z',

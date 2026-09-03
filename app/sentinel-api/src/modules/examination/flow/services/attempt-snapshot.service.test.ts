@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
     buildAssessmentSnapshot,
     buildLegacyEssayRubricSnapshot,
+    buildOptionTokens,
+    buildScoreSnapshot,
     parseAssessmentSnapshot,
     resolveAssessmentSnapshotRubric,
 } from './attempt-snapshot.service';
@@ -169,6 +171,42 @@ describe('buildAssessmentSnapshot', () => {
         const correctIdx = snapshotQuestion?.content.correctAnswer as number;
         expect(snapshotQuestion?.content.options?.[correctIdx]).toBe('Paris');
         expect(snapshotQuestion?.content.optionTokens).toHaveLength(4);
+    });
+
+    it('buildOptionTokens produces deterministic 24-character hexadecimal tokens', () => {
+        const tokens1 = buildOptionTokens('attempt-123', 'q-1', ['Dog', 'Cat', 'Bird']);
+        const tokens2 = buildOptionTokens('attempt-123', 'q-1', ['Dog', 'Cat', 'Bird']);
+
+        expect(tokens1).toHaveLength(3);
+        expect(tokens1).toEqual(tokens2);
+        for (const token of tokens1) {
+            expect(token).toMatch(/^[0-9a-f]{24}$/);
+        }
+    });
+
+    it('buildScoreSnapshot resolves student answer submitted as option token and awards points', () => {
+        const snapshot = buildAssessmentSnapshot({
+            attemptId: 'attempt-score-token-test',
+            examId: 'exam-1',
+            configurationState: configurationState as any,
+            questions: questions as any,
+        });
+
+        const q = snapshot.questions[0]!;
+        const correctIdx = q.content.correctAnswer as number;
+        const correctToken = q.content.optionTokens?.[correctIdx] as string;
+
+        const scoreSnapshot = buildScoreSnapshot({
+            questions: snapshot.questions,
+            answers: {
+                [q.id]: correctToken,
+            },
+            answerChecksum: 'test-checksum-1',
+        });
+
+        expect(scoreSnapshot.score).toBe(2);
+        expect(scoreSnapshot.questionReports[0]?.awardedScore).toBe(2);
+        expect(scoreSnapshot.questionReports[0]?.isCorrect).toBe(true);
     });
 });
 

@@ -48,12 +48,18 @@ const DEFAULT_CONFIGURATION: ExamConfiguration = {
     },
 };
 
-function sortQuestions(exam: ProctorExam | null, settings?: ExamSettings): ExamQuestion[] {
+function sortQuestions(
+    exam: ProctorExam | null,
+    settings?: ExamSettings,
+    isConfigurationLoading?: boolean,
+): ExamQuestion[] {
     if (!exam?.questions?.length) {
         return [];
     }
 
-    if (settings?.shuffleQuestions) {
+    // When shuffle is configured or while configuration is loading, preserve server's presented order.
+    // Also avoid premature orderIndex sorting while configuration is still loading.
+    if (settings?.shuffleQuestions || isConfigurationLoading) {
         return exam.questions;
     }
 
@@ -127,10 +133,13 @@ export function useStudentExamData() {
         configurationState?.configuration || exam?.configuration,
     );
 
-    const settings = configurationState?.settings ?? exam?.settings ?? DEFAULT_SETTINGS;
+    const settings = exam?.settings ?? configurationState?.settings ?? DEFAULT_SETTINGS;
     const configuration =
         configurationState?.configuration ?? exam?.configuration ?? DEFAULT_CONFIGURATION;
-    const questions = useMemo(() => sortQuestions(exam ?? null, settings), [exam, settings]);
+    const questions = useMemo(
+        () => sortQuestions(exam ?? null, settings, isConfigurationLoading),
+        [exam, isConfigurationLoading, settings],
+    );
     const blockedState = useMemo(() => resolveLifecycleBlockedState(exam ?? null), [exam]);
 
     const mediaPipeSandbox = exam?.mediaPipeSandbox ?? DEFAULT_TELEMETRY_SETTINGS.mediaPipeSandbox;

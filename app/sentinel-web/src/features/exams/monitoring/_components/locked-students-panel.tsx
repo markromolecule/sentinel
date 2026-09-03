@@ -4,7 +4,10 @@ import { useState } from 'react';
 import type { StudentSession } from '@sentinel/shared/types';
 import { Button, Card, CardContent, CardHeader, CardTitle, Badge } from '@sentinel/ui';
 import { Lock, Unlock, AlertOctagon, RotateCcw, Clock } from 'lucide-react';
-import { useReopenExamAttemptMutation, useOverrideReconnectLimitMutation } from '@sentinel/hooks';
+import {
+    useReopenExamAttemptMutation,
+    useAuthorizeStudentReentryMutation,
+} from '@sentinel/hooks';
 import { toast } from 'sonner';
 
 interface LockedStudentsPanelProps {
@@ -23,17 +26,37 @@ export function LockedStudentsPanel({
     const [actioningId, setActioningId] = useState<string | null>(null);
 
     const reopenMutation = useReopenExamAttemptMutation();
-    const reconnectOverrideMutation = useOverrideReconnectLimitMutation();
+    const authorizeReentryMutation = useAuthorizeStudentReentryMutation();
 
     const lockedStudents = students.filter(
         (s) =>
             s.lifecycleState === 'LOCKED' ||
-            (maxReconnectAttempts > 0 && (s.reconnectCount ?? 0) >= maxReconnectAttempts),
+            s.lifecycleState === 'CLOSED' ||
+            ((s.reconnectCount ?? 0) > 0 && (s.reconnectCount ?? 0) >= maxReconnectAttempts),
     );
 
     if (lockedStudents.length === 0) {
         return null;
     }
+
+    const handleAuthorizeReentry = async (student: StudentSession) => {
+        setActioningId(student.id);
+        try {
+            await authorizeReentryMutation.mutateAsync({
+                id: examId,
+                studentId: student.studentRecordId ?? student.id,
+                reason: '1-click re-entry authorization granted by instructor.',
+            });
+            toast.success(
+                `Authorized re-entry and reset reconnects for ${student.firstName} ${student.lastName}`,
+            );
+            await onRefresh?.();
+        } catch (err: unknown) {
+            toast.error(err instanceof Error ? err.message : 'Failed to authorize re-entry');
+        } finally {
+            setActioningId(null);
+        }
+    };
 
     const handleUnlock15m = async (student: StudentSession) => {
         setActioningId(student.id);
@@ -48,25 +71,8 @@ export function LockedStudentsPanel({
             });
             toast.success(`Unlocked 15-minute access window for ${student.firstName} ${student.lastName}`);
             await onRefresh?.();
-        } catch (err: any) {
-            toast.error(err?.message || 'Failed to unlock attempt');
-        } finally {
-            setActioningId(null);
-        }
-    };
-
-    const handleOverrideLimit = async (student: StudentSession) => {
-        setActioningId(student.id);
-        try {
-            await reconnectOverrideMutation.mutateAsync({
-                id: examId,
-                studentId: student.studentRecordId ?? student.id,
-                reason: '1-click reconnect limit override granted by instructor.',
-            });
-            toast.success(`Granted reconnect limit override for ${student.firstName} ${student.lastName}`);
-            await onRefresh?.();
-        } catch (err: any) {
-            toast.error(err?.message || 'Failed to override reconnect limit');
+        } catch (err: unknown) {
+            toast.error(err instanceof Error ? err.message : 'Failed to unlock attempt');
         } finally {
             setActioningId(null);
         }
@@ -92,10 +98,7 @@ export function LockedStudentsPanel({
             <CardContent className="pt-0">
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {lockedStudents.map((student) => {
-                        const isLocked = student.lifecycleState === 'LOCKED';
-                        const isLimitReached =
-                            maxReconnectAttempts > 0 &&
-                            (student.reconnectCount ?? 0) >= maxReconnectAttempts;
+                        const isLocked = student.lifecycleState === 'LOCKED' || student.lifecycleState === 'CLOSED';
                         const isBusy = actioningId === student.id;
 
                         return (
@@ -134,28 +137,26 @@ export function LockedStudentsPanel({
                                 </div>
 
                                 <div className="mt-3 flex items-center gap-2">
+                                    <Button
+                                        size="sm"
+                                        variant="default"
+                                        className="h-7 flex-1 text-xs gap-1 bg-amber-600 hover:bg-amber-700 text-white font-medium"
+                                        disabled={isBusy}
+                                        onClick={() => handleAuthorizeReentry(student)}
+                                    >
+                                        <Unlock className="h-3 w-3" />
+                                        Authorize Re-entry
+                                    </Button>
                                     {isLocked && (
                                         <Button
                                             size="sm"
-                                            variant="default"
-                                            className="h-7 flex-1 text-xs gap-1 bg-amber-600 hover:bg-amber-700 text-white"
+                                            variant="outline"
+                                            className="h-7 text-xs gap-1 border-amber-500/40"
                                             disabled={isBusy}
                                             onClick={() => handleUnlock15m(student)}
                                         >
                                             <Clock className="h-3 w-3" />
-                                            Unlock 15m
-                                        </Button>
-                                    )}
-                                    {isLimitReached && (
-                                        <Button
-                                            size="sm"
-                                            variant="outline"
-                                            className="h-7 flex-1 text-xs gap-1 border-amber-500/40 text-amber-800 dark:text-amber-300 hover:bg-amber-500/10"
-                                            disabled={isBusy}
-                                            onClick={() => handleOverrideLimit(student)}
-                                        >
-                                            <Unlock className="h-3 w-3" />
-                                            Reset Limit
+                                            15m
                                         </Button>
                                     )}
                                 </div>

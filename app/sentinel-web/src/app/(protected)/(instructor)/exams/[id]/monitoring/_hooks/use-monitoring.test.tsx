@@ -14,6 +14,7 @@ const {
     mockUseOverrideReconnectLimitMutation,
     mockUseReopenExamAttemptMutation,
     mockUseResetExamAttemptMutation,
+    mockUseAuthorizeStudentReentryMutation,
 } = vi.hoisted(() => ({
     mockUseCloseExamAttemptMutation: vi.fn(),
     mockUseApi: vi.fn(),
@@ -26,6 +27,7 @@ const {
     mockUseOverrideReconnectLimitMutation: vi.fn(),
     mockUseReopenExamAttemptMutation: vi.fn(),
     mockUseResetExamAttemptMutation: vi.fn(),
+    mockUseAuthorizeStudentReentryMutation: vi.fn(),
 }));
 
 vi.mock('@sentinel/hooks', () => ({
@@ -43,6 +45,8 @@ vi.mock('@sentinel/hooks', () => ({
         mockUseOverrideReconnectLimitMutation(options),
     useReopenExamAttemptMutation: (options?: unknown) => mockUseReopenExamAttemptMutation(options),
     useResetExamAttemptMutation: (options?: unknown) => mockUseResetExamAttemptMutation(options),
+    useAuthorizeStudentReentryMutation: (options?: unknown) =>
+        mockUseAuthorizeStudentReentryMutation(options),
 }));
 
 vi.mock('@sentinel/services', () => ({
@@ -123,6 +127,9 @@ describe('useMonitoring', () => {
             refetch: vi.fn(),
         }));
         mockUseOverrideReconnectLimitMutation.mockReturnValue({
+            mutateAsync: vi.fn(),
+        });
+        mockUseAuthorizeStudentReentryMutation.mockReturnValue({
             mutateAsync: vi.fn(),
         });
         for (const mock of [
@@ -339,6 +346,25 @@ describe('useMonitoring', () => {
             attemptId: 'attempt-1',
             reasonCode: 'MANUAL_MONITORING_LOCK',
             notes: 'Locked from instructor monitoring.',
+        });
+    });
+
+    it('routes handleAuthorizeReentry through useAuthorizeStudentReentryMutation', async () => {
+        const authorizeMutateAsync = vi.fn().mockResolvedValue(undefined);
+        mockUseAuthorizeStudentReentryMutation.mockReturnValue({
+            mutateAsync: authorizeMutateAsync,
+        });
+
+        const { result } = renderHook(() => useMonitoring('exam-1'));
+
+        await act(async () => {
+            await result.current.handleAuthorizeReentry('student-1', 'record-1');
+        });
+
+        expect(authorizeMutateAsync).toHaveBeenCalledWith({
+            id: 'exam-1',
+            studentId: 'record-1',
+            reason: 'Instructor authorized student re-entry from monitoring.',
         });
     });
 });

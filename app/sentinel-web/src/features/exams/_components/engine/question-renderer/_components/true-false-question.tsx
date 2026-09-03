@@ -17,12 +17,22 @@ export function TrueFalseQuestion({
         <fieldset className="m-0 grid gap-3 border-0 p-0 sm:grid-cols-2">
             <legend className="sr-only">{question.content.prompt}</legend>
             {[true, false].map((option) => {
-                const isSelected = value === option;
+                const resolvedValue =
+                    typeof value === 'boolean'
+                        ? value
+                        : typeof value === 'string'
+                          ? value.trim().toLowerCase() === 'true'
+                              ? true
+                              : value.trim().toLowerCase() === 'false'
+                                ? false
+                                : null
+                          : null;
+                const isSelected = resolvedValue === option;
                 const isCorrect = showCorrectAnswer && correctBoolean === option;
                 const optionId = `option-${question.id}-${option ? 'true' : 'false'}`;
 
                 return (
-                    <div key={option ? 'true' : 'false'} className="relative flex">
+                    <div key={`${question.id}-${option ? 'true' : 'false'}`} className="relative flex">
                         <input
                             type="radio"
                             id={optionId}

@@ -22,6 +22,7 @@ import {
 import type { ExamQuestionContent } from '@sentinel/shared/types';
 import { sanitizeQuestionForStudentAttempt } from './student-question-sanitizer.service';
 import { applyEffectiveExamBaselineToRawRecord } from './resolve-effective-exam-baseline.service';
+import { buildOptionTokens } from '../../flow/services/attempt-snapshot.service';
 
 function normalizeSnapshotQuestion(
     question: AttemptAssessmentSnapshot['questions'][number],
@@ -82,18 +83,18 @@ export async function getExamDetail(
         if (hasCompletedAttempt) {
             runtimeAccess = accessCheck.accessOverride
                 ? buildStudentOverrideRuntimeAccess({
-                      accessOverride: accessCheck.accessOverride,
-                      runtimeAccess: accessCheck.runtimeAccess,
-                  })
+                    accessOverride: accessCheck.accessOverride,
+                    runtimeAccess: accessCheck.runtimeAccess,
+                })
                 : {
-                      ...accessCheck.runtimeAccess,
-                      state: 'closed',
-                      reasonCode: 'CLOSED',
-                      message: 'This exam has already been turned in.',
-                      canStart: false,
-                      canResume: false,
-                      hasActiveAttempt: false,
-                  };
+                    ...accessCheck.runtimeAccess,
+                    state: 'closed',
+                    reasonCode: 'CLOSED',
+                    message: 'This exam has already been turned in.',
+                    canStart: false,
+                    canResume: false,
+                    hasActiveAttempt: false,
+                };
         }
     } else {
         runtimeAccess = await RuntimeAccessService.resolveExamRuntimeAccess({
@@ -127,7 +128,7 @@ export async function getExamDetail(
                     question.source_question_bank_question_id ?? undefined,
                 sourceCollectionId: question.source_collection_id ?? undefined,
                 sourceOrigin: (question.source_origin === 'AI_PDF' ||
-                question.source_origin === 'MANUAL'
+                    question.source_origin === 'MANUAL'
                     ? question.source_origin
                     : undefined) as 'MANUAL' | 'AI_PDF' | undefined,
                 sourceFileName: question.source_file_name ?? null,
@@ -168,6 +169,26 @@ export async function getExamDetail(
                     randomizeQuestionChoices(q, `${seed}-${q.id}`),
                 );
             }
+
+            finalQuestions = finalQuestions.map((question) => {
+                if (question.type !== 'MULTIPLE_CHOICE' && question.type !== 'MULTIPLE_RESPONSE') {
+                    return question;
+                }
+
+                const options = question.content.options ?? [];
+                if (options.length === 0) {
+                    return question;
+                }
+
+                return {
+                    ...question,
+                    content: {
+                        ...question.content,
+                        optionTokens: buildOptionTokens(seed, question.id, options),
+                    },
+                };
+            });
+
             finalQuestions = finalQuestions.map(sanitizeQuestionForStudentAttempt);
 
             return finalQuestions;

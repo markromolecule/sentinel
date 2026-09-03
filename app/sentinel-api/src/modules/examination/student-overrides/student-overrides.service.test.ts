@@ -121,5 +121,105 @@ describe('StudentOverridesService reconnect overrides', () => {
         expect(results[1]?.studentId).toBe(studentIds[1]);
         expect(createOverrideSpy).toHaveBeenCalledTimes(2);
     });
+
+    it('atomically unlocks attempt, resets reconnect count to 0, approves lobby admission, and broadcasts event', async () => {
+        const now = new Date('2026-04-13T05:30:00.000Z');
+        const updateAttemptBuilder = {
+            set: vi.fn().mockReturnThis(),
+            where: vi.fn().mockReturnThis(),
+            execute: vi.fn().mockResolvedValue(undefined),
+        };
+        const updateLobbyBuilder = {
+            set: vi.fn().mockReturnThis(),
+            where: vi.fn().mockReturnThis(),
+            execute: vi.fn().mockResolvedValue(undefined),
+        };
+        const insertBuilder = {
+            values: vi.fn().mockReturnThis(),
+            returningAll: vi.fn().mockReturnThis(),
+            executeTakeFirstOrThrow: vi.fn().mockResolvedValue({
+                event_id: 'event-1',
+                attempt_id: 'attempt-locked',
+                exam_id: 'exam-1',
+                student_id: 'student-1',
+                event_type: 'REOPENED',
+                previous_state: 'LOCKED',
+                next_state: 'IN_PROGRESS',
+                created_at: now,
+            }),
+            execute: vi.fn().mockResolvedValue(undefined),
+        };
+
+        const dbClient = {
+            selectFrom: vi.fn().mockReturnValue(
+                createSelectBuilder({
+                    attempt_id: 'attempt-locked',
+                    reconnect_attempt_count: 3,
+                    status: 'IN_PROGRESS',
+                    lifecycle_state: 'LOCKED',
+                    end_date_time: new Date('2026-04-13T06:00:00.000Z'),
+                    institution_id: 'inst-1',
+                }),
+            ),
+            updateTable: vi
+                .fn()
+                .mockReturnValueOnce(updateAttemptBuilder)
+                .mockReturnValueOnce(updateLobbyBuilder),
+            insertInto: vi.fn().mockReturnValue(insertBuilder),
+        } as unknown as DbClient;
+
+        const result = await StudentOverridesService.authorizeStudentReentry({
+            dbClient,
+            examId: 'exam-1',
+            studentId: 'student-1',
+            reason: 'Instructor cleared re-entry after connection drop.',
+            actorUserId: 'instructor-1',
+            institutionId: 'inst-1',
+            now,
+        });
+
+        expect(result).toEqual({
+            attemptId: 'attempt-locked',
+            status: 'APPROVED',
+            reconnectAttemptCount: 0,
+            reopenedUntil: '2026-04-13T06:00:00.000Z',
+        });
+        expect(updateAttemptBuilder.set).toHaveBeenCalledWith(
+            expect.objectContaining({
+                lifecycle_state: 'IN_PROGRESS',
+                reconnect_attempt_count: 0,
+                lifecycle_reason: 'REOPENED_BY_INSTRUCTOR',
+            }),
+        );
+        expect(updateLobbyBuilder.set).toHaveBeenCalledWith(
+            expect.objectContaining({
+                status: 'APPROVED',
+                decided_by: 'instructor-1',
+            }),
+        );
+    });
+
+    it('throws error when authorizing re-entry for an already completed attempt', async () => {
+        const dbClient = {
+            selectFrom: vi.fn().mockReturnValue(
+                createSelectBuilder({
+                    attempt_id: 'attempt-done',
+                    reconnect_attempt_count: 1,
+                    status: 'COMPLETED',
+                    lifecycle_state: 'SUBMITTED',
+                    end_date_time: new Date('2026-04-13T06:00:00.000Z'),
+                    institution_id: 'inst-1',
+                }),
+            ),
+        } as unknown as DbClient;
+
+        await expect(
+            StudentOverridesService.authorizeStudentReentry({
+                dbClient,
+                examId: 'exam-1',
+                studentId: 'student-1',
+            }),
+        ).rejects.toThrow('Student has already completed this exam. Grant a retake override instead.');
+    });
 });
 

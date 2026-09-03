@@ -129,4 +129,90 @@ describe('useStudentExamData', () => {
 
         expect(result.current.isLoading).toBe(false);
     });
+
+    it('preserves server question order when configuration is still loading to avoid sorting flash', () => {
+        const serverOrderedQuestions = [
+            { id: 'q-2', orderIndex: 2, points: 1 },
+            { id: 'q-1', orderIndex: 1, points: 1 },
+            { id: 'q-3', orderIndex: 3, points: 1 },
+        ];
+
+        mockUseExamQuery.mockReturnValue({
+            data: {
+                questions: serverOrderedQuestions,
+                settings: null,
+            },
+            isLoading: false,
+            isError: false,
+            refetch: vi.fn(),
+        });
+        mockUseExamConfigurationQuery.mockReturnValue({
+            data: null,
+            isLoading: true,
+            isError: false,
+        });
+
+        const { result } = renderHook(() => useStudentExamData());
+
+        expect(result.current.questions.map((q) => q.id)).toEqual(['q-2', 'q-1', 'q-3']);
+    });
+
+    it('preserves server question order when shuffleQuestions is true', () => {
+        const shuffledQuestions = [
+            { id: 'q-3', orderIndex: 3, points: 1 },
+            { id: 'q-1', orderIndex: 1, points: 1 },
+            { id: 'q-2', orderIndex: 2, points: 1 },
+        ];
+
+        mockUseExamQuery.mockReturnValue({
+            data: {
+                questions: shuffledQuestions,
+                settings: { shuffleQuestions: true },
+            },
+            isLoading: false,
+            isError: false,
+            refetch: vi.fn(),
+        });
+        mockUseExamConfigurationQuery.mockReturnValue({
+            data: {
+                settings: { shuffleQuestions: true },
+            },
+            isLoading: false,
+            isError: false,
+        });
+
+        const { result } = renderHook(() => useStudentExamData());
+
+        expect(result.current.questions.map((q) => q.id)).toEqual(['q-3', 'q-1', 'q-2']);
+    });
+
+    it('sorts questions by orderIndex when shuffleQuestions is false and configuration is loaded', () => {
+        const unorderedQuestions = [
+            { id: 'q-3', orderIndex: 3, points: 1 },
+            { id: 'q-1', orderIndex: 1, points: 1 },
+            { id: 'q-2', orderIndex: 2, points: 1 },
+        ];
+
+        mockUseExamQuery.mockReturnValue({
+            data: {
+                questions: unorderedQuestions,
+                settings: { shuffleQuestions: false },
+            },
+            isLoading: false,
+            isError: false,
+            refetch: vi.fn(),
+        });
+        mockUseExamConfigurationQuery.mockReturnValue({
+            data: {
+                settings: { shuffleQuestions: false },
+            },
+            isLoading: false,
+            isError: false,
+        });
+
+        const { result } = renderHook(() => useStudentExamData());
+
+        expect(result.current.questions.map((q) => q.id)).toEqual(['q-1', 'q-2', 'q-3']);
+    });
 });
+

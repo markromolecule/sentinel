@@ -36,7 +36,7 @@ export default function ExamMonitoringPage() {
         handleFilterChange,
         handleConfirmAction,
         handleSubmitReopen,
-        handleOverrideReconnect,
+        handleAuthorizeReentry,
         handleLifecycleAction,
         refetch,
     } = useMonitoring(examId);
@@ -114,7 +114,7 @@ export default function ExamMonitoringPage() {
                     overridingStudentId={overridingStudentId}
                     activeLifecycleActionId={activeLifecycleActionId}
                     onOverrideReconnect={(student) => {
-                        void handleOverrideReconnect(student.id, student.studentRecordId);
+                        void handleAuthorizeReentry(student.id, student.studentRecordId);
                     }}
                     onLifecycleAction={(student, action) => {
                         void handleLifecycleAction(student, action);

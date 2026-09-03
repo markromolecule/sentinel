@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildExamAttemptQuestionReports, scoreExamAttempt } from './score-exam-attempt';
-import { randomizeQuestionChoices } from './shuffle-exam';
+import { randomizeQuestionChoices, shuffleExamQuestions } from './shuffle-exam';
 import type { ExamAttemptAnswers, ExamQuestion } from '../types';
 import type { EssayQuestionEvaluation } from '../schema/exams/assessment-schema';
 
@@ -596,5 +596,253 @@ describe('buildExamAttemptQuestionReports', () => {
                 displayAnswer: ['Alpha', 'Beta'],
             }),
         ]);
+    });
+
+    it('faithfully scores and reports all 8 question types end-to-end with shuffle and choice randomization', () => {
+        const rawQuestions: ExamQuestion[] = [
+            {
+                id: 'q-mc',
+                examId: 'exam-all-8',
+                type: 'MULTIPLE_CHOICE',
+                points: 5,
+                orderIndex: 0,
+                tags: [],
+                content: {
+                    prompt: 'What is the capital of France?',
+                    options: ['Berlin', 'Madrid', 'Paris', 'Rome'],
+                    correctAnswer: 2, // 'Paris'
+                },
+            },
+            {
+                id: 'q-mr',
+                examId: 'exam-all-8',
+                type: 'MULTIPLE_RESPONSE',
+                points: 6,
+                orderIndex: 1,
+                tags: [],
+                content: {
+                    prompt: 'Select all primary colors',
+                    options: ['Red', 'Green', 'Blue', 'Yellow'],
+                    correctAnswer: [0, 2, 3], // Red, Blue, Yellow
+                },
+            },
+            {
+                id: 'q-tf',
+                examId: 'exam-all-8',
+                type: 'TRUE_FALSE',
+                points: 3,
+                orderIndex: 2,
+                tags: [],
+                content: {
+                    prompt: 'The earth orbits the sun.',
+                    correctAnswer: true,
+                },
+            },
+            {
+                id: 'q-id',
+                examId: 'exam-all-8',
+                type: 'IDENTIFICATION',
+                points: 4,
+                orderIndex: 3,
+                tags: [],
+                content: {
+                    prompt: 'What is the powerhouse of the cell?',
+                    acceptedAnswers: ['Mitochondria', 'mitochondrion'],
+                    caseSensitive: false,
+                },
+            },
+            {
+                id: 'q-fb',
+                examId: 'exam-all-8',
+                type: 'FILL_BLANK',
+                points: 6,
+                orderIndex: 4,
+                tags: [],
+                content: {
+                    prompt: 'Roses are [blank1] and violets are [blank2].',
+                    blanks: ['red', 'blue'],
+                    caseSensitive: false,
+                },
+            },
+            {
+                id: 'q-match',
+                examId: 'exam-all-8',
+                type: 'MATCHING',
+                points: 4,
+                orderIndex: 5,
+                tags: [],
+                content: {
+                    prompt: 'Match countries to capitals',
+                    pairs: [
+                        { left: 'Japan', right: 'Tokyo' },
+                        { left: 'Italy', right: 'Rome' },
+                    ],
+                },
+            },
+            {
+                id: 'q-enum',
+                examId: 'exam-all-8',
+                type: 'ENUMERATION',
+                points: 6,
+                orderIndex: 6,
+                tags: [],
+                content: {
+                    prompt: 'Name three states of matter',
+                    acceptedAnswers: ['Solid', 'Liquid', 'Gas'],
+                    caseSensitive: false,
+                },
+            },
+            {
+                id: 'q-essay',
+                examId: 'exam-all-8',
+                type: 'ESSAY',
+                points: 10,
+                orderIndex: 7,
+                tags: [],
+                content: {
+                    prompt: 'Explain the single responsibility principle.',
+                },
+            },
+        ];
+
+        // Apply choice randomization with option tokens to MC and MR
+        const processedQuestions = rawQuestions.map((q) => {
+            if (q.type === 'MULTIPLE_CHOICE' || q.type === 'MULTIPLE_RESPONSE') {
+                const randomized = randomizeQuestionChoices(q, `test-seed-${q.id}`);
+                const options = randomized.content.options ?? [];
+                const optionTokens = options.map((opt, idx) => `token-${q.id}-${idx}-${opt.toLowerCase()}`);
+                return {
+                    ...randomized,
+                    content: {
+                        ...randomized.content,
+                        optionTokens,
+                    },
+                };
+            }
+            return q;
+        });
+
+        // Apply question shuffling
+        const presentedQuestions = shuffleExamQuestions(processedQuestions, 'student-attempt-seed-999');
+
+        // Find the randomized token for the correct answer of MC
+        const mcQuestion = presentedQuestions.find((q) => q.id === 'q-mc')!;
+        const mcCorrectIndex = mcQuestion.content.correctAnswer as number;
+        const mcCorrectToken = mcQuestion.content.optionTokens![mcCorrectIndex]!;
+
+        // Find the randomized tokens for MR correct answers
+        const mrQuestion = presentedQuestions.find((q) => q.id === 'q-mr')!;
+        const mrCorrectIndices = mrQuestion.content.correctAnswer as number[];
+        const mrCorrectTokens = mrCorrectIndices.map((idx) => mrQuestion.content.optionTokens![idx]!);
+
+        // Prepare student answers
+        const studentAnswers: ExamAttemptAnswers = {
+            'q-mc': mcCorrectToken,
+            'q-mr': mrCorrectTokens,
+            'q-tf': 'true', // string boolean coercion test
+            'q-id': 'mitochondria',
+            'q-fb': ['red', 'blue'],
+            'q-match': {
+                Japan: 'Tokyo',
+                Italy: 'Rome',
+            },
+            'q-enum': ['gas', 'solid', 'liquid'], // order-independent
+            'q-essay': 'A module should have only one reason to change.',
+        };
+
+        // Score the attempt
+        const scoreResult = scoreExamAttempt({
+            questions: presentedQuestions,
+            answers: studentAnswers,
+        });
+
+        // Sum of objective questions: 5 + 6 + 3 + 4 + 6 + 4 + 6 = 34
+        expect(scoreResult.score).toBe(34);
+        expect(scoreResult.totalScore).toBe(44); // 34 + 10 for essay
+        expect(scoreResult.requiresManualReview).toBe(true);
+        expect(scoreResult.manualReviewQuestionCount).toBe(1);
+        expect(scoreResult.autoGradableQuestionCount).toBe(7);
+        expect(scoreResult.answeredCount).toBe(8);
+
+        // Build question reports with essay evaluation
+        const essayEvaluation: EssayQuestionEvaluation = {
+            scores: {
+                contentSubstance: 4,
+                structureOrganization: 4,
+                argumentationSupport: 3,
+                styleTone: 3,
+                grammarConventions: 4,
+            },
+            score: 9,
+            feedback: 'Excellent breakdown.',
+        };
+
+        const reports = buildExamAttemptQuestionReports({
+            questions: presentedQuestions,
+            answers: studentAnswers,
+            evaluations: {
+                'q-essay': essayEvaluation,
+            },
+        });
+
+        expect(reports).toHaveLength(8);
+
+        // Map reports by questionId to assert 1:1 question association
+        const reportMap = new Map(reports.map((r) => [r.questionId, r]));
+
+        // Check MC
+        const mcReport = reportMap.get('q-mc')!;
+        expect(mcReport.isCorrect).toBe(true);
+        expect(mcReport.awardedScore).toBe(5);
+        expect(mcReport.answer).toBe('Paris'); // human-readable display
+        expect(mcReport.correctAnswer).toBe('Paris');
+
+        // Check MR
+        const mrReport = reportMap.get('q-mr')!;
+        expect(mrReport.isCorrect).toBe(true);
+        expect(mrReport.awardedScore).toBe(6);
+        expect((mrReport.answer as string[]).sort()).toEqual(['Blue', 'Red', 'Yellow']);
+
+        // Check TF
+        const tfReport = reportMap.get('q-tf')!;
+        expect(tfReport.isCorrect).toBe(true);
+        expect(tfReport.awardedScore).toBe(3);
+        expect(tfReport.answer).toBe('true');
+        expect(tfReport.correctAnswer).toBe(true);
+
+        // Check ID
+        const idReport = reportMap.get('q-id')!;
+        expect(idReport.isCorrect).toBe(true);
+        expect(idReport.awardedScore).toBe(4);
+        expect(idReport.submittedAnswer).toBe('mitochondria');
+
+        // Check FB
+        const fbReport = reportMap.get('q-fb')!;
+        expect(fbReport.isCorrect).toBe(true);
+        expect(fbReport.awardedScore).toBe(6);
+        expect(fbReport.answer).toEqual(['red', 'blue']);
+
+        // Check Match
+        const matchReport = reportMap.get('q-match')!;
+        expect(matchReport.isCorrect).toBe(true);
+        expect(matchReport.awardedScore).toBe(4);
+        expect(matchReport.answer).toEqual({ Japan: 'Tokyo', Italy: 'Rome' });
+
+        // Check Enum
+        const enumReport = reportMap.get('q-enum')!;
+        expect(enumReport.isCorrect).toBe(true);
+        expect(enumReport.awardedScore).toBe(6);
+        expect((enumReport.answer as string[]).sort()).toEqual(['gas', 'liquid', 'solid']);
+
+        // Check Essay
+        const essayReport = reportMap.get('q-essay')!;
+        expect(essayReport.manualReviewState).toBe('REVIEWED');
+        expect(essayReport.awardedScore).toBe(9);
+        expect(essayReport.maxScore).toBe(10);
+        expect(essayReport.answer).toBe('A module should have only one reason to change.');
+
+        // Total score across all reports
+        const totalAwarded = reports.reduce((sum, r) => sum + (r.awardedScore ?? 0), 0);
+        expect(totalAwarded).toBe(43); // 34 + 9
     });
 });

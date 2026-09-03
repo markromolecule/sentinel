@@ -258,6 +258,65 @@ describe('SessionRepository.createSession', () => {
         );
     });
 
+    it('rejects fresh attempt creation with maximum attempts error when attemptCount >= 1 without override', async () => {
+        const existingAttemptSelect = createExistingAttemptSelect(undefined);
+        const attemptCountSelect = {
+            innerJoin: vi.fn().mockReturnThis(),
+            select: vi.fn().mockReturnThis(),
+            where: vi.fn().mockReturnThis(),
+            executeTakeFirst: vi.fn().mockResolvedValue({
+                attempt_count: '1',
+            }),
+        };
+        const dbClient = {
+            selectFrom: vi
+                .fn()
+                .mockReturnValueOnce(createRemediationSelect(undefined))
+                .mockReturnValueOnce(existingAttemptSelect)
+                .mockReturnValueOnce(attemptCountSelect),
+        } as unknown as DbClient;
+
+        await expect(
+            SessionRepository.createSession(dbClient, {
+                examId: 'exam-1',
+                studentId: 'student-1',
+                maxReconnectAttempts: 3,
+            }),
+        ).rejects.toThrow('Maximum attempts reached for this exam.');
+    });
+
+    it('rejects resumption when existing attempt is LOCKED without an active reopen window or override', async () => {
+        const dbClient = {
+            selectFrom: vi
+                .fn()
+                .mockReturnValueOnce(createRemediationSelect(undefined))
+                .mockReturnValueOnce(
+                    createExistingAttemptSelect({
+                        attempt_id: 'attempt-locked-no-window',
+                        completed_at: null,
+                        status: 'IN_PROGRESS',
+                        lifecycle_state: 'LOCKED',
+                        reopened_until: null,
+                        created_at: new Date('2026-04-13T05:00:00.000Z'),
+                        answer_snapshot: {},
+                        time_spent_minutes: 5,
+                        reconnect_attempt_count: 0,
+                    }),
+                ),
+        } as unknown as DbClient;
+
+        await expect(
+            SessionRepository.createSession(dbClient, {
+                examId: 'exam-1',
+                studentId: 'student-1',
+                maxReconnectAttempts: 3,
+                resumeRequestId: '44444444-4444-4444-8444-444444444444',
+            }),
+        ).rejects.toThrow(
+            'This exam attempt is currently locked and requires instructor authorization to resume.',
+        );
+    });
+
 
     it('does not treat a remediation exam as a same-exam retake override source', async () => {
         const dbClient = {

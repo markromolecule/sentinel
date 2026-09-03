@@ -359,6 +359,55 @@ describe('resolveStudentExamStage', () => {
             shouldRedirect: true,
         });
     });
+
+    it('permits attempt entry when maxReconnectAttempts is 0 but reconnectCount is 0 with fresh lobby entry', () => {
+        const zeroReconnectInitialInput: StudentExamStageResolverInput = {
+            requestedStage: 'attempt',
+            privacyAccepted: true,
+            checkupCompleted: true,
+            mediaPipeStatus: 'ready',
+            admissionMode: 'AUTOMATIC',
+            admissionState: null,
+            hasFreshLobbyEntry: true,
+            lobbyEntrySessionId: 'session-1',
+            storedSessionId: 'session-1',
+            runtimeAccess: {
+                isAttemptActive: true,
+                reconnectCount: 0,
+                maxReconnectAttempts: 0,
+                canResume: false,
+            },
+        };
+
+        expect(resolveStudentExamStage(zeroReconnectInitialInput)).toEqual({
+            targetStage: 'attempt',
+            reasonCode: 'ATTEMPT_ACTIVE',
+            shouldRedirect: false,
+        });
+    });
+
+    it('blocks entry when maxReconnectAttempts is 0 and student has actively reconnected (reconnectCount > 0)', () => {
+        const zeroReconnectReconnectedInput: StudentExamStageResolverInput = {
+            requestedStage: 'attempt',
+            privacyAccepted: true,
+            checkupCompleted: true,
+            mediaPipeStatus: 'ready',
+            admissionMode: 'AUTOMATIC',
+            admissionState: null,
+            runtimeAccess: {
+                isAttemptActive: true,
+                reconnectCount: 1,
+                maxReconnectAttempts: 0,
+                canResume: false,
+            },
+        };
+
+        expect(resolveStudentExamStage(zeroReconnectReconnectedInput)).toEqual({
+            targetStage: 'lobby',
+            reasonCode: 'MAX_RECONNECT_EXCEEDED',
+            shouldRedirect: true,
+        });
+    });
 });
 
 describe('resolveStudentExamAdmissionState', () => {

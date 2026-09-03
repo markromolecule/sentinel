@@ -72,6 +72,7 @@ export function useMonitoring(examId: string) {
         handleConfirmAction: runtimeAccess.handleConfirmAction,
         handleSubmitReopen: runtimeAccess.handleSubmitReopen,
         handleOverrideReconnect: lifecycle.handleOverrideReconnect,
+        handleAuthorizeReentry: lifecycle.handleAuthorizeReentry,
         handleLifecycleAction: lifecycle.handleLifecycleAction,
         refetch,
     };

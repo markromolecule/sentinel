@@ -1,5 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { EXAM_QUERY_KEYS } from '@sentinel/shared/constants';
 import { useLobbyActions } from './use-lobby-actions';
 
 const {
@@ -16,6 +17,7 @@ const {
     mockWriteStoredReconnectIntent,
     mockGetStudentExamSessionAttemptId,
     mockIsStudentExamAlreadyTurnedInError,
+    mockInvalidateQueries,
 } = vi.hoisted(() => ({
     mockUseApi: vi.fn(),
     mockRouterPush: vi.fn(),
@@ -30,6 +32,13 @@ const {
     mockWriteStoredReconnectIntent: vi.fn(),
     mockGetStudentExamSessionAttemptId: vi.fn(),
     mockIsStudentExamAlreadyTurnedInError: vi.fn((_arg?: unknown) => false),
+    mockInvalidateQueries: vi.fn(),
+}));
+
+vi.mock('@tanstack/react-query', () => ({
+    useQueryClient: () => ({
+        invalidateQueries: mockInvalidateQueries,
+    }),
 }));
 
 vi.mock('next/navigation', () => ({
@@ -226,6 +235,9 @@ describe('useLobbyActions', () => {
             resumeRequestId: '11111111-1111-4111-8111-111111111111',
         });
         expect(mockWriteStoredExamSession).toHaveBeenCalledWith('exam-1', sessionResult);
+        expect(mockInvalidateQueries).toHaveBeenCalledWith({
+            queryKey: EXAM_QUERY_KEYS.details('exam-1'),
+        });
         expect(mockRouterPush).toHaveBeenCalledWith('/student/exam/exam-1/attempt');
     });
 

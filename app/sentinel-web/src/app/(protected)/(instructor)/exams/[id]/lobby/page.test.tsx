@@ -44,9 +44,11 @@ function createLobbyHookValue() {
         setStatusFilter: vi.fn(),
         isUpdatingLobbyAdmissions: false,
         overridingStudentId: null as string | null,
+        authorizingReentryStudentId: null as string | null,
         refreshLobbyAdmissions: mockRefreshLobbyAdmissions,
         handleUpdateLobbyAdmissions: vi.fn(),
         handleOverrideReconnect: vi.fn(),
+        handleAuthorizeReentry: vi.fn(),
     };
 }
 
@@ -82,10 +84,11 @@ describe('InstructorLobbyPage', () => {
         expect(mockRefreshLobbyAdmissions).toHaveBeenCalledTimes(1);
     });
 
-    it('forwards override props to the admission panel', () => {
+    it('forwards override and re-entry props to the admission panel', () => {
         mockUseParams.mockReturnValue({ id: 'exam-1' });
         const hookValue = createLobbyHookValue();
         hookValue.overridingStudentId = 'student-1';
+        hookValue.authorizingReentryStudentId = 'student-2';
         mockUseInstructorLobby.mockReturnValue(hookValue);
 
         render(<InstructorLobbyPage />);
@@ -94,6 +97,8 @@ describe('InstructorLobbyPage', () => {
             expect.objectContaining({
                 overridingStudentId: 'student-1',
                 onOverrideReconnect: hookValue.handleOverrideReconnect,
+                authorizingReentryStudentId: 'student-2',
+                onAuthorizeReentry: hookValue.handleAuthorizeReentry,
             }),
         );
     });
