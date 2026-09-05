@@ -41,7 +41,7 @@ export async function completeSessionService({
         answerChecksum: scoringContext.answerChecksum,
     });
 
-    await notifyCompletedSession({
+    void notifyCompletedSession({
         dbClient,
         studentUserId,
         body,

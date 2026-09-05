@@ -172,4 +172,46 @@ describe('Auth Middleware & LRU Auth Cache', () => {
         expect(res.status).toBe(401);
         expect(authCache.get(digest)).toBeUndefined();
     });
+
+    it('handles 50 concurrent requests for the same user with single DB read and throttled background write', async () => {
+        const payload = {
+            sub: 'user-concurrent-1',
+            email: 'concurrent@example.com',
+            user_metadata: { role: 'student' },
+            exp: Math.floor(Date.now() / 1000) + 3600,
+        };
+        const token = await sign(payload, JWT_SECRET, 'HS256');
+
+        const mockDbUser = {
+            id: 'user-concurrent-1',
+            email: 'concurrent@example.com',
+            user_profiles: {
+                institution_id: 'inst-concurrent',
+                last_seen_at: new Date(Date.now() - 600000),
+            },
+        };
+        (prisma.users.findUnique as any).mockResolvedValue(mockDbUser);
+
+        const app = new Hono();
+        app.use('*', authMiddleware);
+        app.get('/test', (c) => c.json({ ok: true }));
+
+        // Fire 50 concurrent requests simultaneously
+        const requests = Array.from({ length: 50 }, () =>
+            app.request('/test', {
+                headers: { Authorization: `Bearer ${token}` },
+            }),
+        );
+
+        const responses = await Promise.all(requests);
+        for (const res of responses) {
+            expect(res.status).toBe(200);
+        }
+
+        // DB read should be called at most once (or minimal during cache population)
+        expect(prisma.users.findUnique).toHaveBeenCalledTimes(1);
+
+        // last_seen_at update is throttled to at most 1 execution in 5 minutes
+        expect(prisma.user_profiles.update).toHaveBeenCalledTimes(1);
+    });
 });

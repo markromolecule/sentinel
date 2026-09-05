@@ -1,8 +1,34 @@
 import { sql } from 'kysely';
 
-function buildLatestAttemptIdSql(studentUserId: string) {
-    return sql<string | null>`(
-        select ea.attempt_id
+function buildLatestAttemptJsonSql(studentUserId: string) {
+    return sql`(
+        select json_build_object(
+            'attempt_id', ea.attempt_id,
+            'status', ea.status::text,
+            'completed_at', ea.completed_at,
+            'score', ea.score,
+            'total_score', ea.total_score,
+            'time_spent_minutes', ea.time_spent_minutes,
+            'answered_question_count', ea.answered_question_count,
+            'finalized_at', coalesce(
+                ea.finalized_at::text,
+                (ea.answer_snapshot->'_grading'->>'finalizedAt')::text
+            ),
+            'assessment_snapshot', ea.assessment_snapshot,
+            'score_snapshot', ea.score_snapshot,
+            'incident_count', coalesce((
+                select count(*)::int
+                from flagged_incidents as fi
+                where fi.attempt_id = ea.attempt_id
+            ), 0),
+            'primary_incident_type', (
+                select fi.incident_type::text
+                from flagged_incidents as fi
+                where fi.attempt_id = ea.attempt_id
+                order by fi.timestamp desc nulls last
+                limit 1
+            )
+        )
         from exam_attempts as ea
         inner join students as st_attempt on st_attempt.student_id = ea.student_id
         where st_attempt.user_id = ${studentUserId}
@@ -34,141 +60,20 @@ export function buildStudentAttemptSelects(studentUserId?: string) {
         ];
     }
 
-    const latestAttemptId = buildLatestAttemptIdSql(studentUserId);
+    const latestAttempt = buildLatestAttemptJsonSql(studentUserId);
 
     return [
-        latestAttemptId.as('attempt_id'),
-        sql<string | null>`(
-            select ea.status::text
-            from exam_attempts as ea
-            inner join students as st_attempt on st_attempt.student_id = ea.student_id
-            where st_attempt.user_id = ${studentUserId}
-              and ea.exam_id = e.exam_id
-              and (
-                  e.published_at is null
-                  or coalesce(ea.started_at, ea.created_at) >= e.published_at
-              )
-            order by ea.created_at desc nulls last
-            limit 1
-        )`.as('attempt_status'),
-        sql<Date | null>`(
-            select ea.completed_at
-            from exam_attempts as ea
-            inner join students as st_attempt on st_attempt.student_id = ea.student_id
-            where st_attempt.user_id = ${studentUserId}
-              and ea.exam_id = e.exam_id
-              and (
-                  e.published_at is null
-                  or coalesce(ea.started_at, ea.created_at) >= e.published_at
-              )
-            order by ea.created_at desc nulls last
-            limit 1
-        )`.as('attempt_completed_at'),
-        sql<number | null>`(
-            select ea.score
-            from exam_attempts as ea
-            inner join students as st_attempt on st_attempt.student_id = ea.student_id
-            where st_attempt.user_id = ${studentUserId}
-              and ea.exam_id = e.exam_id
-              and (
-                  e.published_at is null
-                  or coalesce(ea.started_at, ea.created_at) >= e.published_at
-              )
-            order by ea.created_at desc nulls last
-            limit 1
-        )`.as('attempt_score'),
-        sql<number | null>`(
-            select ea.total_score
-            from exam_attempts as ea
-            inner join students as st_attempt on st_attempt.student_id = ea.student_id
-            where st_attempt.user_id = ${studentUserId}
-              and ea.exam_id = e.exam_id
-              and (
-                  e.published_at is null
-                  or coalesce(ea.started_at, ea.created_at) >= e.published_at
-              )
-            order by ea.created_at desc nulls last
-            limit 1
-        )`.as('attempt_total_score'),
-        sql<number | null>`(
-            select ea.time_spent_minutes
-            from exam_attempts as ea
-            inner join students as st_attempt on st_attempt.student_id = ea.student_id
-            where st_attempt.user_id = ${studentUserId}
-              and ea.exam_id = e.exam_id
-              and (
-                  e.published_at is null
-                  or coalesce(ea.started_at, ea.created_at) >= e.published_at
-              )
-            order by ea.created_at desc nulls last
-            limit 1
-        )`.as('attempt_time_spent_minutes'),
-        sql<number>`coalesce((
-            select count(*)::int
-            from flagged_incidents as fi
-            where fi.attempt_id = ${latestAttemptId}
-        ), 0)`.as('attempt_incident_count'),
-        sql<string | null>`(
-            select fi.incident_type::text
-            from flagged_incidents as fi
-            where fi.attempt_id = ${latestAttemptId}
-            order by fi.timestamp desc nulls last
-            limit 1
-        )`.as('attempt_primary_incident_type'),
-        sql<number | null>`(
-            select ea.answered_question_count
-            from exam_attempts as ea
-            inner join students as st_attempt on st_attempt.student_id = ea.student_id
-            where st_attempt.user_id = ${studentUserId}
-              and ea.exam_id = e.exam_id
-              and (
-                  e.published_at is null
-                  or coalesce(ea.started_at, ea.created_at) >= e.published_at
-              )
-            order by ea.created_at desc nulls last
-            limit 1
-        )`.as('attempt_answered_count'),
-        sql<string | null>`(
-            select coalesce(
-                ea.finalized_at::text,
-                (ea.answer_snapshot->'_grading'->>'finalizedAt')::text
-            )
-            from exam_attempts as ea
-            inner join students as st_attempt on st_attempt.student_id = ea.student_id
-            where st_attempt.user_id = ${studentUserId}
-              and ea.exam_id = e.exam_id
-              and (
-                  e.published_at is null
-                  or coalesce(ea.started_at, ea.created_at) >= e.published_at
-              )
-            order by ea.created_at desc nulls last
-            limit 1
-        )`.as('attempt_finalized_at'),
-        sql<unknown | null>`(
-            select ea.assessment_snapshot
-            from exam_attempts as ea
-            inner join students as st_attempt on st_attempt.student_id = ea.student_id
-            where st_attempt.user_id = ${studentUserId}
-              and ea.exam_id = e.exam_id
-              and (
-                  e.published_at is null
-                  or coalesce(ea.started_at, ea.created_at) >= e.published_at
-              )
-            order by ea.created_at desc nulls last
-            limit 1
-        )`.as('attempt_assessment_snapshot'),
-        sql<unknown | null>`(
-            select ea.score_snapshot
-            from exam_attempts as ea
-            inner join students as st_attempt on st_attempt.student_id = ea.student_id
-            where st_attempt.user_id = ${studentUserId}
-              and ea.exam_id = e.exam_id
-              and (
-                  e.published_at is null
-                  or coalesce(ea.started_at, ea.created_at) >= e.published_at
-              )
-            order by ea.created_at desc nulls last
-            limit 1
-        )`.as('attempt_score_snapshot'),
+        sql<string | null>`(${latestAttempt}->>'attempt_id')::text`.as('attempt_id'),
+        sql<string | null>`(${latestAttempt}->>'status')::text`.as('attempt_status'),
+        sql<Date | null>`(${latestAttempt}->>'completed_at')::timestamptz`.as('attempt_completed_at'),
+        sql<number | null>`(${latestAttempt}->>'score')::int`.as('attempt_score'),
+        sql<number | null>`(${latestAttempt}->>'total_score')::int`.as('attempt_total_score'),
+        sql<number | null>`(${latestAttempt}->>'time_spent_minutes')::int`.as('attempt_time_spent_minutes'),
+        sql<number>`coalesce((${latestAttempt}->>'incident_count')::int, 0)`.as('attempt_incident_count'),
+        sql<string | null>`(${latestAttempt}->>'primary_incident_type')::text`.as('attempt_primary_incident_type'),
+        sql<number | null>`(${latestAttempt}->>'answered_question_count')::int`.as('attempt_answered_count'),
+        sql<string | null>`(${latestAttempt}->>'finalized_at')::text`.as('attempt_finalized_at'),
+        sql<unknown | null>`(${latestAttempt}->'assessment_snapshot')`.as('attempt_assessment_snapshot'),
+        sql<unknown | null>`(${latestAttempt}->'score_snapshot')`.as('attempt_score_snapshot'),
     ];
 }
