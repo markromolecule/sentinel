@@ -16,6 +16,7 @@ import Animated, {
     Easing,
 } from 'react-native-reanimated';
 import { ThemeColors } from '@/types/exam';
+import { isQuestionAnswered } from '@/features/exam/lib/mobile-exam-adapter';
 
 interface QuestionDrawerProps {
     visible: boolean;
@@ -23,7 +24,7 @@ interface QuestionDrawerProps {
     questions: any[];
     currentIndex: number;
     onSelectQuestion: (index: number) => void;
-    answers: Record<string, string>;
+    answers: Record<string, any>;
     flaggedQuestions: Record<string, boolean>;
     colors: ThemeColors;
     isDark: boolean;
@@ -108,7 +109,7 @@ export const QuestionDrawer = ({
                         >
                             {questions.map((q, index) => {
                                 const isCurrent = index === currentIndex;
-                                const isAnswered = !!answers[q.id];
+                                const isAnswered = isQuestionAnswered(answers[q.id]);
                                 const isFlagged = !!flaggedQuestions[q.id];
 
                                 let bgColor = colors.input;

@@ -310,6 +310,44 @@ describe('QuestionDrawer', () => {
         expect(badges[1].props.style.backgroundColor).toBe('#ecfdf5');
     });
 
+    it('treats boolean false as answered and empty array/object as unanswered', () => {
+        const questions = makeQuestions(5);
+
+        const tree = QuestionDrawer({
+            visible: true,
+            onClose: () => {},
+            questions,
+            currentIndex: 0,
+            onSelectQuestion: () => {},
+            answers: {
+                'q-1': false, // Boolean false -> answered
+                'q-2': [], // Empty array -> unanswered
+                'q-3': ['A'], // Non-empty array -> answered
+                'q-4': {}, // Empty object -> unanswered
+            },
+            flaggedQuestions: {},
+            colors: defaultColors as any,
+            isDark: false,
+            bottomOffset: 80,
+        });
+
+        const badges = findAllNodes(
+            tree,
+            (n) =>
+                n.type === 'TouchableOpacity' &&
+                n.props?.style?.width === 50,
+        );
+
+        // q-1 (index 1) with false -> answered green
+        expect(badges[1].props.style.backgroundColor).toBe('#ecfdf5');
+        // q-2 (index 2) with [] -> unanswered default input bg
+        expect(badges[2].props.style.backgroundColor).toBe('#f4f4f5');
+        // q-3 (index 3) with ['A'] -> answered green
+        expect(badges[3].props.style.backgroundColor).toBe('#ecfdf5');
+        // q-4 (index 4) with {} -> unanswered default input bg
+        expect(badges[4].props.style.backgroundColor).toBe('#f4f4f5');
+    });
+
     it('renders a flag indicator on flagged questions', () => {
         const questions = makeQuestions(3);
 

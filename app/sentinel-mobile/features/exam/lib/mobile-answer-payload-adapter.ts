@@ -7,6 +7,41 @@ import type {
 import type { MobileSessionQuestion } from './mobile-exam-adapter.types';
 
 /**
+ * Standardized answer truthiness check across sync payloads and UI count calculations.
+ * Supports string, boolean (including false), number, array (non-empty), and object (non-empty).
+ */
+export function isQuestionAnswered(
+    answer: unknown,
+): boolean {
+    if (answer === undefined || answer === null) return false;
+    if (typeof answer === 'boolean') return true;
+    if (typeof answer === 'number') return true;
+    if (typeof answer === 'string') return answer.trim().length > 0;
+    if (Array.isArray(answer)) {
+        return (
+            answer.length > 0 &&
+            answer.some((item) =>
+                typeof item === 'string'
+                    ? item.trim().length > 0
+                    : item !== undefined && item !== null && item !== ''
+            )
+        );
+    }
+    if (typeof answer === 'object') {
+        const values = Object.values(answer);
+        return (
+            values.length > 0 &&
+            values.some((val) =>
+                typeof val === 'string'
+                    ? val.trim().length > 0
+                    : val !== undefined && val !== null && val !== ''
+            )
+        );
+    }
+    return false;
+}
+
+/**
  * Builds the answer payload for the API submission from the current in-session
  * answer state. Supports single-value (string option ID/text), multi-select
  * (JSON arrays), arrays (fill blanks/enumeration), objects (matching), and text.

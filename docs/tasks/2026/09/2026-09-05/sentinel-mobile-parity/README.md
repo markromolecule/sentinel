@@ -28,7 +28,7 @@ Finalize all functionalities of `sentinel-mobile` so that student mobile exam ta
   - Add point badges (`X points`) to question headers.
   - Fix boolean True/False answer selection handling.
   - Expand `ENUMERATION` and `FILL_BLANK` with multi-item numbered inputs.
-- [ ] **Phase 3: Question Drawer & Navigation Integrity**
+- [x] **Phase 3: Question Drawer & Navigation Integrity**
   - Refactor `question-drawer.tsx` to use `isQuestionAnswered` helper, fixing boolean false and empty array/object bugs.
   - Respect `shuffleQuestions` configuration in `adaptExamQuestionsForMobile` to prevent accidental un-shuffling.
 - [ ] **Phase 4: Telemetry & Multi-Layer Security Verification**

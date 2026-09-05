@@ -4,6 +4,7 @@ import {
     adaptExamForMobile,
     adaptExamQuestionsForMobile,
     buildSessionAnswerPayload,
+    isQuestionAnswered,
     resolveStudentExamMediaPipeSandbox,
 } from './mobile-exam-adapter';
 import type { Exam } from '@sentinel/shared/types';
@@ -176,6 +177,32 @@ describe('adaptExamQuestionsForMobile', () => {
         const questions = adaptExamQuestionsForMobile(exam);
 
         expect(questions.map((q) => q.text)).toEqual(['First', 'Second', 'Third']);
+    });
+
+    it('preserves incoming order when shuffleQuestions is enabled', () => {
+        const examWithConfig = {
+            ...makeExam([
+                { ...makeQuestion('MULTIPLE_CHOICE', { prompt: 'Third', options: [], correctAnswer: '' }), orderIndex: 2, id: 'q-3' },
+                { ...makeQuestion('MULTIPLE_CHOICE', { prompt: 'First', options: [], correctAnswer: '' }), orderIndex: 0, id: 'q-1' },
+                { ...makeQuestion('MULTIPLE_CHOICE', { prompt: 'Second', options: [], correctAnswer: '' }), orderIndex: 1, id: 'q-2' },
+            ] as any),
+            configuration: { shuffleQuestions: true },
+        } as unknown as Exam;
+
+        const questionsFromConfig = adaptExamQuestionsForMobile(examWithConfig);
+        expect(questionsFromConfig.map((q) => q.text)).toEqual(['Third', 'First', 'Second']);
+
+        const examWithSettings = {
+            ...makeExam([
+                { ...makeQuestion('MULTIPLE_CHOICE', { prompt: 'Third', options: [], correctAnswer: '' }), orderIndex: 2, id: 'q-3' },
+                { ...makeQuestion('MULTIPLE_CHOICE', { prompt: 'First', options: [], correctAnswer: '' }), orderIndex: 0, id: 'q-1' },
+                { ...makeQuestion('MULTIPLE_CHOICE', { prompt: 'Second', options: [], correctAnswer: '' }), orderIndex: 1, id: 'q-2' },
+            ] as any),
+            settings: { shuffleQuestions: true },
+        } as unknown as Exam;
+
+        const questionsFromSettings = adaptExamQuestionsForMobile(examWithSettings);
+        expect(questionsFromSettings.map((q) => q.text)).toEqual(['Third', 'First', 'Second']);
     });
 
     it('adapts questions with object options', () => {
@@ -432,6 +459,43 @@ describe('buildSessionAnswerPayload', () => {
             'q-fb': ['Answer 1', 'Answer 2'],
         });
         expect(payload['q-fb']).toBe(JSON.stringify(['Answer 1', 'Answer 2']));
+    });
+});
+
+// ─── isQuestionAnswered ───────────────────────────────────────────────────────
+
+describe('isQuestionAnswered', () => {
+    it('evaluates boolean true and false as answered', () => {
+        expect(isQuestionAnswered(true)).toBe(true);
+        expect(isQuestionAnswered(false)).toBe(true);
+    });
+
+    it('evaluates numeric values as answered', () => {
+        expect(isQuestionAnswered(0)).toBe(true);
+        expect(isQuestionAnswered(42)).toBe(true);
+    });
+
+    it('evaluates strings based on non-whitespace content', () => {
+        expect(isQuestionAnswered('Option A')).toBe(true);
+        expect(isQuestionAnswered('')).toBe(false);
+        expect(isQuestionAnswered('   ')).toBe(false);
+    });
+
+    it('evaluates arrays based on non-empty items', () => {
+        expect(isQuestionAnswered(['A', 'B'])).toBe(true);
+        expect(isQuestionAnswered([])).toBe(false);
+        expect(isQuestionAnswered(['', '   '])).toBe(false);
+    });
+
+    it('evaluates objects based on non-empty values', () => {
+        expect(isQuestionAnswered({ 'Left': 'Right' })).toBe(true);
+        expect(isQuestionAnswered({})).toBe(false);
+        expect(isQuestionAnswered({ 'Left': '' })).toBe(false);
+    });
+
+    it('evaluates null and undefined as unanswered', () => {
+        expect(isQuestionAnswered(null)).toBe(false);
+        expect(isQuestionAnswered(undefined)).toBe(false);
     });
 });
 

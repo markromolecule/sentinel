@@ -1,116 +1,138 @@
 import type { Exam, ExamQuestion, QuestionType } from '@sentinel/shared/types';
 import type { MobileSessionQuestion } from './mobile-exam-adapter.types';
+import {
+    extractPassageDetails,
+    getQuestionPromptText,
+    parseQuestionContent,
+} from './mobile-question-parser';
+import {
+    getChoiceOptions,
+    getTrueFalseOptions,
+} from './mobile-question-options';
+import { normalizeQuestionType } from './mobile-question-type';
 
-/**
- * Safely parses raw content into an object even if provided as stringified JSON.
- */
-export function parseQuestionContent(rawContent: unknown): Record<string, any> {
-    if (!rawContent) return {};
-    if (typeof rawContent === 'string') {
-        try {
-            return JSON.parse(rawContent);
-        } catch {
-            return { prompt: rawContent };
-        }
-    }
-    if (typeof rawContent === 'object') {
-        return rawContent as Record<string, any>;
-    }
-    return {};
+export {
+    extractPassageDetails,
+    getQuestionPromptText,
+    parseQuestionContent,
+} from './mobile-question-parser';
+export {
+    getChoiceOptions,
+    getTrueFalseOptions,
+} from './mobile-question-options';
+export { normalizeQuestionType } from './mobile-question-type';
+
+interface QuestionLayoutConfig {
+    options: { id: string; text: string }[];
+    placeholder?: string;
+    maxLength?: number;
+    pairs?: { left: string; right: string }[];
+    blanks?: string[];
 }
 
-/**
- * Extracts question prompt text across standard and fallback property keys.
- */
-export function getQuestionPromptText(question: any, content: Record<string, any>): string {
-    if (!content && !question) return '';
-    const candidates = [
-        content?.prompt,
-        content?.question,
-        content?.text,
-        content?.title,
-        content?.body,
-        content?.promptText,
-        content?.questionPrompt,
-        content?.question_text,
-        question?.prompt,
-        question?.question,
-        question?.text,
-        question?.title,
-        question?.body,
-        question?.question_text,
-        question?.promptText,
-        question?.questionPrompt,
-    ];
-
-    for (const cand of candidates) {
-        if (typeof cand === 'string' && cand.trim().length > 0) {
-            return cand.trim();
-        }
-    }
-    return '';
-}
-
-/**
- * Derives rendered option rows for MULTIPLE_CHOICE and MULTIPLE_RESPONSE
- * questions from the raw content, supporting both string arrays and object arrays.
- */
-export function getChoiceOptions(content: Record<string, any>, question?: any): { id: string; text: string }[] {
-    const rawOptions =
-        content?.options ??
-        content?.choices ??
-        content?.items ??
-        content?.answers ??
-        content?.optionTokens ??
-        content?.option_list ??
-        question?.options ??
-        question?.choices ??
-        question?.items ??
-        question?.answers;
-
-    if (!Array.isArray(rawOptions) || rawOptions.length === 0) {
-        return [];
-    }
-
-    return rawOptions.map((opt, index) => {
-        const defaultId = String.fromCharCode(65 + index); // 'A', 'B', 'C', ...
-        if (typeof opt === 'string' || typeof opt === 'number') {
+function resolveQuestionLayout(
+    type: QuestionType,
+    content: Record<string, any>,
+    question: any,
+): QuestionLayoutConfig {
+    switch (type) {
+        case 'MULTIPLE_CHOICE':
+        case 'MULTIPLE_RESPONSE':
             return {
-                id: defaultId,
-                text: String(opt),
+                options: getChoiceOptions(content, question),
+            };
+
+        case 'TRUE_FALSE':
+            return {
+                options: getTrueFalseOptions(),
+            };
+
+        case 'IDENTIFICATION':
+            return {
+                options: [],
+                placeholder: 'Enter your answer here…',
+                maxLength: 250,
+            };
+
+        case 'ENUMERATION': {
+            let blanks: string[] | undefined;
+            if (Array.isArray(content.acceptedAnswers) && content.acceptedAnswers.length > 0) {
+                blanks = content.acceptedAnswers.map((b: any) => String(b ?? ''));
+            } else if (Array.isArray(content.blanks) && content.blanks.length > 0) {
+                blanks = content.blanks.map((b: any) => String(b ?? ''));
+            }
+            return {
+                options: [],
+                placeholder: 'Enter item here…',
+                maxLength: 250,
+                blanks,
             };
         }
-        if (opt && typeof opt === 'object') {
-            const text =
-                opt.text ??
-                opt.label ??
-                opt.value ??
-                opt.prompt ??
-                opt.option_text ??
-                opt.optionText ??
-                opt.choice ??
-                String(opt);
-            const id = opt.id ?? opt.key ?? defaultId;
+
+        case 'ESSAY':
             return {
-                id: String(id),
-                text: String(text),
+                options: [],
+                placeholder: 'Write your response here…',
+                maxLength: typeof content.maxLength === 'number' ? content.maxLength : 5000,
+            };
+
+        case 'FILL_BLANK': {
+            let blanks: string[] | undefined;
+            if (Array.isArray(content.blanks) && content.blanks.length > 0) {
+                blanks = content.blanks.map((b: any) => String(b ?? ''));
+            } else if (Array.isArray(content.acceptedAnswers) && content.acceptedAnswers.length > 0) {
+                blanks = content.acceptedAnswers.map((b: any) => String(b ?? ''));
+            }
+            return {
+                options: [],
+                placeholder: 'Fill in the blank…',
+                maxLength: 250,
+                blanks,
             };
         }
-        return {
-            id: defaultId,
-            text: String(opt),
-        };
-    });
+
+        case 'MATCHING': {
+            let pairs: { left: string; right: string }[] | undefined;
+            if (Array.isArray(content.pairs) && content.pairs.length > 0) {
+                pairs = content.pairs.map((p: any) => ({
+                    left: String(p?.left ?? ''),
+                    right: String(p?.right ?? ''),
+                }));
+            }
+            return {
+                options: [],
+                placeholder: 'Type the matching value…',
+                pairs,
+            };
+        }
+
+        default:
+            return {
+                options: [],
+                placeholder: 'Enter your answer here…',
+            };
+    }
 }
 
 /**
- * Derives the TRUE_FALSE option rows (always "True" then "False").
+ * Extracts raw questions list from various envelope structures (arrays or exam models).
  */
-export function getTrueFalseOptions(): { id: string; text: string }[] {
-    return [
-        { id: 'true', text: 'True' },
-        { id: 'false', text: 'False' },
-    ];
+function extractRawQuestionsList(exam: Exam | ExamQuestion[] | any): any[] {
+    if (!exam) return [];
+    if (Array.isArray(exam)) return exam;
+    if (Array.isArray(exam.questions)) return exam.questions;
+    if (Array.isArray(exam.rawQuestions)) return exam.rawQuestions;
+    if (Array.isArray(exam.examQuestions)) return exam.examQuestions;
+    if (Array.isArray(exam.data?.questions)) return exam.data.questions;
+    return [];
+}
+
+/**
+ * Determines whether question shuffling is active based on exam settings / configuration.
+ */
+function shouldShuffleQuestions(exam: Exam | ExamQuestion[] | any): boolean {
+    if (!exam || Array.isArray(exam)) return false;
+    return Boolean(exam?.settings?.shuffleQuestions || exam?.configuration?.shuffleQuestions);
 }
 
 /**
@@ -120,166 +142,57 @@ export function getTrueFalseOptions(): { id: string; text: string }[] {
  * FILL_BLANK, ENUMERATION, and MATCHING. Questions with missing or malformed
  * fields default gracefully so no question silently fails to render.
  */
-export function adaptExamQuestionsForMobile(exam: Exam | ExamQuestion[] | any): MobileSessionQuestion[] {
-    if (!exam) return [];
+export function adaptExamQuestionsForMobile(
+    exam: Exam | ExamQuestion[] | any,
+): MobileSessionQuestion[] {
+    const rawList = extractRawQuestionsList(exam);
+    if (rawList.length === 0) return [];
 
-    const rawList: any[] = Array.isArray(exam)
-        ? exam
-        : Array.isArray(exam.questions)
-            ? exam.questions
-            : Array.isArray(exam.rawQuestions)
-                ? exam.rawQuestions
-                : Array.isArray(exam.examQuestions)
-                    ? exam.examQuestions
-                    : Array.isArray(exam.data?.questions)
-                        ? exam.data.questions
-                        : [];
+    const isShuffle = shouldShuffleQuestions(exam);
+    const questionList = isShuffle
+        ? [...rawList]
+        : [...rawList].sort(
+            (left, right) =>
+                (left?.orderIndex ?? left?.order_index ?? 0) -
+                (right?.orderIndex ?? right?.order_index ?? 0),
+        );
 
-    return [...rawList]
-        .sort((left, right) => (left?.orderIndex ?? left?.order_index ?? 0) - (right?.orderIndex ?? right?.order_index ?? 0))
-        .map((question, index) => {
-            const content = parseQuestionContent(question?.content ?? question);
-            const rawType = String(
-                question?.type ||
-                question?.question_type ||
-                question?.questionType ||
-                content?.type ||
-                'MULTIPLE_CHOICE'
-            ).toUpperCase().replace(/[-\s]/g, '_');
+    return questionList.map((question, index) => {
+        const content = parseQuestionContent(question?.content ?? question);
+        const rawType =
+            question?.type ||
+            question?.question_type ||
+            question?.questionType ||
+            content?.type;
+        const normalizedType = normalizeQuestionType(rawType);
 
-            let normalizedType: QuestionType = 'MULTIPLE_CHOICE';
-            if (['MULTIPLE_CHOICE', 'SINGLE_CHOICE', 'MCQ'].includes(rawType)) {
-                normalizedType = 'MULTIPLE_CHOICE';
-            } else if (['MULTIPLE_RESPONSE', 'MULTI_SELECT', 'CHECKBOX', 'CHECKBOXES'].includes(rawType)) {
-                normalizedType = 'MULTIPLE_RESPONSE';
-            } else if (['TRUE_FALSE', 'BOOLEAN', 'TRUEFALSE', 'TF'].includes(rawType)) {
-                normalizedType = 'TRUE_FALSE';
-            } else if (['IDENTIFICATION', 'SHORT_ANSWER', 'IDENTIFY'].includes(rawType)) {
-                normalizedType = 'IDENTIFICATION';
-            } else if (['ENUMERATION', 'LIST'].includes(rawType)) {
-                normalizedType = 'ENUMERATION';
-            } else if (['FILL_BLANK', 'FILL_IN_THE_BLANK', 'FILL_IN_BLANK', 'CLOZE'].includes(rawType)) {
-                normalizedType = 'FILL_BLANK';
-            } else if (['MATCHING', 'MATCH'].includes(rawType)) {
-                normalizedType = 'MATCHING';
-            } else if (['ESSAY', 'LONG_ANSWER'].includes(rawType)) {
-                normalizedType = 'ESSAY';
-            } else {
-                normalizedType = rawType as QuestionType;
-            }
+        const layout = resolveQuestionLayout(normalizedType, content, question);
+        const { passage, passageTitle } = extractPassageDetails(question, content);
 
-            let options: { id: string; text: string }[] = [];
-            let placeholder: string | undefined;
-            let maxLength: number | undefined;
-            let pairs: { left: string; right: string }[] | undefined;
-            let blanks: string[] | undefined;
+        const text = getQuestionPromptText(question, content);
+        const questionId = String(
+            question?.id ?? question?.question_id ?? question?.questionId ?? `q-${index}`,
+        );
+        const points =
+            typeof question?.points === 'number'
+                ? question.points
+                : typeof (question as any)?.point === 'number'
+                    ? (question as any).point
+                    : 1;
 
-            switch (normalizedType) {
-                case 'MULTIPLE_CHOICE':
-                case 'MULTIPLE_RESPONSE':
-                    options = getChoiceOptions(content, question);
-                    break;
-
-                case 'TRUE_FALSE':
-                    options = getTrueFalseOptions();
-                    break;
-
-                case 'IDENTIFICATION':
-                    placeholder = 'Enter your answer here…';
-                    maxLength = 250;
-                    break;
-
-                case 'ENUMERATION':
-                    placeholder = 'Enter item here…';
-                    maxLength = 250;
-                    if (Array.isArray(content.acceptedAnswers) && content.acceptedAnswers.length > 0) {
-                        blanks = content.acceptedAnswers.map((b: any) => String(b ?? ''));
-                    } else if (Array.isArray(content.blanks) && content.blanks.length > 0) {
-                        blanks = content.blanks.map((b: any) => String(b ?? ''));
-                    }
-                    break;
-
-                case 'ESSAY':
-                    placeholder = 'Write your response here…';
-                    maxLength =
-                        typeof content.maxLength === 'number' ? content.maxLength : 5000;
-                    break;
-
-                case 'FILL_BLANK':
-                    placeholder = 'Fill in the blank…';
-                    maxLength = 250;
-                    if (Array.isArray(content.blanks) && content.blanks.length > 0) {
-                        blanks = content.blanks.map((b: any) => String(b ?? ''));
-                    } else if (Array.isArray(content.acceptedAnswers) && content.acceptedAnswers.length > 0) {
-                        blanks = content.acceptedAnswers.map((b: any) => String(b ?? ''));
-                    }
-                    break;
-
-                case 'MATCHING':
-                    placeholder = 'Type the matching value…';
-                    if (Array.isArray(content.pairs) && content.pairs.length > 0) {
-                        pairs = content.pairs.map((p: any) => ({
-                            left: String(p?.left ?? ''),
-                            right: String(p?.right ?? ''),
-                        }));
-                    }
-                    break;
-
-                default:
-                    placeholder = 'Enter your answer here…';
-            }
-
-            // Passage can live on the question record (passageContent) or embedded in content.
-            const rawPassage =
-                question?.passageContent ??
-                question?.passage_content ??
-                content?.passage ??
-                content?.passageContent ??
-                content?.passage_content ??
-                content?.passageText ??
-                content?.passage_text ??
-                question?.sourceEvidence ??
-                question?.source_evidence ??
-                content?.sourceEvidence ??
-                content?.source_evidence ??
-                null;
-
-            const passageBody: string | null =
-                typeof rawPassage === 'string' && rawPassage.trim().length > 0
-                    ? rawPassage.trim()
-                    : null;
-
-            const rawPassageTitle =
-                content?.passageTitle ??
-                content?.passage_title ??
-                question?.passageTitle ??
-                question?.passage_title ??
-                content?.passageHeader ??
-                content?.passage_header ??
-                null;
-
-            const passageTitle: string | null =
-                typeof rawPassageTitle === 'string' && rawPassageTitle.trim().length > 0
-                    ? rawPassageTitle.trim()
-                    : null;
-
-            const text = getQuestionPromptText(question, content);
-            const questionId = String(question?.id ?? question?.question_id ?? question?.questionId ?? `q-${index}`);
-            const points = typeof question?.points === 'number' ? question.points : typeof (question as any)?.point === 'number' ? (question as any).point : 1;
-
-            return {
-                id: questionId,
-                text,
-                type: normalizedType,
-                points,
-                options,
-                pairs,
-                blanks,
-                passage: passageBody,
-                passageTitle: passageTitle,
-                ...(placeholder !== undefined && { placeholder }),
-                ...(maxLength !== undefined && { maxLength }),
-                originalContent: question?.content ?? content,
-            };
-        });
+        return {
+            id: questionId,
+            text,
+            type: normalizedType,
+            points,
+            options: layout.options,
+            pairs: layout.pairs,
+            blanks: layout.blanks,
+            passage,
+            passageTitle,
+            ...(layout.placeholder !== undefined && { placeholder: layout.placeholder }),
+            ...(layout.maxLength !== undefined && { maxLength: layout.maxLength }),
+            originalContent: question?.content ?? content,
+        };
+    });
 }

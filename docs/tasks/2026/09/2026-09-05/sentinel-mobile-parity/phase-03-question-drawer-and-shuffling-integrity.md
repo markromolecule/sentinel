@@ -1,7 +1,7 @@
 ---
 title: "Phase 3: Question Drawer & Navigation Integrity"
 type: phase
-status: planned
+status: completed
 created: "2026-09-05"
 tags: [phase, mobile, navigation, shuffling]
 ---
@@ -26,5 +26,5 @@ Fix question answered-state calculation in `QuestionDrawer` and maintain server-
 
 ## Verification Criteria
 
-- [ ] Automated tests pass: `pnpm --filter sentinel-mobile test`
-- [ ] Question drawer correctly shows green "Answered" indicator for boolean False, and grey "Unanswered" for empty array/object.
+- [x] Automated tests pass: `pnpm --filter sentinel-mobile test`
+- [x] Question drawer correctly shows green "Answered" indicator for boolean False, and grey "Unanswered" for empty array/object.
