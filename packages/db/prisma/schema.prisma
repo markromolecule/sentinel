@@ -610,6 +610,7 @@ model notifications {
   @@index([recipient_user_id, status, created_at(sort: Desc)])
   @@index([institution_id, created_at(sort: Desc)])
   @@index([resource_type, resource_id])
+  @@index([recipient_user_id, institution_id, created_at(sort: Desc)], map: "idx_notifications_recipient_inst_created")
   @@schema("public")
 }
 
@@ -1893,6 +1894,7 @@ model audit_logs {
   @@index([institution_id])
   @@index([branch_id])
   @@index([created_at])
+  @@index([user_id, institution_id, created_at(sort: Desc)], map: "idx_audit_logs_user_inst_created")
   @@schema("public")
 }
 
@@ -2434,6 +2436,7 @@ model exam_section_assignments {
   @@index([section_id])
   @@index([class_group_id])
   @@index([instructor_id])
+  @@index([exam_id, class_group_id, section_id, instructor_id], map: "idx_exam_section_assignments_composite")
   @@schema("public")
 }
 
