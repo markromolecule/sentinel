@@ -68,13 +68,12 @@ export async function captureAndUploadEvidenceFrame({
             timestamp,
             platform: 'WEB', // Match backend schema literal requirement
             source: 'AI',
-            ruleKey: `aiRules.${
-                eventType === 'GAZE_OFF_SCREEN'
-                    ? 'gaze_tracking'
-                    : eventType === 'MULTIPLE_FACES'
-                      ? 'multiple_faces_detection'
-                      : 'face_detection'
-            }`,
+            ruleKey: `aiRules.${eventType === 'GAZE_OFF_SCREEN'
+                ? 'gaze_tracking'
+                : eventType === 'MULTIPLE_FACES'
+                    ? 'multiple_faces_detection'
+                    : 'face_detection'
+                }`,
             eventType,
             metadata: {
                 eventId,
