@@ -23,7 +23,7 @@ Finalize all functionalities of `sentinel-mobile` so that student mobile exam ta
   - Integrate deterministic `resolveStudentExamMediaPipeSandbox` into `mobile-exam-adapter.ts`.
   - Enforce front camera calibration in `use-exam-checkup.ts` when AI rules are active.
   - Mount `MobileMediaPipeBridge` in `exam-session-screen.tsx` whenever camera/AI monitoring is enabled.
-- [ ] **Phase 2: Question Engine Display & Type Parity**
+- [x] **Phase 2: Question Engine Display & Type Parity**
   - Add option letter badges (`A.`, `B.`, `C.`, `D.`) to `MULTIPLE_CHOICE` and `MULTIPLE_RESPONSE` in `question-card.tsx`.
   - Add point badges (`X points`) to question headers.
   - Fix boolean True/False answer selection handling.

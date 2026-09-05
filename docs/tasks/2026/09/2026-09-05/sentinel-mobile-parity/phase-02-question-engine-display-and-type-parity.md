@@ -1,7 +1,7 @@
 ---
 title: "Phase 2: Question Engine Display & Type Parity"
 type: phase
-status: planned
+status: completed
 created: "2026-09-05"
 tags: [phase, mobile, questions, ui-parity]
 ---
@@ -24,5 +24,5 @@ Ensure all 8 question types (`MULTIPLE_CHOICE`, `MULTIPLE_RESPONSE`, `TRUE_FALSE
 
 ## Verification Criteria
 
-- [ ] Automated tests pass: `pnpm --filter sentinel-mobile test`
-- [ ] QuestionCard renders all 8 question types cleanly in light and dark mode.
+- [x] Automated tests pass: `pnpm --filter sentinel-mobile test`
+- [x] QuestionCard renders all 8 question types cleanly in light and dark mode.
