@@ -1,32 +1,32 @@
 {
     "name": "@sentinel/shared",
     "version": "0.0.0",
-    "main": "./dist/index.js",
-    "types": "./dist/index.d.ts",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
     "exports": {
         ".": {
-            "types": "./dist/index.d.ts",
-            "default": "./dist/index.js"
+            "types": "./src/index.ts",
+            "default": "./src/index.ts"
         },
         "./constants": {
-            "types": "./dist/constants/index.d.ts",
-            "default": "./dist/constants/index.js"
+            "types": "./src/constants/index.ts",
+            "default": "./src/constants/index.ts"
         },
         "./mock-data": {
-            "types": "./dist/mock-data/index.d.ts",
-            "default": "./dist/mock-data/index.js"
+            "types": "./src/mock-data/index.ts",
+            "default": "./src/mock-data/index.ts"
         },
         "./schema": {
-            "types": "./dist/schema/index.d.ts",
-            "default": "./dist/schema/index.js"
+            "types": "./src/schema/index.ts",
+            "default": "./src/schema/index.ts"
         },
         "./audio": {
-            "types": "./dist/audio/index.d.ts",
-            "default": "./dist/audio/index.js"
+            "types": "./src/audio/index.ts",
+            "default": "./src/audio/index.ts"
         },
         "./types": {
-            "types": "./dist/types/index.d.ts",
-            "default": "./dist/types/index.js"
+            "types": "./src/types/index.ts",
+            "default": "./src/types/index.ts"
         }
     },
     "scripts": {
