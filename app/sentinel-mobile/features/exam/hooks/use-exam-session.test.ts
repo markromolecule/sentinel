@@ -309,4 +309,54 @@ describe('useExamSession Hook', () => {
             }),
         );
     });
+
+    it('emits NOTIFICATION_BLOCK_VIOLATION when AppState transitions to inactive and respects 2000ms debounce', () => {
+        useExamSession();
+        effectCallbacks.forEach((cb) => cb());
+
+        expect(appStateListeners['change']).toBeDefined();
+
+        const dateSpy = vi.spyOn(Date, 'now').mockReturnValue(100000);
+
+        // First transition to inactive (e.g. notification shade pulled down)
+        appStateListeners['change']('inactive');
+
+        expect(mockEmitMobileTelemetryEvent).toHaveBeenCalledWith(
+            expect.objectContaining({
+                eventType: 'NOTIFICATION_BLOCK_VIOLATION',
+                examSessionId: 'session-456',
+                studentId: 'student-789',
+            }),
+        );
+        expect(mockEmitMobileTelemetryEvent).toHaveBeenCalledTimes(1);
+
+        // Immediate subsequent transition within 2000ms (debounce active)
+        dateSpy.mockReturnValue(101000);
+        appStateListeners['change']('inactive');
+        expect(mockEmitMobileTelemetryEvent).toHaveBeenCalledTimes(1);
+
+        // Transition after 2000ms debounce expires
+        dateSpy.mockReturnValue(103000);
+        appStateListeners['change']('inactive');
+        expect(mockEmitMobileTelemetryEvent).toHaveBeenCalledTimes(2);
+
+        dateSpy.mockRestore();
+    });
+
+    it('emits NOTIFICATION_BLOCK_VIOLATION when AppState blur event fires', () => {
+        useExamSession();
+        effectCallbacks.forEach((cb) => cb());
+
+        expect(appStateListeners['blur']).toBeDefined();
+
+        appStateListeners['blur']('blur');
+
+        expect(mockEmitMobileTelemetryEvent).toHaveBeenCalledWith(
+            expect.objectContaining({
+                eventType: 'NOTIFICATION_BLOCK_VIOLATION',
+                examSessionId: 'session-456',
+                studentId: 'student-789',
+            }),
+        );
+    });
 });

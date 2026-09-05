@@ -65,20 +65,27 @@ import type { MobileSessionQuestion } from '@/features/exam/lib/mobile-exam-adap
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function findNode(node: any, predicate: (n: any) => boolean): any {
-    if (!node || typeof node !== 'object') return null;
+    if (!node) return null;
+    if (Array.isArray(node)) {
+        for (const child of node) {
+            const result = findNode(child, predicate);
+            if (result) return result;
+        }
+        return null;
+    }
+    if (typeof node !== 'object') return null;
     if (predicate(node)) return node;
     const children = node.props?.children;
     if (!children) return null;
-    const list = Array.isArray(children) ? children : [children];
-    for (const child of list) {
-        const result = findNode(child, predicate);
-        if (result) return result;
-    }
-    return null;
+    return findNode(children, predicate);
 }
 
 function findText(node: any, content: string): boolean {
-    if (!node || typeof node !== 'object') return false;
+    if (!node) return false;
+    if (Array.isArray(node)) {
+        return node.some((child: any) => findText(child, content));
+    }
+    if (typeof node !== 'object') return false;
     if (node.type === 'Text') {
         const raw = node.props?.children;
         const text = Array.isArray(raw) ? raw.join('') : String(raw ?? '');
@@ -86,8 +93,7 @@ function findText(node: any, content: string): boolean {
     }
     const children = node.props?.children;
     if (!children) return false;
-    const list = Array.isArray(children) ? children : [children];
-    return list.some((c: any) => findText(c, content));
+    return findText(children, content);
 }
 
 function makeQuestion(
@@ -531,5 +537,146 @@ describe('QuestionCard', () => {
         const input = findNode(tree, (n) => n.type === 'TextInput');
         expect(input).not.toBeNull();
         expect(input.props.defaultValue).toBe('Typed answer');
+    });
+
+    it('renders point indicator with singular "pt" and plural "pts"', () => {
+        const q1 = makeQuestion('MULTIPLE_CHOICE', { points: 1 });
+        const tree1 = QuestionCard({
+            question: q1,
+            currentIndex: 0,
+            totalQuestions: 5,
+            isFlagged: false,
+            onSelectOption: () => {},
+            onToggleFlag: () => {},
+        });
+        expect(findText(tree1, '1 pt')).toBe(true);
+
+        const q2 = makeQuestion('MULTIPLE_CHOICE', { points: 5 });
+        const tree2 = QuestionCard({
+            question: q2,
+            currentIndex: 1,
+            totalQuestions: 5,
+            isFlagged: false,
+            onSelectOption: () => {},
+            onToggleFlag: () => {},
+        });
+        expect(findText(tree2, '5 pts')).toBe(true);
+    });
+
+    it('renders option letter pills (A., B., C.) for MULTIPLE_CHOICE and MULTIPLE_RESPONSE', () => {
+        const mcQuestion = makeQuestion('MULTIPLE_CHOICE', {
+            options: [
+                { id: 'opt-1', text: 'First choice' },
+                { id: 'opt-2', text: 'Second choice' },
+            ],
+        });
+        const mcTree = QuestionCard({
+            question: mcQuestion,
+            currentIndex: 0,
+            totalQuestions: 1,
+            isFlagged: false,
+            onSelectOption: () => {},
+            onToggleFlag: () => {},
+        });
+        expect(findText(mcTree, 'A.')).toBe(true);
+        expect(findText(mcTree, 'B.')).toBe(true);
+
+        const mrQuestion = makeQuestion('MULTIPLE_RESPONSE', {
+            options: [
+                { id: 'opt-1', text: 'Option One' },
+                { id: 'opt-2', text: 'Option Two' },
+            ],
+        });
+        const mrTree = QuestionCard({
+            question: mrQuestion,
+            currentIndex: 0,
+            totalQuestions: 1,
+            isFlagged: false,
+            onSelectOption: () => {},
+            onToggleFlag: () => {},
+        });
+        expect(findText(mrTree, 'A.')).toBe(true);
+        expect(findText(mrTree, 'B.')).toBe(true);
+    });
+
+    it('supports boolean true and false in selectedOptionId for TRUE_FALSE questions', () => {
+        const tfQuestion = makeQuestion('TRUE_FALSE', {
+            options: [
+                { id: 'true', text: 'True' },
+                { id: 'false', text: 'False' },
+            ],
+        });
+
+        const treeTrue = QuestionCard({
+            question: tfQuestion,
+            currentIndex: 0,
+            totalQuestions: 1,
+            selectedOptionId: true,
+            isFlagged: false,
+            onSelectOption: () => {},
+            onToggleFlag: () => {},
+        });
+        const trueNode = findNode(
+            treeTrue,
+            (n) =>
+                n.type === 'TouchableOpacity' &&
+                n.props?.accessibilityLabel === 'True' &&
+                n.props?.accessibilityState?.checked === true,
+        );
+        expect(trueNode).not.toBeNull();
+
+        const treeFalse = QuestionCard({
+            question: tfQuestion,
+            currentIndex: 0,
+            totalQuestions: 1,
+            selectedOptionId: false,
+            isFlagged: false,
+            onSelectOption: () => {},
+            onToggleFlag: () => {},
+        });
+        const falseNode = findNode(
+            treeFalse,
+            (n) =>
+                n.type === 'TouchableOpacity' &&
+                n.props?.accessibilityLabel === 'False' &&
+                n.props?.accessibilityState?.checked === true,
+        );
+        expect(falseNode).not.toBeNull();
+    });
+
+    it('renders ENUMERATION numbered item inputs with fallback when blanks is empty', () => {
+        const onSelectOption = vi.fn();
+        const enumQuestion = makeQuestion('ENUMERATION', {
+            blanks: [],
+        });
+
+        const tree = QuestionCard({
+            question: enumQuestion,
+            currentIndex: 0,
+            totalQuestions: 1,
+            selectedOptionId: ['Alpha', 'Beta'],
+            isFlagged: false,
+            onSelectOption,
+            onToggleFlag: () => {},
+        });
+
+        expect(findText(tree, 'Item 1')).toBe(true);
+        expect(findText(tree, 'Item 2')).toBe(true);
+        expect(findText(tree, 'Item 3')).toBe(true);
+
+        const input1 = findNode(
+            tree,
+            (n) => n.type === 'TextInput' && n.props?.accessibilityLabel === 'Item 1',
+        );
+        expect(input1).not.toBeNull();
+        expect(input1.props.defaultValue).toBe('Alpha');
+
+        const input3 = findNode(
+            tree,
+            (n) => n.type === 'TextInput' && n.props?.accessibilityLabel === 'Item 3',
+        );
+        expect(input3).not.toBeNull();
+        input3.props.onChangeText('Gamma');
+        expect(onSelectOption).toHaveBeenCalledWith(['Alpha', 'Beta', 'Gamma']);
     });
 });

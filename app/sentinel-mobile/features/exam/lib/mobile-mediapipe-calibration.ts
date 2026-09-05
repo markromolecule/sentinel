@@ -78,24 +78,24 @@ export function isMobileCalibrationStable(
 
     const headDelta =
         nextSample.gaze.headHorizontalOffset !== null &&
-        previousSample.gaze.headHorizontalOffset !== null &&
-        nextSample.gaze.headVerticalOffset !== null &&
-        previousSample.gaze.headVerticalOffset !== null
+            previousSample.gaze.headHorizontalOffset !== null &&
+            nextSample.gaze.headVerticalOffset !== null &&
+            previousSample.gaze.headVerticalOffset !== null
             ? Math.abs(
-                  nextSample.gaze.headHorizontalOffset - previousSample.gaze.headHorizontalOffset,
-              ) +
-              Math.abs(nextSample.gaze.headVerticalOffset - previousSample.gaze.headVerticalOffset)
+                nextSample.gaze.headHorizontalOffset - previousSample.gaze.headHorizontalOffset,
+            ) +
+            Math.abs(nextSample.gaze.headVerticalOffset - previousSample.gaze.headVerticalOffset)
             : 0;
 
     const irisDelta =
         nextSample.gaze.irisHorizontalOffset !== null &&
-        previousSample.gaze.irisHorizontalOffset !== null &&
-        nextSample.gaze.irisVerticalOffset !== null &&
-        previousSample.gaze.irisVerticalOffset !== null
+            previousSample.gaze.irisHorizontalOffset !== null &&
+            nextSample.gaze.irisVerticalOffset !== null &&
+            previousSample.gaze.irisVerticalOffset !== null
             ? Math.abs(
-                  nextSample.gaze.irisHorizontalOffset - previousSample.gaze.irisHorizontalOffset,
-              ) +
-              Math.abs(nextSample.gaze.irisVerticalOffset - previousSample.gaze.irisVerticalOffset)
+                nextSample.gaze.irisHorizontalOffset - previousSample.gaze.irisHorizontalOffset,
+            ) +
+            Math.abs(nextSample.gaze.irisVerticalOffset - previousSample.gaze.irisVerticalOffset)
             : 0;
 
     return faceCenterDelta <= 0.08 && headDelta <= 0.12 && irisDelta <= 0.28;
