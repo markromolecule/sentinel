@@ -27,7 +27,7 @@ vi.mock('@sentinel/services', () => ({
 
 const telemetry = await import('./mobile-telemetry-client');
 
-function buildConfiguration(overrides: Partial<ExamConfiguration['mobileSecurity']> = {}) {
+function buildConfiguration(overrides: Partial<ExamConfiguration['mobileSecurity']> = {}): ExamConfiguration {
     return {
         lobbyAdmissionMode: 'AUTOMATIC',
         maxReconnectAttempts: 1,
@@ -57,7 +57,7 @@ function buildConfiguration(overrides: Partial<ExamConfiguration['mobileSecurity
             root_jailbreak_detection: false,
             ...overrides,
         },
-    } satisfies ExamConfiguration;
+    };
 }
 
 describe('mobile telemetry client', () => {
@@ -117,5 +117,95 @@ describe('mobile telemetry client', () => {
 
         expect(delivered).toBe(false);
         expect(ingestTelemetryEventMock).not.toHaveBeenCalled();
+    });
+
+    it('correctly maps and delivers AI anomaly telemetry events', async () => {
+        const apiClient = vi.fn();
+        const baseConfig = buildConfiguration();
+        baseConfig.aiRules = {
+            gaze_tracking: true,
+            face_detection: true,
+            multiple_faces_detection: true,
+            audio_anomaly_detection: true,
+        };
+
+        const aiEvents = [
+            { type: 'GAZE_OFF_SCREEN' as const, ruleKey: 'aiRules.gaze_tracking' },
+            { type: 'MULTIPLE_FACES' as const, ruleKey: 'aiRules.multiple_faces_detection' },
+            { type: 'NO_FACE_DETECTED' as const, ruleKey: 'aiRules.face_detection' },
+            { type: 'AUDIO_ANOMALY' as const, ruleKey: 'aiRules.audio_anomaly_detection' },
+        ];
+
+        for (const { type, ruleKey } of aiEvents) {
+            ingestTelemetryEventMock.mockClear();
+            const delivered = await telemetry.emitMobileTelemetryEvent({
+                apiClient,
+                configuration: baseConfig,
+                examSessionId: 'session-ai',
+                eventType: type,
+                studentId: 'student-ai',
+            });
+
+            expect(delivered).toBe(true);
+            expect(ingestTelemetryEventMock).toHaveBeenCalledWith(
+                apiClient,
+                expect.objectContaining({
+                    examSessionId: 'session-ai',
+                    studentId: 'student-ai',
+                    platform: 'MOBILE',
+                    source: 'AI',
+                    ruleKey,
+                    eventType: type,
+                    sessionContext: expect.objectContaining({
+                        deviceType: 'MOBILE',
+                        os: 'ios 17.0',
+                        appVersion: '1.0.0',
+                    }),
+                }),
+            );
+        }
+    });
+
+    it('correctly maps and delivers all native mobile security telemetry events', async () => {
+        const apiClient = vi.fn();
+        const config = buildConfiguration({
+            prevent_backgrounding: true,
+            screenshot_block: true,
+            root_jailbreak_detection: true,
+            app_pinning_required: true,
+            notification_block: true,
+        });
+
+        const mobileEvents = [
+            { type: 'APP_BACKGROUNDING' as const, ruleKey: 'mobileSecurity.prevent_backgrounding' },
+            { type: 'SCREENSHOT_ATTEMPT' as const, ruleKey: 'mobileSecurity.screenshot_block' },
+            { type: 'ROOT_JAILBREAK_DETECTED' as const, ruleKey: 'mobileSecurity.root_jailbreak_detection' },
+            { type: 'APP_PINNING_VIOLATION' as const, ruleKey: 'mobileSecurity.app_pinning_required' },
+            { type: 'NOTIFICATION_BLOCK_VIOLATION' as const, ruleKey: 'mobileSecurity.notification_block' },
+        ];
+
+        for (const { type, ruleKey } of mobileEvents) {
+            ingestTelemetryEventMock.mockClear();
+            const delivered = await telemetry.emitMobileTelemetryEvent({
+                apiClient,
+                configuration: config,
+                examSessionId: 'session-sec',
+                eventType: type,
+                studentId: 'student-sec',
+            });
+
+            expect(delivered).toBe(true);
+            expect(ingestTelemetryEventMock).toHaveBeenCalledWith(
+                apiClient,
+                expect.objectContaining({
+                    examSessionId: 'session-sec',
+                    studentId: 'student-sec',
+                    platform: 'MOBILE',
+                    source: 'CLIENT',
+                    ruleKey,
+                    eventType: type,
+                }),
+            );
+        }
     });
 });

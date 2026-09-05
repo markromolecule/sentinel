@@ -152,4 +152,102 @@ describe('useMobileMediaPipeMonitoring', () => {
         );
         expect(onAnomaly).toHaveBeenCalledWith('NO_FACE_DETECTED');
     });
+
+    it('requires consecutive frames to meet threshold before triggering anomaly', () => {
+        const sandbox = {
+            enabled: true,
+            emitDuringExam: true,
+            consecutiveFrameThreshold: 2,
+            cooldownMs: 10000,
+        };
+        const config = {
+            aiRules: {
+                multiple_faces_detection: true,
+            },
+        };
+
+        mockAnalyzeFrame.mockReturnValue({
+            status: 'multiple-faces',
+            signal: 'MULTIPLE_FACES',
+            faceCount: 2,
+        });
+
+        const onAnomaly = vi.fn();
+        const mockApiClient = {};
+
+        useMobileMediaPipeMonitoring({
+            examId: 'exam-1',
+            apiClient: mockApiClient as any,
+            configuration: config as any,
+            mediaPipeSandbox: sandbox as any,
+            examSessionId: 'session-1',
+            landmarksByFace: [[], []],
+            onAnomalyDetected: onAnomaly,
+        });
+
+        // 1st frame: consecutive frame count = 1 (< 2), no telemetry yet
+        effectCallbacks[effectCallbacks.length - 1]();
+        expect(mockEmitTelemetry).not.toHaveBeenCalled();
+        expect(onAnomaly).not.toHaveBeenCalled();
+
+        // 2nd frame: consecutive frame count = 2 (>= 2), triggers telemetry
+        effectCallbacks[effectCallbacks.length - 1]();
+        expect(mockEmitTelemetry).toHaveBeenCalledWith(
+            expect.objectContaining({
+                eventType: 'MULTIPLE_FACES',
+                examSessionId: 'session-1',
+            }),
+        );
+        expect(onAnomaly).toHaveBeenCalledWith('MULTIPLE_FACES');
+    });
+
+    it('enforces cooldown period between telemetry incident triggers', () => {
+        const sandbox = {
+            enabled: true,
+            emitDuringExam: true,
+            consecutiveFrameThreshold: 1,
+            cooldownMs: 10000,
+        };
+
+        mockAnalyzeFrame.mockReturnValue({
+            status: 'off-screen',
+            signal: 'GAZE_OFF_SCREEN',
+            faceCount: 1,
+        });
+
+        const onAnomaly = vi.fn();
+        const mockApiClient = {};
+
+        useMobileMediaPipeMonitoring({
+            examId: 'exam-1',
+            apiClient: mockApiClient as any,
+            configuration: { aiRules: { gaze_tracking: true } } as any,
+            mediaPipeSandbox: sandbox as any,
+            examSessionId: 'session-1',
+            landmarksByFace: [[]],
+            onAnomalyDetected: onAnomaly,
+        });
+
+        const runHookEffect = effectCallbacks[effectCallbacks.length - 1];
+
+        // Frame 1 triggers anomaly at t=0
+        const dateSpy = vi.spyOn(Date, 'now').mockReturnValue(100000);
+        runHookEffect();
+        expect(mockEmitTelemetry).toHaveBeenCalledTimes(1);
+        expect(onAnomaly).toHaveBeenCalledTimes(1);
+
+        // Frame 2 at t=5000ms (within 10000ms cooldown) -> should be suppressed
+        dateSpy.mockReturnValue(105000);
+        runHookEffect();
+        expect(mockEmitTelemetry).toHaveBeenCalledTimes(1);
+        expect(onAnomaly).toHaveBeenCalledTimes(1);
+
+        // Frame 3 at t=11000ms (cooldown expired) -> triggers telemetry again
+        dateSpy.mockReturnValue(111000);
+        runHookEffect();
+        expect(mockEmitTelemetry).toHaveBeenCalledTimes(2);
+        expect(onAnomaly).toHaveBeenCalledTimes(2);
+
+        dateSpy.mockRestore();
+    });
 });

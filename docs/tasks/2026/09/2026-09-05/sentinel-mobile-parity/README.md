@@ -1,7 +1,7 @@
 ---
 title: "Sentinel Mobile Exam Runtime, Question Engine & Telemetry Parity"
 type: task
-status: planned
+status: completed
 created: "2026-09-05"
 tags: [task, mobile, exam-runtime, mediapipe, telemetry, questions]
 ---
@@ -31,7 +31,7 @@ Finalize all functionalities of `sentinel-mobile` so that student mobile exam ta
 - [x] **Phase 3: Question Drawer & Navigation Integrity**
   - Refactor `question-drawer.tsx` to use `isQuestionAnswered` helper, fixing boolean false and empty array/object bugs.
   - Respect `shuffleQuestions` configuration in `adaptExamQuestionsForMobile` to prevent accidental un-shuffling.
-- [ ] **Phase 4: Telemetry & Multi-Layer Security Verification**
+- [x] **Phase 4: Telemetry & Multi-Layer Security Verification**
   - Verify native screenshot prevention (`FLAG_SECURE`) and `SCREENSHOT_ATTEMPT` event generation.
   - Verify `APP_BACKGROUNDING` and `APP_PINNING_VIOLATION` isolation and cooldown.
   - Verify MediaPipe anomaly detection (`GAZE_OFF_SCREEN`, `MULTIPLE_FACES`, `NO_FACE_DETECTED`) and evidence photo capture.

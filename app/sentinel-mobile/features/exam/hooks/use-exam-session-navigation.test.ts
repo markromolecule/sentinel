@@ -49,7 +49,7 @@ describe('useExamSessionNavigation', () => {
             type: 'MULTIPLE_CHOICE',
             points: 1,
             options: [{ id: 'A', text: 'Option A' }],
-            originalContent: {},
+            originalContent: { prompt: 'Question 1' },
         },
         {
             id: 'q2',
@@ -57,7 +57,7 @@ describe('useExamSessionNavigation', () => {
             type: 'MULTIPLE_CHOICE',
             points: 1,
             options: [{ id: 'B', text: 'Option B' }],
-            originalContent: {},
+            originalContent: { prompt: 'Question 2' },
         },
     ];
 

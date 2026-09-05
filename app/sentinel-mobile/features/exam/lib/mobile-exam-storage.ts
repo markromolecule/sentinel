@@ -5,7 +5,8 @@ export type MobileStoredExamPreview = {
     sessionId: string;
     answers: ExamAttemptAnswers;
     elapsedSeconds: number;
-    summary: ExamAttemptScoreSummary;
+    summary: ExamAttemptScoreSummary & { completedAt?: string };
+    completedAt?: string;
 };
 
 const SESSION_KEY_PREFIX = 'sentinel-mobile:exam-session:';
