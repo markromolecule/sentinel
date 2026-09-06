@@ -61,14 +61,15 @@ export function useAttemptSync({
         monitoringChannel,
     });
 
-    const { sendSnapshot, flush, isTerminallyBlockedRef } = useAttemptSyncCoordinator({
-        syncProgress,
-        saveAnswerDraft,
-        onLifecycleBlocked,
-        selectedAnswersRef,
-        elapsedSecondsRef,
-        clearDebounceTimer,
-    });
+    const { sendSnapshot, flush, isTerminallyBlockedRef, resetTerminallyBlocked } =
+        useAttemptSyncCoordinator({
+            syncProgress,
+            saveAnswerDraft,
+            onLifecycleBlocked,
+            selectedAnswersRef,
+            elapsedSecondsRef,
+            clearDebounceTimer,
+        });
 
     // ─── Local draft & realtime broadcast on every answer change ──────────────
     useEffect(() => {
@@ -188,9 +189,14 @@ export function useAttemptSync({
         await flush(answeredCount, snapshot, elapsedSecondsRef.current);
     }
 
+    const resetSyncBlock = useCallback(() => {
+        resetTerminallyBlocked();
+    }, [resetTerminallyBlocked]);
+
     return {
         flushPendingProgress,
         broadcastSubmitted,
+        resetSyncBlock,
     };
 }
 

@@ -262,36 +262,37 @@ export function InstructorLobbyAdmissionPanel({
                                             ? 'Authorizing...'
                                             : 'Authorize Re-entry'}
                                     </Button>
-                                ) : null}
-                                <div className="flex gap-1">
-                                    <Button
-                                        size="sm"
-                                        className="flex-1 text-xs"
-                                        disabled={isRowUpdating || isAuthorizingThisStudent}
-                                        onClick={() =>
-                                            void onUpdateLobbyAdmissions(
-                                                [student.studentId],
-                                                'APPROVED',
-                                            )
-                                        }
-                                    >
-                                        Admit
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        className="flex-1 text-xs"
-                                        disabled={isRowUpdating || isAuthorizingThisStudent}
-                                        onClick={() =>
-                                            void onUpdateLobbyAdmissions(
-                                                [student.studentId],
-                                                'REJECTED',
-                                            )
-                                        }
-                                    >
-                                        Reject
-                                    </Button>
-                                </div>
+                                ) : (
+                                    <div className="flex gap-1">
+                                        <Button
+                                            size="sm"
+                                            className="flex-1 text-xs"
+                                            disabled={isRowUpdating || isAuthorizingThisStudent}
+                                            onClick={() =>
+                                                void onUpdateLobbyAdmissions(
+                                                    [student.studentId],
+                                                    'APPROVED',
+                                                )
+                                            }
+                                        >
+                                            Admit
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="flex-1 text-xs"
+                                            disabled={isRowUpdating || isAuthorizingThisStudent}
+                                            onClick={() =>
+                                                void onUpdateLobbyAdmissions(
+                                                    [student.studentId],
+                                                    'REJECTED',
+                                                )
+                                            }
+                                        >
+                                            Reject
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
                         );
                     }}

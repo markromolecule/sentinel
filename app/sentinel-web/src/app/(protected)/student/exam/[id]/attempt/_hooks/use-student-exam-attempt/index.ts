@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useAuth } from '@sentinel/hooks';
 import { useExamSession } from '@/app/(protected)/student/exam/[id]/_hooks/use-exam-session';
 import { useExamInterruption } from '@/app/(protected)/student/exam/[id]/_hooks/use-exam-interruption';
@@ -31,9 +31,11 @@ export function useStudentExamAttempt() {
     } = stageGuard;
 
     const {
+        localBlockedMessage,
         setLocalBlockedMessage,
         terminalAttemptSuspended,
         setTerminalAttemptSuspended,
+        clearBlockedState,
         effectiveBlockedState,
     } = useAttemptBlockedState(blockedState);
 
@@ -93,7 +95,7 @@ export function useStudentExamAttempt() {
     const isTerminalAttempt = terminalAttemptSuspended || terminalLifecycle.isTerminal;
     const renderedBlockedState = terminalLifecycle.blockedState ?? effectiveBlockedState;
 
-    const { flushPendingProgress, broadcastSubmitted } = useAttemptSync({
+    const { flushPendingProgress, broadcastSubmitted, resetSyncBlock } = useAttemptSync({
         isInitializingSession,
         sessionId: examSession?.sessionId,
         elapsedSecondsRef,
@@ -106,6 +108,29 @@ export function useStudentExamAttempt() {
         studentId: user?.id,
         totalQuestions: questions.length,
     });
+
+    // Unblock client sync and clear stale local lockouts if attempt is confirmed active on the server
+    useEffect(() => {
+        if (
+            examSession?.sessionId &&
+            !terminalLifecycle.isTerminal &&
+            !terminalLifecycle.blockedState?.isBlocked &&
+            terminalLifecycle.statusQuery.data?.status === 'IN_PROGRESS'
+        ) {
+            if (localBlockedMessage) {
+                clearBlockedState();
+            }
+            resetSyncBlock();
+        }
+    }, [
+        examSession?.sessionId,
+        terminalLifecycle.isTerminal,
+        terminalLifecycle.blockedState?.isBlocked,
+        terminalLifecycle.statusQuery.data?.status,
+        localBlockedMessage,
+        clearBlockedState,
+        resetSyncBlock,
+    ]);
 
     const isRedirectingToHistory = useTurnedInExamRedirect({
         examId,
@@ -156,6 +181,12 @@ export function useStudentExamAttempt() {
         monitoringPhase: uiHook.monitoringPhase,
         isTerminalAttempt,
     });
+
+    const handleResumeSecuredExam = useCallback(async () => {
+        clearBlockedState();
+        resetSyncBlock();
+        return monitoringHook.resumeSecuredExam();
+    }, [clearBlockedState, resetSyncBlock, monitoringHook]);
 
     const questionContext = useAttemptQuestionContext({
         questions,
@@ -236,7 +267,7 @@ export function useStudentExamAttempt() {
         // Security
         securityLockReason: monitoringHook.securityLockReason,
         isResumingExam: monitoringHook.isResumingExam,
-        resumeSecuredExam: monitoringHook.resumeSecuredExam,
+        resumeSecuredExam: handleResumeSecuredExam,
         fullScreenContainerRef: monitoringHook.fullScreenContainerRef,
         // Handlers
         handleAnswerChange: answersHook.handleAnswerChange,

@@ -169,7 +169,7 @@ describe('InstructorLobbyAdmissionPanel', () => {
         expect(onUpdateLobbyAdmissions).toHaveBeenNthCalledWith(2, ['student-1'], 'REJECTED');
     });
 
-    it('shows Authorize Re-entry for students with active attempt requiring re-entry', () => {
+    it('shows Authorize Re-entry exclusively for students requiring re-entry, and Admit/Reject for fresh students', () => {
         const onAuthorizeReentry = vi.fn().mockResolvedValue(undefined);
         renderPanel({
             admissions: [
@@ -198,7 +198,10 @@ describe('InstructorLobbyAdmissionPanel', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Authorize Re-entry' }));
 
         expect(onAuthorizeReentry).toHaveBeenCalledWith('student-8');
-        expect(screen.getAllByRole('button', { name: 'Admit' })).toHaveLength(2);
+        // Only student-9 (fresh student) has Admit and Reject buttons
+        expect(screen.getAllByRole('button', { name: 'Admit' })).toHaveLength(1);
+        expect(screen.getAllByRole('button', { name: 'Reject' })).toHaveLength(1);
+        // Only student-8 (re-entry student) has Authorize Re-entry button
         expect(screen.queryAllByRole('button', { name: 'Authorize Re-entry' })).toHaveLength(1);
     });
 

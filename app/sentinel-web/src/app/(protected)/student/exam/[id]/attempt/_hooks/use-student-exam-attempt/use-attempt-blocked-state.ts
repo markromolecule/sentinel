@@ -36,11 +36,17 @@ export function useAttemptBlockedState(initialBlockedState?: AttemptBlockedState
         );
     }, [initialBlockedState, localBlockedMessage]);
 
+    const clearBlockedState = () => {
+        setLocalBlockedMessage(null);
+        setTerminalAttemptSuspended(false);
+    };
+
     return {
         localBlockedMessage,
         setLocalBlockedMessage,
         terminalAttemptSuspended,
         setTerminalAttemptSuspended,
+        clearBlockedState,
         effectiveBlockedState,
     };
 }
