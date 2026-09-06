@@ -3,7 +3,7 @@ import { HTTPException } from 'hono/http-exception';
 import type { AssessmentAllowedRole } from '../assessment/assessment-access';
 import { EntitlementsRepository } from '../access/data/entitlements.repository';
 import { assertInstructorExamAccess } from '../assign/services/exam-access.service';
-import { getMonitoringExamContext } from '../monitoring/services/get-monitoring-exam-context';
+import { getMonitoringExamContext } from '../monitoring/data/get-monitoring-exam-context';
 import type { LobbyAdmissionDecisionStatus } from './lobby.dto';
 import { bootstrapLobby } from './services/bootstrap-lobby';
 import { checkInLobby } from './services/check-in-lobby';

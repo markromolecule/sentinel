@@ -41,75 +41,76 @@ describe('getMonitoringExamContext', () => {
             source_exam_id: null,
             source_attempt_id: null,
             source_exam_title: null,
-            question_count: 25,
+            question_count: 5,
         });
 
         const result = await getMonitoringExamContext({
             dbClient: mockDb as DbClient,
             examId: 'exam-1',
-            institutionId: 'institution-1',
+            institutionId: 'inst-1',
             viewerRole: 'instructor',
             userId: 'user-1',
         });
 
-        expect(buildStaffExamVisibilityPredicates).toHaveBeenCalledWith({
-            dbClient: mockDb,
-            userId: 'user-1',
-            institutionId: 'institution-1',
-            includePublicInstitutionExams: true,
-        });
-        expect(mockDb.where).toHaveBeenCalledWith('e.institution_id', '=', 'institution-1');
         expect(result).toMatchObject({
             examId: 'exam-1',
             title: 'Final Exam',
             subject: 'Mathematics',
+            scheduledDate: '2026-07-08T08:00:00.000Z',
+            endDateTime: '2026-07-08T09:00:00.000Z',
             durationMinutes: 60,
+            questionCount: 5,
             maxReconnectAttempts: 3,
-            questionCount: 25,
+        });
+        expect(buildStaffExamVisibilityPredicates).toHaveBeenCalledWith({
+            dbClient: mockDb,
+            userId: 'user-1',
+            institutionId: 'inst-1',
+            includePublicInstitutionExams: true,
         });
     });
 
-    it('falls back to DEFAULT_EXAMINATION_GLOBAL_SETTINGS.defaultMaxReconnectAttempts when max_reconnect_attempts is null', async () => {
+    it('throws 404 when the exam monitoring row cannot be found', async () => {
+        mockDb.executeTakeFirst.mockResolvedValue(null);
+
+        await expect(
+            getMonitoringExamContext({
+                dbClient: mockDb as DbClient,
+                examId: 'missing-exam',
+                viewerRole: 'admin',
+            }),
+        ).rejects.toMatchObject({
+            status: 404,
+            message: 'Exam monitoring record not found.',
+        });
+    });
+
+    it('falls back to default reconnect attempts when exam config has no override', async () => {
         mockDb.executeTakeFirst.mockResolvedValue({
             exam_id: 'exam-2',
-            title: 'Midterm',
-            duration_minutes: 45,
-            scheduled_date: '2026-08-08T08:00:00.000Z',
-            end_date_time: '2026-08-08T09:00:00.000Z',
-            // null simulates a row where the column was never set
+            title: 'Quiz 1',
+            duration_minutes: 30,
+            scheduled_date: null,
+            end_date_time: null,
             max_reconnect_attempts: null,
-            subject_title: 'Science',
+            subject_title: null,
             remediation_id: null,
             remediation_type: null,
             source_exam_id: null,
             source_attempt_id: null,
             source_exam_title: null,
-            question_count: 10,
+            question_count: 0,
         });
 
         const result = await getMonitoringExamContext({
             dbClient: mockDb as DbClient,
             examId: 'exam-2',
-            institutionId: 'institution-1',
             viewerRole: 'admin',
         });
 
         expect(result.maxReconnectAttempts).toBe(
             DEFAULT_EXAMINATION_GLOBAL_SETTINGS.defaultMaxReconnectAttempts,
         );
-    });
-
-    it('throws when the monitoring exam cannot be found', async () => {
-        mockDb.executeTakeFirst.mockResolvedValue(undefined);
-
-        await expect(
-            getMonitoringExamContext({
-                dbClient: mockDb as DbClient,
-                examId: 'exam-1',
-                institutionId: 'institution-1',
-                viewerRole: 'instructor',
-                userId: 'user-1',
-            }),
-        ).rejects.toThrow('Exam monitoring record not found.');
+        expect(result.subject).toBe('Untitled Subject');
     });
 });

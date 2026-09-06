@@ -112,12 +112,12 @@ export async function getMonitoringExamContext({
         runtimeAccess,
         remediationContext: exam.remediation_id
             ? {
-                  remediationId: exam.remediation_id,
-                  remediationType: exam.remediation_type!,
-                  sourceExamId: exam.source_exam_id!,
-                  sourceExamTitle: exam.source_exam_title ?? 'Source Exam',
-                  sourceAttemptId: exam.source_attempt_id ?? null,
-              }
+                remediationId: exam.remediation_id,
+                remediationType: exam.remediation_type!,
+                sourceExamId: exam.source_exam_id!,
+                sourceExamTitle: exam.source_exam_title ?? 'Source Exam',
+                sourceAttemptId: exam.source_attempt_id ?? null,
+            }
             : null,
     };
 }

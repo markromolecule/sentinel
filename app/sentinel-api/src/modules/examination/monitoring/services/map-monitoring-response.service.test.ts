@@ -6,7 +6,7 @@ import {
     mapMonitoringIncidentWithEvidenceSummary,
     mapMonitoringStudentDetail,
     mapMonitoringStudentSummary,
-} from './map-monitoring-response';
+} from './map-monitoring-response.service';
 
 describe('map monitoring response', () => {
     it('marks stale in-progress attempts as disconnected when there are no open incidents', () => {

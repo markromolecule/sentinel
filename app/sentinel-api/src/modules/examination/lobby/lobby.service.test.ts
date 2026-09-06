@@ -3,7 +3,7 @@ import { HTTPException } from 'hono/http-exception';
 import { type DbClient } from '@sentinel/db';
 import { EntitlementsRepository } from '../access/data/entitlements.repository';
 import { assertInstructorExamAccess } from '../assign/services/exam-access.service';
-import { getMonitoringExamContext } from '../monitoring/services/get-monitoring-exam-context';
+import { getMonitoringExamContext } from '../monitoring/data/get-monitoring-exam-context';
 import { bootstrapLobby } from './services/bootstrap-lobby';
 import { checkInLobby } from './services/check-in-lobby';
 import { getAdmissionStatus } from './services/get-admission-status';
@@ -22,7 +22,7 @@ vi.mock('../assign/services/exam-access.service', () => ({
     assertInstructorExamAccess: vi.fn(),
 }));
 
-vi.mock('../monitoring/services/get-monitoring-exam-context', () => ({
+vi.mock('../monitoring/data/get-monitoring-exam-context', () => ({
     getMonitoringExamContext: vi.fn(),
 }));
 
