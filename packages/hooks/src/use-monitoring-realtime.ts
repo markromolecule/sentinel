@@ -45,7 +45,7 @@ export function useMonitoringRealtime(args: UseMonitoringRealtimeArgs) {
 
     useEffect(() => {
         if (!enabled || !supabase || !examId || !supabase.channel || !supabase.removeChannel) {
-            return () => {};
+            return () => { };
         }
 
         const channelName = `exam:${examId}:monitoring`;
@@ -53,19 +53,19 @@ export function useMonitoringRealtime(args: UseMonitoringRealtimeArgs) {
         channelRef.current = channel;
 
         channel
-            .on(
+            .on<StudentProgressPayload>(
                 'broadcast',
                 { event: 'student:progress' },
-                (res: { payload?: StudentProgressPayload }) => {
+                (res) => {
                     if (res?.payload?.studentId) {
                         onProgressUpdateRef.current?.(res.payload);
                     }
                 },
             )
-            .on(
+            .on<StudentSubmittedPayload>(
                 'broadcast',
                 { event: 'student:submitted' },
-                (res: { payload?: StudentSubmittedPayload }) => {
+                (res) => {
                     if (res?.payload?.studentId) {
                         onStudentSubmittedRef.current?.(res.payload);
                     }
