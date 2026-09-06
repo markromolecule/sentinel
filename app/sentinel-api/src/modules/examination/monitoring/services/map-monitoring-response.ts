@@ -106,18 +106,24 @@ function getLatestActivityAt(row: MonitoringStudentRow) {
 
 function resolveMonitoringStatus(args: {
     attemptStatus: string | null;
+    lifecycleState?: string | null;
     lastActivityAt: Date | null;
     openIncidentCount: number;
     hasHighSeverity: boolean;
 }): MonitoringStudentStatus {
     const attemptStatus = args.attemptStatus?.toUpperCase();
+    const lifecycleState = args.lifecycleState?.toUpperCase();
     const isFlagged = args.openIncidentCount > 0 || args.hasHighSeverity;
 
     if (isFlagged) {
         return 'flagged';
     }
 
-    if (attemptStatus === 'COMPLETED') {
+    if (
+        attemptStatus === 'COMPLETED' ||
+        attemptStatus === 'SUBMITTED' ||
+        lifecycleState === 'SUBMITTED'
+    ) {
         return 'submitted';
     }
 
@@ -233,6 +239,7 @@ export function mapMonitoringStudentSummary(
     const hasHighSeverity = Boolean(row.has_high_severity);
     const status = resolveMonitoringStatus({
         attemptStatus: row.attempt_status,
+        lifecycleState: row.lifecycle_state,
         lastActivityAt,
         openIncidentCount,
         hasHighSeverity,
@@ -373,7 +380,33 @@ export function buildMonitoringOverview(args: {
     const stats = args.students.reduce(
         (summary, student) => {
             summary.total += 1;
-            summary[student.status] += 1;
+
+            const isSubmitted =
+                student.status === 'submitted' ||
+                student.lifecycleState === 'SUBMITTED' ||
+                Boolean(student.completedAt);
+
+            const isFlagged =
+                student.status === 'flagged' ||
+                student.openIncidentCount > 0 ||
+                student.incidentCount > 0;
+
+            if (isSubmitted) {
+                summary.submitted += 1;
+            }
+
+            if (isFlagged) {
+                summary.flagged += 1;
+            }
+
+            if (!isSubmitted && !isFlagged) {
+                if (student.status === 'disconnected') {
+                    summary.disconnected += 1;
+                } else {
+                    summary.active += 1;
+                }
+            }
+
             return summary;
         },
         {
