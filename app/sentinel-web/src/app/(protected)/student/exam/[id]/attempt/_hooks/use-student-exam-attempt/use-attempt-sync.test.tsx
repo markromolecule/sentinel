@@ -520,6 +520,49 @@ describe('useAttemptSync — one-in-flight coordinator', () => {
         expect(onLifecycleBlocked).not.toHaveBeenCalled();
     });
 
+    it('unblocks sync sends after resetSyncBlock is called following a 409', async () => {
+        const lifecycleError = Object.assign(new Error('Attempt locked'), { status: 409 });
+        const syncProgress = vi.fn().mockRejectedValueOnce(lifecycleError).mockResolvedValue(undefined);
+        const onLifecycleBlocked = vi.fn();
+        const elapsedSecondsRef = makeElapsedRef(0);
+
+        const { result, rerender } = renderHook(
+            ({ selectedAnswers }) =>
+                useAttemptSync({
+                    isInitializingSession: false,
+                    sessionId: 'session-1',
+                    elapsedSecondsRef,
+                    selectedAnswers,
+                    saveAnswerDraft: makeSaveAnswerDraft(),
+                    syncProgress,
+                    onLifecycleBlocked,
+                }),
+            { initialProps: { selectedAnswers: makeAnswers({ 'q-1': 'A' }) } },
+        );
+
+        // Debounce fires -> 409 received -> latched as terminally blocked
+        vi.advanceTimersByTime(SYNC_PROGRESS_DEBOUNCE_MS);
+        await flushMicrotasks();
+
+        expect(onLifecycleBlocked).toHaveBeenCalledTimes(1);
+
+        // Changing answers while latched does not trigger syncProgress
+        syncProgress.mockClear();
+        rerender({ selectedAnswers: makeAnswers({ 'q-1': 'B' }) });
+        vi.advanceTimersByTime(SYNC_PROGRESS_DEBOUNCE_MS);
+        await flushMicrotasks();
+        expect(syncProgress).not.toHaveBeenCalled();
+
+        // Reset sync block (e.g. after instructor re-entry authorization)
+        result.current.resetSyncBlock();
+
+        // Now changing answers triggers syncProgress successfully
+        rerender({ selectedAnswers: makeAnswers({ 'q-1': 'C' }) });
+        vi.advanceTimersByTime(SYNC_PROGRESS_DEBOUNCE_MS);
+        await flushMicrotasks();
+        expect(syncProgress).toHaveBeenCalledTimes(1);
+    });
+
     it('does not call onLifecycleBlocked more than once for repeated 409s', async () => {
         let reject!: (err: unknown) => void;
         const syncProgress = vi.fn().mockImplementation(

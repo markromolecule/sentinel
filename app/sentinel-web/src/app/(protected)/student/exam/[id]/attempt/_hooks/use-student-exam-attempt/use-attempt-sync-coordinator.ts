@@ -135,9 +135,14 @@ export function useAttemptSyncCoordinator({
         await waitForIdle;
     }
 
+    function resetTerminallyBlocked() {
+        isTerminallyBlockedRef.current = false;
+    }
+
     return {
         sendSnapshot,
         flush,
         isTerminallyBlockedRef,
+        resetTerminallyBlocked,
     };
 }

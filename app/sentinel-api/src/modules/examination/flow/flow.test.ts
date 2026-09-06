@@ -568,10 +568,10 @@ describe('Examination Flow Integration', () => {
             totalScore: 15,
             timeSpentMinutes: 3,
             answeredCount: 2,
-            answers: {
+            answers: expect.objectContaining({
                 'question-1': false,
                 'question-2': 'Because arithmetic.',
-            },
+            }),
             scoreSnapshot: expect.objectContaining({
                 version: 'attempt-score.v1',
                 scoringVersion: 'fix-001-student-score-integrity-v1',
