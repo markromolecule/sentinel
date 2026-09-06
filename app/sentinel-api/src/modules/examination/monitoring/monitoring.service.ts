@@ -1,7 +1,9 @@
 import { type DbClient } from '@sentinel/db';
 import type { AssessmentAllowedRole } from '../assessment/assessment-access';
-import { getExamMonitoringOverview } from './services/get-exam-monitoring-overview';
-import { getExamMonitoringStudentDetail } from './services/get-exam-monitoring-student-detail';
+import {
+    getExamMonitoringOverview,
+    getExamMonitoringStudentDetail,
+} from './services/monitoring.services';
 
 export class MonitoringService {
     static async getExamMonitoringOverview(args: {

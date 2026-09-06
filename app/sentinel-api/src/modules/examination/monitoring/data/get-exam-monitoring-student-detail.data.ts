@@ -1,44 +1,17 @@
 import { type DbClient } from '@sentinel/db';
-import { HTTPException } from 'hono/http-exception';
 import { sql } from 'kysely';
-import type { AssessmentAllowedRole } from '../../assessment/assessment-access';
-import { TelemetryStorageService } from '../../../telemetry/storage/storage.service';
-import type { MonitoringStudentDetail } from '../monitoring.dto';
-import { getMonitoringExamContext } from './get-monitoring-exam-context';
-import {
-    mapMonitoringStudentDetail,
-    type MonitoringLifecycleEventRow,
-    type MonitoringStudentRow,
-    type MonitoringIncidentEvidenceSummaryRow,
-} from './map-monitoring-response';
-
 import { applyMonitoringAttemptOrdering } from './attempt-selection.helper';
+import type {
+    MonitoringIncidentEvidenceSummaryRow,
+    MonitoringLifecycleEventRow,
+    MonitoringStudentRow,
+} from './monitoring-data.types';
 
-type GetExamMonitoringStudentDetailArgs = {
-    dbClient: DbClient;
-    examId: string;
-    studentId: string;
-    institutionId?: string;
-    viewerRole: AssessmentAllowedRole;
-    userId?: string | null;
-};
-
-export async function getExamMonitoringStudentDetail({
-    dbClient,
-    examId,
-    studentId,
-    institutionId,
-    viewerRole,
-    userId,
-}: GetExamMonitoringStudentDetailArgs): Promise<MonitoringStudentDetail> {
-    const exam = await getMonitoringExamContext({
-        dbClient,
-        examId,
-        institutionId,
-        viewerRole,
-        userId,
-    });
-
+export async function getStudentLatestAttemptRow(
+    dbClient: DbClient,
+    examId: string,
+    studentId: string,
+): Promise<MonitoringStudentRow | undefined> {
     const latestAttemptQuery = dbClient
         .selectFrom('exam_attempts as ea')
         .distinctOn('ea.student_id')
@@ -111,41 +84,38 @@ export async function getExamMonitoringStudentDetail({
         .where('ea.exam_id', '=', examId)
         .where(sql<boolean>`(st.user_id = ${studentId} or st.student_id = ${studentId})`);
 
-    const latestAttempt = (await applyMonitoringAttemptOrdering(
+    return (await applyMonitoringAttemptOrdering(
         latestAttemptQuery,
     ).executeTakeFirst()) as MonitoringStudentRow | undefined;
+}
 
-    if (!latestAttempt) {
-        throw new HTTPException(404, {
-            message: 'Monitoring student record not found.',
-        });
+export async function getIncidentEvidenceSummaryRows(
+    dbClient: DbClient,
+    incidentIds: string[],
+): Promise<MonitoringIncidentEvidenceSummaryRow[]> {
+    if (incidentIds.length === 0) {
+        return [];
     }
 
-    const incidents = await TelemetryStorageService.getIncidents(
-        dbClient,
-        {
-            attemptId: latestAttempt.attempt_id,
-            limit: 200,
-        },
-        institutionId,
-    );
+    const rows = await dbClient
+        .selectFrom('telemetry_incident_evidence')
+        .select([
+            'incident_id',
+            sql<string>`state::text`.as('state'),
+            sql<number>`count(*)::int`.as('count'),
+        ])
+        .where('incident_id', 'in', incidentIds)
+        .groupBy(['incident_id', 'state'])
+        .execute();
 
-    const incidentIds = incidents.map((incident) => incident.incidentId).filter(Boolean);
-    const evidenceSummaryRows =
-        incidentIds.length > 0
-            ? await dbClient
-                  .selectFrom('telemetry_incident_evidence')
-                  .select([
-                      'incident_id',
-                      sql<string>`state::text`.as('state'),
-                      sql<number>`count(*)::int`.as('count'),
-                  ])
-                  .where('incident_id', 'in', incidentIds)
-                  .groupBy(['incident_id', 'state'])
-                  .execute()
-            : [];
+    return rows as MonitoringIncidentEvidenceSummaryRow[];
+}
 
-    const lifecycleEvents = await dbClient
+export async function getAttemptLifecycleEvents(
+    dbClient: DbClient,
+    attemptId: string,
+): Promise<MonitoringLifecycleEventRow[]> {
+    const rows = await dbClient
         .selectFrom('exam_attempt_lifecycle_events')
         .select([
             'event_id',
@@ -163,16 +133,9 @@ export async function getExamMonitoringStudentDetail({
             'metadata',
             'created_at',
         ])
-        .where('attempt_id', '=', latestAttempt.attempt_id)
+        .where('attempt_id', '=', attemptId)
         .orderBy('created_at', 'desc')
         .execute();
 
-    return mapMonitoringStudentDetail(
-        latestAttempt,
-        exam.durationMinutes,
-        exam.questionCount,
-        incidents,
-        evidenceSummaryRows as MonitoringIncidentEvidenceSummaryRow[],
-        lifecycleEvents as MonitoringLifecycleEventRow[],
-    );
+    return rows as MonitoringLifecycleEventRow[];
 }

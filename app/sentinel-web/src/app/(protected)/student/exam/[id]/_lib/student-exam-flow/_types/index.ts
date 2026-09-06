@@ -33,11 +33,11 @@ export type StudentExamMediaPipeSandboxLike = {
 };
 
 export type StudentExamMediaPipeConfigurationLike = {
-    cameraRequired: boolean;
-    aiRules: {
-        gaze_tracking: boolean;
-        face_detection: boolean;
-        multiple_faces_detection: boolean;
+    cameraRequired?: boolean;
+    aiRules?: {
+        gaze_tracking?: boolean;
+        face_detection?: boolean;
+        multiple_faces_detection?: boolean;
     };
 };
 

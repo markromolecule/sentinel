@@ -42,6 +42,7 @@ type GradingRubricPaneProps = {
     overallFeedback: string;
     onOverallFeedbackChange: (text: string) => void;
     rubric?: AttemptEssayRubricSnapshot;
+    onRecalculateRubric?: () => void;
 };
 
 export type {

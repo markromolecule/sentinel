@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback, type MutableRefObject } from 'react';
+import { useAuth } from '@sentinel/hooks';
 import { syncExamProgress } from '@sentinel/services';
 import {
     buildSessionAnswerPayload,
@@ -16,6 +17,8 @@ interface UseExamSessionSyncOptions {
     answersRef: MutableRefObject<Record<string, any>>;
     timeLeftRef: MutableRefObject<number>;
     reconRef?: MutableRefObject<MobileExamReconnection | null>;
+    studentId?: string;
+    monitoringChannel?: { send: (msg: any) => void } | null;
 }
 
 export function useExamSessionSync({
@@ -27,8 +30,34 @@ export function useExamSessionSync({
     answersRef,
     timeLeftRef,
     reconRef,
+    studentId,
+    monitoringChannel,
 }: UseExamSessionSyncOptions) {
     const isSyncingRef = useRef(false);
+    const { supabase, session } = useAuth();
+    const resolvedStudentId = studentId ?? session?.user?.id;
+    const activeChannelRef = useRef<any>(monitoringChannel ?? null);
+
+    useEffect(() => {
+        if (monitoringChannel) {
+            activeChannelRef.current = monitoringChannel;
+            return () => {};
+        }
+
+        const examId = exam?.id;
+        if (!supabase || !examId || !supabase.channel || !supabase.removeChannel) {
+            return () => {};
+        }
+
+        const channel = supabase.channel(`exam:${examId}:monitoring`);
+        activeChannelRef.current = channel;
+        channel.subscribe?.();
+
+        return () => {
+            activeChannelRef.current = null;
+            void supabase.removeChannel(channel);
+        };
+    }, [exam?.id, monitoringChannel, supabase]);
 
     // Core progress sync execution function (reads latest refs, guarded against concurrent races)
     const syncProgressNow = useCallback(async () => {
@@ -54,16 +83,35 @@ export function useExamSessionSync({
         }
     }, [apiClient, exam, questions, sessionId, answersRef, timeLeftRef, reconRef]);
 
-    // 1. Debounced sync on answer state change (1200ms after user action)
+    // 1. Debounced sync on answer state change (1200ms after user action) + immediate realtime broadcast
     useEffect(() => {
         if (!sessionId) return;
+
+        // Broadcast progress event (<50ms, zero DB load)
+        const currentAnswers = answersRef.current;
+        const answeredCount = Object.values(currentAnswers).filter(isQuestionAnswered).length;
+        const totalQuestions = questions.length;
+        const progress = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
+
+        if (resolvedStudentId && activeChannelRef.current) {
+            activeChannelRef.current.send({
+                type: 'broadcast',
+                event: 'student:progress',
+                payload: {
+                    studentId: resolvedStudentId,
+                    answeredCount,
+                    totalQuestions,
+                    progress,
+                },
+            });
+        }
 
         const timer = setTimeout(() => {
             void syncProgressNow();
         }, 1200);
 
         return () => clearTimeout(timer);
-    }, [answers, sessionId, syncProgressNow]);
+    }, [answers, sessionId, syncProgressNow, questions.length, resolvedStudentId, answersRef]);
 
     // 2. Periodic background heartbeat with randomized jitter (15s–25s)
     useEffect(() => {
@@ -91,8 +139,21 @@ export function useExamSessionSync({
         };
     }, [sessionId, syncProgressNow]);
 
+    const broadcastSubmitted = useCallback(() => {
+        if (!resolvedStudentId || !activeChannelRef.current) return;
+        activeChannelRef.current.send({
+            type: 'broadcast',
+            event: 'student:submitted',
+            payload: {
+                studentId: resolvedStudentId,
+                submittedAt: new Date().toISOString(),
+            },
+        });
+    }, [resolvedStudentId]);
+
     return {
         syncProgressNow,
         isSyncingRef,
+        broadcastSubmitted,
     };
 }

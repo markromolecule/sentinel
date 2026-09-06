@@ -1,4 +1,8 @@
-import type { MediaPipeCalibrationProfile, MediaPipeFaceBounds } from '@sentinel/shared';
+import {
+    DEFAULT_TELEMETRY_SETTINGS,
+    type MediaPipeCalibrationProfile,
+    type MediaPipeFaceBounds,
+} from '@sentinel/shared';
 import type {
     StudentExamMediaPipeConfigurationLike,
     StudentExamMediaPipeSandboxLike,
@@ -110,14 +114,17 @@ export function normalizeMediaPipeCalibrationProfile(
 
 export function resolveStudentExamMediaPipeSandbox(args: {
     configuration: StudentExamMediaPipeConfigurationLike | undefined;
-    mediaPipeSandbox: StudentExamMediaPipeSandboxLike;
+    mediaPipeSandbox?: StudentExamMediaPipeSandboxLike;
 }): StudentExamMediaPipeSandboxLike {
-    const { configuration, mediaPipeSandbox } = args;
+    const {
+        configuration,
+        mediaPipeSandbox = DEFAULT_TELEMETRY_SETTINGS.mediaPipeSandbox,
+    } = args;
     const requiresStudentExamMediaPipe = Boolean(
         configuration?.cameraRequired &&
-        (configuration.aiRules.gaze_tracking ||
-            configuration.aiRules.face_detection ||
-            configuration.aiRules.multiple_faces_detection),
+        (configuration.aiRules?.gaze_tracking ||
+            configuration.aiRules?.face_detection ||
+            configuration.aiRules?.multiple_faces_detection),
     );
 
     if (!requiresStudentExamMediaPipe) {

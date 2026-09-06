@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { type DbClient } from '@sentinel/db';
-import { getExamMonitoringOverview } from './get-exam-monitoring-overview';
-import { getMonitoringExamContext } from './get-monitoring-exam-context';
+import { getExamMonitoringOverview } from './get-exam-monitoring-overview.service';
+import { getMonitoringExamContext } from '../data/get-monitoring-exam-context';
 
-vi.mock('./get-monitoring-exam-context', () => ({
+vi.mock('../data/get-monitoring-exam-context', () => ({
     getMonitoringExamContext: vi.fn(),
 }));
 

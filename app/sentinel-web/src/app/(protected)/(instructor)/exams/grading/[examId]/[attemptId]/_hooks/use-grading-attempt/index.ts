@@ -7,7 +7,11 @@ import {
     updateGradingAttempt,
     type UpdateGradingAttemptBody,
 } from '@sentinel/services';
-import { calculateEssayWeightedScore, scoreExamAttempt } from '@sentinel/shared';
+import {
+    calculateEssayWeightedScore,
+    evaluateEssayWithRubric,
+    scoreExamAttempt,
+} from '@sentinel/shared';
 import { toast } from 'sonner';
 import { GRADING_ATTEMPT_QUERY_KEY, DEFAULT_RUBRIC_SCORE } from '../../_constants';
 import type { CriteriaScores, EvaluationsState, ScoreSummary } from '../../_types';
@@ -159,6 +163,29 @@ function useGradingAttempt({ examId, attemptId }: UseGradingAttemptProps): UseGr
         });
     };
 
+    const activeQuestion = essayQuestions.find((q) => q.id === activeQuestionId);
+    const activeEval = activeQuestionId ? evaluations[activeQuestionId] : null;
+
+    const handleRecalculateRubric = () => {
+        if (!activeQuestion || !data) return;
+        const rawAnswer = data.attempt.answers[activeQuestion.id];
+        const answerText = typeof rawAnswer === 'string' ? rawAnswer : '';
+        const prompt = (activeQuestion.content as any)?.prompt ?? null;
+        const rubricDef = data.attempt.rubric?.definition;
+
+        const evalResult = evaluateEssayWithRubric(answerText, prompt, rubricDef);
+
+        setEvaluations((prev) => ({
+            ...prev,
+            [activeQuestion.id]: {
+                scores: evalResult.scores,
+                feedback: evalResult.feedback,
+            },
+        }));
+
+        toast.success('Rubric pre-scoring applied.');
+    };
+
     const handleSubmit = (finalize: boolean) => {
         const body: UpdateGradingAttemptBody = {
             evaluations: Object.entries(evaluations).reduce(
@@ -177,9 +204,6 @@ function useGradingAttempt({ examId, attemptId }: UseGradingAttemptProps): UseGr
         saveMutation.mutate(body);
     };
 
-    const activeQuestion = essayQuestions.find((q) => q.id === activeQuestionId);
-    const activeEval = activeQuestionId ? evaluations[activeQuestionId] : null;
-
     return {
         attemptDetail: data,
         isLoading,
@@ -196,6 +220,7 @@ function useGradingAttempt({ examId, attemptId }: UseGradingAttemptProps): UseGr
         isSubmitting: saveMutation.isPending,
         handleScoreChange,
         handleFeedbackChange,
+        handleRecalculateRubric,
         handleSubmit,
     };
 }

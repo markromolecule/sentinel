@@ -1,6 +1,12 @@
 'use client';
 
-import { useExamMonitoringOverviewQuery } from '@sentinel/hooks';
+import { useCallback, useMemo, useState } from 'react';
+import {
+    useExamMonitoringOverviewQuery,
+    useMonitoringRealtime,
+    type StudentProgressPayload,
+    type StudentSubmittedPayload,
+} from '@sentinel/hooks';
 import { useFilters } from './use-filters';
 import { useIncidentToast } from './use-incident-toast';
 import { useRuntimeAccess } from './use-runtime-access';
@@ -22,11 +28,110 @@ export function useMonitoring(examId: string) {
         refetch,
     } = useExamMonitoringOverviewQuery(examId);
 
+    // In-memory live progress and live submission overrides
+    const [liveProgressMap, setLiveProgressMap] = useState<Record<string, number>>({});
+    const [liveSubmittedIds, setLiveSubmittedIds] = useState<Set<string>>(new Set());
+
+    // Ultra-low latency (<50ms) real-time broadcast subscription
+    useMonitoringRealtime({
+        examId,
+        onProgressUpdate: useCallback((payload: StudentProgressPayload) => {
+            setLiveProgressMap((prev) => ({
+                ...prev,
+                [payload.studentId]: payload.progress,
+            }));
+        }, []),
+        onStudentSubmitted: useCallback((payload: StudentSubmittedPayload) => {
+            setLiveSubmittedIds((prev) => {
+                const next = new Set(prev);
+                next.add(payload.studentId);
+                return next;
+            });
+        }, []),
+    });
+
+    // Merged students with live progress & immediate submission status
+    const mergedStudents = useMemo(() => {
+        if (!monitoring?.students) return undefined;
+
+        return monitoring.students.map((student) => {
+            const isLiveSubmitted =
+                liveSubmittedIds.has(student.id) ||
+                Boolean(student.studentRecordId && liveSubmittedIds.has(student.studentRecordId));
+
+            const hasLiveProgress =
+                liveProgressMap[student.id] !== undefined ||
+                (student.studentRecordId && liveProgressMap[student.studentRecordId] !== undefined);
+
+            const liveProgress =
+                liveProgressMap[student.id] ??
+                (student.studentRecordId ? liveProgressMap[student.studentRecordId] : undefined);
+
+            const nextStatus = isLiveSubmitted
+                ? student.status === 'flagged'
+                    ? 'flagged'
+                    : 'submitted'
+                : student.status;
+
+            const nextProgress = isLiveSubmitted
+                ? 100
+                : hasLiveProgress && liveProgress !== undefined
+                  ? liveProgress
+                  : student.progress;
+
+            return {
+                ...student,
+                status: nextStatus,
+                lifecycleState: isLiveSubmitted ? ('SUBMITTED' as const) : student.lifecycleState,
+                progress: nextProgress,
+            };
+        });
+    }, [monitoring?.students, liveProgressMap, liveSubmittedIds]);
+
+    // Merged stats reflecting immediate live submissions without waiting for query refetch
+    const mergedStats = useMemo(() => {
+        if (!monitoring?.stats) return undefined;
+
+        let newlySubmittedCount = 0;
+        if (monitoring.students) {
+            monitoring.students.forEach((student) => {
+                const wasAlreadySubmitted =
+                    student.status === 'submitted' ||
+                    student.lifecycleState === 'SUBMITTED' ||
+                    Boolean(student.completedAt);
+
+                const isLiveSubmitted =
+                    liveSubmittedIds.has(student.id) ||
+                    Boolean(
+                        student.studentRecordId && liveSubmittedIds.has(student.studentRecordId),
+                    );
+
+                if (isLiveSubmitted && !wasAlreadySubmitted) {
+                    newlySubmittedCount++;
+                }
+            });
+        }
+
+        return {
+            ...monitoring.stats,
+            submitted: (monitoring.stats.submitted ?? 0) + newlySubmittedCount,
+        };
+    }, [monitoring?.stats, monitoring?.students, liveSubmittedIds]);
+
+    const mergedMonitoring = useMemo(() => {
+        if (!monitoring) return undefined;
+        return {
+            ...monitoring,
+            stats: mergedStats ?? monitoring.stats,
+            students: mergedStudents ?? monitoring.students,
+        };
+    }, [monitoring, mergedStats, mergedStudents]);
+
     // Filter, search and page states
-    const filters = useFilters(monitoring?.students);
+    const filters = useFilters(mergedMonitoring?.students);
 
     // Incident toast notifications
-    useIncidentToast(examId, monitoring?.students);
+    useIncidentToast(examId, mergedMonitoring?.students);
 
     // Global exam runtime access state and actions
     const runtimeAccess = useRuntimeAccess({
@@ -42,7 +147,7 @@ export function useMonitoring(examId: string) {
 
     return {
         // Data
-        monitoring,
+        monitoring: mergedMonitoring,
         isLoading,
         isFetching,
         isError,

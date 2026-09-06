@@ -39,6 +39,7 @@ export async function completeSessionService({
         summary: scoringContext.summary,
         scoreSnapshot: scoringContext.scoreSnapshot,
         answerChecksum: scoringContext.answerChecksum,
+        evaluations: scoringContext.evaluations,
     });
 
     void notifyCompletedSession({

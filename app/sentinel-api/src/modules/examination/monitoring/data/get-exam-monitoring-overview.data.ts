@@ -1,40 +1,21 @@
 import { type DbClient } from '@sentinel/db';
 import { sql } from 'kysely';
-import type { AssessmentAllowedRole } from '../../assessment/assessment-access';
-import type { MonitoringOverview } from '../monitoring.dto';
-import { getMonitoringExamContext } from './get-monitoring-exam-context';
-import {
-    buildMonitoringOverview,
-    mapMonitoringExam,
-    mapMonitoringStudentSummary,
-    type MonitoringStudentRow,
-} from './map-monitoring-response';
-
 import { applyMonitoringAttemptOrdering } from './attempt-selection.helper';
+import type { MonitoringStudentRow } from './monitoring-data.types';
 
-type GetExamMonitoringOverviewArgs = {
-    dbClient: DbClient;
-    examId: string;
-    institutionId?: string;
-    viewerRole: AssessmentAllowedRole;
-    userId?: string | null;
+export type ExamMonitoringOverviewData = {
+    rows: MonitoringStudentRow[];
+    lobbyAdmissions: {
+        waiting: number;
+        approved: number;
+        inAttempt: number;
+    };
 };
 
-export async function getExamMonitoringOverview({
-    dbClient,
-    examId,
-    institutionId,
-    viewerRole,
-    userId,
-}: GetExamMonitoringOverviewArgs): Promise<MonitoringOverview> {
-    const exam = await getMonitoringExamContext({
-        dbClient,
-        examId,
-        institutionId,
-        viewerRole,
-        userId,
-    });
-
+export async function getExamMonitoringOverviewData(
+    dbClient: DbClient,
+    examId: string,
+): Promise<ExamMonitoringOverviewData> {
     const latestAttemptsQuery = dbClient
         .selectFrom('exam_attempts as ea')
         .distinctOn('ea.student_id')
@@ -150,17 +131,12 @@ export async function getExamMonitoringOverview({
         .where('ela.exam_id', '=', examId)
         .executeTakeFirst();
 
-    const students = rows.map((row) =>
-        mapMonitoringStudentSummary(row, exam.durationMinutes, exam.questionCount),
-    );
-
-    return buildMonitoringOverview({
-        exam: mapMonitoringExam(exam),
+    return {
+        rows,
         lobbyAdmissions: {
             waiting: Number(lobbyAdmissions?.waiting ?? 0),
             approved: Number(lobbyAdmissions?.approved ?? 0),
             inAttempt: Number(lobbyAdmissions?.in_attempt ?? 0),
         },
-        students,
-    });
+    };
 }

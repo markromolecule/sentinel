@@ -39,6 +39,7 @@ export type CompleteSessionScoringContext = {
     answerChecksum: string;
     scoreSnapshot: AttemptScoreSnapshot;
     summary: CompleteSessionSummary;
+    evaluations?: Record<string, any>;
 };
 
 export type CompletedAttemptResult = {
@@ -55,6 +56,7 @@ export type PersistCompleteSessionArgs = {
     summary: CompleteSessionSummary;
     scoreSnapshot: AttemptScoreSnapshot;
     answerChecksum: string;
+    evaluations?: Record<string, any>;
 };
 
 export type CompleteSessionNotificationArgs = {

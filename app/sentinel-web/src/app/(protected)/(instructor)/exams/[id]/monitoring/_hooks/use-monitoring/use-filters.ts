@@ -25,7 +25,28 @@ export function useFilters(students?: StudentSession[]) {
                 student.firstName.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
                 student.lastName.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
                 student.studentNo.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
-            const matchesFilter = filterStatus === 'all' || student.status === filterStatus;
+            let matchesFilter = true;
+            if (filterStatus === 'submitted') {
+                matchesFilter =
+                    student.status === 'submitted' ||
+                    student.lifecycleState === 'SUBMITTED' ||
+                    Boolean(student.completedAt);
+            } else if (filterStatus === 'flagged') {
+                matchesFilter =
+                    student.status === 'flagged' ||
+                    (student.incidentCount ?? 0) > 0 ||
+                    (student.openIncidentCount ?? 0) > 0;
+            } else if (filterStatus === 'active') {
+                matchesFilter =
+                    student.status === 'active' &&
+                    student.lifecycleState !== 'SUBMITTED' &&
+                    !student.completedAt;
+            } else if (filterStatus === 'disconnected') {
+                matchesFilter = student.status === 'disconnected';
+            } else if (filterStatus !== 'all') {
+                matchesFilter = student.status === filterStatus;
+            }
+
             return matchesSearch && matchesFilter;
         });
     }, [students, debouncedSearchQuery, filterStatus]);
