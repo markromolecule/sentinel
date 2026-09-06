@@ -4,10 +4,12 @@ import {
     CardTitle,
     CardContent,
     Badge,
+    Button,
     Slider,
     Label,
     Textarea,
 } from '@sentinel/ui';
+import { RotateCcw } from 'lucide-react';
 import { calculateEssayWeightedScore, LEGACY_ESSAY_RUBRIC } from '@sentinel/shared';
 import type { GradingRubricPaneProps } from './_types';
 
@@ -22,6 +24,7 @@ function GradingRubricPane({
     overallFeedback,
     onOverallFeedbackChange,
     rubric,
+    onRecalculateRubric,
 }: GradingRubricPaneProps) {
     const effectiveRubric = rubric?.definition ?? LEGACY_ESSAY_RUBRIC;
     const versionLabel = rubric
@@ -38,7 +41,7 @@ function GradingRubricPane({
                                 <CardTitle className="text-base font-bold">
                                     Rubric Evaluation Sliders
                                 </CardTitle>
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex flex-wrap items-center gap-1.5">
                                     <span className="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase">
                                         Rubric:
                                     </span>
@@ -50,17 +53,31 @@ function GradingRubricPane({
                                     </Badge>
                                 </div>
                             </div>
-                            <div className="text-right">
-                                <div className="text-muted-foreground text-xs font-medium">
-                                    Weighted Score
-                                </div>
-                                <div className="text-primary text-lg font-bold">
-                                    {calculateEssayWeightedScore(
-                                        activeEval.scores,
-                                        activeQuestion.points,
-                                        effectiveRubric,
-                                    ).toFixed(2)}{' '}
-                                    / {activeQuestion.points} pts
+                            <div className="flex items-center gap-3">
+                                {onRecalculateRubric && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={onRecalculateRubric}
+                                        className="h-8 gap-1.5 text-xs font-medium"
+                                        title="Recalculate scores using active rubric heuristic"
+                                    >
+                                        <RotateCcw className="h-3.5 w-3.5" />
+                                        <span>Re-calculate with Rubric</span>
+                                    </Button>
+                                )}
+                                <div className="text-right">
+                                    <div className="text-muted-foreground text-xs font-medium">
+                                        Weighted Score
+                                    </div>
+                                    <div className="text-primary text-lg font-bold">
+                                        {calculateEssayWeightedScore(
+                                            activeEval.scores,
+                                            activeQuestion.points,
+                                            effectiveRubric,
+                                        ).toFixed(2)}{' '}
+                                        / {activeQuestion.points} pts
+                                    </div>
                                 </div>
                             </div>
                         </div>

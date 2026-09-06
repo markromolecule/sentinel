@@ -28,6 +28,7 @@ type UseGradingAttemptReturn = {
     isSubmitting: boolean;
     handleScoreChange: (qId: string, criterionKey: keyof CriteriaScores, value: number) => void;
     handleFeedbackChange: (qId: string, text: string) => void;
+    handleRecalculateRubric: () => void;
     handleSubmit: (finalize: boolean) => void;
 };
 

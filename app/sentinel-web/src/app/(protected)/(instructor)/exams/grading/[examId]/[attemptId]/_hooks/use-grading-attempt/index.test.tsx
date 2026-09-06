@@ -3,8 +3,13 @@ import { renderHook, waitFor, act } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
 import { useGradingAttempt } from './index';
-import { getGradingAttemptDetail, updateGradingAttempt } from '@sentinel/services';
+import {
+    getGradingAttemptDetail,
+    updateGradingAttempt,
+    type GradingAttemptDetail,
+} from '@sentinel/services';
 import { LEGACY_ESSAY_RUBRIC } from '@sentinel/shared';
+import { toast } from 'sonner';
 
 const { mockApiClient } = vi.hoisted(() => ({
     mockApiClient: vi.fn(),
@@ -12,6 +17,13 @@ const { mockApiClient } = vi.hoisted(() => ({
 
 const mockPush = vi.fn();
 const mockRefresh = vi.fn();
+
+vi.mock('sonner', () => ({
+    toast: {
+        success: vi.fn(),
+        error: vi.fn(),
+    },
+}));
 
 vi.mock('@sentinel/hooks', () => ({
     useApi: () => mockApiClient,
@@ -88,7 +100,9 @@ describe('useGradingAttempt', () => {
             ],
         };
 
-        vi.mocked(getGradingAttemptDetail).mockResolvedValue(attemptDetail);
+        vi.mocked(getGradingAttemptDetail).mockResolvedValue(
+            attemptDetail as unknown as GradingAttemptDetail,
+        );
 
         const { result } = renderHook(
             () => useGradingAttempt({ examId: 'exam-id', attemptId: 'attempt-id' }),
@@ -151,7 +165,9 @@ describe('useGradingAttempt', () => {
             ],
         };
 
-        vi.mocked(getGradingAttemptDetail).mockResolvedValue(attemptDetail);
+        vi.mocked(getGradingAttemptDetail).mockResolvedValue(
+            attemptDetail as unknown as GradingAttemptDetail,
+        );
 
         const { result } = renderHook(
             () => useGradingAttempt({ examId: 'exam-id', attemptId: 'attempt-id' }),
@@ -214,7 +230,9 @@ describe('useGradingAttempt', () => {
             ],
         };
 
-        vi.mocked(getGradingAttemptDetail).mockResolvedValue(attemptDetail);
+        vi.mocked(getGradingAttemptDetail).mockResolvedValue(
+            attemptDetail as unknown as GradingAttemptDetail,
+        );
         vi.mocked(updateGradingAttempt).mockResolvedValue({
             attemptId: 'attempt-id',
             score: 18,
@@ -325,7 +343,9 @@ describe('useGradingAttempt', () => {
             ],
         };
 
-        vi.mocked(getGradingAttemptDetail).mockResolvedValue(attemptDetail);
+        vi.mocked(getGradingAttemptDetail).mockResolvedValue(
+            attemptDetail as unknown as GradingAttemptDetail,
+        );
 
         const { result } = renderHook(
             () => useGradingAttempt({ examId: 'exam-id', attemptId: 'attempt-id' }),
@@ -352,4 +372,77 @@ describe('useGradingAttempt', () => {
 
         expect(result.current.scoreSummary.essayScore).toBe(14);
     });
+
+    it('recalculates scores and feedback when handleRecalculateRubric is called', async () => {
+        const attemptDetail = {
+            attempt: {
+                id: 'attempt-id',
+                examId: 'exam-id',
+                studentName: 'Alice Student',
+                studentNumber: '2026-0001',
+                examTitle: 'Final Exam',
+                subjectTitle: 'Computer Science',
+                totalScore: 100,
+                status: 'SUBMITTED',
+                completedAt: '2026-06-13T00:00:00Z',
+                answers: {
+                    'q-1': 'Polymorphism is a fundamental concept in object-oriented programming that allows objects of different concrete classes to be treated through a unified interface. For example, runtime polymorphism is achieved through method overriding, allowing dynamic dispatch at execution time depending on the underlying object type. Furthermore, compile-time polymorphism can be achieved through method overloading or generics. In addition, polymorphism improves system maintainability and extensibility by decoupling high-level business logic from specific low-level implementations.',
+                },
+                evaluations: {
+                    'q-1': {
+                        scores: {
+                            contentSubstance: 1,
+                            structureOrganization: 1,
+                            argumentationSupport: 1,
+                            styleTone: 1,
+                            grammarConventions: 1,
+                        },
+                        feedback: 'Initial low score',
+                    },
+                },
+                rubric: mockLegacyRubric,
+            },
+            questions: [
+                {
+                    id: 'q-1',
+                    examId: 'exam-id',
+                    type: 'ESSAY',
+                    points: 20,
+                    orderIndex: 0,
+                    content: {
+                        prompt: 'Explain polymorphism.',
+                    },
+                },
+            ],
+        };
+
+        vi.mocked(getGradingAttemptDetail).mockResolvedValue(
+            attemptDetail as unknown as GradingAttemptDetail,
+        );
+
+        const { result } = renderHook(
+            () => useGradingAttempt({ examId: 'exam-id', attemptId: 'attempt-id' }),
+            {
+                wrapper: createWrapper(),
+            },
+        );
+
+        await waitFor(() => {
+            expect(result.current.isLoading).toBe(false);
+        });
+
+        // Initially scores were loaded from evaluations (all 1)
+        expect(result.current.evaluations['q-1'].scores.contentSubstance).toBe(1);
+
+        // Call handleRecalculateRubric
+        act(() => {
+            result.current.handleRecalculateRubric();
+        });
+
+        // The substantive answer evaluates to higher scores than 1
+        expect(result.current.evaluations['q-1'].scores.contentSubstance).toBeGreaterThanOrEqual(2);
+        expect(result.current.evaluations['q-1'].feedback).toContain('Evaluated via rubric');
+        expect(toast.success).toHaveBeenCalledWith('Rubric pre-scoring applied.');
+    });
 });
+

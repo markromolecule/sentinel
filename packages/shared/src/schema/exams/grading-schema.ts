@@ -145,3 +145,4 @@ export const updateGradingAttemptBodySchema = z.object({
 export type AttemptGradingDetailType = z.infer<typeof attemptGradingDetailSchema>;
 export type GradingQuestionType = z.infer<typeof gradingQuestionSchema>;
 export type UpdateGradingAttemptBodyType = z.infer<typeof updateGradingAttemptBodySchema>;
+

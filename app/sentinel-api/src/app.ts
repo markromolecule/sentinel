@@ -184,6 +184,7 @@ app.route('/exams', examsRouter);
 app.route('/rubrics', rubricRouter);
 app.route('/history', historyRouter);
 app.route('/grading', gradingRouter);
+app.route('/examination/grading', gradingRouter);
 app.route('/examination/assign', assignRouter);
 app.route('/configuration', configurationRouter);
 app.route('/examination/access', examinationAccessRouter);

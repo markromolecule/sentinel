@@ -1,6 +1,10 @@
 import { HTTPException } from 'hono/http-exception';
 import { type DbClient } from '@sentinel/db';
-import { type ExamAttemptAnswers } from '@sentinel/shared';
+import {
+    calculateEssayWeightedScore,
+    evaluateEssayWithRubric,
+    type ExamAttemptAnswers,
+} from '@sentinel/shared';
 import { getExamConfigurationState } from '../../../configuration/configuration.service';
 import { getExamQuestionsData } from '../../../exams/data/get-exam-questions';
 import {
@@ -67,6 +71,34 @@ export async function buildCompleteSessionScoringContext(args: {
     const normalizedQuestions = normalizeAssessmentSnapshotQuestions(assessmentSnapshot.questions);
     const rubric = resolveAssessmentSnapshotRubric(assessmentSnapshot);
 
+    const essayQuestions = normalizedQuestions.filter((q) => q.type === 'ESSAY');
+    const essayEvaluations: Record<string, any> = {};
+
+    if (essayQuestions.length > 0) {
+        for (const question of essayQuestions) {
+            const studentAnswer =
+                typeof body.answers[question.id] === 'string'
+                    ? (body.answers[question.id] as string)
+                    : null;
+            const prompt =
+                question.content && typeof (question.content as any).prompt === 'string'
+                    ? (question.content as any).prompt
+                    : '';
+            const evaluation = evaluateEssayWithRubric(studentAnswer, prompt, rubric.definition);
+            const essayScore = calculateEssayWeightedScore(
+                evaluation.scores,
+                question.points,
+                rubric.definition,
+            );
+
+            essayEvaluations[question.id] = {
+                scores: evaluation.scores,
+                score: essayScore,
+                feedback: evaluation.feedback,
+            };
+        }
+    }
+
     const answerChecksum = buildAnswerPayloadChecksum({
         attemptId: body.sessionId,
         answers: body.answers as ExamAttemptAnswers,
@@ -93,6 +125,7 @@ export async function buildCompleteSessionScoringContext(args: {
         questions: normalizedQuestions,
         answers: body.answers as ExamAttemptAnswers,
         answerChecksum,
+        evaluations: essayEvaluations,
         rubric,
     });
 
@@ -120,5 +153,6 @@ export async function buildCompleteSessionScoringContext(args: {
         answerChecksum,
         scoreSnapshot,
         summary,
+        evaluations: essayEvaluations,
     };
 }

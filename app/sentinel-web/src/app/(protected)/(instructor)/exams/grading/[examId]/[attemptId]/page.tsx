@@ -39,6 +39,7 @@ function AttemptGradingPage({ params }: AttemptGradingPageProps) {
         isSubmitting,
         handleScoreChange,
         handleFeedbackChange,
+        handleRecalculateRubric,
         handleSubmit,
     } = useGradingAttempt({ examId, attemptId });
 
@@ -96,6 +97,7 @@ function AttemptGradingPage({ params }: AttemptGradingPageProps) {
                         overallFeedback={overallFeedback}
                         onOverallFeedbackChange={setOverallFeedback}
                         rubric={attemptDetail?.attempt.rubric}
+                        onRecalculateRubric={handleRecalculateRubric}
                     />
                 </div>
             )}

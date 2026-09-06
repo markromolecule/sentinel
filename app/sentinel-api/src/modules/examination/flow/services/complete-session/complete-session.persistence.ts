@@ -18,8 +18,16 @@ export async function persistCompletedSession(
         summary,
         scoreSnapshot,
         answerChecksum,
+        evaluations,
     } = args;
     const { attempt, examId, studentId } = attemptContext;
+
+    const answersWithEvaluations = {
+        ...body.answers,
+        ...(evaluations && Object.keys(evaluations).length > 0
+            ? { _evaluations: evaluations }
+            : {}),
+    } as unknown as ExamAttemptAnswers;
 
     return executeTransaction(async (trx) => {
         const updatedAttempt = await SessionRepository.completeSession(trx, {
@@ -29,7 +37,7 @@ export async function persistCompletedSession(
             totalScore: summary.totalScore,
             timeSpentMinutes: body.elapsedSeconds > 0 ? Math.ceil(body.elapsedSeconds / 60) : 0,
             answeredCount: summary.answeredCount,
-            answers: body.answers as ExamAttemptAnswers,
+            answers: answersWithEvaluations,
             scoreSnapshot,
             scoringVersion: ATTEMPT_SCORING_VERSION,
         });
