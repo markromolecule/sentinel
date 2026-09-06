@@ -1,19 +1,12 @@
 'use client';
 
-import { useCallback, useMemo, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAudioSettingsQuery } from '@sentinel/hooks';
-import { DEFAULT_AUDIO_ANOMALY_CONFIG } from '@sentinel/shared';
-import { getRuntimePassageDetails, hasAnswer } from '@/features/exams/_components/engine';
-import { useStudentExamData } from '@/app/(protected)/student/exam/[id]/_hooks/use-student-exam-data';
+import { useCallback } from 'react';
+import { useAuth } from '@sentinel/hooks';
 import { useExamSession } from '@/app/(protected)/student/exam/[id]/_hooks/use-exam-session';
 import { useExamInterruption } from '@/app/(protected)/student/exam/[id]/_hooks/use-exam-interruption';
 import { useTurnedInExamRedirect } from '@/app/(protected)/student/exam/[id]/_hooks/use-turned-in-exam-redirect';
-import { resolveStudentExamMediaPipeSandbox } from '@/app/(protected)/student/exam/[id]/_lib/student-exam-flow';
-import {
-    readStoredLobbyEntry,
-    readStoredExamSession,
-} from '@/app/(protected)/student/exam/[id]/_lib/exam-session-storage';
+import { useStudentExamStageGuard } from '@/app/(protected)/student/exam/[id]/_hooks/use-student-exam-stage-guard';
+
 import { useAttemptNavigation } from './use-attempt-navigation';
 import { useAttemptAnswers } from './use-attempt-answers';
 import { useAttemptSync } from './use-attempt-sync';
@@ -21,11 +14,11 @@ import { useAttemptUIState } from './use-attempt-ui-state';
 import { useAttemptMonitoring } from './use-attempt-monitoring';
 import { useAttemptSubmission } from './use-attempt-submission';
 import { useActiveAttemptLifecycle } from '../use-active-attempt-lifecycle';
-
-import { useStudentExamStageGuard } from '@/app/(protected)/student/exam/[id]/_hooks/use-student-exam-stage-guard';
+import { useAttemptBlockedState } from './use-attempt-blocked-state';
+import { useAttemptEffectiveConfig } from './use-attempt-effective-config';
+import { useAttemptQuestionContext } from './use-attempt-question-context';
 
 export function useStudentExamAttempt() {
-    const { replace } = useRouter();
     const stageGuard = useStudentExamStageGuard('attempt');
     const {
         examId,
@@ -35,32 +28,14 @@ export function useStudentExamAttempt() {
         mediaPipeSandbox,
         questions,
         isResolving,
-        isResolving: isLoading,
     } = stageGuard;
 
-    const [localBlockedMessage, setLocalBlockedMessage] = useState<string | null>(null);
-    const [terminalAttemptSuspended, setTerminalAttemptSuspended] = useState(false);
-
-    const effectiveBlockedState = useMemo(() => {
-        if (localBlockedMessage) {
-            const isSuperseded = /reset|replaced|superseded/i.test(localBlockedMessage);
-            return {
-                isBlocked: true,
-                code: isSuperseded ? 'SUPERSEDED' : ('LOCKED' as const),
-                title: isSuperseded ? 'Attempt Replaced' : 'Exam Locked',
-                message: localBlockedMessage,
-            };
-        }
-
-        return (
-            blockedState ?? {
-                isBlocked: false,
-                code: null,
-                title: null,
-                message: null,
-            }
-        );
-    }, [blockedState, localBlockedMessage]);
+    const {
+        setLocalBlockedMessage,
+        terminalAttemptSuspended,
+        setTerminalAttemptSuspended,
+        effectiveBlockedState,
+    } = useAttemptBlockedState(blockedState);
 
     const answersHook = useAttemptAnswers();
     const uiHook = useAttemptUIState();
@@ -77,7 +52,7 @@ export function useStudentExamAttempt() {
         examId,
         examDurationMinutes: exam?.duration,
         runtimeAccess: exam?.runtimeAccess,
-        isLoadingData: isLoading,
+        isLoadingData: isResolving,
         isSessionStartBlocked:
             exam?.status === 'turned_in' ||
             terminalAttemptSuspended ||
@@ -98,11 +73,13 @@ export function useStudentExamAttempt() {
         onLifecycleBlocked: (msg) => setLocalBlockedMessage(msg),
     });
 
+    const { setMonitoringPhase } = uiHook;
     const handleTerminalAttempt = useCallback(() => {
         setTerminalAttemptSuspended(true);
-        uiHook.setMonitoringPhase('suspended');
-    }, [uiHook.setMonitoringPhase]);
+        setMonitoringPhase('suspended');
+    }, [setMonitoringPhase, setTerminalAttemptSuspended]);
 
+    const { user } = useAuth();
     const terminalLifecycle = useActiveAttemptLifecycle({
         examId,
         sessionId: examSession?.sessionId,
@@ -116,7 +93,7 @@ export function useStudentExamAttempt() {
     const isTerminalAttempt = terminalAttemptSuspended || terminalLifecycle.isTerminal;
     const renderedBlockedState = terminalLifecycle.blockedState ?? effectiveBlockedState;
 
-    const { flushPendingProgress } = useAttemptSync({
+    const { flushPendingProgress, broadcastSubmitted } = useAttemptSync({
         isInitializingSession,
         sessionId: examSession?.sessionId,
         elapsedSecondsRef,
@@ -125,6 +102,9 @@ export function useStudentExamAttempt() {
         syncProgress,
         onLifecycleBlocked: (msg) => setLocalBlockedMessage(msg),
         isSuspended: isTerminalAttempt,
+        examId,
+        studentId: user?.id,
+        totalQuestions: questions.length,
     });
 
     const isRedirectingToHistory = useTurnedInExamRedirect({
@@ -147,49 +127,18 @@ export function useStudentExamAttempt() {
         onBeforeInterruption: () => saveAnswerDraft(answersHook.selectedAnswers, elapsedSeconds),
     });
 
-    const effectiveConfiguration = useMemo(
-        () => examSession?.configSnapshot?.configuration ?? configuration,
-        [configuration, examSession?.configSnapshot?.configuration],
-    );
-
-    const effectiveMediaPipeSandbox = useMemo(
-        () =>
-            resolveStudentExamMediaPipeSandbox({
-                configuration: effectiveConfiguration,
-                mediaPipeSandbox,
-            }),
-        [effectiveConfiguration, mediaPipeSandbox],
-    );
-    const canonicalAttemptId = examSession?.attemptId ?? exam?.attemptId ?? null;
-    const effectiveCameraRequired = Boolean(effectiveConfiguration?.cameraRequired);
-    const isLiveInspectionEligible =
-        Boolean(examSession?.sessionId) &&
-        Boolean(canonicalAttemptId) &&
-        effectiveCameraRequired &&
-        !renderedBlockedState.isBlocked &&
-        !uiHook.isRedirectingToTurnIn &&
-        !isRedirectingToHistory &&
-        !isTerminalAttempt;
-    const audioSettingsQuery = useAudioSettingsQuery();
-    const effectiveAudioSettings = useMemo(() => {
-        if (!effectiveConfiguration?.aiRules?.audio_anomaly_detection) {
-            return null;
-        }
-
-        if (audioSettingsQuery.data?.value) {
-            return audioSettingsQuery.data.value;
-        }
-
-        if (audioSettingsQuery.isLoading) {
-            return null;
-        }
-
-        return DEFAULT_AUDIO_ANOMALY_CONFIG;
-    }, [
-        audioSettingsQuery.data?.value,
-        audioSettingsQuery.isLoading,
-        effectiveConfiguration?.aiRules?.audio_anomaly_detection,
-    ]);
+    const configHook = useAttemptEffectiveConfig({
+        configuration,
+        sessionConfiguration: examSession?.configSnapshot?.configuration,
+        mediaPipeSandbox,
+        examAttemptId: exam?.attemptId,
+        sessionAttemptId: examSession?.attemptId,
+        sessionId: examSession?.sessionId,
+        isBlocked: renderedBlockedState.isBlocked,
+        isRedirectingToTurnIn: uiHook.isRedirectingToTurnIn,
+        isRedirectingToHistory,
+        isTerminalAttempt,
+    });
 
     const navigationHook = useAttemptNavigation({
         totalQuestions: questions.length,
@@ -197,70 +146,51 @@ export function useStudentExamAttempt() {
 
     const monitoringHook = useAttemptMonitoring({
         examId,
-        attemptId: canonicalAttemptId ?? undefined,
-        audioSettings: effectiveAudioSettings,
-        configuration: effectiveConfiguration,
+        attemptId: configHook.canonicalAttemptId ?? undefined,
+        audioSettings: configHook.effectiveAudioSettings,
+        configuration: configHook.effectiveConfiguration,
         examSessionId: examSession?.sessionId,
         isRedirectingToTurnIn: uiHook.isRedirectingToTurnIn,
-        mediaPipeSandbox: effectiveMediaPipeSandbox,
+        mediaPipeSandbox: configHook.effectiveMediaPipeSandbox,
         runtimeAccess: exam?.runtimeAccess,
         monitoringPhase: uiHook.monitoringPhase,
         isTerminalAttempt,
     });
 
-    const unansweredQuestions = questions.filter(
-        (question) => !hasAnswer(answersHook.selectedAnswers[question.id]),
-    );
-    const unansweredCount = unansweredQuestions.length;
-    const unansweredQuestionLabels = unansweredQuestions.slice(0, 8).map((question, index) => {
-        const qIndex = questions.findIndex((q) => q.id === question.id);
-        return `Q${qIndex >= 0 ? qIndex + 1 : index + 1}`;
+    const questionContext = useAttemptQuestionContext({
+        questions,
+        currentQuestionIndex: navigationHook.currentQuestionIndex,
+        selectedAnswers: answersHook.selectedAnswers,
+        answeredCount: answersHook.answeredCount,
+        reviewQuestionIds: uiHook.reviewQuestionIds,
+        setIsCompactPassageOpen: uiHook.setIsCompactPassageOpen,
     });
 
     const submissionHook = useAttemptSubmission({
         examId,
         sessionId: examSession?.sessionId,
-        releaseScoreMode: effectiveConfiguration.releaseScoreMode ?? 'AUTO_RELEASE',
+        releaseScoreMode: configHook.effectiveConfiguration?.releaseScoreMode ?? 'AUTO_RELEASE',
         questions,
         selectedAnswers: answersHook.selectedAnswers,
         elapsedSeconds,
-        unansweredCount,
+        unansweredCount: questionContext.unansweredCount,
         isRedirectingToTurnIn: uiHook.isRedirectingToTurnIn,
         setIsRedirectingToTurnIn: uiHook.setIsRedirectingToTurnIn,
         setIsSubmitDialogOpen: uiHook.setIsSubmitDialogOpen,
         suspendSecurityMonitoring: monitoringHook.suspendSecurityMonitoring,
         isBlocked: renderedBlockedState.isBlocked || isTerminalAttempt,
         setMonitoringPhase: uiHook.setMonitoringPhase,
-    });
-
-    const safeQuestionIndex = navigationHook.currentQuestionIndex;
-    const currentQuestion = questions[safeQuestionIndex] ?? null;
-    const progress = questions.length
-        ? Math.round((answersHook.answeredCount / questions.length) * 100)
-        : 0;
-
-    const isCurrentQuestionFlagged = currentQuestion
-        ? uiHook.reviewQuestionIds.includes(currentQuestion.id)
-        : false;
-
-    // Close the compact passage sheet on question change
-    const currentQuestionId = currentQuestion?.id;
-    useEffect(() => {
-        uiHook.setIsCompactPassageOpen(false);
-    }, [currentQuestionId]);
-
-    const currentContext = getRuntimePassageDetails({
-        questionPassageContent: currentQuestion?.passageContent,
-        questionPassageType: currentQuestion?.passageType,
+        flushPendingProgress,
+        broadcastSubmitted,
     });
 
     return {
         // Data
         examId,
         examSessionId: examSession?.sessionId ?? null,
-        attemptId: canonicalAttemptId,
-        effectiveCameraRequired,
-        isLiveInspectionEligible,
+        attemptId: configHook.canonicalAttemptId,
+        effectiveCameraRequired: configHook.effectiveCameraRequired,
+        isLiveInspectionEligible: configHook.isLiveInspectionEligible,
         exam,
         questions,
         isLoading: isResolving,
@@ -268,15 +198,15 @@ export function useStudentExamAttempt() {
         isRedirectingHistory: isRedirectingToHistory || terminalLifecycle.isNavigatingToHistory,
         isTerminalAttempt,
         blockedState: renderedBlockedState,
-        currentQuestion,
-        safeQuestionIndex,
+        currentQuestion: questionContext.currentQuestion,
+        safeQuestionIndex: questionContext.safeQuestionIndex,
         answeredCount: answersHook.answeredCount,
         answeredQuestionIds: answersHook.answeredQuestionIds,
-        progress,
-        unansweredCount,
-        unansweredQuestionLabels,
-        isCurrentQuestionFlagged,
-        currentContext,
+        progress: questionContext.progress,
+        unansweredCount: questionContext.unansweredCount,
+        unansweredQuestionLabels: questionContext.unansweredQuestionLabels,
+        isCurrentQuestionFlagged: questionContext.isCurrentQuestionFlagged,
+        currentContext: questionContext.currentContext,
         secondsRemaining,
         flushPendingProgress,
         // State
@@ -318,3 +248,4 @@ export function useStudentExamAttempt() {
         setCurrentQuestionIndex: navigationHook.setCurrentQuestionIndex,
     };
 }
+

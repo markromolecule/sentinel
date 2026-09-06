@@ -607,4 +607,70 @@ describe('useAttemptSync — one-in-flight coordinator', () => {
         expect(syncProgress).toHaveBeenCalledTimes(2);
         expect(onLifecycleBlocked).toHaveBeenCalledTimes(1);
     });
+
+    // ── Realtime Broadcasts ───────────────────────────────────────────────────
+
+    it('broadcasts student:progress immediately when answers change without waiting for debounce', () => {
+        const monitoringChannel = {
+            send: vi.fn(),
+        };
+
+        renderHook(() =>
+            useAttemptSync({
+                isInitializingSession: false,
+                sessionId: 'session-1',
+                elapsedSecondsRef: makeElapsedRef(10),
+                selectedAnswers: { 'q-1': 'A', 'q-2': 'B' } as any,
+                saveAnswerDraft: makeSaveAnswerDraft(),
+                syncProgress: makeSyncProgress(),
+                examId: 'exam-1',
+                studentId: 'student-42',
+                totalQuestions: 4,
+                monitoringChannel,
+            }),
+        );
+
+        expect(monitoringChannel.send).toHaveBeenCalledWith({
+            type: 'broadcast',
+            event: 'student:progress',
+            payload: {
+                studentId: 'student-42',
+                answeredCount: 2,
+                totalQuestions: 4,
+                progress: 50,
+            },
+        });
+    });
+
+    it('broadcasts student:submitted via broadcastSubmitted callback', () => {
+        const monitoringChannel = {
+            send: vi.fn(),
+        };
+
+        const { result } = renderHook(() =>
+            useAttemptSync({
+                isInitializingSession: false,
+                sessionId: 'session-1',
+                elapsedSecondsRef: makeElapsedRef(10),
+                selectedAnswers: { 'q-1': 'A' } as any,
+                saveAnswerDraft: makeSaveAnswerDraft(),
+                syncProgress: makeSyncProgress(),
+                examId: 'exam-1',
+                studentId: 'student-42',
+                totalQuestions: 4,
+                monitoringChannel,
+            }),
+        );
+
+        result.current.broadcastSubmitted();
+
+        expect(monitoringChannel.send).toHaveBeenCalledWith({
+            type: 'broadcast',
+            event: 'student:submitted',
+            payload: {
+                studentId: 'student-42',
+                submittedAt: expect.any(String),
+            },
+        });
+    });
 });

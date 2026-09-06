@@ -44,6 +44,7 @@ vi.mock('@sentinel/hooks', () => ({
     useApi: () => ({ mockClient: true }),
     useAudioSettingsQuery: () => mockUseAudioSettingsQuery(),
     useExamSessionStatusQuery: (...args: unknown[]) => mockUseExamSessionStatusQuery(...args),
+    useAuth: () => ({ user: { id: 'student-1' } }),
 }));
 
 vi.mock('@/app/(protected)/student/exam/[id]/_hooks/use-student-exam-stage-guard', async () => {

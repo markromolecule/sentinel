@@ -16,6 +16,7 @@ export * from './use-stable-value';
 export * from './use-notification-realtime';
 export * from './use-message-realtime';
 export * from './use-lobby-realtime';
+export * from './use-monitoring-realtime';
 export * from './use-server-pagination';
 export * from './query/_shared/permission-errors';
 export * from './query/notifications';

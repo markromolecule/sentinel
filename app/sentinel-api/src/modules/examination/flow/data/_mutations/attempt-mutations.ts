@@ -18,6 +18,7 @@ export async function insertNewAttempt(db: DbClient, examId: string, studentId: 
             student_id: studentId,
             status: 'IN_PROGRESS',
             lifecycle_state: 'IN_PROGRESS',
+            answered_question_count: 0,
             started_at: new Date(),
             created_at: new Date(),
             time_spent_minutes: 0,

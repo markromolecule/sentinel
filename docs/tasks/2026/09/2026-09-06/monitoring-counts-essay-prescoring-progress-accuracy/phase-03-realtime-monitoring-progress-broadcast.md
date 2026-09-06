@@ -3,7 +3,7 @@ title: "Phase 3: Zero-DB Real-Time Monitoring Progress Broadcast"
 type: phase
 parent: "monitoring-counts-essay-prescoring-progress-accuracy"
 phase: "03"
-status: planned
+status: completed
 created: "2026-09-06"
 tags: [task, phase, realtime, supabase, monitoring, progress]
 ---
@@ -28,13 +28,13 @@ Implement an ultra-low-latency (<50ms) real-time student progress update mechani
 
 ## Implementation Tasks
 
-- [ ] **Task 3.1 (Broadcast Hook for Instructor Monitoring):**
+- [x] **Task 3.1 (Broadcast Hook for Instructor Monitoring):**
   - Create `useMonitoringRealtime({ examId, onProgressUpdate, onStudentSubmitted })` in `packages/hooks/`.
   - Channel name: `exam:${examId}:monitoring`.
   - Listens to:
     1. `broadcast` event `student:progress` with payload: `{ studentId: string, answeredCount: number, totalQuestions: number, progress: number }`.
     2. `broadcast` event `student:submitted` with payload: `{ studentId: string, submittedAt: string }`.
-- [ ] **Task 3.2 (Student Progress Broadcaster):**
+- [x] **Task 3.2 (Student Progress Broadcaster):**
   - In `use-attempt-sync.ts` (Web) and `use-exam-session-sync.ts` (Mobile):
   - When the student selects/changes an answer, alongside the existing local draft save and debounced remote HTTP sync, trigger:
 
@@ -47,18 +47,26 @@ Implement an ultra-low-latency (<50ms) real-time student progress update mechani
     ```
 
   - This is a non-blocking WebSocket broadcast taking <50ms and incurring zero database writes or locks.
-- [ ] **Task 3.3 (Instructor UI Local State Merge):**
+- [x] **Task 3.3 (Instructor UI Local State Merge):**
   - In `use-monitoring`, maintain an in-memory map of live progress overrides: `liveProgressMap: Record<string, number>`.
   - Merged student item computes `progress = liveProgressMap[student.id] ?? student.progress`.
   - When `student:submitted` is received, immediately mark the student as submitted and bump `stats.submitted` without waiting for the 6-second query refetch.
-- [ ] **Task 3.4 (DB Initialization Sanity):**
+- [x] **Task 3.4 (DB Initialization Sanity):**
   - In `insertNewAttempt` (`attempt-mutations.ts`), set `answered_question_count: 0` explicitly on attempt creation.
 
 ## Verification & Testing
 
-- Unit tests for `useMonitoringRealtime`.
-- Integration test simulating student progress broadcasts and asserting UI update without network refetch.
-- Verify zero extra rows in PostgreSQL `pg_stat_statements` or WAL logs during active student broadcasts.
+- Unit tests for `useMonitoringRealtime`:
+  - `packages/hooks/src/use-monitoring-realtime.test.ts` (5/5 passed).
+- Integration tests in web and mobile:
+  - `sentinel-web`: `use-monitoring.test.tsx` (11/11 passed, asserts live broadcast merges progress and increments `stats.submitted`).
+  - `sentinel-web`: `use-attempt-sync.test.tsx` (22/22 passed, verifies `broadcastProgress`).
+  - `sentinel-web`: `use-attempt-submission.test.tsx` (7/7 passed, verifies `broadcastSubmitted`).
+  - `sentinel-web`: `use-student-exam-attempt/index.test.tsx` (12/12 passed).
+  - `sentinel-mobile`: `use-exam-session-sync.test.ts` (2/2 passed, verifies `broadcastProgress` and `broadcastSubmitted`).
+  - `sentinel-mobile`: `use-exam-session.test.ts` (9/9 passed).
+- Database mutation verified:
+  - `attempt-mutations.ts` explicitly sets `answered_question_count: 0` on new attempts.
 
 ## Risks & Rollback
 

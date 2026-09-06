@@ -26,6 +26,7 @@ export type UseAttemptSubmissionArgs = {
     isBlocked?: boolean;
     setMonitoringPhase?: (phase: AttemptMonitoringPhase) => void;
     flushPendingProgress?: () => Promise<void>;
+    broadcastSubmitted?: () => void;
 };
 
 /**
@@ -50,6 +51,7 @@ export function useAttemptSubmission({
     isBlocked,
     setMonitoringPhase,
     flushPendingProgress,
+    broadcastSubmitted,
 }: UseAttemptSubmissionArgs) {
     const router = useRouter();
     const apiClient = useApi();
@@ -101,6 +103,8 @@ export function useAttemptSubmission({
                 answers: selectedAnswers as ExamAttemptAnswers,
                 elapsedSeconds,
             });
+
+            broadcastSubmitted?.();
 
             writeStoredExamTurnInPreview({
                 examId,

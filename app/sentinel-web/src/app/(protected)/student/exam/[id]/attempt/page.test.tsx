@@ -85,6 +85,7 @@ vi.mock('@/hooks/use-audio-anomaly-worker', () => ({
 
 vi.mock('@sentinel/hooks', () => ({
     useApi: () => ({ mockClient: true }),
+    useAuth: () => ({ user: { id: 'student-1' }, supabase: null }),
     useAudioSettingsQuery: () => mockUseAudioSettingsQuery(),
     useExamSessionStatusQuery: (...args: unknown[]) => mockUseExamSessionStatusQuery(...args),
 }));

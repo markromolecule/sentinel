@@ -48,13 +48,13 @@ tags: [task, monitoring, grading, essay-rubric, progress-bar, realtime]
 |---|---|---|---|---|---|
 | AC-01 | SC-01 / DEC-01 | `stats.submitted` reflects all attempts where `lifecycle_state === 'SUBMITTED'` or `attempt_status === 'COMPLETED'` | [`map-monitoring-response.ts`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/app/sentinel-api/src/modules/examination/monitoring/services/map-monitoring-response.ts) | Unit tests in `map-monitoring-response.test.ts` | Passed |
 | AC-02 | SC-01 / DEC-01 | Filtering by "Submitted" on monitoring view displays submitted students regardless of incident flags | [`use-filters.ts`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/app/sentinel-web/src/app/(protected)/(instructor)/exams/[id]/monitoring/_hooks/use-monitoring/use-filters.ts) | Unit tests in `use-filters.test.ts` | Passed |
-| AC-03 | SC-02 / DEC-02 | Progress bar on `/exams?view=grade` reflects progress against total cohort (`graded / total`) or dual-fill | [`columns.tsx`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/app/sentinel-web/src/app/(protected)/(instructor)/exams/grading/_components/columns.tsx) | Table render tests | Planned |
-| AC-04 | SC-03 / DEC-03 | Student answer progress broadcasts via Supabase channel `exam:${examId}:monitoring` and updates instructor monitoring UI without DB query | `use-monitoring-realtime.ts` + `use-attempt-sync.ts` | Realtime hook unit tests | Planned |
+| AC-03 | SC-02 / DEC-02 | Progress bar on `/exams?view=grade` reflects progress against total cohort (`graded / total`) or dual-fill | [`columns.tsx`](file:///Applications/XAMPP/xamppfiles/htdocs/sentinel/app/sentinel-web/src/app/(protected)/(instructor)/exams/grading/_components/columns.tsx) | Table render tests (`columns.test.tsx`) | Passed |
+| AC-04 | SC-03 / DEC-03 | Student answer progress broadcasts via Supabase channel `exam:${examId}:monitoring` and updates instructor monitoring UI without DB query | `use-monitoring-realtime.ts` + `use-attempt-sync.ts` | Realtime hook unit tests | Passed |
 | AC-05 | SC-04 / DEC-04 | Gemini pre-scores essay responses against active rubric criteria descriptions and levels (0-4), populating draft scores for instructor confirmation | `essay-prescoring.service.ts` + `GradingRubricPane.tsx` | Service unit tests + UI interaction tests | Planned |
 
 ## Phases
 
 - [x] `phase-01-monitoring-submitted-count-and-status.md` — Phase 1: Monitoring Submitted Count & Status Decoupling
-- [ ] `phase-02-grading-table-progress-bar-accuracy.md` — Phase 2: Grading Table Progress Bar & Visual Cohort Accuracy
-- [ ] `phase-03-realtime-monitoring-progress-broadcast.md` — Phase 3: Zero-DB Real-Time Monitoring Progress Broadcast
+- [x] `phase-02-grading-table-progress-bar-accuracy.md` — Phase 2: Grading Table Progress Bar & Visual Cohort Accuracy
+- [x] `phase-03-realtime-monitoring-progress-broadcast.md` — Phase 3: Zero-DB Real-Time Monitoring Progress Broadcast
 - [ ] `phase-04-essay-rubric-ai-prescoring.md` — Phase 4: Essay Rubric AI Pre-Scoring & Calibration Workspace

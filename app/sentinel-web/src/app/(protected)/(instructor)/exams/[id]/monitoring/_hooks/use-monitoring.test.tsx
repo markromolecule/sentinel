@@ -15,6 +15,7 @@ const {
     mockUseReopenExamAttemptMutation,
     mockUseResetExamAttemptMutation,
     mockUseAuthorizeStudentReentryMutation,
+    mockUseMonitoringRealtime,
 } = vi.hoisted(() => ({
     mockUseCloseExamAttemptMutation: vi.fn(),
     mockUseApi: vi.fn(),
@@ -28,6 +29,7 @@ const {
     mockUseReopenExamAttemptMutation: vi.fn(),
     mockUseResetExamAttemptMutation: vi.fn(),
     mockUseAuthorizeStudentReentryMutation: vi.fn(),
+    mockUseMonitoringRealtime: vi.fn(),
 }));
 
 vi.mock('@sentinel/hooks', () => ({
@@ -36,6 +38,7 @@ vi.mock('@sentinel/hooks', () => ({
     useDebounce: (value: string, delay: number) => mockUseDebounce(value, delay),
     useStableValue: (factory: () => unknown, deps: unknown[]) => mockUseStableValue(factory, deps),
     useExamMonitoringOverviewQuery: (examId: string) => mockUseExamMonitoringOverviewQuery(examId),
+    useMonitoringRealtime: (options?: unknown) => mockUseMonitoringRealtime(options),
     useGrantMakeupExamWindowMutation: (options?: unknown) =>
         mockUseGrantMakeupExamWindowMutation(options),
     useGrantRetakeExamWindowMutation: (options?: unknown) =>
@@ -366,5 +369,50 @@ describe('useMonitoring', () => {
             studentId: 'record-1',
             reason: 'Instructor authorized student re-entry from monitoring.',
         });
+    });
+
+    it('updates student progress in real-time when student:progress broadcast fires', () => {
+        let realtimeCallbacks: any = {};
+        mockUseMonitoringRealtime.mockImplementation((args: any) => {
+            realtimeCallbacks = args;
+        });
+
+        const { result } = renderHook(() => useMonitoring('exam-1'));
+
+        expect(result.current.filteredStudents[0].progress).toBe(10);
+
+        act(() => {
+            realtimeCallbacks.onProgressUpdate({
+                studentId: 'student-1',
+                answeredCount: 8,
+                totalQuestions: 10,
+                progress: 80,
+            });
+        });
+
+        expect(result.current.filteredStudents[0].progress).toBe(80);
+        expect(result.current.monitoring?.students[0].progress).toBe(80);
+    });
+
+    it('immediately marks student as submitted and increments stats.submitted when student:submitted fires', () => {
+        let realtimeCallbacks: any = {};
+        mockUseMonitoringRealtime.mockImplementation((args: any) => {
+            realtimeCallbacks = args;
+        });
+
+        const { result } = renderHook(() => useMonitoring('exam-1'));
+
+        expect(result.current.monitoring?.stats.submitted).toBe(0);
+
+        act(() => {
+            realtimeCallbacks.onStudentSubmitted({
+                studentId: 'student-1',
+                submittedAt: '2026-09-06T12:00:00.000Z',
+            });
+        });
+
+        expect(result.current.monitoring?.stats.submitted).toBe(1);
+        expect(result.current.filteredStudents[0].status).toBe('submitted');
+        expect(result.current.filteredStudents[0].progress).toBe(100);
     });
 });
