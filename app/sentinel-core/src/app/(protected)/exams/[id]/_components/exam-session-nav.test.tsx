@@ -38,10 +38,10 @@ describe('ExamSessionNav', () => {
         expect(screen.getByRole('link', { name: 'Monitoring' }).getAttribute('href')).toBe(
             '/exams/exam-1/monitoring',
         );
-        expect(screen.getByRole('link', { name: 'Attempt Summary' }).getAttribute('href')).toBe(
+        expect(screen.getByRole('link', { name: 'Summary' }).getAttribute('href')).toBe(
             '/exams/exam-1/report',
         );
-        expect(screen.getByRole('link', { name: 'Action Queue' }).getAttribute('href')).toBe(
+        expect(screen.getByRole('link', { name: 'Actions' }).getAttribute('href')).toBe(
             '/exams/exam-1/report?section=queue',
         );
         expect(screen.getByRole('link', { name: 'Incident Logs' }).getAttribute('href')).toBe(
@@ -71,18 +71,18 @@ describe('ExamSessionNav', () => {
         expect(activeLink.className).toContain('border-r-2');
     });
 
-    it('marks Attempt Summary active for report routes', () => {
+    it('marks Summary active for report routes', () => {
         mockPathname.mockReturnValue('/exams/exam-1/report');
         mockSearchParams.get.mockImplementation((key: string) => (key === 'section' ? null : null));
 
         render(<ExamSessionNav examId="exam-1" />);
 
-        const activeLink = screen.getByRole('link', { name: 'Attempt Summary' });
+        const activeLink = screen.getByRole('link', { name: 'Summary' });
         expect(activeLink.className).toContain('bg-accent/50');
         expect(activeLink.className).toContain('border-r-2');
     });
 
-    it('marks Action Queue active for queued report routes', () => {
+    it('marks Actions active for queued report routes', () => {
         mockPathname.mockReturnValue('/exams/exam-1/report');
         mockSearchParams.get.mockImplementation((key: string) =>
             key === 'section' ? 'queue' : null,
@@ -90,7 +90,7 @@ describe('ExamSessionNav', () => {
 
         render(<ExamSessionNav examId="exam-1" />);
 
-        const activeLink = screen.getByRole('link', { name: 'Action Queue' });
+        const activeLink = screen.getByRole('link', { name: 'Actions' });
         expect(activeLink.className).toContain('bg-accent/50');
         expect(activeLink.className).toContain('border-r-2');
     });
@@ -116,10 +116,10 @@ describe('ExamSessionNav', () => {
         expect(screen.queryByRole('link', { name: 'Lobby' })).toBeNull();
         expect(screen.queryByRole('link', { name: 'Monitoring' })).toBeNull();
 
-        expect(screen.getByRole('link', { name: 'Attempt Summary' }).getAttribute('href')).toBe(
+        expect(screen.getByRole('link', { name: 'Summary' }).getAttribute('href')).toBe(
             '/exams/exam-1/report',
         );
-        expect(screen.getByRole('link', { name: 'Action Queue' }).getAttribute('href')).toBe(
+        expect(screen.getByRole('link', { name: 'Actions' }).getAttribute('href')).toBe(
             '/exams/exam-1/report?section=queue',
         );
         expect(screen.getByRole('link', { name: 'Incident Logs' }).getAttribute('href')).toBe(

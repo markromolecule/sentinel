@@ -41,10 +41,10 @@ describe('ExamSessionNav', () => {
         expect(screen.getByRole('link', { name: 'Overview' }).getAttribute('href')).toBe(
             '/exams/reports/exam-1?section=overview',
         );
-        expect(screen.getByRole('link', { name: 'Attempt Summary' }).getAttribute('href')).toBe(
+        expect(screen.getByRole('link', { name: 'Summary' }).getAttribute('href')).toBe(
             '/exams/reports/exam-1?section=attempts',
         );
-        expect(screen.getByRole('link', { name: 'Action Queue' }).getAttribute('href')).toBe(
+        expect(screen.getByRole('link', { name: 'Actions' }).getAttribute('href')).toBe(
             '/exams/reports/exam-1?section=queue',
         );
         expect(screen.getByRole('link', { name: 'Incident Logs' }).getAttribute('href')).toBe(
@@ -87,7 +87,7 @@ describe('ExamSessionNav', () => {
         expect(activeLink.className).toContain('border-r-2');
     });
 
-    it('marks Attempt Summary active for report attempt routes', () => {
+    it('marks Summary active for report attempt routes', () => {
         mockPathname.mockReturnValue('/exams/reports/exam-1');
         mockSearchParams.get.mockImplementation((key: string) =>
             key === 'section' ? 'attempts' : null,
@@ -95,12 +95,12 @@ describe('ExamSessionNav', () => {
 
         render(<ExamSessionNav examId="exam-1" />);
 
-        const activeLink = screen.getByRole('link', { name: 'Attempt Summary' });
+        const activeLink = screen.getByRole('link', { name: 'Summary' });
         expect(activeLink.className).toContain('bg-accent/50');
         expect(activeLink.className).toContain('border-r-2');
     });
 
-    it('marks Action Queue active for report queue routes', () => {
+    it('marks Actions active for report queue routes', () => {
         mockPathname.mockReturnValue('/exams/reports/exam-1');
         mockSearchParams.get.mockImplementation((key: string) =>
             key === 'section' ? 'queue' : null,
@@ -108,7 +108,7 @@ describe('ExamSessionNav', () => {
 
         render(<ExamSessionNav examId="exam-1" />);
 
-        const activeLink = screen.getByRole('link', { name: 'Action Queue' });
+        const activeLink = screen.getByRole('link', { name: 'Actions' });
         expect(activeLink.className).toContain('bg-accent/50');
         expect(activeLink.className).toContain('border-r-2');
     });
@@ -137,10 +137,10 @@ describe('ExamSessionNav', () => {
         expect(screen.getByRole('link', { name: 'Overview' }).getAttribute('href')).toBe(
             '/exams/reports/exam-1?section=overview',
         );
-        expect(screen.getByRole('link', { name: 'Attempt Summary' }).getAttribute('href')).toBe(
+        expect(screen.getByRole('link', { name: 'Summary' }).getAttribute('href')).toBe(
             '/exams/reports/exam-1?section=attempts',
         );
-        expect(screen.getByRole('link', { name: 'Action Queue' }).getAttribute('href')).toBe(
+        expect(screen.getByRole('link', { name: 'Actions' }).getAttribute('href')).toBe(
             '/exams/reports/exam-1?section=queue',
         );
         expect(screen.getByRole('link', { name: 'Incident Logs' }).getAttribute('href')).toBe(
@@ -159,13 +159,13 @@ describe('ExamSessionNav', () => {
         expect(screen.getByRole('link', { name: 'Monitoring' })).toBeTruthy();
     });
 
-    it('marks Attempt Summary active on detailed attempt routes', () => {
+    it('marks Summary active on detailed attempt routes', () => {
         mockPathname.mockReturnValue('/exams/reports/exam-1/attempt-1');
         mockSearchParams.get.mockReturnValue(null);
 
         render(<ExamSessionNav examId="exam-1" />);
 
-        const activeLink = screen.getByRole('link', { name: 'Attempt Summary' });
+        const activeLink = screen.getByRole('link', { name: 'Summary' });
         expect(activeLink.className).toContain('bg-accent/50');
         expect(activeLink.className).toContain('border-r-2');
     });

@@ -68,12 +68,12 @@ export function ExamSessionNav({ examId }: ExamSessionNavProps) {
         ? [
               {
                   id: 'report',
-                  label: 'Attempt Summary',
+                  label: 'Summary',
                   href: `/exams/${examId}/report`,
               },
               {
                   id: 'queue',
-                  label: 'Action Queue',
+                  label: 'Actions',
                   href: `/exams/${examId}/report?section=queue`,
               },
               {
@@ -95,12 +95,12 @@ export function ExamSessionNav({ examId }: ExamSessionNavProps) {
               },
               {
                   id: 'report',
-                  label: 'Attempt Summary',
+                  label: 'Summary',
                   href: `/exams/${examId}/report`,
               },
               {
                   id: 'queue',
-                  label: 'Action Queue',
+                  label: 'Actions',
                   href: `/exams/${examId}/report?section=queue`,
               },
               {

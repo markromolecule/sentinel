@@ -70,6 +70,12 @@ describe('formatDisplayName', () => {
         expect(formatDisplayName('Joseph Cruz')).toBe('Joseph');
         expect(formatDisplayName('jake_harper')).toBe('Jake');
     });
+
+    it('normalizes uppercase names to first-letter capital only', () => {
+        expect(formatDisplayName('KEANNA')).toBe('Keanna');
+        expect(formatDisplayName('KEANNA CRUZ')).toBe('Keanna');
+        expect(formatDisplayName('JAKE_HARPER')).toBe('Jake');
+    });
 });
 
 describe('DashboardGreeting', () => {

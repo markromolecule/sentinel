@@ -14,7 +14,7 @@ import {
     Textarea,
 } from '@sentinel/ui';
 import { formatAnswerValue, type AttemptReportOverrideDrafts } from '../attempt-report-utils';
-import type { ReportCardType } from '../_hooks/use-attempt-report/_types';
+import type { ReportCardType } from '../_types';
 
 export type AttemptReportOverrideDialogProps = {
     selectedReport: ReportCardType | null;
@@ -55,7 +55,7 @@ export function AttemptReportOverrideDialog({
         return null;
     }
 
-    const prompt = selectedReport.question?.content.prompt ?? selectedReport.prompt;
+    const prompt = selectedReport.question?.content?.prompt ?? selectedReport.prompt;
 
     const questionTypeLabel = (
         selectedReport.question?.type ??

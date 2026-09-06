@@ -498,7 +498,7 @@ describe('ExamReportPage', () => {
         );
         viewResult.unmount();
 
-        // Attempt Summary
+        // Summary
         mockSearchParamsGet.mockImplementation((key: string) =>
             key === 'section' ? 'attempts' : null,
         );
@@ -512,12 +512,12 @@ describe('ExamReportPage', () => {
             await attemptsParams;
         });
         expect(screen.getAllByText('Attempt Summary Report').length).toBeGreaterThan(0);
-        expect(screen.getAllByRole('link', { name: 'Attempt Summary' })[0]?.className).toContain(
+        expect(screen.getAllByRole('link', { name: 'Summary' })[0]?.className).toContain(
             'bg-accent/50',
         );
         viewResult.unmount();
 
-        // Action Queue
+        // Actions
         mockSearchParamsGet.mockImplementation((key: string) =>
             key === 'section' ? 'queue' : null,
         );
@@ -530,7 +530,7 @@ describe('ExamReportPage', () => {
             );
             await queueParams;
         });
-        expect(screen.getAllByRole('link', { name: 'Action Queue' })[0]?.className).toContain(
+        expect(screen.getAllByRole('link', { name: 'Actions' })[0]?.className).toContain(
             'bg-accent/50',
         );
         viewResult.unmount();

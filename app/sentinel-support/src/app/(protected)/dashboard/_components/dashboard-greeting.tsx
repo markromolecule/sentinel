@@ -33,7 +33,7 @@ export function formatDisplayName(name: string): string {
     const words = cleanName.split(/\s+/).filter(Boolean);
     if (words.length === 0) return 'User';
     const firstName = words[0];
-    return firstName.charAt(0).toUpperCase() + firstName.slice(1);
+    return firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
 }
 
 interface DashboardGreetingProps {

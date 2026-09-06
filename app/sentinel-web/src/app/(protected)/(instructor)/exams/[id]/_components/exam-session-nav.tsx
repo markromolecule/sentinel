@@ -78,12 +78,12 @@ export function ExamSessionNav({ examId }: ExamSessionNavProps) {
               },
               {
                   id: 'report',
-                  label: 'Attempt Summary',
+                  label: 'Summary',
                   href: `/exams/reports/${examId}?section=attempts`,
               },
               {
                   id: 'queue',
-                  label: 'Action Queue',
+                  label: 'Actions',
                   href: `/exams/reports/${examId}?section=queue`,
               },
               {
@@ -110,12 +110,12 @@ export function ExamSessionNav({ examId }: ExamSessionNavProps) {
               },
               {
                   id: 'report',
-                  label: 'Attempt Summary',
+                  label: 'Summary',
                   href: `/exams/reports/${examId}?section=attempts`,
               },
               {
                   id: 'queue',
-                  label: 'Action Queue',
+                  label: 'Actions',
                   href: `/exams/reports/${examId}?section=queue`,
               },
               {
