@@ -6,9 +6,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { toast } from 'sonner';
 import ExamReportPage from './page';
 
-const { mockApiClient, mockRefetch } = vi.hoisted(() => ({
+const { mockApiClient, mockRefetch, mockSearchParams } = vi.hoisted(() => ({
     mockApiClient: vi.fn(),
     mockRefetch: vi.fn(),
+    mockSearchParams: {
+        get: vi.fn().mockReturnValue(null),
+    },
+}));
+
+vi.mock('next/navigation', () => ({
+    useSearchParams: () => mockSearchParams,
 }));
 
 vi.mock('next/link', () => ({
@@ -27,6 +34,7 @@ vi.mock('./_components/exam-report-pdf-export', () => ({
 
 vi.mock('@sentinel/hooks', () => ({
     useApi: () => mockApiClient,
+    useDebounce: (val: any) => val,
     useExamReportQuery: () => ({
         data: {
             exam: {
@@ -243,6 +251,33 @@ vi.mock('@sentinel/ui', () => ({
     TableHead: ({ children }: { children: React.ReactNode }) => <th>{children}</th>,
     TableHeader: ({ children }: { children: React.ReactNode }) => <thead>{children}</thead>,
     TableRow: ({ children }: { children: React.ReactNode }) => <tr>{children}</tr>,
+    Separator: ({ className }: { className?: string }) => <hr className={className} />,
+    Checkbox: ({ checked, onCheckedChange, 'aria-label': ariaLabel, className }: any) => (
+        <input
+            type="checkbox"
+            checked={Boolean(checked)}
+            onChange={(e) => onCheckedChange?.(e.target.checked)}
+            aria-label={ariaLabel}
+            className={className}
+        />
+    ),
+    DataTable: ({ columns, data, toolbarActions }: any) => (
+        <div data-testid="data-table">
+            {toolbarActions}
+            <table>
+                <tbody>
+                    {data?.map((item: any, idx: number) => (
+                        <tr key={idx}>
+                            <td>
+                                {item.lastName}, {item.firstName}
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    ),
+    FacetedFilter: ({ title }: any) => <div>Filter {title}</div>,
 }));
 
 vi.mock('sonner', () => ({
@@ -380,5 +415,28 @@ describe('ExamReportPage', () => {
                 .compareDocumentPosition(screen.getByText('Back to Exams')),
         ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
         expect(mockRefetch).not.toHaveBeenCalled();
+    });
+
+    it('renders the Action Queue view when section=queue', async () => {
+        mockSearchParams.get.mockImplementation((param: string) =>
+            param === 'section' ? 'queue' : null,
+        );
+
+        const params = Promise.resolve({ id: 'exam-1' });
+
+        await act(async () => {
+            render(
+                <Suspense fallback={<div>Loading...</div>}>
+                    <ExamReportPage params={params} />
+                </Suspense>,
+            );
+
+            await params;
+        });
+
+        expect(screen.getByRole('heading', { level: 1, name: 'Action Queue' })).toBeDefined();
+        expect(screen.getByText('Back to Summary')).toBeDefined();
+        expect(screen.getByText('Needs Makeup (1)')).toBeDefined();
+        expect(screen.getByText('Needs Retake (1)')).toBeDefined();
     });
 });

@@ -173,7 +173,7 @@ vi.mock('@sentinel/ui', () => ({
                 <span>{title}</span>
                 <select
                     data-testid="faceted-filter"
-                    value={Array.from(selectedValues)[0] ?? 'all'}
+                    value={(Array.from(selectedValues as Iterable<string>)[0] ?? 'all') as string}
                     onChange={(e) => {
                         const val = e.target.value;
                         if (val === 'all') {

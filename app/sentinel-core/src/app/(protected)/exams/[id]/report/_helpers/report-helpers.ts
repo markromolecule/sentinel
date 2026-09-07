@@ -34,6 +34,54 @@ export async function grantLifecycleOverride(args: {
 }
 
 /**
+ * Executes a batch of lifecycle override requests concurrently via Promise.allSettled.
+ */
+export async function grantLifecycleOverridesBatch(args: {
+    apiClient: ReturnType<typeof useApi>;
+    examId: string;
+    items: ExamReportActionItem[];
+    overrideType: 'MAKEUP' | 'RETAKE';
+    availableFrom: string;
+    availableUntil: string;
+    notes: string | null;
+}) {
+    const results = await Promise.allSettled(
+        args.items.map((item) =>
+            grantLifecycleOverride({
+                apiClient: args.apiClient,
+                examId: args.examId,
+                item,
+                overrideType: args.overrideType,
+                availableFrom: args.availableFrom,
+                availableUntil: args.availableUntil,
+                notes: args.notes,
+            }),
+        ),
+    );
+
+    const succeeded: { item: ExamReportActionItem; response: any }[] = [];
+    const failed: { item: ExamReportActionItem; reason: string }[] = [];
+
+    results.forEach((result, idx) => {
+        const item = args.items[idx]!;
+        if (result.status === 'fulfilled') {
+            succeeded.push({ item, response: result.value });
+        } else {
+            const reason =
+                result.reason instanceof Error
+                    ? result.reason.message
+                    : typeof result.reason === 'string'
+                        ? result.reason
+                        : 'Unknown error';
+            failed.push({ item, reason });
+        }
+    });
+
+    return { succeeded, failed };
+}
+
+
+/**
  * Formats the grant success state so instructors immediately see the scheduled remediation exam.
  */
 export function buildGrantSuccessMessage(args: {
@@ -155,3 +203,25 @@ export function getAttemptKindLabel(attemptKind: ExamReport['students'][number][
             return 'No completed attempt';
     }
 }
+
+/**
+ * Paginates an array of items client-side.
+ */
+export function paginateItems<T>(items: T[], page: number, pageSize: number) {
+    const total = items.length;
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    const safePage = Math.min(Math.max(page, 1), totalPages);
+    const start = (safePage - 1) * pageSize;
+
+    return {
+        items: items.slice(start, start + pageSize),
+        pagination: {
+            page: safePage,
+            pageSize,
+            total,
+            totalPages,
+            hasMore: safePage < totalPages,
+        },
+    };
+}
+
