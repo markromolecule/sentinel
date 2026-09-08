@@ -12,7 +12,7 @@ type ActionQueueColumnsArgs = {
 };
 
 /**
- * Generates column definitions for the Action Queue DataTable.
+ * Generates column definitions for the Action Queue DataTable in sentinel-core.
  *
  * @param args - Callback functions and action configuration.
  */
@@ -90,7 +90,7 @@ export const getActionQueueColumns = (
                         )}
                         {item.attemptId ? (
                             <Button size="sm" variant="ghost" asChild>
-                                <Link href={`/exams/reports/${args.examId}/${item.attemptId}`}>
+                                <Link href={`/exams/grading/${args.examId}/${item.attemptId}`}>
                                     View Attempt
                                 </Link>
                             </Button>
@@ -100,9 +100,8 @@ export const getActionQueueColumns = (
                     </div>
                 );
             },
-        }
+        },
     );
 
     return columns;
 };
-

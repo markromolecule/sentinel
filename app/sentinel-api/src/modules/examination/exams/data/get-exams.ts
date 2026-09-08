@@ -1,7 +1,10 @@
 import { type DbClient, type question_type } from '@sentinel/db';
 import { sql } from 'kysely';
 import type { GetExamsQuery } from '../exam.dto';
-import { buildStudentAttemptSelects } from '../../history/data/build-student-attempt-selects';
+import {
+    buildStudentAttemptSelects,
+    withStudentAttemptJoin,
+} from '../../history/data/build-student-attempt-selects';
 import { buildStaffExamVisibilityPredicates } from '../../assign/services/exam-access.service';
 import { getExamColumnSupport } from '../helper/exam-schema-compat';
 import type { RawExamRecord } from '../services/map-exam-response.service';
@@ -44,8 +47,11 @@ export async function getExamsData({
         .leftJoin('exam_configurations as ec', 'ec.exam_id', 'e.exam_id')
         .leftJoin('user_profiles as up_creator', 'up_creator.user_id', 'e.created_by')
         .leftJoin('user_profiles as up_publisher', 'up_publisher.user_id', 'e.published_by')
-        .$if(columnSupport.hasRoomId, (qb) => qb.leftJoin('rooms as r', 'r.room_id', 'e.room_id'))
-        .select([
+        .$if(columnSupport.hasRoomId, (qb) => qb.leftJoin('rooms as r', 'r.room_id', 'e.room_id'));
+
+    query = withStudentAttemptJoin(query, studentUserId);
+
+    query = query.select([
             'e.exam_id',
             'e.title',
             'e.description',

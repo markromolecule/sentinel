@@ -44,7 +44,7 @@ export type UseExamReportResult = {
         retake: ExamReportActionItem[];
     };
     handleGrantOverride: (
-        item: ExamReportActionItem,
+        itemOrItems: ExamReportActionItem | ExamReportActionItem[],
         overrideType: 'MAKEUP' | 'RETAKE',
         availableFrom: string,
         availableUntil: string,

@@ -1,3 +1,5 @@
+'use client';
+
 import { useState } from 'react';
 import type { ExamReportActionItem } from '@sentinel/shared/types';
 import { Button, Separator } from '@sentinel/ui';
@@ -13,10 +15,6 @@ type ActionQueueViewProps = {
         makeup: ExamReportActionItem[];
         retake: ExamReportActionItem[];
     };
-    activeQueue: ActionQueueType;
-    setActiveQueue: (queue: ActionQueueType) => void;
-    actionPages: Record<ActionQueueType, number>;
-    setActionPages: React.Dispatch<React.SetStateAction<Record<ActionQueueType, number>>>;
     activeActionId: string | null;
     examId: string;
     sectionOptions: readonly (readonly [string, string])[];
@@ -30,21 +28,22 @@ type ActionQueueViewProps = {
 };
 
 /**
- * Renders the Action Queue panel view, featuring:
- * - Queue category headers and inline tab selector buttons (Needs Review, Needs Makeup, Needs Retake)
- * - Individual queue panel sub-tables mapped to state handlers and paging indicators.
+ * Renders the dedicated Action Queue view in sentinel-core (/exams/[id]/report?section=queue).
+ * Features tabs for Review, Makeup, and Retake, alongside multi-select and batch remediation.
  */
 export function ActionQueueView({
     actionQueues,
-    activeQueue,
-    setActiveQueue,
-    actionPages,
-    setActionPages,
     activeActionId,
     examId,
     sectionOptions,
     onGrantOverride,
 }: ActionQueueViewProps) {
+    const [activeQueue, setActiveQueue] = useState<ActionQueueType>('makeup');
+    const [actionPages, setActionPages] = useState<Record<ActionQueueType, number>>({
+        review: 1,
+        makeup: 1,
+        retake: 1,
+    });
     const [remediationTarget, setRemediationTarget] = useState<{
         items: ExamReportActionItem[];
         type: 'MAKEUP' | 'RETAKE';

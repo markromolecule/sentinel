@@ -3,7 +3,7 @@ import { useState, useMemo, useEffect } from 'react';
 import type { ExamReportActionItem } from '@sentinel/shared/types';
 import { Badge, Button, DataTable, FacetedFilter } from '@sentinel/ui';
 import { getActionQueueColumns } from './action-queue-columns';
-import { paginateItems } from './helpers';
+import { paginateItems } from '../_helpers/report-helpers';
 
 type ActionQueuePanelProps = {
     title: string;
@@ -22,8 +22,8 @@ type ActionQueuePanelProps = {
 };
 
 /**
- * Renders an Action Queue sub-section table (Needs Review, Needs Makeup, Needs Retake).
- * Features a local search bar, a section faceted filter, client-side pagination, and column actions.
+ * Renders an Action Queue sub-section table (Needs Review, Needs Makeup, Needs Retake) in sentinel-core.
+ * Features a local search bar, a section faceted filter, client-side pagination, and batch actions.
  */
 export function ActionQueuePanel({
     title,
@@ -176,4 +176,3 @@ export function ActionQueuePanel({
         </div>
     );
 }
-
